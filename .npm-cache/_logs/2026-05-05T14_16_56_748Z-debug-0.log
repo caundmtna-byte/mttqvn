@@ -1,0 +1,243 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.9.3
+2 info using node@v22.19.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/admin/Desktop/dự án/mttqvn/.npmrc
+5 silly config load:file:/Users/admin/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install"
+9 verbose logfile logs-max:10 dir:/Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T14_16_56_748Z-
+10 verbose logfile /Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T14_16_56_748Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+13 silly idealTree buildDeps
+14 silly fetch manifest react@^18.0.0
+15 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+16 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+17 http fetch GET 200 https://registry.npmjs.org/react 717ms (cache miss)
+18 silly packumentCache full:https://registry.npmjs.org/react set size:undefined disposed:false
+19 silly fetch manifest react-dom@^18.0.0
+20 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+21 http fetch GET 200 https://registry.npmjs.org/react-dom 295ms (cache miss)
+22 silly packumentCache full:https://registry.npmjs.org/react-dom set size:undefined disposed:false
+23 warn ERESOLVE overriding peer dependency {
+23 warn ERESOLVE   code: 'ERESOLVE',
+23 warn ERESOLVE   edge: {
+23 warn ERESOLVE     type: 'peer',
+23 warn ERESOLVE     name: 'react',
+23 warn ERESOLVE     spec: '^18.0.0',
+23 warn ERESOLVE     error: 'INVALID',
+23 warn ERESOLVE     from: {
+23 warn ERESOLVE       name: '@react-leaflet/core',
+23 warn ERESOLVE       version: '2.1.0',
+23 warn ERESOLVE       location: 'node_modules/@react-leaflet/core',
+23 warn ERESOLVE       isWorkspace: false,
+23 warn ERESOLVE       dependents: [Array]
+23 warn ERESOLVE     }
+23 warn ERESOLVE   },
+23 warn ERESOLVE   dep: {
+23 warn ERESOLVE     name: 'react',
+23 warn ERESOLVE     version: '18.3.1',
+23 warn ERESOLVE     whileInstalling: {
+23 warn ERESOLVE       name: '@react-leaflet/core',
+23 warn ERESOLVE       version: '2.1.0',
+23 warn ERESOLVE       path: '/Users/admin/Desktop/dự án/mttqvn/node_modules/@react-leaflet/core'
+23 warn ERESOLVE     },
+23 warn ERESOLVE     location: 'node_modules/react',
+23 warn ERESOLVE     isWorkspace: false,
+23 warn ERESOLVE     dependents: [ [Object] ]
+23 warn ERESOLVE   },
+23 warn ERESOLVE   force: false,
+23 warn ERESOLVE   isMine: false,
+23 warn ERESOLVE   strictPeerDeps: false,
+23 warn ERESOLVE   current: {
+23 warn ERESOLVE     name: 'react',
+23 warn ERESOLVE     version: '19.2.4',
+23 warn ERESOLVE     location: 'node_modules/react',
+23 warn ERESOLVE     isWorkspace: false,
+23 warn ERESOLVE     dependents: [
+23 warn ERESOLVE       [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object],
+23 warn ERESOLVE       [Object], [Object], [Object],
+23 warn ERESOLVE       [Object]
+23 warn ERESOLVE     ]
+23 warn ERESOLVE   },
+23 warn ERESOLVE   peerConflict: {
+23 warn ERESOLVE     current: {
+23 warn ERESOLVE       name: 'react',
+23 warn ERESOLVE       version: '19.2.4',
+23 warn ERESOLVE       location: 'node_modules/react',
+23 warn ERESOLVE       isWorkspace: false,
+23 warn ERESOLVE       dependents: [Array]
+23 warn ERESOLVE     },
+23 warn ERESOLVE     peer: {
+23 warn ERESOLVE       name: 'react',
+23 warn ERESOLVE       version: '18.3.1',
+23 warn ERESOLVE       whileInstalling: [Object],
+23 warn ERESOLVE       location: 'node_modules/react',
+23 warn ERESOLVE       isWorkspace: false,
+23 warn ERESOLVE       dependents: [Array]
+23 warn ERESOLVE     }
+23 warn ERESOLVE   }
+23 warn ERESOLVE }
+24 warn ERESOLVE overriding peer dependency {
+24 warn ERESOLVE   code: 'ERESOLVE',
+24 warn ERESOLVE   edge: {
+24 warn ERESOLVE     type: 'peer',
+24 warn ERESOLVE     name: 'react-dom',
+24 warn ERESOLVE     spec: '^18.0.0',
+24 warn ERESOLVE     error: 'INVALID',
+24 warn ERESOLVE     from: {
+24 warn ERESOLVE       name: '@react-leaflet/core',
+24 warn ERESOLVE       version: '2.1.0',
+24 warn ERESOLVE       location: 'node_modules/@react-leaflet/core',
+24 warn ERESOLVE       isWorkspace: false,
+24 warn ERESOLVE       dependents: [Array]
+24 warn ERESOLVE     }
+24 warn ERESOLVE   },
+24 warn ERESOLVE   dep: {
+24 warn ERESOLVE     name: 'react-dom',
+24 warn ERESOLVE     version: '18.3.1',
+24 warn ERESOLVE     whileInstalling: {
+24 warn ERESOLVE       name: '@react-leaflet/core',
+24 warn ERESOLVE       version: '2.1.0',
+24 warn ERESOLVE       path: '/Users/admin/Desktop/dự án/mttqvn/node_modules/@react-leaflet/core'
+24 warn ERESOLVE     },
+24 warn ERESOLVE     location: 'node_modules/react-dom',
+24 warn ERESOLVE     isWorkspace: false,
+24 warn ERESOLVE     dependents: [ [Object] ]
+24 warn ERESOLVE   },
+24 warn ERESOLVE   force: false,
+24 warn ERESOLVE   isMine: false,
+24 warn ERESOLVE   strictPeerDeps: false,
+24 warn ERESOLVE   current: {
+24 warn ERESOLVE     name: 'react-dom',
+24 warn ERESOLVE     version: '19.2.4',
+24 warn ERESOLVE     location: 'node_modules/react-dom',
+24 warn ERESOLVE     isWorkspace: false,
+24 warn ERESOLVE     dependents: [
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object],
+24 warn ERESOLVE       [Object], [Object]
+24 warn ERESOLVE     ]
+24 warn ERESOLVE   },
+24 warn ERESOLVE   peerConflict: {
+24 warn ERESOLVE     current: {
+24 warn ERESOLVE       name: 'react-dom',
+24 warn ERESOLVE       version: '19.2.4',
+24 warn ERESOLVE       location: 'node_modules/react-dom',
+24 warn ERESOLVE       isWorkspace: false,
+24 warn ERESOLVE       dependents: [Array]
+24 warn ERESOLVE     },
+24 warn ERESOLVE     peer: {
+24 warn ERESOLVE       name: 'react-dom',
+24 warn ERESOLVE       version: '18.3.1',
+24 warn ERESOLVE       whileInstalling: [Object],
+24 warn ERESOLVE       location: 'node_modules/react-dom',
+24 warn ERESOLVE       isWorkspace: false,
+24 warn ERESOLVE       dependents: [Array]
+24 warn ERESOLVE     }
+24 warn ERESOLVE   }
+24 warn ERESOLVE }
+25 silly fetch manifest @tanstack/react-query@^5.99.0
+26 silly packumentCache full:https://registry.npmjs.org/@tanstack%2freact-query cache-miss
+27 http fetch GET 200 https://registry.npmjs.org/@tanstack%2freact-query 113ms (cache miss)
+28 silly packumentCache full:https://registry.npmjs.org/@tanstack%2freact-query set size:undefined disposed:false
+29 silly fetch manifest react@^18 || ^19
+30 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+31 http cache https://registry.npmjs.org/react 24ms (cache hit)
+32 silly packumentCache full:https://registry.npmjs.org/react set size:6637568 disposed:false
+33 silly placeDep ROOT @tanstack/react-query@5.100.9 REPLACE for: @tanstack/react-query-devtools@5.99.0 want: ^5.99.0
+34 silly fetch manifest @tanstack/query-core@5.100.9
+35 silly packumentCache full:https://registry.npmjs.org/@tanstack%2fquery-core cache-miss
+36 http fetch GET 200 https://registry.npmjs.org/@tanstack%2fquery-core 105ms (cache miss)
+37 silly packumentCache full:https://registry.npmjs.org/@tanstack%2fquery-core set size:undefined disposed:false
+38 silly placeDep ROOT @tanstack/query-core@5.100.9 OK for: @tanstack/react-query@5.100.9 want: 5.100.9
+39 silly fetch manifest @types/react@^17.0.0 || ^18.0.0 || ^19.0.0
+40 silly packumentCache full:https://registry.npmjs.org/@types%2freact cache-miss
+41 http fetch GET 200 https://registry.npmjs.org/@types%2freact 119ms (cache miss)
+42 silly packumentCache full:https://registry.npmjs.org/@types%2freact set size:undefined disposed:false
+43 silly fetch manifest @types/react-dom@^17.0.0 || ^18.0.0 || ^19.0.0
+44 silly packumentCache full:https://registry.npmjs.org/@types%2freact-dom cache-miss
+45 http fetch GET 200 https://registry.npmjs.org/@types%2freact-dom 91ms (cache miss)
+46 silly packumentCache full:https://registry.npmjs.org/@types%2freact-dom set size:undefined disposed:false
+47 silly placeDep ROOT @types/react@19.2.14 OK for: @tiptap/react@3.20.0 want: ^17.0.0 || ^18.0.0 || ^19.0.0
+48 silly placeDep ROOT @types/react-dom@19.2.3 OK for: @tiptap/react@3.20.0 want: ^17.0.0 || ^18.0.0 || ^19.0.0
+49 silly fetch manifest csstype@^3.2.2
+50 silly packumentCache full:https://registry.npmjs.org/csstype cache-miss
+51 http fetch GET 200 https://registry.npmjs.org/csstype 64ms (cache miss)
+52 silly packumentCache full:https://registry.npmjs.org/csstype set size:undefined disposed:false
+53 silly placeDep ROOT csstype@3.2.3 OK for: @types/react@19.2.14 want: ^3.2.2
+54 silly fetch manifest eslint@^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9
+55 silly packumentCache full:https://registry.npmjs.org/eslint cache-miss
+56 http fetch GET 200 https://registry.npmjs.org/eslint 99ms (cache miss)
+57 silly packumentCache full:https://registry.npmjs.org/eslint set size:undefined disposed:false
+58 silly fetch manifest jiti@*
+59 silly packumentCache full:https://registry.npmjs.org/jiti cache-miss
+60 http fetch GET 200 https://registry.npmjs.org/jiti 70ms (cache miss)
+61 silly packumentCache full:https://registry.npmjs.org/jiti set size:undefined disposed:false
+62 verbose stack Error: could not resolve
+62 verbose stack     at PlaceDep.failPeerConflict (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/place-dep.js:503:25)
+62 verbose stack     at new PlaceDep (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/place-dep.js:157:21)
+62 verbose stack     at #buildDepStep (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:920:18)
+62 verbose stack     at async Arborist.buildIdealTree (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:181:7)
+62 verbose stack     at async Promise.all (index 1)
+62 verbose stack     at async Arborist.reify (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:131:5)
+62 verbose stack     at async Install.exec (/usr/local/lib/node_modules/npm/lib/commands/install.js:150:5)
+62 verbose stack     at async Npm.exec (/usr/local/lib/node_modules/npm/lib/npm.js:207:9)
+62 verbose stack     at async module.exports (/usr/local/lib/node_modules/npm/lib/cli/entry.js:74:5)
+63 error code ERESOLVE
+64 error ERESOLVE could not resolve
+65 error
+66 error While resolving: eslint-plugin-jsx-a11y@6.10.2
+66 error Found: eslint@10.0.2
+66 error node_modules/eslint
+66 error   dev eslint@"^10.0.2" from the root project
+66 error   peer eslint@"^6.0.0 || ^7.0.0 || >=8.0.0" from @eslint-community/eslint-utils@4.9.1
+66 error   node_modules/@eslint-community/eslint-utils
+66 error     @eslint-community/eslint-utils@"^4.9.1" from @typescript-eslint/utils@8.56.1
+66 error     node_modules/@typescript-eslint/utils
+66 error       @typescript-eslint/utils@"8.56.1" from @typescript-eslint/eslint-plugin@8.56.1
+66 error       node_modules/@typescript-eslint/eslint-plugin
+66 error         @typescript-eslint/eslint-plugin@"8.56.1" from typescript-eslint@8.56.1
+66 error         node_modules/typescript-eslint
+66 error       2 more (@typescript-eslint/type-utils, typescript-eslint)
+66 error     @eslint-community/eslint-utils@"^4.8.0" from eslint@10.0.2
+66 error   7 more (@eslint/js, @typescript-eslint/eslint-plugin, ...)
+66 error
+66 error Could not resolve dependency:
+66 error peer eslint@"^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9" from eslint-plugin-jsx-a11y@6.10.2
+66 error node_modules/eslint-plugin-jsx-a11y
+66 error   dev eslint-plugin-jsx-a11y@"^6.10.2" from the root project
+66 error
+66 error Conflicting peer dependency: eslint@9.39.4
+66 error node_modules/eslint
+66 error   peer eslint@"^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9" from eslint-plugin-jsx-a11y@6.10.2
+66 error   node_modules/eslint-plugin-jsx-a11y
+66 error     dev eslint-plugin-jsx-a11y@"^6.10.2" from the root project
+66 error
+66 error Fix the upstream dependency conflict, or retry
+66 error this command with --force or --legacy-peer-deps
+66 error to accept an incorrect (and potentially broken) dependency resolution.
+67 error
+67 error
+67 error For a full report see:
+67 error /Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T14_16_56_748Z-eresolve-report.txt
+68 silly unfinished npm timer reify 1777990617337
+69 silly unfinished npm timer reify:loadTrees 1777990617342
+70 silly unfinished npm timer idealTree:buildDeps 1777990617724
+71 silly unfinished npm timer idealTree:node_modules/eslint-plugin-jsx-a11y 1777990619578
+72 verbose cwd /Users/admin/Desktop/dự án/mttqvn
+73 verbose os Darwin 24.6.0
+74 verbose node v22.19.0
+75 verbose npm  v10.9.3
+76 verbose exit 1
+77 verbose code 1
+78 error A complete log of this run can be found in: /Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T14_16_56_748Z-debug-0.log
