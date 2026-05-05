@@ -14,3 +14,11 @@ export function loginNameToSupabaseEmail(loginName: string): string {
   const local = t.includes('@') ? t.split('@')[0]!.trim() : t;
   return `${local}${SUPABASE_AUTH_EMAIL_SUFFIX}`;
 }
+
+/** Lấy phần local từ email đăng nhập Supabase (đối chiếu với `ten_tai_khoan`). */
+export function supabaseEmailToLoginName(email: string): string {
+  const t = email.trim().toLowerCase();
+  if (!t) return '';
+  const at = t.indexOf('@');
+  return at >= 0 ? t.slice(0, at) : t;
+}

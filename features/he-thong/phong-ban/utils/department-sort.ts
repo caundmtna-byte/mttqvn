@@ -18,9 +18,8 @@ export function compareDepartments(
     case 'thu_tu':
       return a.thu_tu - b.thu_tu;
     case 'ten_phong_ban':
-      return a.ten_phong_ban.localeCompare(b.ten_phong_ban, 'vi');
     case 'ma_phong_ban':
-      return a.ma_phong_ban.localeCompare(b.ma_phong_ban, 'vi');
+      return a.ten_phong_ban.localeCompare(b.ten_phong_ban, 'vi');
     case 'ten_phong_cha':
       return parentName(a, allDepartments).localeCompare(parentName(b, allDepartments), 'vi');
     case 'mo_ta':

@@ -1,5 +1,10 @@
 export interface User {
+  /** ID của Supabase Auth (auth.users.id) */
   id: string;
+  /** ID dòng tương ứng trong bảng `var_nhan_vien` */
+  nhan_vien_id?: string;
+  /** Tên tài khoản (`var_nhan_vien.ten_tai_khoan`) — định danh nghiệp vụ */
+  username?: string;
   email: string;
   full_name?: string;
   avatar_url?: string;
@@ -7,8 +12,12 @@ export interface User {
   created_at: string;
   /** Id phòng ban (để tự chọn phòng trong Chức năng nhiệm vụ, v.v.) */
   id_phong_ban?: string | null;
-  /** Id chức vụ (để lọc khóa mở đăng ký theo phân quyền đào tạo) */
-  id_chuc_vu?: string[] | null;
+  /** Id bộ phận (phòng ban con) */
+  id_bo_phan?: string | null;
+  /** Id chức vụ — module mới: 1 chức vụ; hỗ trợ array ở các module cũ. */
+  id_chuc_vu?: string | string[] | null;
+  /** Trạng thái tài khoản trong `var_nhan_vien` (tiếng Việt có dấu) */
+  trang_thai?: 'Hoạt động' | 'Khóa';
 }
 
 export interface AuthState {

@@ -91,7 +91,7 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
   return (
     <GenericDrawer
       title={txt('position.detail.title')}
-      subtitle={`${txt('position.detail.subtitle')}: ${data.ma_chuc_vu}`}
+      subtitle={`${txt('position.detail.subtitle')} · #${data.id}`}
       icon={<Briefcase size={18} />}
       onClose={onClose}
       footer={renderFooter}
@@ -112,7 +112,9 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
                 <EnumBadge value={data.trang_thai} config={trangThaiBadgeConfig} />
               </div>
             </div>
-            <p className="text-body-sm text-muted-foreground font-mono">{data.ma_chuc_vu}</p>
+            {data.ten_phong_ban ? (
+              <p className="text-body-sm text-muted-foreground">{data.ten_phong_ban}</p>
+            ) : null}
           </div>
         </div>
 
@@ -122,7 +124,6 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
 
         <DetailSection title={txt('position.detail.basicInfo')} icon={<Briefcase size={14} />} variant="primary">
           <DetailFieldGrid>
-            <DetailField label={txt('position.form.code')} value={data.ma_chuc_vu} icon={<Briefcase size={12} />} />
             <DetailField label={txt('position.form.name')} value={data.ten_chuc_vu} icon={<Briefcase size={12} />} />
             <DetailField label={txt('position.detail.level')} value={data.ten_cap_bac ?? '—'} icon={<Layers size={12} />} emptyText="—" />
             <DetailField label={txt('position.detail.department')} value={data.ten_phong_ban ?? '—'} icon={<Building2 size={12} />} emptyText="—" />

@@ -22,6 +22,7 @@ import MobileBottomNav from './MobileBottomNav';
 import { CommandPalette } from './CommandPalette';
 import { SIDEBAR_MENU } from '../../lib/sidebar-menu';
 import { useEmployees } from '../../features/he-thong/nhan-vien/hooks/use-nhan-vien';
+import { supabaseEmailToLoginName } from '@/lib/auth-email';
 import { toast } from 'sonner';
 
 /** Sidebar width: expanded 240px (gọn), collapsed 64px (4rem, 8px grid) */
@@ -30,15 +31,28 @@ const SIDEBAR_WIDTH_COLLAPSED = 64;
 
 /** Chỉ vùng avatar subscribe `useEmployees` — tránh refetch nhân viên làm re-render cả Layout/sidebar. */
 const LayoutHeaderAvatarImg: React.FC<{
-  user: { email?: string | null; full_name?: string | null; avatar_url?: string | null } | null;
+  user: {
+    id?: string | null;
+    email?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+  } | null;
 }> = ({ user }) => {
   const { data: employees = [] } = useEmployees();
-  const currentEmployee = user?.email ? employees.find((e) => e.email === user.email) : null;
-  const displayNameForAvatar = currentEmployee?.ho_ten ?? user?.full_name ?? 'User';
+  const currentEmployee =
+    user == null
+      ? null
+      : employees.find((e) => {
+          const u = user.username?.trim().toLowerCase();
+          if (u && e.ten_tai_khoan.trim().toLowerCase() === u) return true;
+          const fromEmail = supabaseEmailToLoginName(user.email ?? '');
+          return Boolean(fromEmail && e.ten_tai_khoan.trim().toLowerCase() === fromEmail);
+        }) ?? null;
+  const displayNameForAvatar = currentEmployee?.ho_va_ten ?? user?.full_name ?? txt('nav.guestUser');
   return (
     <img
-      src={user?.avatar_url || getAvatarUrl(displayNameForAvatar)}
-      alt="Avatar"
+      src={currentEmployee?.hinh_anh || user?.avatar_url || getAvatarUrl(displayNameForAvatar)}
+      alt={txt('nav.userAvatarAlt')}
       className="h-7 w-7 rounded-lg ring-1 ring-border shadow-sm object-cover"
     />
   );
@@ -416,7 +430,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                         onClick={() => { setIsUserMenuOpen(false); setShowChangePasswordModal(true); setChangePasswordError(null); setChangePasswordForm({ current: '', new: '', confirm: '' }); }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-primary/5 hover:text-primary rounded-lg transition-colors group text-left"
                       >
-                        <Key size={15} className="text-muted-foreground group-hover:text-primary transition-colors" /> {txt('nav.changePassword')}
+                        <Key size={15} className="text-muted-foreground group-hover:text-primary transition-colors" /> {txt('nav.changePasswordLabel')}
                       </button>
                       <div className="h-px bg-border my-1 mx-2" />
                       <button

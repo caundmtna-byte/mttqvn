@@ -65,7 +65,7 @@ export const permission = {
     "attendance": "Chấm công vân tay",
     "leaveRequest": "Đơn từ nghỉ phép",
     "payroll": "Tính lương & Thuế",
-    "companyInfo": "Thông tin công ty",
+    "companyInfo": "Thông tin tổ chức",
     "generalConfig": "Cấu hình chung",
     "dataSecurity": "An toàn dữ liệu",
     "fullSystemDesc": "Toàn quyền hệ thống",

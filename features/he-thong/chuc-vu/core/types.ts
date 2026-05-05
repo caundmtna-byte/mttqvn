@@ -2,9 +2,8 @@ import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 
 export interface Position {
   id: string;
-  ma_chuc_vu: string;
   ten_chuc_vu: string;
-  cap_bac_id?: string | null;
+  cap_bac?: string | null;
   phong_ban_id?: string | null;
   ten_cap_bac?: string;
   ten_phong_ban?: string;
@@ -23,9 +22,8 @@ export interface PositionFilters {
 }
 
 export interface PositionFormState {
-  ma_chuc_vu: string;
   ten_chuc_vu: string;
-  cap_bac_id?: string;
+  cap_bac?: string;
   phong_ban_id?: string;
   mo_ta: string | null;
   thu_tu: number;

@@ -4,7 +4,7 @@ import { txt } from '../lib/text';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, X, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore, useUIStore } from '../store/useStore';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { DIALOG_SIZE } from '../lib/dialog-sizes';
 import { cn } from '../lib/utils';
 import { loginNameToSupabaseEmail } from '../lib/auth-email';
+import { getAuthService } from '../lib/supabase/auth';
 
 const AUTH_REMEMBER_KEY = 'auth-remember';
 
@@ -40,7 +41,7 @@ const Login: React.FC = () => {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: 'admin',
-      password: '123456'
+      password: ''
     }
   });
 
@@ -93,24 +94,20 @@ const Login: React.FC = () => {
     setIsLoading(true);
     localStorage.setItem(AUTH_REMEMBER_KEY, rememberMe ? 'true' : 'false');
 
-    setTimeout(() => {
-      setIsLoading(false);
+    const username = data.username.trim();
+    const result = await getAuthService().signIn({
+      email: loginNameToSupabaseEmail(username),
+      password: data.password,
+    });
+    setIsLoading(false);
 
-      const username = data.username.trim();
-      const mockUser = {
-        id: 'emp-000',
-        email: loginNameToSupabaseEmail(username),
-        full_name: txt('page.login.mockUserName'),
-        role: 'admin' as const,
-        id_phong_ban: 'dep-7',
-        avatar_url: `https://ui-avatars.com/api/?name=Nguoi+Dung&background=random`,
-        created_at: new Date().toISOString()
-      };
-
-      login(mockUser);
-      toast.success(txt('page.login.loginSuccess'));
-      navigate('/');
-    }, 1500);
+    if ('error' in result) {
+      toast.error(result.error);
+      return;
+    }
+    login(result.user);
+    toast.success(txt('page.login.loginSuccess'));
+    navigate('/');
   };
 
   const handleRememberChange = (checked: boolean) => {
@@ -250,10 +247,6 @@ const Login: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <div className="text-center text-sm text-muted-foreground">
-          {txt('page.login.noAccount')}{' '}
-          <Link to="/dang-ky" className="font-semibold text-primary hover:underline">{txt('page.login.register')}</Link>
-        </div>
       </motion.div>
 
       <div className="absolute bottom-6 text-center text-xs text-muted-foreground w-full left-0 px-4">

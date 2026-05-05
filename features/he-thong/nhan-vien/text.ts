@@ -33,7 +33,7 @@ export const employee = {
     "noPhone": "Chưa có số điện thoại",
   },
   "unassigned": "Chưa gán",
-  "searchPlaceholder": "Tìm theo tên, mã NV, email, SĐT, chức vụ, phòng ban...",
+  "searchPlaceholder": "Tìm theo tài khoản, họ tên, phòng ban, bộ phận, chức vụ, trạng thái…",
   "deleteConfirmTitle": "Xóa nhân viên?",
   "deleteConfirmMessage": "Bạn có chắc muốn xóa nhân viên",
   "deleteConfirmNote": "Bạn có thể hoàn tác trong vài giây.",
@@ -46,7 +46,8 @@ export const employee = {
   "importSuccess": "Import {{count}} nhân viên thành công",
   "importTemplateName": "Mau_Import_Nhan_Vien",
   "exportFileName": "Danh_Sach_Nhan_Vien",
-  "statusActive": "Đang làm việc",
+  "statusActive": "Hoạt động",
+  "statusLocked": "Khóa",
   "statusProbation": "Thử việc",
   "statusLeave": "Nghỉ phép",
   "statusResigned": "Đã nghỉ việc",
@@ -85,6 +86,15 @@ export const employee = {
     "avatar": "Ảnh đại diện",
     "avatarPlaceholder": "Ảnh 3x4",
     "avatarHint": "PNG, JPG · Tối đa 2MB",
+    "username": "Tên tài khoản",
+    "usernamePlaceholder": "vd: nguyenvana",
+    "authEmailHint": "Email Auth: {{email}} · Mật khẩu mặc định: 123456",
+    "authEmailHintEmpty": "Email Auth sẽ là <ten_tai_khoan>@gmail.com · Mật khẩu mặc định: 123456",
+    "statusSwitchActiveHint": "Tài khoản đang được phép đăng nhập.",
+    "statusSwitchLockedHint": "Tài khoản bị khoá, không đăng nhập được.",
+    "identity": "Định danh",
+    "unit": "Bộ phận",
+    "unitPlaceholder": "Chọn bộ phận...",
     "fullName": "Họ và tên",
     "fullNamePlaceholder": "Nguyễn Văn A",
     "gender": "Giới tính",
@@ -185,9 +195,10 @@ export const employee = {
     "medicalFacilityPlaceholder": "Bệnh viện Đại học Y Dược"
   },
   "detail": {
-    "title": "Hồ sơ Nhân sự",
+    "title": "Hồ sơ nhân viên",
     "subtitle": "Mã NV:",
-    "changeStatus": "Trạng thái",
+    "identity": "Thông tin định danh",
+    "changeStatus": "Đổi trạng thái",
     "print": "In hồ sơ",
     "changePassword": "Đổi MK",
     "sendEmail": "Gửi Email",
@@ -337,6 +348,9 @@ export const employee = {
     }
   },
   "validation": {
+    "usernameMin": "Tên tài khoản phải có ít nhất 2 ký tự",
+    "usernameFormat": "Tên tài khoản chỉ chứa chữ, số, dấu chấm, gạch dưới hoặc gạch ngang",
+    "fullNameMin": "Họ tên phải có ít nhất 2 ký tự",
     "codeRequired": "Mã nhân viên là bắt buộc",
     "nameMin": "Họ tên phải có ít nhất 2 ký tự",
     "emailInvalid": "Địa chỉ email không hợp lệ",
@@ -344,6 +358,7 @@ export const employee = {
     "phoneInvalid": "SĐT không hợp lệ (VD: 0901234567)",
     "positionRequired": "Vui lòng chọn chức vụ",
     "departmentRequired": "Vui lòng chọn phòng ban",
+    "unitRequired": "Vui lòng chọn bộ phận",
     "hireDateInvalid": "Ngày vào làm không hợp lệ",
     "ageMin": "Nhân viên phải đủ 16 tuổi trở lên",
     "idCardLength": "CCCD phải có đúng 12 chữ số",
@@ -360,7 +375,18 @@ export const employee = {
     "deleteSuccess": "Đã xóa thành công {{count}} nhân viên",
     "deleteCount": "Đã xóa {{count}} nhân viên",
     "undo": "Hoàn tác",
-    "undoSuccess": "Đã hoàn tác xóa"
+    "undoSuccess": "Đã hoàn tác xóa",
+    "authCreated": "Đã tạo tài khoản đăng nhập",
+    "authPasswordReset": "Đã đặt lại mật khẩu về 123456",
+    "authDeleted": "Đã xóa tài khoản đăng nhập cũ"
+  },
+  "authConflict": {
+    "title": "Tài khoản đăng nhập đã tồn tại",
+    "desc": "Email {{email}} đã có sẵn trên hệ thống. Bạn muốn xử lý thế nào?",
+    "optionResetTitle": "Đặt lại mật khẩu về 123456",
+    "optionResetDesc": "Mật khẩu hiện tại sẽ bị ghi đè bằng 123456 và liên kết với hồ sơ nhân viên này.",
+    "optionKeepTitle": "Giữ mật khẩu hiện tại",
+    "optionKeepDesc": "Không thay đổi mật khẩu; chỉ liên kết tài khoản Auth có sẵn với hồ sơ nhân viên này."
   },
   "service": {
     "notFound": "Nhân viên không tồn tại"
@@ -376,7 +402,7 @@ export const employee = {
     "educationInfo": "HỌC VẤN & CHỨNG CHỈ",
     "financialInfo": "TÀI CHÍNH & NGÂN HÀNG",
     "insuranceInfo": "BẢO HIỂM",
-    "printedAt": "In luc:"
+    "printedAt": "In lúc:"
   },
   "profile": {
     "notFound": "Không tìm thấy hồ sơ nhân viên.",
@@ -411,6 +437,8 @@ export const employee = {
     "activeRatePercent": "Tỷ lệ HĐ (%)"
   },
   "store": {
+    "usernameCol": "Tên tài khoản",
+    "unitCol": "Bộ phận",
     "codeCol": "Mã NV",
     "nameCol": "Họ và tên",
     "positionDeptCol": "Chức vụ / Phòng ban",

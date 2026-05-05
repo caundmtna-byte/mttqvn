@@ -2,7 +2,6 @@ import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 
 export interface Department {
   id: string;
-  ma_phong_ban: string;
   ten_phong_ban: string;
   mo_ta?: string;
   cha_id: string | null;
@@ -15,7 +14,6 @@ export interface Department {
 }
 
 export interface DepartmentFormState {
-  ma_phong_ban: string;
   ten_phong_ban: string;
   cha_id: string | null;
   trang_thai: TrangThaiHoatDong;

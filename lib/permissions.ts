@@ -29,9 +29,12 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   employees: 'he-thong/nhan-vien',
   departments: 'he-thong/phong-ban',
   positions: 'he-thong/chuc-vu',
-  company: 'he-thong/thong-tin-cong-ty',
+  company: 'he-thong/thong-tin-to-chuc',
   permissions: 'he-thong/phan-quyen',
 };
+
+/** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */
+const COMPANY_MODULE_ID_LEGACY = 'he-thong/thong-tin-cong-ty';
 
 /** UI dùng `edit`; ma trận phân quyền dùng `update`. */
 export function mapAppActionToActionType(action: AppAction): ActionType {
@@ -50,16 +53,31 @@ function legacyCan(user: User, action: AppAction, resource: AppResource): boolea
   return false;
 }
 
+function grantsAllow(allowed: readonly string[], need: ReturnType<typeof mapAppActionToActionType>): boolean {
+  if (allowed.includes('all') || allowed.includes('admin')) return true;
+  return allowed.includes(need);
+}
+
 function matrixCan(user: User, action: AppAction, resource: AppResource): boolean {
+  void user;
   const moduleId = APP_RESOURCE_TO_MODULE[resource];
   if (moduleId === undefined) {
     return legacyCan(user, action, resource);
   }
   const need = mapAppActionToActionType(action);
   const { grantsByModule } = usePermissionGrantStore.getState();
+
+  if (resource === 'company') {
+    const ids = [moduleId, COMPANY_MODULE_ID_LEGACY];
+    for (const id of ids) {
+      const allowed = grantsByModule[id] ?? [];
+      if (grantsAllow(allowed, need)) return true;
+    }
+    return false;
+  }
+
   const allowed = grantsByModule[moduleId] ?? [];
-  if (allowed.includes('all') || allowed.includes('admin')) return true;
-  return allowed.includes(need);
+  return grantsAllow(allowed, need);
 }
 
 /**

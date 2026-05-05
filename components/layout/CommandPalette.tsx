@@ -25,7 +25,7 @@ const PATH_ICONS: Record<string, LucideIcon> = {
   '/he-thong/nhan-vien': Users,
   '/he-thong/phong-ban': Network,
   '/he-thong/chuc-vu': Briefcase,
-  '/he-thong/thong-tin-cong-ty': Landmark,
+  '/he-thong/thong-tin-to-chuc': Landmark,
   '/he-thong/phan-quyen': Shield,
   '/ho-so': UserCircle,
   '/thong-bao': Bell,

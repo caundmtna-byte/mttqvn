@@ -13,9 +13,9 @@ const printHTML = (title: string, content: string, companyInfo?: CompanyPrintInf
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
-  const name = companyInfo?.companyName || '5F QUẢN LÝ THIẾT BỊ';
-  const address = companyInfo?.address || 'Số 1 Đường Mẫu, Quận 1, TP. Hồ Chí Minh';
-  const phone = companyInfo?.phone || '028 1234 5678';
+  const name = companyInfo?.companyName || 'MẶT TRẬN TỔ QUỐC VIỆT NAM';
+  const address = companyInfo?.address || 'Khối 7, đường Hùng Vương, TP. Vinh, tỉnh Nghệ An';
+  const phone = companyInfo?.phone || '';
 
   const html = `
     <!DOCTYPE html>
@@ -52,7 +52,7 @@ const printHTML = (title: string, content: string, companyInfo?: CompanyPrintInf
           <div class="company-info">
             <div class="company-name">${name}</div>
             <div>Địa chỉ: ${address}</div>
-            <div>Điện thoại: ${phone}</div>
+            ${phone ? `<div>Điện thoại: ${phone}</div>` : ''}
           </div>
           <div style="text-align: right;">
              <div>Ngày in: ${formatDateTime(new Date())}</div>

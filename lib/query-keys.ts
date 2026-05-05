@@ -5,7 +5,7 @@
 export const EMPLOYEES_LIST_QUERY_PARAMS = {
   limit: 5000,
   offset: 0,
-  orderBy: 'ma_nhan_vien',
+  orderBy: 'ten_tai_khoan',
   ascending: true,
 } as const;
 
@@ -37,5 +37,8 @@ export const queryKeys = {
   },
   jobLevels: {
     all: ['job-levels'] as const,
+  },
+  thongTinToChuc: {
+    singleton: ['thong-tin-to-chuc', 'singleton'] as const,
   },
 } as const;

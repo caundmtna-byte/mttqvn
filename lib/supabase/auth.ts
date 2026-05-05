@@ -1,6 +1,7 @@
 import { getSupabase } from '@/lib/supabase/client';
 import { isSupabase } from '@/lib/data/config';
 import type { User } from '@/types';
+import { loginNameToSupabaseEmail, supabaseEmailToLoginName } from '@/lib/auth-email';
 
 export interface SignInCredentials {
   email: string;
@@ -25,53 +26,105 @@ export interface AuthService {
   onAuthStateChange(callback: (session: AuthSession | null) => void): () => void;
 }
 
-function mapSupabaseUserToAppUser(supabaseUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): User {
-  const meta = supabaseUser.user_metadata ?? {};
+const VAR_NHAN_VIEN_AUTH_COLUMNS =
+  'id, ten_tai_khoan, ho_va_ten, hinh_anh, id_phong_ban, id_bo_phan, id_chuc_vu, trang_thai';
+
+export interface VarNhanVienAuthRow {
+  id: string;
+  ten_tai_khoan: string;
+  ho_va_ten: string;
+  hinh_anh: string | null;
+  id_phong_ban: string | null;
+  id_bo_phan: string | null;
+  id_chuc_vu: string | null;
+  trang_thai: 'Hoạt động' | 'Khóa';
+}
+
+/** Tra cứu nhân viên theo `ten_tai_khoan` (không phân biệt hoa thường). */
+export async function getEmployeeByUsername(username: string): Promise<VarNhanVienAuthRow | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('var_nhan_vien')
+    .select(VAR_NHAN_VIEN_AUTH_COLUMNS)
+    .ilike('ten_tai_khoan', username.trim())
+    .maybeSingle();
+  if (error) return null;
+  return (data as VarNhanVienAuthRow | null) ?? null;
+}
+
+/**
+ * Lấy dòng `var_nhan_vien` khớp tài khoản Auth: phần local của email phải trùng `ten_tai_khoan`
+ * và email đăng nhập phải đúng dạng `<ten_tai_khoan>@gmail.com`.
+ */
+async function resolveNhanVienForAuthEmail(authEmail: string | undefined): Promise<VarNhanVienAuthRow | null> {
+  if (!authEmail?.trim()) return null;
+  const normalizedEmail = authEmail.trim().toLowerCase();
+  const login = supabaseEmailToLoginName(authEmail);
+  if (!login) return null;
+  const row = await getEmployeeByUsername(login);
+  if (!row) return null;
+  if (loginNameToSupabaseEmail(row.ten_tai_khoan).toLowerCase() !== normalizedEmail) return null;
+  return row;
+}
+
+function buildAppUser(authUser: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }, nhanVien: VarNhanVienAuthRow | null): User {
+  const meta = authUser.user_metadata ?? {};
+  const role = (meta.role as 'admin' | 'user') ?? 'admin';
   return {
-    id: supabaseUser.id,
-    email: supabaseUser.email ?? '',
-    full_name: (meta.full_name as string) ?? undefined,
-    avatar_url: (meta.avatar_url as string) ?? undefined,
-    role: (meta.role as 'admin' | 'user') ?? 'user',
-    created_at: new Date().toISOString(),
-    id_phong_ban: (meta.id_phong_ban as string) ?? undefined,
-    id_chuc_vu: (meta.id_chuc_vu as string[] | null) ?? undefined,
+    id: authUser.id,
+    nhan_vien_id: nhanVien?.id,
+    username: nhanVien?.ten_tai_khoan,
+    email: authUser.email ?? '',
+    full_name: nhanVien?.ho_va_ten ?? (meta.full_name as string | undefined),
+    avatar_url: nhanVien?.hinh_anh ?? (meta.avatar_url as string | undefined),
+    role,
+    created_at: authUser.created_at ?? new Date().toISOString(),
+    id_phong_ban: nhanVien?.id_phong_ban ?? null,
+    id_bo_phan: nhanVien?.id_bo_phan ?? null,
+    id_chuc_vu: nhanVien?.id_chuc_vu ?? null,
+    trang_thai: nhanVien?.trang_thai,
   };
 }
 
 const mockUser: User = {
   id: 'emp-000',
-  email: 'admin@5fedu.com',
-  full_name: 'Lê Minh Công',
+  username: 'admin',
+  email: 'admin@gmail.com',
+  full_name: 'Quản trị viên',
   role: 'admin',
   created_at: new Date().toISOString(),
-  id_phong_ban: 'dep-7',
+  id_phong_ban: null,
+  id_bo_phan: null,
+  id_chuc_vu: null,
+  trang_thai: 'Hoạt động',
 };
 
 const mockAuthService: AuthService = {
   async signIn({ email, password }) {
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 600));
     if (password.length < 6) return { error: 'Mật khẩu không hợp lệ' };
     return {
       user: {
         ...mockUser,
         email,
-        full_name: email === 'admin@5fedu.com' ? mockUser.full_name : email.split('@')[0],
+        username: email.split('@')[0],
+        full_name: email === 'admin@gmail.com' ? mockUser.full_name : email.split('@')[0],
       },
     };
   },
 
   async signUp() {
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 800));
     return {};
   },
 
   async signOut() {
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 100));
   },
 
   async getSession() {
-    return null; // Mock: no persistent session, caller uses store
+    return null;
   },
 
   onAuthStateChange() {
@@ -85,8 +138,18 @@ const supabaseAuthService: AuthService = {
     if (!supabase) return { error: 'Supabase chưa được cấu hình' };
     const { data, error } = await supabase.auth.signInWithPassword(credentials);
     if (error) return { error: error.message };
-    if (!data.user) return { error: 'Đăng nhập thất bại' };
-    return { user: mapSupabaseUserToAppUser(data.user) };
+    if (!data.user?.email) return { error: 'Đăng nhập thất bại' };
+
+    const nhanVien = await resolveNhanVienForAuthEmail(data.user.email);
+    if (!nhanVien) {
+      await supabase.auth.signOut();
+      return { error: 'Không tìm thấy hồ sơ nhân viên trùng tên đăng nhập. Liên hệ quản trị viên.' };
+    }
+    if (nhanVien.trang_thai === 'Khóa') {
+      await supabase.auth.signOut();
+      return { error: 'Tài khoản đã bị khoá. Liên hệ quản trị viên.' };
+    }
+    return { user: buildAppUser(data.user, nhanVien) };
   },
 
   async signUp({ email, password, fullName }) {
@@ -98,8 +161,10 @@ const supabaseAuthService: AuthService = {
       options: { data: { full_name: fullName } },
     });
     if (error) return { error: error.message };
-    if (data.user)
-      return { user: mapSupabaseUserToAppUser(data.user) };
+    if (data.user?.email) {
+      const nhanVien = await resolveNhanVienForAuthEmail(data.user.email);
+      return { user: buildAppUser(data.user, nhanVien) };
+    }
     return {};
   },
 
@@ -111,17 +176,26 @@ const supabaseAuthService: AuthService = {
   async getSession() {
     const supabase = getSupabase();
     if (!supabase) return null;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return null;
-    return { user: mapSupabaseUserToAppUser(session.user) };
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.user?.email) return null;
+    const nhanVien = await resolveNhanVienForAuthEmail(session.user.email);
+    return { user: buildAppUser(session.user, nhanVien) };
   },
 
   onAuthStateChange(callback) {
     const supabase = getSupabase();
     if (!supabase) return () => {};
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) callback({ user: mapSupabaseUserToAppUser(session.user) });
-      else callback(null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session?.user?.email) {
+        callback(null);
+        return;
+      }
+      const nhanVien = await resolveNhanVienForAuthEmail(session.user.email);
+      callback({ user: buildAppUser(session.user, nhanVien) });
     });
     return () => subscription.unsubscribe();
   },

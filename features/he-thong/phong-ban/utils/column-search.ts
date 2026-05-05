@@ -12,7 +12,8 @@ function columnIdToValue(
     case 'thu_tu':
       return String(item.thu_tu);
     case 'ma_phong_ban':
-      return item.ma_phong_ban;
+    case 'ten_phong_ban':
+      return item.ten_phong_ban;
     case 'mo_ta':
       return item.mo_ta ?? '';
     case 'cap_do':

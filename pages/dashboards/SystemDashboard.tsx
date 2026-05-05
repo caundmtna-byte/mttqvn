@@ -42,7 +42,7 @@ const SystemDashboard: React.FC = () => {
           description: txt('page.systemDashboard.companyInfoDesc'),
           icon: Building,
           color: 'bg-violet-500',
-          action: () => navigate('/he-thong/thong-tin-cong-ty'),
+          action: () => navigate('/he-thong/thong-tin-to-chuc'),
         },
         {
           title: txt('page.systemDashboard.permission'),

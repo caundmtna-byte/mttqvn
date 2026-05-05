@@ -30,7 +30,6 @@ const DepartmentForm: React.FC<Props> = ({ initialData, allDepartments, onClose,
 
   const defaultValues = useMemo<Partial<DepartmentFormValues>>(
     () => ({
-      ma_phong_ban: '',
       ten_phong_ban: '',
       mo_ta: '',
       cha_id: '',
@@ -48,7 +47,6 @@ const DepartmentForm: React.FC<Props> = ({ initialData, allDepartments, onClose,
   useEffect(() => {
     if (initialData) {
       reset({
-        ma_phong_ban: initialData.ma_phong_ban,
         ten_phong_ban: initialData.ten_phong_ban,
         mo_ta: initialData.mo_ta ?? '',
         cha_id: initialData.cha_id || '',
@@ -103,26 +101,16 @@ const DepartmentForm: React.FC<Props> = ({ initialData, allDepartments, onClose,
         {/* Một section giống detail: Thông tin cơ bản, thứ tự trường trùng với detail */}
         <FormSection title={txt('department.detail.basicInfo')} icon={<Building2 size={14} />} variant="primary">
           <FormGrid cols={2}>
-            <Input
-              label={txt('department.name')}
-              placeholder={txt('department.form.namePlaceholder')}
-              icon={<Building2 size={12} />}
-              required
-              {...register('ten_phong_ban')}
-              error={errors.ten_phong_ban?.message}
-            />
-            <Input
-              label={txt('department.code')}
-              placeholder={txt('department.form.codePlaceholder')}
-              icon={<Building2 size={12} />}
-              required
-              {...register('ma_phong_ban')}
-              error={errors.ma_phong_ban?.message}
-              onChange={(e) => {
-                e.target.value = e.target.value.toUpperCase();
-                register('ma_phong_ban').onChange(e);
-              }}
-            />
+            <div className="col-span-1 sm:col-span-2">
+              <Input
+                label={txt('department.name')}
+                placeholder={txt('department.form.namePlaceholder')}
+                icon={<Building2 size={12} />}
+                required
+                {...register('ten_phong_ban')}
+                error={errors.ten_phong_ban?.message}
+              />
+            </div>
             <div className="col-span-1 sm:col-span-2">
               <Textarea
                 {...register('mo_ta')}

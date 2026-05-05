@@ -132,12 +132,6 @@ const PositionTable = memo(function PositionTable({
     switch (colId) {
       case 'thu_tu':
         return <span className="text-sm font-medium text-muted-foreground">{item.thu_tu}</span>;
-      case 'ma_chuc_vu':
-        return (
-          <span className="font-mono text-xs font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border tabular-nums">
-            {item.ma_chuc_vu}
-          </span>
-        );
       case 'ten_chuc_vu':
         return (
           <div className="flex min-w-0 items-center gap-2">
@@ -224,7 +218,9 @@ const PositionTable = memo(function PositionTable({
               className="w-5 h-5 rounded border-border text-primary accent-primary"
             />
           </div>
-          <p className="text-xs text-muted-foreground font-mono mb-3">{item.ma_chuc_vu}</p>
+          {item.ten_phong_ban ? (
+            <p className="text-xs text-muted-foreground mb-3 truncate">{item.ten_phong_ban}</p>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="p-2 bg-muted rounded-xl border border-border">

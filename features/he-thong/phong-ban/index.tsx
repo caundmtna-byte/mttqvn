@@ -68,7 +68,6 @@ const DepartmentPage = () => {
 
   const IMPORT_COLUMNS = useMemo(
     () => [
-      { key: 'ma_phong_ban', label: txt('department.code'), required: true },
       { key: 'ten_phong_ban', label: txt('department.name'), required: true },
       { key: 'mo_ta', label: txt('department.store.descCol') },
       { key: 'cha_id', label: txt('department.detail.parent') },
@@ -159,7 +158,6 @@ const DepartmentPage = () => {
 
   const EXPORT_COLUMNS = useMemo(
     () => [
-      { key: 'ma_phong_ban', label: txt('department.exportCode') },
       { key: 'ten_phong_ban', label: txt('department.exportName') },
       { key: 'mo_ta', label: txt('department.store.descCol') },
       { key: 'cap_do', label: txt('department.exportLevel') },
@@ -171,7 +169,6 @@ const DepartmentPage = () => {
 
   const exportMapFn = useCallback(
     (item: Department) => ({
-      ma_phong_ban: item.ma_phong_ban,
       ten_phong_ban: item.ten_phong_ban,
       mo_ta: item.mo_ta ?? '',
       cap_do: item.cap_do,
@@ -285,7 +282,6 @@ const DepartmentPage = () => {
 
   const handleImportData = async (data: Record<string, unknown>[]) => {
     const rows: DepartmentFormValues[] = data.map((row) => ({
-      ma_phong_ban: String(row.ma_phong_ban ?? '').trim().toUpperCase(),
       ten_phong_ban: String(row.ten_phong_ban ?? '').trim(),
       mo_ta: row.mo_ta != null ? String(row.mo_ta).trim() : undefined,
       cha_id: row.cha_id != null && String(row.cha_id).trim() !== '' ? String(row.cha_id).trim() : '',

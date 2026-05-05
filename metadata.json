@@ -1,6 +1,6 @@
 {
-  "name": "5F Enterprise Template",
-  "description": "Hệ thống quản lý doanh nghiệp tích hợp.",
+  "name": "MTTQVN",
+  "description": "Trang thông tin điện tử",
   "requestFramePermissions": [
     "microphone"
   ]

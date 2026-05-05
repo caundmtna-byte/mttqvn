@@ -2,6 +2,7 @@ import { Department } from '../core/types';
 import { DepartmentFormValues } from '../core/schema';
 import { MOCK_DEPARTMENTS } from '@/mocks/he-thong';
 import { createRepository } from '@/lib/data/create-repository';
+import { isSupabase } from '@/lib/data/config';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import {
   DEPARTMENT_RETURNING_FULL,
@@ -11,16 +12,45 @@ import {
 import { txt } from '../../../../lib/text';
 
 const repo = createRepository<Department>({
-  tableName: 'he_thong_phong_ban',
+  tableName: 'var_phong_ban',
   mockData: MOCK_DEPARTMENTS,
   select: DEPARTMENT_SELECT_FULL,
   delay: 600,
 });
 
+/** Chuẩn hoá id / FK int8 từ PostgREST (number hoặc chuỗi số). */
+function normalizeDepartmentRow(raw: Department): Department {
+  return {
+    ...raw,
+    id: String(raw.id),
+    cha_id: raw.cha_id == null || raw.cha_id === '' ? null : String(raw.cha_id),
+    cap_do: typeof raw.cap_do === 'number' ? raw.cap_do : Number(raw.cap_do),
+    thu_tu: typeof raw.thu_tu === 'number' ? raw.thu_tu : Number(raw.thu_tu),
+  };
+}
+
+function normInt8Fk(v: string | null | undefined): number | null {
+  const s = v == null || v === '' ? '' : String(v).trim();
+  if (!s || !/^\d+$/.test(s)) return null;
+  return Number(s);
+}
+
+/** cha_id lưu DB: Supabase dùng int8; mock giữ chuỗi (vd dep-0). */
+function chaIdForStorage(chaId: string | null): string | number | null {
+  if (chaId == null || chaId === '') return null;
+  if (isSupabase()) return normInt8Fk(chaId);
+  return chaId;
+}
+
+function resolveChaIdForm(dataCha: string | null | undefined): string | null {
+  if (dataCha === '' || dataCha == null) return null;
+  return String(dataCha).trim();
+}
+
 function buildPathAndLevel(
   id: string,
   chaId: string | null,
-  all: Department[]
+  all: Department[],
 ): { duong_dan: string; cap_do: number } {
   let duong_dan = `/${id}`;
   let cap_do = 1;
@@ -36,72 +66,97 @@ function buildPathAndLevel(
 
 export const getDepartments = async (): Promise<Department[]> => {
   const list = await repo.getAll({ orderBy: 'duong_dan', ascending: true });
-  return list;
+  return list.map((row) => normalizeDepartmentRow(row as Department));
 };
 
 export const createDepartment = async (data: DepartmentFormValues): Promise<Department> => {
-  const all = await repo.getAll();
-  const id = `dep-${Date.now()}`;
-  const chaId = data.cha_id === '' || data.cha_id == null ? null : data.cha_id;
-  const { duong_dan, cap_do } = buildPathAndLevel(id, chaId, all);
   const now = new Date().toISOString();
+  const chaId = resolveChaIdForm(data.cha_id);
+  const ten = data.ten_phong_ban.trim();
+
+  if (isSupabase()) {
+    const inserted = await repo.insert(
+      {
+        ten_phong_ban: ten,
+        mo_ta: data.mo_ta && data.mo_ta.trim() !== '' ? data.mo_ta.trim() : null,
+        cha_id: normInt8Fk(chaId ?? undefined),
+        trang_thai: data.trang_thai,
+        thu_tu: data.thu_tu ?? 0,
+        duong_dan: '',
+        cap_do: 0,
+        tg_tao: now,
+        tg_cap_nhat: now,
+      } as unknown as Omit<Department, 'id'> & { id?: string },
+      { returningSelect: DEPARTMENT_RETURNING_FULL },
+    );
+    return normalizeDepartmentRow(inserted as Department);
+  }
+
+  const all = (await repo.getAll()).map((d) => normalizeDepartmentRow(d as Department));
+  const id = `dep-${Date.now()}`;
+  const { duong_dan, cap_do } = buildPathAndLevel(id, chaId, all);
   const newDep = await repo.insert(
     {
-    id,
-    ma_phong_ban: data.ma_phong_ban,
-    ten_phong_ban: data.ten_phong_ban,
-    mo_ta: data.mo_ta,
-    cha_id: chaId,
-    trang_thai: data.trang_thai,
-    thu_tu: data.thu_tu ?? 0,
-    duong_dan,
-    cap_do,
-    tg_tao: now,
-    tg_cap_nhat: now,
-  } as Omit<Department, 'id'> & { id: string },
+      id,
+      ten_phong_ban: ten,
+      mo_ta: data.mo_ta,
+      cha_id: chaId,
+      trang_thai: data.trang_thai,
+      thu_tu: data.thu_tu ?? 0,
+      duong_dan,
+      cap_do,
+      tg_tao: now,
+      tg_cap_nhat: now,
+    } as Omit<Department, 'id'> & { id: string },
     { returningSelect: DEPARTMENT_RETURNING_FULL },
   );
-  return newDep;
+  return normalizeDepartmentRow(newDep as Department);
 };
 
 export const updateDepartment = async (id: string, data: DepartmentFormValues): Promise<Department> => {
-  const existing = await repo.getById(id);
-  if (!existing) throw new Error(txt('department.service.notFound'));
+  const existingRaw = await repo.getById(id);
+  if (!existingRaw) throw new Error(txt('department.service.notFound'));
+  const existing = normalizeDepartmentRow(existingRaw as Department);
 
-  const all = await repo.getAll();
-  const chaId = data.cha_id === '' || data.cha_id == null ? null : data.cha_id;
+  const all = (await repo.getAll()).map((d) => normalizeDepartmentRow(d as Department));
+  const chaId = resolveChaIdForm(data.cha_id);
   let { duong_dan, cap_do } = buildPathAndLevel(id, chaId, all);
   if (chaId === existing.cha_id) {
     duong_dan = existing.duong_dan;
     cap_do = existing.cap_do;
   }
 
-  return repo.update(
+  const ten = data.ten_phong_ban.trim();
+  const updated = await repo.update(
     id,
     {
-    ...data,
-    cha_id: chaId,
-    trang_thai: data.trang_thai,
-    duong_dan,
-    cap_do,
-    tg_cap_nhat: new Date().toISOString(),
-    },
+      ten_phong_ban: ten,
+      mo_ta: data.mo_ta && data.mo_ta.trim() !== '' ? data.mo_ta.trim() : null,
+      cha_id: chaIdForStorage(chaId),
+      trang_thai: data.trang_thai,
+      thu_tu: data.thu_tu ?? 0,
+      duong_dan,
+      cap_do,
+      tg_cap_nhat: new Date().toISOString(),
+    } as unknown as Partial<Department>,
     { returningSelect: DEPARTMENT_RETURNING_FULL },
   );
+  return normalizeDepartmentRow(updated as Department);
 };
 
 export const updateDepartmentStatus = async (id: string, status: TrangThaiHoatDong): Promise<Department> => {
   const existing = await repo.getById(id);
   if (!existing) throw new Error(txt('department.service.notFound'));
-  return repo.update(
+  const updated = await repo.update(
     id,
-    { trang_thai: status, tg_cap_nhat: new Date().toISOString() },
+    { trang_thai: status, tg_cap_nhat: new Date().toISOString() } as unknown as Partial<Department>,
     { returningSelect: DEPARTMENT_RETURNING_STATUS_ONLY },
   );
+  return normalizeDepartmentRow(updated as Department);
 };
 
 export const deleteDepartment = async (id: string): Promise<void> => {
-  const all = await repo.getAll();
+  const all = (await repo.getAll()).map((d) => normalizeDepartmentRow(d as Department));
   const hasChildren = all.some((d) => d.cha_id === id);
   if (hasChildren) throw new Error(txt('department.service.hasChildren'));
   await repo.remove([id]);
@@ -109,16 +164,16 @@ export const deleteDepartment = async (id: string): Promise<void> => {
 
 /** Import nhiều phòng ban (chỉ thêm mới, cha_id = null hoặc id có sẵn) */
 export const importDepartments = async (
-  rows: DepartmentFormValues[]
+  rows: DepartmentFormValues[],
 ): Promise<{ created: number; errors: string[] }> => {
   const errors: string[] = [];
   let created = 0;
   for (let i = 0; i < rows.length; i++) {
     try {
       const data = rows[i];
-      const idCha = data.cha_id === '' || data.cha_id == null ? null : data.cha_id;
+      const idCha = resolveChaIdForm(data.cha_id);
       if (idCha) {
-        const all = await repo.getAll();
+        const all = await getDepartments();
         if (!all.some((d) => d.id === idCha)) {
           errors.push(`Dòng ${i + 2}: Phòng cha không tồn tại`);
           continue;

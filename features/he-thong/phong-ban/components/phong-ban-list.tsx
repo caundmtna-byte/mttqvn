@@ -243,17 +243,8 @@ const DepartmentList: React.FC<Props> = ({
                 <span className={`${getNameStyleDefault(dept.cap_do)} group-hover:text-primary transition-colors`}>
                   {dept.ten_phong_ban}
                 </span>
-                <div className="md:hidden text-xs text-muted-foreground mt-0.5 font-mono">{dept.ma_phong_ban}</div>
               </div>
             </div>
-          </td>
-        );
-      case 'ma_phong_ban':
-        return (
-          <td key={col.id} className="px-6 py-1.5" style={getColumnCellStyle(col)}>
-            <span className="font-mono text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded border border-border">
-              {dept.ma_phong_ban}
-            </span>
           </td>
         );
       case 'ten_phong_cha':
@@ -325,7 +316,9 @@ const DepartmentList: React.FC<Props> = ({
           </div>
         )}
         metaLine={(
-          <p className="font-mono text-xs text-muted-foreground">{dept.ma_phong_ban}</p>
+          <p className="text-xs text-muted-foreground">
+            {txt('department.detail.level')} {dept.cap_do}
+          </p>
         )}
         subheader={
           hasExtra ? (

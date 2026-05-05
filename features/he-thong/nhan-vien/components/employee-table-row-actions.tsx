@@ -1,13 +1,11 @@
 import React from 'react';
-import { toast } from 'sonner';
-import { Edit, RefreshCw, Printer, Mail, Phone, Trash2 } from 'lucide-react';
+import { Edit, RefreshCw, Trash2 } from 'lucide-react';
 import { txt } from '../../../../lib/text';
 import {
   DataTableRowActions,
   TableRowIconButton,
   type RowOverflowMenuItem,
 } from '../../../../components/shared/row-actions';
-import { openEmployeeProfilePreviewTab } from '../utils/open-employee-profile-preview';
 import type { Employee } from '../core/types';
 import { useCan } from '@/hooks/use-can';
 
@@ -18,7 +16,7 @@ export interface EmployeeTableRowActionsProps {
   onEdit: (item: Employee) => void;
   onDelete: (id: string) => void;
   onStatusChange: (item: Employee) => void;
-  /** Hàng thao tác trên card mobile (mobile list): nút gọn, cùng hàng với checkbox */
+  /** Hàng thao tác trên card mobile: nút gọn, cùng hàng với checkbox. */
   compact?: boolean;
 }
 
@@ -32,10 +30,8 @@ export function EmployeeTableRowActions({
   compact = false,
 }: EmployeeTableRowActionsProps) {
   const close = () => onMenuOpenChange(null);
-
   const canEdit = useCan('edit', 'employees');
   const canDelete = useCan('delete', 'employees');
-  const canViewRow = useCan('view', 'employees');
 
   const overflowItems: RowOverflowMenuItem[] = [
     ...(canEdit
@@ -46,41 +42,6 @@ export function EmployeeTableRowActions({
             icon: <RefreshCw size={14} />,
             onClick: () => {
               onStatusChange(item);
-              close();
-            },
-          },
-        ]
-      : []),
-    ...(canViewRow
-      ? [
-          {
-            key: 'print',
-            label: txt('employee.detail.print'),
-            icon: <Printer size={14} />,
-            onClick: () => {
-              openEmployeeProfilePreviewTab(item.id);
-              close();
-            },
-          },
-          {
-            key: 'email',
-            label: txt('employee.detail.sendEmail'),
-            icon: <Mail size={14} />,
-            onClick: () => {
-              window.location.href = `mailto:${item.email}`;
-              close();
-            },
-          },
-          {
-            key: 'phone',
-            label: txt('employee.detail.callPhone'),
-            icon: <Phone size={14} />,
-            onClick: () => {
-              if (item.so_dien_thoai) {
-                window.location.href = `tel:${item.so_dien_thoai}`;
-              } else {
-                toast.warning(txt('employee.rowActions.noPhone'));
-              }
               close();
             },
           },
@@ -102,20 +63,17 @@ export function EmployeeTableRowActions({
       : []),
   ];
 
-  const hasMenuItems = overflowItems.length > 0;
+  const primary = canEdit ? (
+    <TableRowIconButton
+      icon={Edit}
+      label={txt('common.edit')}
+      size={compact ? 'compact' : 'default'}
+      variant="primary"
+      onClick={() => onEdit(item)}
+    />
+  ) : undefined;
 
-  const primary =
-    canEdit ? (
-      <TableRowIconButton
-        icon={Edit}
-        label={txt('common.edit')}
-        size={compact ? 'compact' : 'default'}
-        variant="primary"
-        onClick={() => onEdit(item)}
-      />
-    ) : undefined;
-
-  if (!primary && !hasMenuItems) {
+  if (!primary && overflowItems.length === 0) {
     return (
       <div
         role="group"

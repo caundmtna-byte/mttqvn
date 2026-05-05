@@ -110,7 +110,7 @@ emitTsConst(
 emitTsConst(
   'company',
   stripPrefixNest(readJson('company.json'), 'company'),
-  path.join(root, 'features/he-thong/thong-tin-cong-ty/text.ts'),
+  path.join(root, 'features/he-thong/thong-tin-to-chuc/text.ts'),
   'Thông tin công ty',
 );
 

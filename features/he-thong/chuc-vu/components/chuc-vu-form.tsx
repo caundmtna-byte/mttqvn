@@ -22,9 +22,8 @@ import { useDepartments } from '../../phong-ban/hooks/use-phong-ban';
 import { usePositions } from '../hooks/use-chuc-vu';
 
 const DEFAULT_VALUES: PositionFormValues = {
-  ma_chuc_vu: '',
   ten_chuc_vu: '',
-  cap_bac_id: '',
+  cap_bac: '',
   phong_ban_id: '',
   mo_ta: '',
   thu_tu: 1,
@@ -64,7 +63,6 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
         .map((dept) => ({
           label: dept.ten_phong_ban,
           value: dept.id,
-          subLabel: dept.ma_phong_ban,
         })),
     [departments]
   );
@@ -77,9 +75,8 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
   useEffect(() => {
     if (initialData) {
       reset({
-        ma_chuc_vu: initialData.ma_chuc_vu,
         ten_chuc_vu: initialData.ten_chuc_vu,
-        cap_bac_id: initialData.cap_bac_id || '',
+        cap_bac: initialData.cap_bac || '',
         phong_ban_id: initialData.phong_ban_id || '',
         mo_ta: initialData.mo_ta || '',
         thu_tu: initialData.thu_tu ?? 0,
@@ -97,7 +94,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
     // Convert empty strings to null
     const sanitizedData = {
         ...data,
-        cap_bac_id: data.cap_bac_id || null,
+        cap_bac: data.cap_bac || null,
         phong_ban_id: data.phong_ban_id || null,
     };
 
@@ -115,7 +112,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
         title={isEdit ? txt('position.form.editTitle') : txt('position.form.createTitle')}
         subtitle={
           isEdit && initialData
-            ? `${txt('position.form.editSubtitle')} · ${initialData.ma_chuc_vu}`
+            ? `${txt('position.form.editSubtitle')} · ${initialData.ten_chuc_vu}`
             : txt('position.form.createSubtitle')
         }
         icon={<Briefcase size={20} />}
@@ -136,25 +133,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
           <form id="pos-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FormSection title={txt('position.detail.basicInfo')} icon={<Briefcase size={14} />} variant="primary">
               <FormGrid cols={3}>
-                <div className="sm:col-span-1">
-                  <Controller
-                    name="ma_chuc_vu"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        label={txt('position.form.code')}
-                        placeholder={txt('position.form.codePlaceholder')}
-                        icon={<Briefcase size={12} />}
-                        required
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                        onBlur={field.onBlur}
-                        error={errors.ma_chuc_vu?.message}
-                      />
-                    )}
-                  />
-                </div>
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-3">
                   <Input
                     label={txt('position.form.name')}
                     placeholder={txt('position.form.namePlaceholder')}
@@ -165,7 +144,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
                   />
                 </div>
                 <Controller
-                  name="cap_bac_id"
+                  name="cap_bac"
                   control={control}
                   render={({ field }) => (
                     <Combobox
@@ -174,7 +153,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
                       value={field.value}
                       onChange={field.onChange}
                       placeholder={txt('position.form.levelPlaceholder')}
-                      error={errors.cap_bac_id?.message}
+                      error={errors.cap_bac?.message}
                       icon={<Layers size={12} />}
                     />
                   )}

@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useSyncExternalStore } from 'react';
-import { useUIStore } from '../store/useStore';
+import { useQuery } from '@tanstack/react-query';
+import { useAuthStore, useUIStore } from '../store/useStore';
+import { isSupabase } from './data/config';
+import { queryKeys } from './query-keys';
+import { masterDataQueryOptions } from './supabase/query-config';
+import { getThongTinToChuc } from '../features/he-thong/thong-tin-to-chuc/services/thong-tin-to-chuc-service';
 import { PRIMARY_COLOR_MAP } from './theme-utils';
 import {
   GOOGLE_FONT_CSS2_MAP,
@@ -73,6 +78,22 @@ export const ThemeSynchronizer: React.FC = () => {
       if (transitionTimer) clearTimeout(transitionTimer);
     };
   }, [colorScheme]);
+  return null;
+};
+
+/** Khi Supabase + đã đăng nhập: tải `var_thong_tin_to_chuc` vào Zustand (sidebar, PWA, in). */
+export const ThongTinToChucSynchronizer: React.FC = () => {
+  const user = useAuthStore((s) => s.user);
+  const setCompanyInfo = useUIStore((s) => s.setCompanyInfo);
+  const { data } = useQuery({
+    queryKey: queryKeys.thongTinToChuc.singleton,
+    queryFn: getThongTinToChuc,
+    enabled: isSupabase() && !!user,
+    ...masterDataQueryOptions,
+  });
+  useEffect(() => {
+    if (data) setCompanyInfo(data);
+  }, [data, setCompanyInfo]);
   return null;
 };
 

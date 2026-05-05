@@ -21,7 +21,7 @@ export function getSupabase(): SupabaseClient<Database> | null {
       detectSessionInUrl: true,
     },
     global: {
-      headers: { 'x-client-info': '5f-template-erp' },
+      headers: { 'x-client-info': 'mttqvn-web' },
     },
   });
   return supabaseInstance;

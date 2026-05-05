@@ -1,20 +1,15 @@
 import type { Employee } from '../core/types';
 
 /**
- * Cột đã có ô tìm trong dropdown MultiSelect (lọc danh sách tick) — không dùng thêm `columnSearch` cho cùng cột
- * (một ô giao diện thống nhất).
+ * Cột đã có sẵn ô tìm trong dropdown MultiSelect (header bộ lọc kết hợp tick) —
+ * không cần áp thêm `columnSearch` cho các cột này.
  */
 export const COLUMN_IDS_WITH_MULTISELECT_SEARCH = [
   'ten_phong_ban',
+  'ten_bo_phan',
   'ten_chuc_vu',
   'trang_thai',
 ] as const;
-
-/** Map id cột UI → field trên Employee (cột cũ `lien_he` = SĐT). */
-export function columnIdToEmployeeKey(colId: string): keyof Employee {
-  if (colId === 'lien_he') return 'so_dien_thoai';
-  return colId as keyof Employee;
-}
 
 /** Số ô columnSearch đang có nội dung (bỏ cột đã có MultiSelect). */
 export function countColumnSearchActive(
@@ -31,8 +26,8 @@ export function countColumnSearchActive(
 }
 
 /**
- * Kiểm tra một nhân viên có khớp tất cả ô lọc theo cột (AND, không phân biệt hoa thường).
- * Bỏ qua các khóa thuộc cột đã có MultiSelect (state cũ không còn UI).
+ * Kiểm tra một nhân viên có khớp toàn bộ ô lọc theo cột (AND, không phân biệt hoa thường).
+ * Bỏ qua các khoá thuộc cột đã có MultiSelect.
  */
 export function employeeMatchesColumnSearch(
   emp: Employee,
@@ -44,8 +39,7 @@ export function employeeMatchesColumnSearch(
     if (skip.includes(colId)) continue;
     const trimmed = q.trim();
     if (!trimmed) continue;
-    const key = columnIdToEmployeeKey(colId);
-    const raw = emp[key];
+    const raw = emp[colId as keyof Employee];
     const str = raw == null ? '' : String(raw);
     if (!str.toLowerCase().includes(trimmed.toLowerCase())) return false;
   }

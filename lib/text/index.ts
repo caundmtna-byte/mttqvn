@@ -10,7 +10,7 @@ import { employee } from '../../features/he-thong/nhan-vien/text';
 import { department } from '../../features/he-thong/phong-ban/text';
 import { position } from '../../features/he-thong/chuc-vu/text';
 import { permission } from '../../features/he-thong/phan-quyen/text';
-import { company } from '../../features/he-thong/thong-tin-cong-ty/text';
+import { company } from '../../features/he-thong/thong-tin-to-chuc/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
   const out: Record<string, string> = {};

@@ -1,1 +1,7 @@
-# Supabase CLI — thêm cấu hình functions khi cần.
+# Cấu hình Supabase CLI (https://supabase.com/docs/guides/cli/config)
+#
+# admin-user: TẮT verify JWT ở gateway — nếu BẬT, trình duyệt gửi OPTIONS (CORS preflight)
+# không qua kiểm tra JWT → 401 → "preflight không có HTTP ok" và bị chặn CORS.
+# Function vẫn tự gọi auth.getUser(accessToken) cho mọi request POST.
+[functions.admin-user]
+verify_jwt = false

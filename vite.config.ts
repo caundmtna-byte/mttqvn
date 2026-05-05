@@ -35,9 +35,9 @@ export default defineConfig(() => {
           registerType: 'autoUpdate',
           includeAssets: ['favicon.svg'],
           manifest: {
-            name: '5F template',
-            short_name: '5F template',
-            description: 'Ứng dụng mẫu quản lý ERP',
+            name: 'MTTQVN',
+            short_name: 'MTTQVN',
+            description: 'Trang thông tin điện tử',
             theme_color: '#ffffff',
             background_color: '#ffffff',
             display: 'standalone',

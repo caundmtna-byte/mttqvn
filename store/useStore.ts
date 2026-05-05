@@ -87,17 +87,29 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-interface CompanyInfo {
+/** Thông tin tổ chức + thương hiệu (UI / Zustand; đồng bộ var_thong_tin_to_chuc khi Supabase). */
+export interface CompanyInfo {
   appName: string;
-  appDescription: string; // New field for short description
-  appLogo: string | null; // Base64 string or URL
+  appDescription: string;
+  appLogo: string | null;
   companyName: string;
-  taxId: string;
   address: string;
   phone: string;
   email: string;
   website: string;
 }
+
+/** Mặc định MTTQVN — đồng bộ với index.html / PWA; chỉnh trong Hệ thống → Thông tin tổ chức. */
+export const DEFAULT_COMPANY_INFO: CompanyInfo = {
+  appName: 'MTTQVN',
+  appDescription: 'Trang thông tin điện tử',
+  appLogo: 'https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png',
+  companyName: 'Mặt trận Tổ quốc Việt Nam',
+  address: 'Khối 7, đường Hùng Vương, TP. Vinh, tỉnh Nghệ An',
+  phone: '',
+  email: '',
+  website: 'https://mttq.org.vn',
+};
 
 interface ThemeState {
   primaryColor: 'blue' | 'violet' | 'emerald' | 'rose' | 'amber' | 'orange' | 'cyan' | 'slate';
@@ -145,18 +157,8 @@ export const useUIStore = create<UIState>()(
         set((state) => ({ ...state, ...settings }));
       },
 
-      // Default Company Info (dữ liệu mặc định cho module Thông tin công ty)
-      companyInfo: {
-        appName: '5F template',
-        appDescription: 'Ứng dụng mẫu quản lý ERP',
-        appLogo: null,
-        companyName: '5F template',
-        taxId: '0101234567',
-        address: 'Số 1 Đường Mẫu, Quận 1, TP. Hồ Chí Minh',
-        phone: '028 1234 5678',
-        email: 'contact@company.vn',
-        website: 'www.company.vn'
-      },
+      // Thông tin tổ chức + thương hiệu (persist; nguồn Supabase khi bật VITE_DATA_SOURCE)
+      companyInfo: { ...DEFAULT_COMPANY_INFO },
       setCompanyInfo: (info) => set((state) => ({
         companyInfo: { ...state.companyInfo, ...info }
       })),
@@ -167,7 +169,7 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: 'ui-storage', // Persist UI settings including branding
-      version: 2,
+      version: 4,
       migrate: (persisted: unknown, version: number) => {
         if (!persisted || typeof persisted !== 'object') return persisted as UIState;
         const state = persisted as Record<string, unknown> & Partial<ThemeState>;
@@ -183,6 +185,19 @@ export const useUIStore = create<UIState>()(
         // v1 → v2: chỉ còn tiếng Việt — bỏ language khỏi state đã lưu
         if (version < 2) {
           delete state.language;
+        }
+        // v2 → v3: nâng branding mặc định từ template 5F lên MTTQVN (chỉ khi chưa đổi tên mẫu)
+        if (version < 3) {
+          const ci = state.companyInfo as CompanyInfo | undefined;
+          if (ci?.appName === '5F template' && ci?.companyName === '5F template') {
+            state.companyInfo = { ...DEFAULT_COMPANY_INFO };
+          }
+        }
+        // v3 → v4: bỏ taxId (module Thông tin tổ chức)
+        if (version < 4 && state.companyInfo && typeof state.companyInfo === 'object') {
+          const ci = { ...(state.companyInfo as Record<string, unknown>) };
+          delete ci.taxId;
+          state.companyInfo = { ...DEFAULT_COMPANY_INFO, ...ci } as CompanyInfo;
         }
         return persisted as UIState;
       },

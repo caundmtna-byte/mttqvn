@@ -120,7 +120,6 @@ const DepartmentDetail: React.FC<Props> = ({
   return (
     <GenericDrawer
       title={txt('department.detail.title')}
-      subtitle={data.ma_phong_ban}
       icon={<Building2 size={18} />}
       onClose={onClose}
       footer={renderFooter}
@@ -142,7 +141,6 @@ const DepartmentDetail: React.FC<Props> = ({
                 <EnumBadge shape="pill" value={data.trang_thai} config={statusBadgeConfig} />
               </div>
             </div>
-            <p className="font-mono text-body-sm text-muted-foreground">{data.ma_phong_ban}</p>
           </div>
         </div>
 
@@ -154,7 +152,6 @@ const DepartmentDetail: React.FC<Props> = ({
         <DetailSection title={txt('department.detail.basicInfo')} icon={<Building2 size={14} />} variant="primary">
           <DetailFieldGrid>
             <DetailField label={txt('department.name')} value={data.ten_phong_ban} icon={<Building2 size={12} />} />
-            <DetailField label={txt('department.code')} value={data.ma_phong_ban} icon={<Building2 size={12} />} />
             <DetailField
               label={txt('department.detail.description')}
               value={data.mo_ta ?? ''}
@@ -238,15 +235,6 @@ const DepartmentDetail: React.FC<Props> = ({
                 renderCell: (child) => <span className="font-medium text-foreground">{child.ten_phong_ban}</span>,
               }}
               columns={[
-                {
-                  id: 'code',
-                  header: txt('department.code'),
-                  renderCell: (child) => (
-                    <span className="rounded border border-border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
-                      {child.ma_phong_ban}
-                    </span>
-                  ),
-                },
                 {
                   id: 'desc',
                   header: txt('department.store.descCol'),

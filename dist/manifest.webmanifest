@@ -1,7 +1,7 @@
 {
-  "name": "5F template",
-  "short_name": "5F template",
-  "description": "Ứng dụng mẫu quản lý ERP",
+  "name": "MTTQVN",
+  "short_name": "MTTQVN",
+  "description": "Trang thông tin điện tử",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

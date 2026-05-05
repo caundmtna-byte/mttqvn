@@ -1,75 +1,72 @@
-
 import { useMemo } from 'react';
 import type { Employee, EmployeeFilters } from '../core/types';
+import { matchesSearchTerm } from '@/lib/searchUtils';
 import { employeeMatchesColumnSearch } from '../utils/column-search';
 
+const SEARCHABLE_KEYS = [
+  'ten_tai_khoan',
+  'ho_va_ten',
+  'ten_phong_ban',
+  'ten_bo_phan',
+  'ten_chuc_vu',
+  'trang_thai',
+];
+
+export interface FilterCounts {
+  /** Số lượng nhân viên thuộc mỗi phòng ban (sau khi bỏ chính filter phòng ban hiện tại). */
+  deptCounts: Record<string, number>;
+  /** Số lượng nhân viên thuộc mỗi bộ phận (phòng ban con). */
+  unitCounts: Record<string, number>;
+  /** Số lượng nhân viên thuộc mỗi chức vụ. */
+  posCounts: Record<string, number>;
+  /** Số lượng nhân viên theo trạng thái (`Hoạt động` | `Khóa`). */
+  statusCounts: Record<string, number>;
+}
+
 /**
- * Tính count cho từng giá trị filter theo chiến lược "exclude-self":
- * - Khi đếm cho filter A, áp dụng TẤT CẢ filter khác NGOẠI TRỪ A.
- * - Nhờ vậy, khi user đã chọn "Phòng Kỹ thuật", các phòng ban khác
- *   vẫn hiện count chính xác (không bị = 0).
+ * Đếm số nhân viên thoả mỗi tuỳ chọn trong các bộ lọc multi-select. Mỗi nhóm
+ * counts loại trừ chính filter đó (exclude-self) để hiển thị "nếu chọn thêm
+ * sẽ được bao nhiêu kết quả".
  */
 export function useFilterCounts(
   employees: Employee[],
   searchTerm: string,
   filters: EmployeeFilters,
-) {
+): FilterCounts {
   return useMemo(() => {
-    const searchLower = searchTerm.toLowerCase();
+    const passesText = (e: Employee) => {
+      if (!matchesSearchTerm(e as Record<string, unknown>, searchTerm, SEARCHABLE_KEYS)) return false;
+      if (!employeeMatchesColumnSearch(e, filters.columnSearch)) return false;
+      return true;
+    };
+    const passesStatus = (e: Employee) =>
+      filters.trang_thai.length === 0 || filters.trang_thai.includes(e.trang_thai);
+    const passesDept = (e: Employee) =>
+      filters.id_phong_ban.length === 0 ||
+      (e.id_phong_ban != null && filters.id_phong_ban.includes(e.id_phong_ban));
+    const passesPos = (e: Employee) =>
+      filters.id_chuc_vu.length === 0 ||
+      (e.id_chuc_vu != null && filters.id_chuc_vu.includes(e.id_chuc_vu));
 
-    const matchesSearch = (emp: Employee) =>
-      !searchTerm ||
-      emp.ho_ten.toLowerCase().includes(searchLower) ||
-      emp.ma_nhan_vien.toLowerCase().includes(searchLower) ||
-      emp.email.toLowerCase().includes(searchLower) ||
-      emp.so_dien_thoai.includes(searchLower) ||
-      (emp.ten_chuc_vu && emp.ten_chuc_vu.toLowerCase().includes(searchLower)) ||
-      (emp.ten_phong_ban && emp.ten_phong_ban.toLowerCase().includes(searchLower));
-
-    const matchesDept = (emp: Employee) =>
-      filters.phong_ban_id.length === 0 ||
-      (emp.phong_ban_id != null && filters.phong_ban_id.includes(emp.phong_ban_id));
-
-    const matchesPosition = (emp: Employee) =>
-      filters.position.length === 0 ||
-      (emp.chuc_vu_id != null && filters.position.includes(emp.chuc_vu_id));
-
-    const matchesStatus = (emp: Employee) =>
-      filters.trang_thai.length === 0 ||
-      filters.trang_thai.includes(String(emp.trang_thai));
-
-    // ── Đếm cho Phòng ban (exclude dept filter) ──
     const deptCounts: Record<string, number> = {};
-    // ── Đếm cho Chức vụ (exclude position filter) ──
+    const unitCounts: Record<string, number> = {};
     const posCounts: Record<string, number> = {};
-    // ── Đếm cho Trạng thái (exclude status filter) ──
     const statusCounts: Record<string, number> = {};
 
-    for (const emp of employees) {
-      if (!matchesSearch(emp)) continue;
-      if (!employeeMatchesColumnSearch(emp, filters.columnSearch)) continue;
-
-      const passDept = matchesDept(emp);
-      const passPos = matchesPosition(emp);
-      const passStatus = matchesStatus(emp);
-
-      // Dept count: apply search + position + status (exclude dept)
-      if (passPos && passStatus && emp.phong_ban_id) {
-        deptCounts[emp.phong_ban_id] = (deptCounts[emp.phong_ban_id] || 0) + 1;
+    for (const e of employees) {
+      if (!passesText(e)) continue;
+      if (passesStatus(e) && passesPos(e)) {
+        if (e.id_phong_ban) deptCounts[e.id_phong_ban] = (deptCounts[e.id_phong_ban] ?? 0) + 1;
+        if (e.id_bo_phan) unitCounts[e.id_bo_phan] = (unitCounts[e.id_bo_phan] ?? 0) + 1;
       }
-
-      // Position count: apply search + dept + status (exclude position)
-      if (passDept && passStatus && emp.chuc_vu_id) {
-        posCounts[emp.chuc_vu_id] = (posCounts[emp.chuc_vu_id] || 0) + 1;
+      if (passesStatus(e) && passesDept(e) && e.id_chuc_vu) {
+        posCounts[e.id_chuc_vu] = (posCounts[e.id_chuc_vu] ?? 0) + 1;
       }
-
-      // Status count: apply search + dept + position (exclude status)
-      if (passDept && passPos) {
-        const key = String(emp.trang_thai);
-        statusCounts[key] = (statusCounts[key] || 0) + 1;
+      if (passesDept(e) && passesPos(e)) {
+        statusCounts[e.trang_thai] = (statusCounts[e.trang_thai] ?? 0) + 1;
       }
     }
 
-    return { deptCounts, posCounts, statusCounts };
+    return { deptCounts, unitCounts, posCounts, statusCounts };
   }, [employees, searchTerm, filters]);
 }

@@ -104,10 +104,10 @@ const PositionPage: React.FC = () => {
 
   const IMPORT_COLUMNS = useMemo(
     () => [
-      { key: 'ma_chuc_vu', label: txt('position.form.code'), required: true },
       { key: 'ten_chuc_vu', label: txt('position.form.name'), required: true },
+      { key: 'cap_bac', label: `${txt('position.form.level')} (id/số)` },
       { key: 'ma_cap_bac', label: `${txt('position.form.level')} (mã)` },
-      { key: 'ma_phong_ban', label: `${txt('position.form.department')} (mã)` },
+      { key: 'ten_phong_ban', label: `${txt('position.form.department')} (tên)` },
       { key: 'mo_ta', label: txt('position.form.description') },
       { key: 'thu_tu', label: txt('position.store.orderCol') },
       { key: 'trang_thai', label: txt('common.status') },
@@ -177,7 +177,6 @@ const PositionPage: React.FC = () => {
 
   const EXPORT_COLUMNS = useMemo(
     () => [
-      { key: 'ma_chuc_vu', label: txt('position.exportCode') },
       { key: 'ten_chuc_vu', label: txt('position.exportName') },
       { key: 'mo_ta', label: txt('position.exportDesc') },
       { key: 'trang_thai_text', label: txt('position.exportStatus') },
@@ -187,7 +186,6 @@ const PositionPage: React.FC = () => {
 
   const exportMapFn = useCallback(
     (item: Position) => ({
-      ma_chuc_vu: item.ma_chuc_vu,
       ten_chuc_vu: item.ten_chuc_vu,
       mo_ta: item.mo_ta ?? '',
       trang_thai_text: item.trang_thai,

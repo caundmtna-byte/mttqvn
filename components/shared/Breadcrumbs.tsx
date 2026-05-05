@@ -16,7 +16,7 @@ const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/he-thong/nhan-vien': { label: t('breadcrumb.employee'), parentPath: '/he-thong' },
   '/he-thong/phong-ban': { label: t('breadcrumb.department'), parentPath: '/he-thong' },
   '/he-thong/chuc-vu': { label: t('breadcrumb.position'), parentPath: '/he-thong' },
-  '/he-thong/thong-tin-cong-ty': { label: t('breadcrumb.companyInfo'), parentPath: '/he-thong' },
+  '/he-thong/thong-tin-to-chuc': { label: t('breadcrumb.companyInfo'), parentPath: '/he-thong' },
   '/he-thong/phan-quyen': { label: t('breadcrumb.permission'), parentPath: '/he-thong' },
   '/ho-so': { label: t('breadcrumb.profile'), parentPath: '/' },
   '/thong-bao': { label: t('notification.title'), parentPath: '/' },

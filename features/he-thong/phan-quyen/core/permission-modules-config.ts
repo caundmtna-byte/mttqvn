@@ -35,7 +35,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'he-thong/nhan-vien', nameKey: 'permission.module.employeeList' },
           { id: 'he-thong/phong-ban', nameKey: 'permission.module.departmentChart' },
           { id: 'he-thong/chuc-vu', nameKey: 'permission.module.positionRole' },
-          { id: 'he-thong/thong-tin-cong-ty', nameKey: 'permission.module.companyInfo' },
+          { id: 'he-thong/thong-tin-to-chuc', nameKey: 'permission.module.companyInfo' },
           { id: 'he-thong/phan-quyen', nameKey: 'permission.module.permission' },
         ],
       },
