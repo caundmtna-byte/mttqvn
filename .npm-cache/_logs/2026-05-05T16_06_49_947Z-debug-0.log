@@ -1,0 +1,395 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.9.3
+2 info using node@v22.19.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/admin/Desktop/dự án/mttqvn/.npmrc
+5 silly config load:file:/Users/admin/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install"
+9 verbose logfile logs-max:10 dir:/Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T16_06_49_947Z-
+10 verbose logfile /Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T16_06_49_947Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+13 silly logfile done cleaning log files
+14 silly idealTree buildDeps
+15 silly fetch manifest @eslint/js@^9.39.4
+16 silly packumentCache full:https://registry.npmjs.org/@eslint%2fjs cache-miss
+17 http cache https://registry.npmjs.org/@eslint%2fjs 177ms (cache hit)
+18 silly packumentCache full:https://registry.npmjs.org/@eslint%2fjs set size:140022 disposed:false
+19 silly fetch manifest eslint@^9.39.4
+20 silly packumentCache full:https://registry.npmjs.org/eslint cache-miss
+21 http cache https://registry.npmjs.org/eslint 12ms (cache hit)
+22 silly packumentCache full:https://registry.npmjs.org/eslint set size:1990528 disposed:false
+23 silly fetch manifest jiti@*
+24 silly packumentCache full:https://registry.npmjs.org/jiti cache-miss
+25 http fetch GET 200 https://registry.npmjs.org/jiti 227ms (cache revalidated)
+26 silly packumentCache full:https://registry.npmjs.org/jiti set size:382310 disposed:false
+27 silly placeDep ROOT @eslint/js@9.39.4 REPLACE for:  want: ^9.39.4
+28 silly placeDep ROOT eslint@9.39.4 REPLACE for:  want: ^9.39.4
+29 silly fetch manifest chalk@^4.0.0
+30 silly packumentCache full:https://registry.npmjs.org/chalk cache-miss
+31 silly fetch manifest espree@^10.4.0
+32 silly packumentCache full:https://registry.npmjs.org/espree cache-miss
+33 silly fetch manifest minimatch@^3.1.5
+34 silly packumentCache full:https://registry.npmjs.org/minimatch cache-miss
+35 silly fetch manifest @eslint/core@^0.17.0
+36 silly packumentCache full:https://registry.npmjs.org/@eslint%2fcore cache-miss
+37 silly fetch manifest eslint-scope@^8.4.0
+38 silly packumentCache full:https://registry.npmjs.org/eslint-scope cache-miss
+39 silly fetch manifest lodash.merge@^4.6.2
+40 silly packumentCache full:https://registry.npmjs.org/lodash.merge cache-miss
+41 silly fetch manifest @eslint/eslintrc@^3.3.5
+42 silly packumentCache full:https://registry.npmjs.org/@eslint%2feslintrc cache-miss
+43 http fetch GET 200 https://registry.npmjs.org/chalk 66ms (cache miss)
+44 silly packumentCache full:https://registry.npmjs.org/chalk set size:undefined disposed:false
+45 silly fetch manifest @eslint/plugin-kit@^0.4.1
+46 silly packumentCache full:https://registry.npmjs.org/@eslint%2fplugin-kit cache-miss
+47 http fetch GET 200 https://registry.npmjs.org/@eslint%2fplugin-kit 67ms (cache miss)
+48 silly packumentCache full:https://registry.npmjs.org/@eslint%2fplugin-kit set size:undefined disposed:false
+49 silly fetch manifest eslint-visitor-keys@^4.2.1
+50 silly packumentCache full:https://registry.npmjs.org/eslint-visitor-keys cache-miss
+51 http fetch GET 200 https://registry.npmjs.org/espree 164ms (cache miss)
+52 silly packumentCache full:https://registry.npmjs.org/espree set size:undefined disposed:false
+53 silly fetch manifest @eslint/config-array@^0.21.2
+54 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-array cache-miss
+55 http fetch GET 200 https://registry.npmjs.org/lodash.merge 182ms (cache miss)
+56 silly packumentCache full:https://registry.npmjs.org/lodash.merge set size:undefined disposed:false
+57 silly fetch manifest @eslint/config-helpers@^0.4.2
+58 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-helpers cache-miss
+59 http fetch GET 200 https://registry.npmjs.org/@eslint%2fcore 186ms (cache miss)
+60 silly packumentCache full:https://registry.npmjs.org/@eslint%2fcore set size:undefined disposed:false
+61 http fetch GET 200 https://registry.npmjs.org/eslint-scope 189ms (cache miss)
+62 silly packumentCache full:https://registry.npmjs.org/eslint-scope set size:undefined disposed:false
+63 http fetch GET 200 https://registry.npmjs.org/@eslint%2feslintrc 191ms (cache miss)
+64 silly packumentCache full:https://registry.npmjs.org/@eslint%2feslintrc set size:undefined disposed:false
+65 http fetch GET 200 https://registry.npmjs.org/eslint-visitor-keys 62ms (cache miss)
+66 silly packumentCache full:https://registry.npmjs.org/eslint-visitor-keys set size:undefined disposed:false
+67 http fetch GET 200 https://registry.npmjs.org/minimatch 200ms (cache miss)
+68 silly packumentCache full:https://registry.npmjs.org/minimatch set size:undefined disposed:false
+69 http fetch GET 200 https://registry.npmjs.org/@eslint%2fconfig-array 67ms (cache miss)
+70 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-array set size:undefined disposed:false
+71 http fetch GET 200 https://registry.npmjs.org/@eslint%2fconfig-helpers 85ms (cache miss)
+72 silly packumentCache full:https://registry.npmjs.org/@eslint%2fconfig-helpers set size:undefined disposed:false
+73 silly fetch manifest react@^18.0.0
+74 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+75 http fetch GET 200 https://registry.npmjs.org/react 75ms (cache revalidated)
+76 silly packumentCache full:https://registry.npmjs.org/react set size:6637568 disposed:false
+77 silly fetch manifest react-dom@^18.0.0
+78 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+79 http fetch GET 200 https://registry.npmjs.org/react-dom 78ms (cache revalidated)
+80 silly packumentCache full:https://registry.npmjs.org/react-dom set size:8846320 disposed:false
+81 warn ERESOLVE overriding peer dependency {
+81 warn ERESOLVE   code: 'ERESOLVE',
+81 warn ERESOLVE   edge: {
+81 warn ERESOLVE     type: 'peer',
+81 warn ERESOLVE     name: 'react',
+81 warn ERESOLVE     spec: '^18.0.0',
+81 warn ERESOLVE     error: 'INVALID',
+81 warn ERESOLVE     from: {
+81 warn ERESOLVE       name: '@react-leaflet/core',
+81 warn ERESOLVE       version: '2.1.0',
+81 warn ERESOLVE       location: 'node_modules/@react-leaflet/core',
+81 warn ERESOLVE       isWorkspace: false,
+81 warn ERESOLVE       dependents: [Array]
+81 warn ERESOLVE     }
+81 warn ERESOLVE   },
+81 warn ERESOLVE   dep: {
+81 warn ERESOLVE     name: 'react',
+81 warn ERESOLVE     version: '18.3.1',
+81 warn ERESOLVE     whileInstalling: {
+81 warn ERESOLVE       name: '@react-leaflet/core',
+81 warn ERESOLVE       version: '2.1.0',
+81 warn ERESOLVE       path: '/Users/admin/Desktop/dự án/mttqvn/node_modules/@react-leaflet/core'
+81 warn ERESOLVE     },
+81 warn ERESOLVE     location: 'node_modules/react',
+81 warn ERESOLVE     isWorkspace: false,
+81 warn ERESOLVE     dependents: [ [Object] ]
+81 warn ERESOLVE   },
+81 warn ERESOLVE   force: false,
+81 warn ERESOLVE   isMine: false,
+81 warn ERESOLVE   strictPeerDeps: false,
+81 warn ERESOLVE   current: {
+81 warn ERESOLVE     name: 'react',
+81 warn ERESOLVE     version: '19.2.4',
+81 warn ERESOLVE     location: 'node_modules/react',
+81 warn ERESOLVE     isWorkspace: false,
+81 warn ERESOLVE     dependents: [
+81 warn ERESOLVE       [Object], [Object], [Object],
+81 warn ERESOLVE       [Object], [Object], [Object],
+81 warn ERESOLVE       [Object], [Object], [Object],
+81 warn ERESOLVE       [Object], [Object], [Object],
+81 warn ERESOLVE       [Object], [Object], [Object],
+81 warn ERESOLVE       [Object], [Object], [Object],
+81 warn ERESOLVE       [Object], [Object], [Object],
+81 warn ERESOLVE       [Object]
+81 warn ERESOLVE     ]
+81 warn ERESOLVE   },
+81 warn ERESOLVE   peerConflict: {
+81 warn ERESOLVE     current: {
+81 warn ERESOLVE       name: 'react',
+81 warn ERESOLVE       version: '19.2.4',
+81 warn ERESOLVE       location: 'node_modules/react',
+81 warn ERESOLVE       isWorkspace: false,
+81 warn ERESOLVE       dependents: [Array]
+81 warn ERESOLVE     },
+81 warn ERESOLVE     peer: {
+81 warn ERESOLVE       name: 'react',
+81 warn ERESOLVE       version: '18.3.1',
+81 warn ERESOLVE       whileInstalling: [Object],
+81 warn ERESOLVE       location: 'node_modules/react',
+81 warn ERESOLVE       isWorkspace: false,
+81 warn ERESOLVE       dependents: [Array]
+81 warn ERESOLVE     }
+81 warn ERESOLVE   }
+81 warn ERESOLVE }
+82 warn ERESOLVE overriding peer dependency {
+82 warn ERESOLVE   code: 'ERESOLVE',
+82 warn ERESOLVE   edge: {
+82 warn ERESOLVE     type: 'peer',
+82 warn ERESOLVE     name: 'react-dom',
+82 warn ERESOLVE     spec: '^18.0.0',
+82 warn ERESOLVE     error: 'INVALID',
+82 warn ERESOLVE     from: {
+82 warn ERESOLVE       name: '@react-leaflet/core',
+82 warn ERESOLVE       version: '2.1.0',
+82 warn ERESOLVE       location: 'node_modules/@react-leaflet/core',
+82 warn ERESOLVE       isWorkspace: false,
+82 warn ERESOLVE       dependents: [Array]
+82 warn ERESOLVE     }
+82 warn ERESOLVE   },
+82 warn ERESOLVE   dep: {
+82 warn ERESOLVE     name: 'react-dom',
+82 warn ERESOLVE     version: '18.3.1',
+82 warn ERESOLVE     whileInstalling: {
+82 warn ERESOLVE       name: '@react-leaflet/core',
+82 warn ERESOLVE       version: '2.1.0',
+82 warn ERESOLVE       path: '/Users/admin/Desktop/dự án/mttqvn/node_modules/@react-leaflet/core'
+82 warn ERESOLVE     },
+82 warn ERESOLVE     location: 'node_modules/react-dom',
+82 warn ERESOLVE     isWorkspace: false,
+82 warn ERESOLVE     dependents: [ [Object] ]
+82 warn ERESOLVE   },
+82 warn ERESOLVE   force: false,
+82 warn ERESOLVE   isMine: false,
+82 warn ERESOLVE   strictPeerDeps: false,
+82 warn ERESOLVE   current: {
+82 warn ERESOLVE     name: 'react-dom',
+82 warn ERESOLVE     version: '19.2.4',
+82 warn ERESOLVE     location: 'node_modules/react-dom',
+82 warn ERESOLVE     isWorkspace: false,
+82 warn ERESOLVE     dependents: [
+82 warn ERESOLVE       [Object], [Object],
+82 warn ERESOLVE       [Object], [Object],
+82 warn ERESOLVE       [Object], [Object],
+82 warn ERESOLVE       [Object], [Object],
+82 warn ERESOLVE       [Object], [Object]
+82 warn ERESOLVE     ]
+82 warn ERESOLVE   },
+82 warn ERESOLVE   peerConflict: {
+82 warn ERESOLVE     current: {
+82 warn ERESOLVE       name: 'react-dom',
+82 warn ERESOLVE       version: '19.2.4',
+82 warn ERESOLVE       location: 'node_modules/react-dom',
+82 warn ERESOLVE       isWorkspace: false,
+82 warn ERESOLVE       dependents: [Array]
+82 warn ERESOLVE     },
+82 warn ERESOLVE     peer: {
+82 warn ERESOLVE       name: 'react-dom',
+82 warn ERESOLVE       version: '18.3.1',
+82 warn ERESOLVE       whileInstalling: [Object],
+82 warn ERESOLVE       location: 'node_modules/react-dom',
+82 warn ERESOLVE       isWorkspace: false,
+82 warn ERESOLVE       dependents: [Array]
+82 warn ERESOLVE     }
+82 warn ERESOLVE   }
+82 warn ERESOLVE }
+83 silly fetch manifest @tanstack/react-query@^5.99.0
+84 silly packumentCache full:https://registry.npmjs.org/@tanstack%2freact-query cache-miss
+85 http fetch GET 200 https://registry.npmjs.org/@tanstack%2freact-query 239ms (cache revalidated)
+86 silly packumentCache full:https://registry.npmjs.org/@tanstack%2freact-query set size:1589091 disposed:false
+87 silly fetch manifest react@^18 || ^19
+88 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+89 http cache https://registry.npmjs.org/react 17ms (cache hit)
+90 silly packumentCache full:https://registry.npmjs.org/react set size:6637568 disposed:false
+91 silly placeDep ROOT @tanstack/react-query@5.100.9 REPLACE for: @tanstack/react-query-devtools@5.99.0 want: ^5.99.0
+92 silly fetch manifest @tanstack/query-core@5.100.9
+93 silly packumentCache full:https://registry.npmjs.org/@tanstack%2fquery-core cache-miss
+94 http fetch GET 200 https://registry.npmjs.org/@tanstack%2fquery-core 74ms (cache revalidated)
+95 silly packumentCache full:https://registry.npmjs.org/@tanstack%2fquery-core set size:1079064 disposed:false
+96 silly placeDep ROOT @tanstack/query-core@5.100.9 OK for: @tanstack/react-query@5.100.9 want: 5.100.9
+97 silly fetch manifest @types/react@^17.0.0 || ^18.0.0 || ^19.0.0
+98 silly packumentCache full:https://registry.npmjs.org/@types%2freact cache-miss
+99 http fetch GET 200 https://registry.npmjs.org/@types%2freact 68ms (cache revalidated)
+100 silly packumentCache full:https://registry.npmjs.org/@types%2freact set size:2588964 disposed:false
+101 silly fetch manifest @types/react-dom@^17.0.0 || ^18.0.0 || ^19.0.0
+102 silly packumentCache full:https://registry.npmjs.org/@types%2freact-dom cache-miss
+103 http fetch GET 200 https://registry.npmjs.org/@types%2freact-dom 56ms (cache revalidated)
+104 silly packumentCache full:https://registry.npmjs.org/@types%2freact-dom set size:429026 disposed:false
+105 silly placeDep ROOT @types/react@19.2.14 OK for: @tiptap/react@3.20.0 want: ^17.0.0 || ^18.0.0 || ^19.0.0
+106 silly placeDep ROOT @types/react-dom@19.2.3 OK for: @tiptap/react@3.20.0 want: ^17.0.0 || ^18.0.0 || ^19.0.0
+107 silly fetch manifest csstype@^3.2.2
+108 silly packumentCache full:https://registry.npmjs.org/csstype cache-miss
+109 http fetch GET 200 https://registry.npmjs.org/csstype 65ms (cache revalidated)
+110 silly packumentCache full:https://registry.npmjs.org/csstype set size:274189 disposed:false
+111 silly placeDep ROOT csstype@3.2.3 OK for: @types/react@19.2.14 want: ^3.2.2
+112 silly placeDep ROOT @eslint/config-array@0.21.2 OK for: eslint@9.39.4 want: ^0.21.2
+113 silly placeDep ROOT @eslint/config-helpers@0.4.2 OK for: eslint@9.39.4 want: ^0.4.2
+114 silly placeDep ROOT @eslint/core@0.17.0 OK for: eslint@9.39.4 want: ^0.17.0
+115 silly placeDep ROOT @eslint/eslintrc@3.3.5 OK for: eslint@9.39.4 want: ^3.3.5
+116 silly placeDep ROOT @eslint/plugin-kit@0.4.1 OK for: eslint@9.39.4 want: ^0.4.1
+117 silly placeDep ROOT chalk@4.1.2 OK for: eslint@9.39.4 want: ^4.0.0
+118 silly placeDep ROOT eslint-scope@8.4.0 OK for: eslint@9.39.4 want: ^8.4.0
+119 silly placeDep node_modules/eslint eslint-visitor-keys@4.2.1 OK for: eslint@9.39.4 want: ^4.2.1
+120 silly placeDep ROOT espree@10.4.0 OK for: eslint@9.39.4 want: ^10.4.0
+121 silly placeDep ROOT lodash.merge@4.6.2 OK for: eslint@9.39.4 want: ^4.6.2
+122 silly placeDep ROOT minimatch@3.1.5 OK for: eslint@9.39.4 want: ^3.1.5
+123 silly fetch manifest @eslint/object-schema@^2.1.7
+124 silly packumentCache full:https://registry.npmjs.org/@eslint%2fobject-schema cache-miss
+125 silly fetch manifest @types/json-schema@^7.0.15
+126 silly packumentCache full:https://registry.npmjs.org/@types%2fjson-schema cache-miss
+127 silly fetch manifest ajv@^6.14.0
+128 silly packumentCache full:https://registry.npmjs.org/ajv cache-miss
+129 silly fetch manifest espree@^10.0.1
+130 silly packumentCache full:https://registry.npmjs.org/espree cache-miss
+131 silly fetch manifest globals@^14.0.0
+132 silly packumentCache full:https://registry.npmjs.org/globals cache-miss
+133 silly fetch manifest import-fresh@^3.2.1
+134 silly packumentCache full:https://registry.npmjs.org/import-fresh cache-miss
+135 silly fetch manifest js-yaml@^4.1.1
+136 silly packumentCache full:https://registry.npmjs.org/js-yaml cache-miss
+137 http cache https://registry.npmjs.org/espree 9ms (cache hit)
+138 silly packumentCache full:https://registry.npmjs.org/espree set size:326080 disposed:false
+139 silly fetch manifest strip-json-comments@^3.1.1
+140 silly packumentCache full:https://registry.npmjs.org/strip-json-comments cache-miss
+141 http fetch GET 200 https://registry.npmjs.org/import-fresh 60ms (cache miss)
+142 silly packumentCache full:https://registry.npmjs.org/import-fresh set size:undefined disposed:false
+143 silly fetch manifest ansi-styles@^4.1.0
+144 silly packumentCache full:https://registry.npmjs.org/ansi-styles cache-miss
+145 http fetch GET 200 https://registry.npmjs.org/@eslint%2fobject-schema 78ms (cache miss)
+146 silly packumentCache full:https://registry.npmjs.org/@eslint%2fobject-schema set size:undefined disposed:false
+147 silly fetch manifest supports-color@^7.1.0
+148 silly packumentCache full:https://registry.npmjs.org/supports-color cache-miss
+149 http fetch GET 200 https://registry.npmjs.org/@types%2fjson-schema 82ms (cache miss)
+150 silly packumentCache full:https://registry.npmjs.org/@types%2fjson-schema set size:undefined disposed:false
+151 silly fetch manifest esrecurse@^4.3.0
+152 silly packumentCache full:https://registry.npmjs.org/esrecurse cache-miss
+153 http fetch GET 200 https://registry.npmjs.org/strip-json-comments 73ms (cache miss)
+154 silly packumentCache full:https://registry.npmjs.org/strip-json-comments set size:undefined disposed:false
+155 silly fetch manifest acorn-jsx@^5.3.2
+156 silly packumentCache full:https://registry.npmjs.org/acorn-jsx cache-miss
+157 http fetch GET 200 https://registry.npmjs.org/js-yaml 89ms (cache miss)
+158 silly packumentCache full:https://registry.npmjs.org/js-yaml set size:undefined disposed:false
+159 silly fetch manifest brace-expansion@^1.1.7
+160 silly packumentCache full:https://registry.npmjs.org/brace-expansion cache-miss
+161 http fetch GET 200 https://registry.npmjs.org/globals 102ms (cache miss)
+162 silly packumentCache full:https://registry.npmjs.org/globals set size:undefined disposed:false
+163 http fetch GET 200 https://registry.npmjs.org/ajv 118ms (cache miss)
+164 silly packumentCache full:https://registry.npmjs.org/ajv set size:undefined disposed:false
+165 http fetch GET 200 https://registry.npmjs.org/ansi-styles 105ms (cache miss)
+166 silly packumentCache full:https://registry.npmjs.org/ansi-styles set size:undefined disposed:false
+167 http fetch GET 200 https://registry.npmjs.org/esrecurse 87ms (cache miss)
+168 silly packumentCache full:https://registry.npmjs.org/esrecurse set size:undefined disposed:false
+169 http fetch GET 200 https://registry.npmjs.org/supports-color 92ms (cache miss)
+170 silly packumentCache full:https://registry.npmjs.org/supports-color set size:undefined disposed:false
+171 http fetch GET 200 https://registry.npmjs.org/acorn-jsx 86ms (cache miss)
+172 silly packumentCache full:https://registry.npmjs.org/acorn-jsx set size:undefined disposed:false
+173 http fetch GET 200 https://registry.npmjs.org/brace-expansion 218ms (cache miss)
+174 silly packumentCache full:https://registry.npmjs.org/brace-expansion set size:undefined disposed:false
+175 silly placeDep ROOT @eslint/object-schema@2.1.7 OK for: @eslint/config-array@0.21.2 want: ^2.1.7
+176 silly placeDep ROOT @types/json-schema@7.0.15 OK for: @eslint/core@0.17.0 want: ^7.0.15
+177 silly placeDep node_modules/@eslint/eslintrc ajv@6.15.0 OK for: @eslint/eslintrc@3.3.5 want: ^6.14.0
+178 silly placeDep ROOT globals@14.0.0 OK for: @eslint/eslintrc@3.3.5 want: ^14.0.0
+179 silly placeDep ROOT import-fresh@3.3.1 OK for: @eslint/eslintrc@3.3.5 want: ^3.2.1
+180 silly placeDep ROOT js-yaml@4.1.1 OK for: @eslint/eslintrc@3.3.5 want: ^4.1.1
+181 silly placeDep ROOT strip-json-comments@3.1.1 OK for: @eslint/eslintrc@3.3.5 want: ^3.1.1
+182 silly fetch manifest json-schema-traverse@^0.4.1
+183 silly packumentCache full:https://registry.npmjs.org/json-schema-traverse cache-miss
+184 silly fetch manifest resolve-from@^4.0.0
+185 silly packumentCache full:https://registry.npmjs.org/resolve-from cache-miss
+186 silly fetch manifest parent-module@^1.0.0
+187 silly packumentCache full:https://registry.npmjs.org/parent-module cache-miss
+188 http fetch GET 200 https://registry.npmjs.org/resolve-from 62ms (cache miss)
+189 silly packumentCache full:https://registry.npmjs.org/resolve-from set size:undefined disposed:false
+190 http fetch GET 200 https://registry.npmjs.org/json-schema-traverse 64ms (cache miss)
+191 silly packumentCache full:https://registry.npmjs.org/json-schema-traverse set size:undefined disposed:false
+192 http fetch GET 200 https://registry.npmjs.org/parent-module 63ms (cache miss)
+193 silly packumentCache full:https://registry.npmjs.org/parent-module set size:undefined disposed:false
+194 silly placeDep node_modules/chalk ansi-styles@4.3.0 OK for: chalk@4.1.2 want: ^4.1.0
+195 silly placeDep ROOT supports-color@7.2.0 OK for: chalk@4.1.2 want: ^7.1.0
+196 silly fetch manifest has-flag@^4.0.0
+197 silly packumentCache full:https://registry.npmjs.org/has-flag cache-miss
+198 http fetch GET 200 https://registry.npmjs.org/has-flag 47ms (cache miss)
+199 silly packumentCache full:https://registry.npmjs.org/has-flag set size:undefined disposed:false
+200 silly placeDep ROOT esrecurse@4.3.0 OK for: eslint-scope@8.4.0 want: ^4.3.0
+201 silly fetch manifest acorn@^8.15.0
+202 silly packumentCache full:https://registry.npmjs.org/acorn cache-miss
+203 http fetch GET 200 https://registry.npmjs.org/acorn 214ms (cache miss)
+204 silly packumentCache full:https://registry.npmjs.org/acorn set size:undefined disposed:false
+205 silly placeDep ROOT acorn-jsx@5.3.2 OK for: espree@10.4.0 want: ^5.3.2
+206 silly placeDep node_modules/espree eslint-visitor-keys@4.2.1 OK for: espree@10.4.0 want: ^4.2.1
+207 silly placeDep ROOT parent-module@1.0.1 OK for: import-fresh@3.3.1 want: ^1.0.0
+208 silly placeDep ROOT resolve-from@4.0.0 OK for: import-fresh@3.3.1 want: ^4.0.0
+209 silly fetch manifest callsites@^3.0.0
+210 silly packumentCache full:https://registry.npmjs.org/callsites cache-miss
+211 http fetch GET 200 https://registry.npmjs.org/callsites 50ms (cache miss)
+212 silly packumentCache full:https://registry.npmjs.org/callsites set size:undefined disposed:false
+213 silly placeDep node_modules/minimatch brace-expansion@1.1.14 OK for: minimatch@3.1.5 want: ^1.1.7
+214 silly fetch manifest concat-map@0.0.1
+215 silly packumentCache full:https://registry.npmjs.org/concat-map cache-miss
+216 http fetch GET 200 https://registry.npmjs.org/concat-map 46ms (cache miss)
+217 silly packumentCache full:https://registry.npmjs.org/concat-map set size:undefined disposed:false
+218 silly placeDep ROOT callsites@3.1.0 OK for: parent-module@1.0.1 want: ^3.0.0
+219 verbose stack Error: could not resolve
+219 verbose stack     at PlaceDep.failPeerConflict (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/place-dep.js:503:25)
+219 verbose stack     at new PlaceDep (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/place-dep.js:157:21)
+219 verbose stack     at #buildDepStep (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:920:18)
+219 verbose stack     at async Arborist.buildIdealTree (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:181:7)
+219 verbose stack     at async Promise.all (index 1)
+219 verbose stack     at async Arborist.reify (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:131:5)
+219 verbose stack     at async Install.exec (/usr/local/lib/node_modules/npm/lib/commands/install.js:150:5)
+219 verbose stack     at async Npm.exec (/usr/local/lib/node_modules/npm/lib/npm.js:207:9)
+219 verbose stack     at async module.exports (/usr/local/lib/node_modules/npm/lib/cli/entry.js:74:5)
+220 error code ERESOLVE
+221 error ERESOLVE could not resolve
+222 error
+223 error While resolving: react-leaflet@4.2.1
+223 error Found: react@19.2.4
+223 error node_modules/react
+223 error   react@"^19.2.4" from the root project
+223 error   peer react@">=16.8.0" from @dnd-kit/accessibility@3.1.1
+223 error   node_modules/@dnd-kit/accessibility
+223 error     @dnd-kit/accessibility@"^3.1.1" from @dnd-kit/core@6.3.1
+223 error     node_modules/@dnd-kit/core
+223 error       @dnd-kit/core@"^6.3.1" from the root project
+223 error   20 more (@dnd-kit/core, @dnd-kit/utilities, @reduxjs/toolkit, ...)
+223 error
+223 error Could not resolve dependency:
+223 error peer react@"^18.0.0" from react-leaflet@4.2.1
+223 error node_modules/react-leaflet
+223 error   react-leaflet@"^4.2.1" from the root project
+223 error
+223 error Conflicting peer dependency: react@18.3.1
+223 error node_modules/react
+223 error   peer react@"^18.0.0" from react-leaflet@4.2.1
+223 error   node_modules/react-leaflet
+223 error     react-leaflet@"^4.2.1" from the root project
+223 error
+223 error Fix the upstream dependency conflict, or retry
+223 error this command with --force or --legacy-peer-deps
+223 error to accept an incorrect (and potentially broken) dependency resolution.
+224 error
+224 error
+224 error For a full report see:
+224 error /Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T16_06_49_947Z-eresolve-report.txt
+225 silly unfinished npm timer reify 1777997210382
+226 silly unfinished npm timer reify:loadTrees 1777997210387
+227 silly unfinished npm timer idealTree:buildDeps 1777997210721
+228 silly unfinished npm timer idealTree:node_modules/react-leaflet 1777997213220
+229 verbose cwd /Users/admin/Desktop/dự án/mttqvn
+230 verbose os Darwin 24.6.0
+231 verbose node v22.19.0
+232 verbose npm  v10.9.3
+233 verbose exit 1
+234 verbose code 1
+235 error A complete log of this run can be found in: /Users/admin/Desktop/dự án/mttqvn/.npm-cache/_logs/2026-05-05T16_06_49_947Z-debug-0.log
