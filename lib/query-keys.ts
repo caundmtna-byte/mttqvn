@@ -41,4 +41,14 @@ export const queryKeys = {
   thongTinToChuc: {
     singleton: ['thong-tin-to-chuc', 'singleton'] as const,
   },
+  baiVietTheLoai: {
+    all: ['bai-viet-the-loai'] as const,
+  },
+  baiVietThietLapKhac: {
+    all: ['bai-viet-thiet-lap-khac'] as const,
+  },
+  baiVietDanhSach: {
+    all: ['bai-viet-danh-sach'] as const,
+    detail: (id: string) => ['bai-viet-danh-sach', 'detail', id] as const,
+  },
 } as const;

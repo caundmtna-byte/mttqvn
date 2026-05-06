@@ -169,6 +169,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fix iOS/Android auto-zoom khi tap vào input (xảy ra khi font-size < 16px).
+   max(16px, 1em) đảm bảo không bao giờ dưới 16px nhưng vẫn scale theo text-size preference. */
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
+}
+
 /* Smooth theme transition when switching between dark/light modes.
    Applied via [data-theme-transition] to avoid flash on initial load.
    The attribute is added after mount and removed after the transition. */

@@ -11,7 +11,7 @@ export interface CreateRepositoryConfig<T extends { id: string }> {
 }
 
 /**
- * Factory: returns MockRepository or SupabaseRepository based on VITE_DATA_SOURCE.
+ * Factory: returns MockRepository or SupabaseRepository based on `isSupabase()` (URL + anon key, xem `lib/data/config.ts`).
  */
 export function createRepository<T extends { id: string }>(
   config: CreateRepositoryConfig<T>,

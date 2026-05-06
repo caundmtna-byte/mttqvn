@@ -254,8 +254,14 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                   </div>
 
                   {/* Mapping table */}
-                  <div className="border border-border rounded-xl overflow-hidden">
-                    <table className="w-full text-xs">
+                  <div className="border border-border rounded-xl overflow-x-auto">
+                    <table
+                      className="w-full text-xs"
+                      style={{
+                        minWidth: Math.max(480, columns.length * 160),
+                        width: '100%',
+                      }}
+                    >
                       <thead>
                         <tr className="bg-muted/30 border-b border-border">
                           <th className="px-3 py-2 text-left font-medium text-muted-foreground">{txt('shared.import.systemColumn')}</th>
@@ -307,7 +313,13 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-2">{txt('shared.import.preview')}</p>
                       <div className="border border-border rounded-lg overflow-x-auto">
-                        <table className="w-full text-xs">
+                        <table
+                          className="w-full text-xs"
+                          style={{
+                            minWidth: Math.max(360, sheetHeaders.length * 96),
+                            width: '100%',
+                          }}
+                        >
                           <thead>
                             <tr className="bg-muted/20">
                               {sheetHeaders.map((h, i) => (

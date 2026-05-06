@@ -40,7 +40,7 @@ const Login: React.FC = () => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: 'admin',
+      username: '',
       password: ''
     }
   });

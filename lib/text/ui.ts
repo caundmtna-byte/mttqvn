@@ -19,6 +19,9 @@ export const ui = {
     "home": "Trang chủ",
     "back": "Quay lại",
     "licenseInfo": "Thông tin bản quyền",
+    "matTranToQuoc": "Mặt trận tổ quốc",
+    "quanLyVietBai": "Quản lý viết bài",
+    "trangThongTinKhac": "Trang thông tin khác",
     "system": "Hệ thống",
     "skipToMain": "Chuyển đến nội dung chính",
     "collapseSidebar": "Thu gọn sidebar",
@@ -45,7 +48,8 @@ export const ui = {
       "hint": "Esc đóng · Enter mở · ↑↓ chọn",
       "groupGeneral": "Chung",
       "groupSystem": "Hệ thống",
-      "groupAccount": "Tài khoản"
+      "groupAccount": "Tài khoản",
+      "groupArticleMgmt": "Quản lý viết bài"
     }
   },
   "shared": {
@@ -127,7 +131,8 @@ export const ui = {
       "greetingEvening": "Chào buổi tối",
       "adminFallback": "Quản trị viên",
       "systemModuleDesc": "Cấu hình, phân quyền và nhân sự.",
-      "licenseInfoDesc": "Quản lý sở hữu trí tuệ và thông tin nhà phát triển."
+      "licenseInfoDesc": "Quản lý sở hữu trí tuệ và thông tin nhà phát triển.",
+      "placeholderModuleDesc": "Nội dung đang được cập nhật."
     },
     "license": {
       "title": "Thông tin Bản quyền",
@@ -275,6 +280,85 @@ export const ui = {
       "companyInfoDesc": "Logo, tên ứng dụng MTTQVN và thông tin liên hệ hiển thị trên hệ thống.",
       "permission": "Phân quyền",
       "permissionDesc": "Vai trò và quyền hạn."
+    },
+    "articleDashboard": {
+      "groupMain": "Nội dung & cấu hình",
+      "articles": "Bài viết",
+      "articlesDesc": "Danh sách, soạn thảo và trạng thái bài viết.",
+      "commission": "Hoa hồng viết bài",
+      "commissionDesc": "Theo dõi hoa hồng theo bài và tác giả.",
+      "statsReport": "BC thống kê bài viết",
+      "statsReportDesc": "Báo cáo và thống kê hiệu quả nội dung.",
+      "settings": "Thiết lập bài viết",
+      "settingsDesc": "Danh mục, template và quy tắc đăng bài.",
+      "backToParent": "Quay lại Quản lý viết bài"
+    },
+    "externalLinksDashboard": {
+      "groupMain": "Liên kết truy cập",
+      "mttqNews": "Trang tin MTTQ",
+      "mttqNewsDesc": "Cổng thông tin điện tử Ủy ban Mặt trận Tổ quốc Việt Nam tỉnh Nghệ An.",
+      "zaloOa": "Trang thông tin OA",
+      "zaloOaDesc": "Cổng quản lý tài khoản Zalo OA (tài khoản chính thức) và tương tác với người dùng Zalo."
+    },
+    "articleSettings": {
+      "tabTheLoai": "Thể loại",
+      "tabThietLapKhac": "Thiết lập khác",
+      "sectionTrangDang": "Trang đăng",
+      "sectionNguonDang": "Nguồn đăng",
+      "addTheLoai": "Thêm thể loại",
+      "addKhac": "Thêm mục",
+      "editTheLoai": "Sửa thể loại",
+      "editKhac": "Sửa mục",
+      "colTenTheLoai": "Tên thể loại",
+      "colMoTa": "Mô tả",
+      "colDonGia": "Đơn giá (VNĐ)",
+      "colTgTao": "Ngày tạo",
+      "colTgCapNhat": "Ngày cập nhật",
+      "colTen": "Tên",
+      "colThuTu": "Thứ tự",
+      "emptyTheLoai": "Chưa có thể loại",
+      "emptyKhac": "Chưa có bản ghi",
+      "deleteConfirm": "Xóa {{count}} mục đã chọn?",
+      "deleteOneConfirm": "Xóa mục này?",
+      "deleteTheLoaiTitle": "Xóa thể loại",
+      "deleteTheLoaiMessage": "Bạn có chắc muốn xóa thể loại này? Hành động không hoàn tác.",
+      "deleteKhacTitle": "Xóa thiết lập",
+      "deleteKhacMessage": "Bạn có chắc muốn xóa mục này?",
+      "formDonGia": "Đơn giá (VNĐ)",
+      "formTenTheLoai": "Tên thể loại",
+      "formTen": "Tên hiển thị",
+      "formThuTu": "Thứ tự",
+      "service": {
+        "notFoundTheLoai": "Không tìm thấy thể loại",
+        "notFoundKhac": "Không tìm thấy bản ghi thiết lập"
+      },
+      "validation": {
+        "tenTheLoaiRequired": "Nhập tên thể loại",
+        "donGiaMin": "Đơn giá không âm",
+        "tenRequired": "Nhập tên"
+      },
+      "toast": {
+        "theLoaiCreate": "Đã thêm thể loại",
+        "theLoaiUpdate": "Đã cập nhật thể loại",
+        "theLoaiDelete": "Đã xóa {{count}} thể loại",
+        "khacCreate": "Đã thêm thiết lập",
+        "khacUpdate": "Đã cập nhật thiết lập",
+        "khacDelete": "Đã xóa {{count}} mục"
+      },
+      "detailTheLoaiTitle": "Chi tiết thể loại",
+      "detailTheLoaiSubtitle": "Thể loại bài viết",
+      "detailKhacTitle": "Chi tiết thiết lập",
+      "detailBasic": "Thông tin chính",
+      "detailSystem": "Thông tin hệ thống",
+      "bulkDeleteTheLoaiTitle": "Xóa nhiều thể loại",
+      "bulkDeleteTheLoaiMessage": "Bạn có chắc muốn xóa {{count}} thể loại đã chọn? Hành động không hoàn tác.",
+      "bulkDeleteKhacTitle": "Xóa nhiều thiết lập",
+      "bulkDeleteKhacMessage": "Bạn có chắc muốn xóa {{count}} mục thiết lập đã chọn? Hành động không hoàn tác.",
+      "noExportData": "Không có dữ liệu để xuất",
+      "formTheLoaiCreateSubtitle": "Thêm thể loại mới cho hệ thống",
+      "formTheLoaiEditSubtitle": "Cập nhật thể loại",
+      "formKhacCreateSubtitle": "Thêm mục thiết lập mới",
+      "formKhacEditSubtitle": "Cập nhật thiết lập"
     }
   },
   "notification": {
@@ -292,13 +376,20 @@ export const ui = {
     "home": "Trang chủ",
     "licenseInfo": "Thông tin bản quyền",
     "goHome": "Về trang chủ",
+    "matTranToQuoc": "Mặt trận tổ quốc",
+    "quanLyVietBai": "Quản lý viết bài",
+    "trangThongTinKhac": "Trang thông tin khác",
     "systemAdmin": "Hệ thống",
     "employee": "Nhân sự",
     "department": "Phòng ban",
     "position": "Chức vụ",
     "companyInfo": "Thông tin tổ chức",
     "permission": "Phân quyền",
-    "profile": "Hồ sơ cá nhân"
+    "profile": "Hồ sơ cá nhân",
+    "articleArticles": "Bài viết",
+    "articleCommission": "Hoa hồng viết bài",
+    "articleStats": "BC thống kê bài viết",
+    "articleSettings": "Thiết lập bài viết"
   },
   "clock": {
     "sunday": "Chủ nhật",
@@ -384,7 +475,24 @@ export const ui = {
     "trendVsLastPeriod": "So với kỳ trước"
   },
   "guide": {
-    "buttonTitle": "Hướng dẫn"
+    "buttonTitle": "Hướng dẫn",
+    "modules": {
+      "quanLyVietBai_baiViet": {
+        "intro": "Quản lý các bài viết đã đăng: thể loại, đơn giá, nguồn và trang đăng.",
+        "overview":
+          "Module ghi nhận từng bài viết với liên kết thực tế, gắn thiết lập thể loại và danh mục trang đăng / nguồn đăng. Người tạo được lấy tự động từ hồ sơ nhân viên đăng nhập.",
+        "permissions":
+          "Theo ma trận phân quyền chức vụ: Xem danh sách, Thêm, Sửa, Xóa, Xuất. Tab \"Của tôi\" chỉ lọc giao diện theo người tạo; quyền thao tác vẫn theo module.",
+        "workflow": "Thêm bài → điền thông tin → Lưu. Sửa hoặc xóa từ danh sách hoặc từ màn chi tiết. Có thể xuất Excel từ thanh công cụ.",
+        "quickStart":
+          "1) Vào Quản lý viết bài → Bài viết. 2) Chọn tab Tất cả hoặc Của tôi. 3) Thêm bài mới, chọn thể loại (đơn giá gợi ý theo thiết lập). 4) Lưu và kiểm tra trên danh sách.",
+        "glossary":
+          "Thể loại / Trang đăng / Nguồn đăng: cấu hình tại Thiết lập bài viết. Đơn giá: số tiền ghi trên từng bài (có thể khớp hoặc chỉnh so với đơn giá thể loại).",
+        "faq":
+          "Tại sao không thêm được bài? Kiểm tra tài khoản đã gắn nhân viên (nhan_vien_id). Làm sao chỉ xem bài của mình? Dùng tab Của tôi.",
+        "contact": "Liên hệ quản trị hệ thống hoặc phòng hành chính nếu cần điều chỉnh phân quyền hoặc thiết lập danh mục.",
+      },
+    },
   },
   "settings": {
     "primaryColor": "Màu",

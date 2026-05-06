@@ -18,11 +18,11 @@ const StatsTableCard: React.FC<Props> = ({
         {Icon && <Icon size={18} className="text-muted-foreground shrink-0" />}
         <span className="font-medium text-foreground text-sm">{title}</span>
       </div>
-      <div className={cn('p-4 overflow-auto', maxHeight)}>
+      <div className={cn('p-4 overflow-x-auto overflow-y-auto', maxHeight)}>
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{txt(emptyKey)}</p>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[280px] text-sm">
             <thead>
               <tr className="text-left text-muted-foreground border-b border-border">
                 <th className="pb-2 font-medium">{txt(columnLabelKey)}</th>

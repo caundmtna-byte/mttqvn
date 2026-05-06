@@ -9,15 +9,15 @@ import PageSizeSelect from './PageSizeSelect';
 import { cn } from '../../lib/utils';
 import type { ColumnConfig, SortState } from '../../store/createGenericStore';
 import { getColumnCellStyle } from '../../store/createGenericStore';
+import {
+  TABLE_CHECKBOX_WIDTH,
+  TABLE_ACTION_COLUMN_WIDTH,
+  DEFAULT_DATA_COLUMN_MIN_WIDTH,
+  computeDataTableMinWidth,
+} from '../../lib/table-layout-widths';
 
 /** Ngưỡng kích hoạt virtual scroll tự động (số dòng trên trang) */
 const VIRTUAL_THRESHOLD = 50;
-/** Chiều rộng cột checkbox (px) */
-const TABLE_CHECKBOX_WIDTH = 44;
-/** Chiều rộng cột Thao tác (px) — Sửa + menu ⋮ */
-const TABLE_ACTION_COLUMN_WIDTH = 92;
-/** MinWidth mặc định cho cột khi tính sticky offset (px) */
-const DEFAULT_COLUMN_MIN_WIDTH = 120;
 
 interface GenericTableProps<T> {
   data: T[];
@@ -114,10 +114,13 @@ function GenericTable<T>({
   );
 
   /** Tổng minWidth của bảng để luôn cuộn ngang khi nhiều cột, tránh ép cột xuống dòng */
-  const tableMinWidth = useMemo(() => {
-    const cols = dataColumns.reduce((sum, c) => sum + (c.width ?? c.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH), 0);
-    return TABLE_CHECKBOX_WIDTH + cols + TABLE_ACTION_COLUMN_WIDTH;
-  }, [dataColumns]);
+  const tableMinWidth = useMemo(
+    () =>
+      computeDataTableMinWidth(dataColumns, {
+        defaultColumnMin: DEFAULT_DATA_COLUMN_MIN_WIDTH,
+      }),
+    [dataColumns]
+  );
 
   /** Tính left offset tích lũy cho từng cột sticky (sau checkbox) */
   const stickyLeftOffsets = useMemo(() => {
@@ -126,7 +129,7 @@ function GenericTable<T>({
     for (let i = 0; i < stickyLeftCount && i < dataColumns.length; i++) {
       offsets.push(acc);
       const col = dataColumns[i];
-      acc += col.width ?? col.minWidth ?? DEFAULT_COLUMN_MIN_WIDTH;
+      acc += col.width ?? col.minWidth ?? DEFAULT_DATA_COLUMN_MIN_WIDTH;
     }
     return offsets;
   }, [dataColumns, stickyLeftCount]);
@@ -254,8 +257,11 @@ function GenericTable<T>({
         <div className="shrink-0 py-3 px-3 sm:px-4 border-b border-border/50 bg-muted/20">
           <LoadingSpinnerWithText text={loadingText} centered />
         </div>
-        <div className="hidden md:block flex-1 min-h-0 overflow-hidden">
-          <table className="w-full text-sm border-separate border-spacing-0">
+        <div className="hidden md:block flex-1 min-h-0 overflow-auto custom-scrollbar">
+          <table
+            className="text-sm border-separate border-spacing-0"
+            style={{ minWidth: tableMinWidth, width: '100%' }}
+          >
             <thead>
               <tr className="bg-muted/30 border-b border-border">
                 <th className={cn('w-[44px] px-3 border-b border-border', headerPy)}><div className="w-4 h-4 bg-muted rounded animate-pulse" /></th>

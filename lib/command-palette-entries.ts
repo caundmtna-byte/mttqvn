@@ -11,6 +11,13 @@ export interface CommandPaletteEntry {
 
 export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/', nameKey: 'nav.home', groupKey: 'nav.commandPalette.groupGeneral' },
+  { path: '/mat-tran-to-quoc', nameKey: 'nav.matTranToQuoc', groupKey: 'nav.commandPalette.groupGeneral' },
+  { path: '/quan-ly-viet-bai', nameKey: 'nav.quanLyVietBai', groupKey: 'nav.commandPalette.groupArticleMgmt' },
+  { path: '/quan-ly-viet-bai/bai-viet', nameKey: 'page.articleDashboard.articles', groupKey: 'nav.commandPalette.groupArticleMgmt' },
+  { path: '/quan-ly-viet-bai/hoa-hong-viet-bai', nameKey: 'page.articleDashboard.commission', groupKey: 'nav.commandPalette.groupArticleMgmt' },
+  { path: '/quan-ly-viet-bai/bc-thong-ke-bai-viet', nameKey: 'page.articleDashboard.statsReport', groupKey: 'nav.commandPalette.groupArticleMgmt' },
+  { path: '/quan-ly-viet-bai/thiet-lap-bai-viet', nameKey: 'page.articleDashboard.settings', groupKey: 'nav.commandPalette.groupArticleMgmt' },
+  { path: '/trang-thong-tin-khac', nameKey: 'nav.trangThongTinKhac', groupKey: 'nav.commandPalette.groupGeneral' },
   { path: '/thong-tin-ban-quyen', nameKey: 'nav.licenseInfo', groupKey: 'nav.commandPalette.groupGeneral' },
   { path: '/he-thong', nameKey: 'nav.system', groupKey: 'nav.commandPalette.groupSystem' },
   { path: '/he-thong/nhan-vien', nameKey: 'page.systemDashboard.employee', groupKey: 'nav.commandPalette.groupSystem' },

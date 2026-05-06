@@ -17,6 +17,8 @@ export type AppResource =
   | 'positions'
   | 'company'
   | 'permissions'
+  | 'articleSettings'
+  | 'articles'
   | 'profile'
   | 'notifications'
   | '*';
@@ -31,6 +33,8 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   positions: 'he-thong/chuc-vu',
   company: 'he-thong/thong-tin-to-chuc',
   permissions: 'he-thong/phan-quyen',
+  articleSettings: 'quan-ly-viet-bai/thiet-lap-bai-viet',
+  articles: 'quan-ly-viet-bai/bai-viet',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */

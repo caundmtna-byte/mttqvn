@@ -7,12 +7,12 @@
 - **Frontend:** React (Vite) + TypeScript.
 - **UI:** Tailwind CSS + **component nội bộ** trong `components/ui/` (phong cách tương tự shadcn, **không** cài registry shadcn/Radix để giữ kiểm soát bundle).
 - **Dữ liệu:** TanStack Query (server) + Zustand (client); React Hook Form + Zod.
-- **Backend:** Supabase (PostgreSQL + Auth); mặc định dev có thể dùng mock (`VITE_DATA_SOURCE=mock`).
+- **Backend:** Supabase (PostgreSQL + Auth); thiếu URL/anon key hoặc bật `VITE_FORCE_MOCK=true` thì dùng mock.
 
 ## Supabase
 
 1. Tạo project trên [Supabase](https://supabase.com), lấy **URL** và **anon key**.
-2. Copy `.env.example` → `.env` và đặt `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_DATA_SOURCE=supabase`.
+2. Copy `.env.example` → `.env.local` và đặt `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (đủ hai là bật Supabase). Tuỳ chọn: `VITE_FORCE_MOCK=true` để ép mock.
 3. Sinh type TypeScript cho PostgREST (khuyến nghị khi schema ổn định):
 
    ```bash

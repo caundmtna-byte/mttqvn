@@ -11,6 +11,7 @@ import { department } from '../../features/he-thong/phong-ban/text';
 import { position } from '../../features/he-thong/chuc-vu/text';
 import { permission } from '../../features/he-thong/phan-quyen/text';
 import { company } from '../../features/he-thong/thong-tin-to-chuc/text';
+import { articleList } from '../../features/quan-ly-viet-bai/bai-viet/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
   const out: Record<string, string> = {};
@@ -37,6 +38,7 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('position', position),
   ...flatten('permission', permission),
   ...flatten('company', company),
+  ...flatten('articleList', articleList),
   ...flatten('tenure', tenure),
   ...flatten('taiLieu', taiLieu),
 });
@@ -67,5 +69,5 @@ export function txt(key: string, options?: Record<string, unknown> | string): st
   return fmt(raw, vars);
 }
 
-export { ui, tenure, taiLieu, employee, department, position, permission, company };
+export { ui, tenure, taiLieu, employee, department, position, permission, company, articleList };
 export { fmt };

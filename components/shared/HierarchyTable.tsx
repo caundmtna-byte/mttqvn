@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { txt } from '../../lib/text';
 import { Edit, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { ColumnConfig } from '../../store/createGenericStore';
 import { getColumnCellStyle } from '../../store/createGenericStore';
+import {
+  computeDataTableMinWidth,
+  TABLE_ACTION_COLUMN_WIDTH,
+  TABLE_ACTION_COLUMN_WIDTH_COMPACT,
+  DEFAULT_DATA_COLUMN_MIN_WIDTH,
+} from '../../lib/table-layout-widths';
 
 export interface HierarchyTableProps<T> {
   /** Dữ liệu đã flatten + đã paginate (một trang) */
@@ -64,6 +70,19 @@ export function HierarchyTable<T>({
   const showActionsCol = Boolean(renderActions || onEdit || onDelete);
   const actionsColWidthClass = renderActions ? 'w-[92px] min-w-[92px]' : 'w-20 min-w-[80px]';
 
+  const tableMinWidth = useMemo(() => {
+    const dataCols = columns.map((c) => ({ width: c.width, minWidth: c.minWidth }));
+    const actionW = !showActionsCol
+      ? 0
+      : renderActions
+        ? TABLE_ACTION_COLUMN_WIDTH
+        : TABLE_ACTION_COLUMN_WIDTH_COMPACT;
+    return computeDataTableMinWidth(dataCols, {
+      actionColumnWidth: actionW,
+      defaultColumnMin: DEFAULT_DATA_COLUMN_MIN_WIDTH,
+    });
+  }, [columns, showActionsCol, renderActions]);
+
   return (
     <div
       className={cn(
@@ -72,7 +91,10 @@ export function HierarchyTable<T>({
       )}
       style={{ overscrollBehavior: 'contain' }}
     >
-      <table className="w-full text-sm text-left border-separate border-spacing-0">
+      <table
+        className="text-sm text-left border-separate border-spacing-0"
+        style={{ minWidth: tableMinWidth, width: '100%' }}
+      >
         <thead className="sticky top-0 z-[2]">
           <tr className="bg-muted border-b border-border align-middle">
             <th

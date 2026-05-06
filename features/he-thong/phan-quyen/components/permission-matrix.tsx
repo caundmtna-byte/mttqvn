@@ -739,7 +739,13 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
 
             {/* Table */}
             <div className="flex-1 overflow-auto custom-scrollbar">
-              <table className="w-full border-collapse">
+              <table
+                className="w-full border-collapse"
+                style={{
+                  minWidth: 220 + MATRIX_ACTIONS.length * 80,
+                  width: '100%',
+                }}
+              >
                 <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-md border-b-2 border-border">
                   <tr>
                     <th className="px-6 py-2.5 text-left text-[11px] font-semibold text-muted-foreground w-[220px]">{txt('permission.matrix.position')}</th>

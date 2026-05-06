@@ -6,34 +6,38 @@ import { usePermissionGrantStore } from './usePermissionGrantStore';
 
 const AUTH_REMEMBER_KEY = 'auth-remember';
 
-/** Storage cho auth: nếu "Ghi nhớ đăng nhập" bật thì dùng localStorage, tắt thì dùng sessionStorage (đóng tab là thoát). Không có key thì mặc định dùng localStorage. */
-function getAuthStorage(): { getItem: (name: string) => string | null; setItem: (name: string, value: string) => void; removeItem: (name: string) => void } | null {
-  const remembered = typeof window !== 'undefined' && localStorage.getItem(AUTH_REMEMBER_KEY) !== 'false';
-  const storage = typeof window !== 'undefined' ? (remembered ? localStorage : sessionStorage) : null;
-  if (!storage) return null;
+/** Kiểm tra động xem người dùng có bật "Ghi nhớ đăng nhập" không. */
+function isRemembered(): boolean {
+  return typeof window !== 'undefined' && localStorage.getItem(AUTH_REMEMBER_KEY) !== 'false';
+}
+
+/**
+ * Storage adapter động cho zustand persist.
+ * Mỗi lần đọc/ghi đều kiểm tra auth-remember tại thời điểm đó,
+ * đảm bảo lựa chọn "Ghi nhớ" có hiệu lực ngay trong cùng phiên đăng nhập.
+ */
+function createAuthPersistStorage() {
+  if (typeof window === 'undefined') return null;
   return {
-    getItem: (name: string) => storage.getItem(name),
-    setItem: (name: string, value: string) => { storage.setItem(name, value); },
+    getItem: (name: string) => {
+      const storage = isRemembered() ? localStorage : sessionStorage;
+      const raw = storage.getItem(name);
+      return raw ? JSON.parse(raw) : null;
+    },
+    setItem: (name: string, value: { state: unknown; version: number }) => {
+      const serialized = JSON.stringify(value);
+      if (isRemembered()) {
+        sessionStorage.removeItem(name);
+        localStorage.setItem(name, serialized);
+      } else {
+        localStorage.removeItem(name);
+        sessionStorage.setItem(name, serialized);
+      }
+    },
     removeItem: (name: string) => {
       localStorage.removeItem(name);
       sessionStorage.removeItem(name);
     },
-  };
-}
-
-/** Storage adapter cho zustand persist: phải trả về object { state, version }, lưu dạng JSON. */
-function createAuthPersistStorage() {
-  const base = getAuthStorage();
-  if (!base) return null;
-  return {
-    getItem: (name: string) => {
-      const raw = base.getItem(name);
-      return raw ? JSON.parse(raw) : null;
-    },
-    setItem: (name: string, value: { state: unknown; version: number }) => {
-      base.setItem(name, JSON.stringify(value));
-    },
-    removeItem: (name: string) => base.removeItem(name),
   };
 }
 
@@ -157,7 +161,7 @@ export const useUIStore = create<UIState>()(
         set((state) => ({ ...state, ...settings }));
       },
 
-      // Thông tin tổ chức + thương hiệu (persist; nguồn Supabase khi bật VITE_DATA_SOURCE)
+      // Thông tin tổ chức + thương hiệu (persist; đồng bộ Supabase khi `isSupabase()` — có URL + anon key)
       companyInfo: { ...DEFAULT_COMPANY_INFO },
       setCompanyInfo: (info) => set((state) => ({
         companyInfo: { ...state.companyInfo, ...info }

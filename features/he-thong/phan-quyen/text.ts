@@ -45,6 +45,7 @@ export const permission = {
     "hrGroup": "Nhân sự & Tổ chức",
     "salaryGroup": "Tiền lương & Công",
     "systemGroup": "Hệ thống & Bảo mật",
+    "articleMgmtGroup": "Quản lý viết bài",
     "setupTitle": "Thiết lập quyền:",
     "setupDesc": "Phân quyền chi tiết cho từng chức vụ đối với module này.",
     "position": "Chức vụ",
@@ -75,7 +76,9 @@ export const permission = {
     "branch": "Chi nhánh",
     "functionTask": "Chức năng nhiệm vụ",
     "loginDevice": "Thiết bị đăng nhập",
-    "permission": "Phân quyền"
+    "permission": "Phân quyền",
+    "articleSettings": "Thiết lập bài viết",
+    "articleList": "Danh sách bài viết"
   },
   "validation": {
     "codeMin": "Mã vai trò tối thiểu 2 ký tự",

@@ -73,7 +73,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
           </label>
         )}
         <div className="relative">
-          {icon && (
+          {icon && !label && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
               {icon}
             </div>
@@ -91,7 +91,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
               'flex h-10 w-full rounded-lg border border-border bg-background py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               'disabled:cursor-not-allowed disabled:opacity-50',
-              icon ? 'pl-10' : 'pl-3',
+              icon && !label ? 'pl-10' : 'pl-3',
               suffix ? 'pr-14' : 'pr-3',
               error ? 'border-destructive focus-visible:ring-destructive' : '',
               className

@@ -61,4 +61,20 @@ describe('can', () => {
     });
     expect(can(member, 'delete', 'employees')).toBe(true);
   });
+
+  it('matrix: member with view on thiet-lap-bai-viet can view articleSettings only', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'quan-ly-viet-bai/thiet-lap-bai-viet': ['view'],
+    });
+    expect(can(member, 'view', 'articleSettings')).toBe(true);
+    expect(can(member, 'edit', 'articleSettings')).toBe(false);
+  });
+
+  it('matrix: member with view on bai-viet can view articles only', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'quan-ly-viet-bai/bai-viet': ['view'],
+    });
+    expect(can(member, 'view', 'articles')).toBe(true);
+    expect(can(member, 'create', 'articles')).toBe(false);
+  });
 });

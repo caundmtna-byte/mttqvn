@@ -3,7 +3,10 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 describe('createRepository', () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv('VITE_DATA_SOURCE', 'mock');
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', '');
+    vi.stubEnv('VITE_FORCE_MOCK', '');
+    vi.stubEnv('VITE_DATA_SOURCE', '');
   });
 
   afterEach(() => {

@@ -1,6 +1,11 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 import { DEFAULT_COLUMN_MAX_WIDTH } from '../../store/createGenericStore';
+import {
+  computeDataTableMinWidth,
+  TABLE_CHECKBOX_WIDTH,
+  TABLE_ACTION_COLUMN_WIDTH,
+} from '../../lib/table-layout-widths';
 
 export interface TableSkeletonColumn {
   /** MinWidth cho cột (px hoặc string) */
@@ -39,9 +44,22 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({
     ? Array.from({ length: columns }, () => ({}))
     : columns;
 
+  const dataColsForMin = cols.map((c) => ({
+    width: undefined as number | undefined,
+    minWidth: typeof c.minWidth === 'number' ? c.minWidth : 100,
+  }));
+  const tableMinWidth = computeDataTableMinWidth(dataColsForMin, {
+    checkboxWidth: showCheckbox ? TABLE_CHECKBOX_WIDTH : 0,
+    actionColumnWidth: showActions ? TABLE_ACTION_COLUMN_WIDTH : 0,
+    defaultColumnMin: 100,
+  });
+
   return (
-    <div className={cn('flex-1 min-h-0 overflow-hidden', className)}>
-      <table className="w-full text-sm border-separate border-spacing-0">
+    <div className={cn('flex-1 min-h-0 overflow-auto custom-scrollbar', className)}>
+      <table
+        className="text-sm border-separate border-spacing-0"
+        style={{ minWidth: tableMinWidth, width: '100%' }}
+      >
         <thead>
           <tr className="bg-muted/30 border-b border-border">
             {showCheckbox && (
@@ -62,7 +80,7 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({
               </th>
             ))}
             {showActions && (
-              <th className="w-[80px] px-3 py-2 border-b border-border">
+              <th className="w-[92px] min-w-[92px] px-3 py-2 border-b border-border">
                 <div className="h-3 w-12 bg-muted rounded animate-pulse mx-auto" />
               </th>
             )}

@@ -8,9 +8,16 @@ import ConfirmDialog from './components/shared/ConfirmDialog';
 import PwaRegister from './components/shared/PwaRegister';
 
 import Home from './pages/Home';
+import HomeModulePlaceholder from './pages/HomeModulePlaceholder';
 import LicenseInfo from './pages/LicenseInfo';
 import NotificationPage from './pages/NotificationPage';
 import SystemDashboard from './pages/dashboards/SystemDashboard';
+import QuanLyVietBaiDashboard from './pages/dashboards/QuanLyVietBaiDashboard';
+import TrangThongTinKhacDashboard from './pages/dashboards/TrangThongTinKhacDashboard';
+import VietBaiSubPlaceholder from './pages/quan-ly-viet-bai/VietBaiSubPlaceholder';
+
+const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet-lap-bai-viet/index'));
+const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import {
@@ -59,6 +66,13 @@ const App = () => {
                 <Suspense fallback={<PageFallback />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/mat-tran-to-quoc" element={<HomeModulePlaceholder />} />
+                    <Route path="/quan-ly-viet-bai" element={<QuanLyVietBaiDashboard />} />
+                    <Route path="/quan-ly-viet-bai/bai-viet" element={<BaiVietDanhSachPage />} />
+                    <Route path="/quan-ly-viet-bai/hoa-hong-viet-bai" element={<VietBaiSubPlaceholder />} />
+                    <Route path="/quan-ly-viet-bai/bc-thong-ke-bai-viet" element={<VietBaiSubPlaceholder />} />
+                    <Route path="/quan-ly-viet-bai/thiet-lap-bai-viet" element={<ThietLapBaiVietPage />} />
+                    <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
                     <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 
                     <Route path="/he-thong" element={<SystemDashboard />} />

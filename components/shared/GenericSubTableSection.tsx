@@ -27,6 +27,11 @@ export interface GenericSubTableSectionProps {
   loadingText?: string;
   /** Chiều cao tối đa vùng scroll bảng (mặc định 320px) */
   maxTableHeight?: string;
+  /**
+   * `minWidth` (px) cho `<table>` — khi nhiều cột, ép cuộn ngang thay vì co cột
+   * (cùng nguyên tắc GenericTable / HierarchyTable).
+   */
+  tableMinWidth?: number;
   className?: string;
   /**
    * Nội dung bảng: thead + tbody.
@@ -52,6 +57,7 @@ const GenericSubTableSection: React.FC<GenericSubTableSectionProps> = ({
   loading = false,
   loadingText = 'Đang tải...',
   maxTableHeight = '320px',
+  tableMinWidth,
   className,
   children,
 }) => {
@@ -122,7 +128,14 @@ const GenericSubTableSection: React.FC<GenericSubTableSectionProps> = ({
             )}
             style={maxTableHeight !== '320px' ? { maxHeight: maxTableHeight } : undefined}
           >
-            <table className="w-full text-sm text-left border-collapse">
+            <table
+              className="w-full text-sm text-left border-collapse"
+              style={
+                tableMinWidth != null
+                  ? { minWidth: tableMinWidth, width: '100%' }
+                  : undefined
+              }
+            >
               {children}
             </table>
           </div>

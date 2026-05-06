@@ -12,6 +12,13 @@ interface RouteConfig {
 const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/': { label: t('breadcrumb.home') },
   '/thong-tin-ban-quyen': { label: t('breadcrumb.licenseInfo'), parentPath: '/' },
+  '/mat-tran-to-quoc': { label: t('breadcrumb.matTranToQuoc'), parentPath: '/' },
+  '/quan-ly-viet-bai': { label: t('breadcrumb.quanLyVietBai'), parentPath: '/' },
+  '/quan-ly-viet-bai/bai-viet': { label: t('breadcrumb.articleArticles'), parentPath: '/quan-ly-viet-bai' },
+  '/quan-ly-viet-bai/hoa-hong-viet-bai': { label: t('breadcrumb.articleCommission'), parentPath: '/quan-ly-viet-bai' },
+  '/quan-ly-viet-bai/bc-thong-ke-bai-viet': { label: t('breadcrumb.articleStats'), parentPath: '/quan-ly-viet-bai' },
+  '/quan-ly-viet-bai/thiet-lap-bai-viet': { label: t('breadcrumb.articleSettings'), parentPath: '/quan-ly-viet-bai' },
+  '/trang-thong-tin-khac': { label: t('breadcrumb.trangThongTinKhac'), parentPath: '/' },
   '/he-thong': { label: t('breadcrumb.systemAdmin'), parentPath: '/' },
   '/he-thong/nhan-vien': { label: t('breadcrumb.employee'), parentPath: '/he-thong' },
   '/he-thong/phong-ban': { label: t('breadcrumb.department'), parentPath: '/he-thong' },

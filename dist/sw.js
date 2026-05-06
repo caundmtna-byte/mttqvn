@@ -79,7 +79,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "774d9b02c19566fad22c917876afb8e2"
+    "revision": "3b8a7c0183c44ee8827ee67be42a42bd"
   }, {
     "url": "favicon.svg",
     "revision": "0c103376318df03758d733bc377b28ca"
@@ -90,91 +90,142 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "assets/workbox-window.prod.es5-BIl4cyR9.js",
     "revision": null
   }, {
-    "url": "assets/vendor-tanstack-0HEaS6QX.js",
+    "url": "assets/vendor-tanstack-ljurUkit.js",
     "revision": null
   }, {
-    "url": "assets/vendor-jspdf-CGsmjyrN.js",
+    "url": "assets/vendor-jspdf-C_JYak0-.js",
     "revision": null
   }, {
-    "url": "assets/vendor-icons-097PiHmJ.js",
+    "url": "assets/vendor-icons-vdXCJOmt.js",
     "revision": null
   }, {
-    "url": "assets/vendor-framer-DoU9xMD0.js",
+    "url": "assets/vendor-framer-BUBGjcc-.js",
     "revision": null
   }, {
-    "url": "assets/useExportData-BQDOHVef.js",
+    "url": "assets/use-thiet-lap-khac-CT5uRHk4.js",
     "revision": null
   }, {
-    "url": "assets/use-can-C1gvNNho.js",
+    "url": "assets/use-chuc-vu-DOPVV9vx.js",
+    "revision": null
+  }, {
+    "url": "assets/use-can-DVNhgCAQ.js",
+    "revision": null
+  }, {
+    "url": "assets/the-loai-form-DTXSMgWi.js",
+    "revision": null
+  }, {
+    "url": "assets/schema-Bn49RtKi.js",
     "revision": null
   }, {
     "url": "assets/purify.es-Bzr520pe.js",
     "revision": null
   }, {
-    "url": "assets/phong-ban-form-Qqg-Hjui.js",
+    "url": "assets/phong-ban-form-PMT-88Tq.js",
     "revision": null
   }, {
-    "url": "assets/phong-ban-detail-B84u35OW.js",
+    "url": "assets/phong-ban-detail-CG_Zsfsl.js",
     "revision": null
   }, {
-    "url": "assets/nhan-vien-form-Dg-1hcCP.js",
+    "url": "assets/nhan-vien-form-Djvpe9h-.js",
     "revision": null
   }, {
-    "url": "assets/nhan-vien-detail-CmARfEAy.js",
+    "url": "assets/nhan-vien-detail-DzhUfLR_.js",
     "revision": null
   }, {
-    "url": "assets/index.es-CxTiknO2.js",
+    "url": "assets/khac-form-BAxeySl9.js",
     "revision": null
   }, {
-    "url": "assets/index-ZFa56PEJ.js",
+    "url": "assets/index.es-B5-c_5fm.js",
     "revision": null
   }, {
-    "url": "assets/index-DR35X0Rp.css",
+    "url": "assets/index-lcyvk-CS.css",
     "revision": null
   }, {
-    "url": "assets/index-D3_tnGEe.js",
+    "url": "assets/index-RRqRnGMn.js",
     "revision": null
   }, {
-    "url": "assets/index-CzLyvyZE.js",
+    "url": "assets/index-Dgmb-R37.js",
     "revision": null
   }, {
-    "url": "assets/index-CU_MfCsX.js",
+    "url": "assets/index-DXNRBZlc.js",
     "revision": null
   }, {
-    "url": "assets/index-Bs2TOXNq.js",
+    "url": "assets/index-DDqg2NMQ.js",
     "revision": null
   }, {
-    "url": "assets/index-BRZwa-M4.js",
+    "url": "assets/index-D7oiL2BC.js",
+    "revision": null
+  }, {
+    "url": "assets/index-D1l5Xo4b.js",
+    "revision": null
+  }, {
+    "url": "assets/index-Cvac-BHz.js",
+    "revision": null
+  }, {
+    "url": "assets/index-C15aTJTn.js",
     "revision": null
   }, {
     "url": "assets/html2canvas.esm-DXEQVQnt.js",
     "revision": null
   }, {
-    "url": "assets/hooks-DavczCA_.js",
+    "url": "assets/chuc-vu-form-F_fCxJwB.js",
     "revision": null
   }, {
-    "url": "assets/chuc-vu-form-DPPBHsuA.js",
+    "url": "assets/chuc-vu-detail-D5L5Rzwx.js",
     "revision": null
   }, {
-    "url": "assets/chuc-vu-detail-B1SK1nyL.js",
+    "url": "assets/bai-viet-form-BwNCB6g1.js",
     "revision": null
   }, {
-    "url": "assets/StatusToggle-DAed4BAo.js",
+    "url": "assets/bai-viet-detail-VJrIqMQS.js",
     "revision": null
   }, {
-    "url": "assets/MobileListCard-CqBDWu1R.js",
+    "url": "assets/article-the-loai-detail-DP3PwLo6.js",
     "revision": null
   }, {
-    "url": "assets/LoadingSpinnerWithText-BQ-lG9yB.js",
+    "url": "assets/article-khac-detail-yZOPFjxr.js",
     "revision": null
   }, {
-    "url": "assets/GenericTable-BZY3WYxC.js",
+    "url": "assets/Textarea-Coc_tzPg.js",
     "revision": null
   }, {
-    "url": "assets/GenericDrawer-hNtBC-Iz.js",
+    "url": "assets/TabGroup-14epodQC.js",
     "revision": null
   }, {
-    "url": "assets/FormGrid-D84opkyj.js",
+    "url": "assets/StatusToggle-DCDvUylO.js",
+    "revision": null
+  }, {
+    "url": "assets/MobileListCard-CtdRCn1K.js",
+    "revision": null
+  }, {
+    "url": "assets/LoadingSpinnerWithText-D4jGwQOC.js",
+    "revision": null
+  }, {
+    "url": "assets/ImportDialog-CI5wJseR.js",
+    "revision": null
+  }, {
+    "url": "assets/GenericTable-pUbHry04.js",
+    "revision": null
+  }, {
+    "url": "assets/GenericDrawer-BhwtQAxk.js",
+    "revision": null
+  }, {
+    "url": "assets/FormGrid-BnPSS1_Y.js",
+    "revision": null
+  }, {
+    "url": "assets/ExportDialog-BFQKezl9.js",
+    "revision": null
+  }, {
+    "url": "assets/EmployeeColumnHeaderSearch-CbwVE4ez.js",
+    "revision": null
+  }, {
+    "url": "assets/EmployeeColumnHeaderFilter-CxNATP7G.js",
+    "revision": null
+  }, {
+    "url": "assets/DataTableRowActions-B7rJxVM2.js",
+    "revision": null
+  }, {
+    "url": "assets/CurrencyInput-BwxPxYoi.js",
     "revision": null
   }, {
     "url": "favicon.svg",

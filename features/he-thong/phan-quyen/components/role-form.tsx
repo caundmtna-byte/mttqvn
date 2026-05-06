@@ -130,7 +130,13 @@ const RoleForm: React.FC<Props> = ({ initialData, onClose }) => {
                 </div>
 
                 <div className="overflow-x-auto -mx-5 sm:mx-0">
-                    <table className="w-full text-sm border-separate border-spacing-0">
+                    <table
+                      className="text-sm border-separate border-spacing-0"
+                      style={{
+                        minWidth: 220 + ALL_ACTION_COLUMNS.length * 88 + 100,
+                        width: '100%',
+                      }}
+                    >
                         <thead>
                             <tr className="bg-muted/50">
                                 <th className="py-3 text-left font-medium text-xs text-muted-foreground px-4 rounded-tl-xl border-b border-border">{txt('permission.form.moduleHeader')}</th>

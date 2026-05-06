@@ -68,7 +68,7 @@ interface GenericToolbarProps {
     /** Nội dung nhỏ hiển thị bên phải ô search (desktop & mobile, khi không có selection) */
     searchTrailing?: React.ReactNode;
 
-    /** Desktop (≥sm): nội dung sau nút Back — vd. TabGroup (chỉ render trong hàng toolbar desktop). */
+    /** Sau nút Back (desktop + mobile): vd. TabGroup — luôn đứng bên phải nút Back. */
     desktopStartSlot?: React.ReactNode;
 }
 
@@ -231,6 +231,12 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                     <ArrowLeft size={14} strokeWidth={2.25} />
                                 </button>
                             )}
+
+                            {desktopStartSlot ? (
+                                <div className="shrink-0 min-w-0 flex items-center max-w-[min(100%,28rem)]">
+                                    {desktopStartSlot}
+                                </div>
+                            ) : null}
 
                             {/* Search */}
                             {!hideSearch ? (
