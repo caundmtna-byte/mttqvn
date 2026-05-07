@@ -74,7 +74,9 @@ const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({ onPageB
         term,
         [...ARTICLE_THE_LOAI_SEARCH_KEYS],
       );
-      const matchesCol = theLoaiMatchesColumnSearch(item, f.columnSearch);
+      if (f.don_gia_bucket === 'free' && item.don_gia !== 0) return false;
+      if (f.don_gia_bucket === 'paid' && !(item.don_gia > 0)) return false;
+      const matchesCol = theLoaiMatchesColumnSearch(item, f.columnSearch, f.don_gia_bucket);
       return matchesSearch && matchesCol;
     },
     [],
@@ -179,6 +181,14 @@ const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({ onPageB
     setShowExport(true);
   };
 
+  const donGiaCounts = useMemo(
+    () => ({
+      free: rows.filter((r) => r.don_gia === 0).length,
+      paid: rows.filter((r) => r.don_gia > 0).length,
+    }),
+    [rows],
+  );
+
   const handleCloseForm = () => {
     const wasEditing = editing;
     const origin = formOrigin;
@@ -197,6 +207,7 @@ const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({ onPageB
         <ArticleTheLoaiToolbar
           onPageBack={onPageBack}
           tabsSlot={tabsSlot}
+          donGiaCounts={donGiaCounts}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');

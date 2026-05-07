@@ -2,6 +2,7 @@ export type BaiVietListScope = 'all' | 'mine';
 
 export interface BaiVietDanhSachFilters {
   columnSearch: Record<string, string>;
+  id_the_loai: string[];
 }
 
 /** Danh sách / chi tiết — id và FK dạng string (JSON bigint từ Supabase). */

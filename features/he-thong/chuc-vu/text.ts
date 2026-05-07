@@ -85,5 +85,10 @@ export const position = {
     "order": "Thứ tự hiển thị",
     "updated": "Cập nhật",
     "createdAt": "Được tạo lúc"
+  },
+  "footerRecords": "chức vụ",
+  "list": {
+    "deptHeaderUnassigned": "Chưa gán phòng",
+    "deptHeaderUnknown": "Phòng không còn tồn tại"
   }
 } as const;

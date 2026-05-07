@@ -12,6 +12,15 @@ import { position } from '../../features/he-thong/chuc-vu/text';
 import { permission } from '../../features/he-thong/phan-quyen/text';
 import { company } from '../../features/he-thong/thong-tin-to-chuc/text';
 import { articleList } from '../../features/quan-ly-viet-bai/bai-viet/text';
+import { articleStats } from '../../features/quan-ly-viet-bai/bc-thong-ke-bai-viet/text';
+import { articleCommission } from '../../features/quan-ly-viet-bai/hoa-hong-viet-bai/text';
+import { taskList } from '../../features/quan-ly-giao-viec/cong-viec/text';
+import { taskReport } from '../../features/quan-ly-giao-viec/bao-cao-cong-viec/text';
+import { matTranCanBo } from '../../features/mat-tran-to-quoc/danh-sach-can-bo/text';
+import { matTranKhenThuong } from '../../features/mat-tran-to-quoc/danh-sach-khen-thuong/text';
+import { matTranTapHuan } from '../../features/mat-tran-to-quoc/danh-sach-tap-huan/text';
+import { matTranNhiemKy } from '../../features/mat-tran-to-quoc/nhiem-ky/text';
+import { diaBan } from '../../features/he-thong/danh-sach-tinh-thanh/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
   const out: Record<string, string> = {};
@@ -39,8 +48,17 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('permission', permission),
   ...flatten('company', company),
   ...flatten('articleList', articleList),
+  ...flatten('articleStats', articleStats),
+  ...flatten('articleCommission', articleCommission),
+  ...flatten('taskList', taskList),
+  ...flatten('taskReport', taskReport),
+  ...flatten('matTranCanBo', matTranCanBo),
+  ...flatten('matTranKhenThuong', matTranKhenThuong),
+  ...flatten('matTranTapHuan', matTranTapHuan),
+  ...flatten('matTranNhiemKy', matTranNhiemKy),
   ...flatten('tenure', tenure),
   ...flatten('taiLieu', taiLieu),
+  ...flatten('diaBan', diaBan),
 });
 
 export type TFunction = typeof txt;
@@ -69,5 +87,24 @@ export function txt(key: string, options?: Record<string, unknown> | string): st
   return fmt(raw, vars);
 }
 
-export { ui, tenure, taiLieu, employee, department, position, permission, company, articleList };
+export {
+  ui,
+  tenure,
+  taiLieu,
+  employee,
+  department,
+  position,
+  permission,
+  company,
+  articleList,
+  articleStats,
+  articleCommission,
+  taskList,
+  taskReport,
+  matTranCanBo,
+  matTranKhenThuong,
+  matTranTapHuan,
+  matTranNhiemKy,
+  diaBan,
+};
 export { fmt };

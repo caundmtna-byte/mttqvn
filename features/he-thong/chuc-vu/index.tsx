@@ -11,7 +11,6 @@ import { txt } from '../../../lib/text';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { getLanguage } from '../../../lib/utils';
 import { matchesSearchTerm } from '../../../lib/searchUtils';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
@@ -72,7 +71,6 @@ const PositionPage: React.FC = () => {
   const {
     searchTerm,
     filters,
-    sort,
     resetState,
     clearSelection,
     selectedIds,
@@ -135,7 +133,7 @@ const PositionPage: React.FC = () => {
   const filterFn = useCallback(
     (item: Position, term: string, f: typeof filters) => {
       const matchesSearch = matchesSearchTerm(
-        item as Record<string, unknown>,
+        item as unknown as Record<string, unknown>,
         term,
         POSITION_SEARCHABLE_KEYS
       );
@@ -151,29 +149,6 @@ const PositionPage: React.FC = () => {
   );
 
   const filteredPositions = useListWithFilter(positions, searchTerm, filters, filterFn);
-
-  const positionSortKey = useCallback((columnId: string): keyof Position => {
-    return columnId as keyof Position;
-  }, []);
-
-  const sortedPositions = useMemo(() => {
-    const sorted = [...filteredPositions];
-    if (sort.column && sort.direction) {
-      sorted.sort((a: Position, b: Position) => {
-        const key = positionSortKey(sort.column!);
-        const aVal = a[key] ?? '';
-        const bVal = b[key] ?? '';
-        const cmp =
-          typeof aVal === 'number' && typeof bVal === 'number'
-            ? aVal - bVal
-            : String(aVal).localeCompare(String(bVal), getLanguage());
-        return sort.direction === 'desc' ? -cmp : cmp;
-      });
-    } else {
-      sorted.sort((a: Position, b: Position) => a.thu_tu - b.thu_tu || a.ten_chuc_vu.localeCompare(b.ten_chuc_vu, getLanguage()));
-    }
-    return sorted;
-  }, [filteredPositions, sort, positionSortKey]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -322,7 +297,7 @@ const PositionPage: React.FC = () => {
 
         <div className="flex-1 min-h-0">
           <PositionTable
-            data={sortedPositions}
+            data={filteredPositions}
             isLoading={isLoading}
             deptCounts={deptCounts}
             statusCounts={statusCounts}

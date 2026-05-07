@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { txt } from '../../../../lib/text';
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User, AtSign, Building2, Layers, Briefcase } from 'lucide-react';
 import Input from '../../../../components/ui/Input';
@@ -65,9 +65,8 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
     formState: { errors },
     reset,
     control,
-    watch,
   } = useForm<EmployeeFormValues>({
-    resolver: zodResolver(employeeSchema),
+    resolver: zodResolver(employeeSchema) as Resolver<EmployeeFormValues>,
     defaultValues: getDefaultEmployeeFormValues(),
   });
 
@@ -79,8 +78,8 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
     }
   }, [initialData, reset]);
 
-  const selectedDept = watch('id_phong_ban');
-  const watchedUsername = (watch('ten_tai_khoan') ?? '').trim().toLowerCase();
+  const selectedDept = useWatch({ control, name: 'id_phong_ban' });
+  const watchedUsername = (useWatch({ control, name: 'ten_tai_khoan' }) ?? '').trim().toLowerCase();
   const authEmailHint = watchedUsername
     ? txt('employee.form.authEmailHint', { email: `${watchedUsername}@gmail.com` })
     : txt('employee.form.authEmailHintEmpty');

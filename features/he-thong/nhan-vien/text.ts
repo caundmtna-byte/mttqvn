@@ -21,11 +21,6 @@ export const employee = {
   "idCard": "CCCD",
   "createdAt": "Ngày tạo",
   "positionDepartment": "Chức vụ / Phòng ban",
-  "columnHeader": {
-    "sortAsc": "Sắp xếp A đến Z",
-    "sortDesc": "Sắp xếp Z đến A",
-    "searchPlaceholder": "Lọc…",
-  },
   "rowActions": {
     "more": "Thao tác khác",
     "popupBlocked": "Không mở được tab mới",

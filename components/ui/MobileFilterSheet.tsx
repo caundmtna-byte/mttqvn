@@ -33,7 +33,7 @@ const FilterSection: React.FC<{
   const [search, setSearch] = useState('');
   const Icon = group.icon;
 
-  const filteredBySearch = group.options.filter((o) =>
+  const filteredBySearch = (group.options ?? []).filter((o) =>
     o.label.toLowerCase().includes(search.toLowerCase()),
   );
   const filtered = filterOptionsWithCount(filteredBySearch, group.value);
@@ -93,7 +93,7 @@ const FilterSection: React.FC<{
           >
             <div className="px-4 pb-3 space-y-2">
               {/* Search nếu có nhiều option */}
-              {group.options.length > 5 && (
+              {(group.options ?? []).length > 5 && (
                 <div className="relative">
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input

@@ -39,6 +39,8 @@ interface DashboardToolbarProps {
   className?: string;
   /** Khi set, wrap nội dung toolbar trong div có class này (vd. max-w-5xl mx-auto px-4 sm:px-6) để đồng bộ chiều rộng với layout nội dung */
   innerWrapperClassName?: string;
+  /** true: vùng `filters` desktop một hàng + cuộn ngang (mặc định flex-wrap xuống dòng). */
+  filtersSingleRow?: boolean;
 }
 
 const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
@@ -57,6 +59,7 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
   hideBack = false,
   className,
   innerWrapperClassName,
+  filtersSingleRow = false,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,6 +87,10 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
             >
               <ArrowLeft size={15} className="stroke-[2.5px]" />
             </button>
+          )}
+
+          {desktopStartSlot && (
+            <div className="shrink-0 min-w-0 max-w-[42%] sm:max-w-none">{desktopStartSlot}</div>
           )}
 
           {leadingContent && <div className="flex-1 min-w-0">{leadingContent}</div>}
@@ -157,7 +164,12 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
 
         {/* Filter chips */}
         {filters && (
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div
+            className={cn(
+              'flex items-center gap-2 min-w-0',
+              filtersSingleRow ? 'flex-nowrap overflow-x-auto' : 'flex-wrap',
+            )}
+          >
             {filters}
             {activeFilterCount > 0 && onClearFilters && (
               <button

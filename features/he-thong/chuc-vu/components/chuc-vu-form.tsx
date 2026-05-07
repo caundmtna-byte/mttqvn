@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { txt } from '../../../../lib/text';
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Briefcase, Layers, Building2, FileText, Power } from 'lucide-react';
 import { TRANG_THAI_HOAT_DONG } from '@/lib/constants/trang-thai';
@@ -68,7 +68,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
   );
 
   const { register, handleSubmit, formState: { errors }, reset, control } = useForm<PositionFormValues>({
-    resolver: zodResolver(positionSchema),
+    resolver: zodResolver(positionSchema) as Resolver<PositionFormValues>,
     defaultValues: DEFAULT_VALUES,
   });
 
@@ -76,7 +76,10 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
     if (initialData) {
       reset({
         ten_chuc_vu: initialData.ten_chuc_vu,
-        cap_bac: initialData.cap_bac || '',
+        cap_bac:
+          initialData.cap_bac != null && String(initialData.cap_bac).trim() !== ''
+            ? String(initialData.cap_bac).trim()
+            : '',
         phong_ban_id: initialData.phong_ban_id || '',
         mo_ta: initialData.mo_ta || '',
         thu_tu: initialData.thu_tu ?? 0,

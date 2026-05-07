@@ -17,8 +17,17 @@ export type AppResource =
   | 'positions'
   | 'company'
   | 'permissions'
+  | 'provinces'
   | 'articleSettings'
   | 'articles'
+  | 'articleStats'
+  | 'matTranThietLapCaiDat'
+  | 'matTranOfficerList'
+  | 'matTranRewardList'
+  | 'matTranTrainingList'
+  | 'matTranTerm'
+  | 'tasks'
+  | 'taskReports'
   | 'profile'
   | 'notifications'
   | '*';
@@ -33,8 +42,17 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   positions: 'he-thong/chuc-vu',
   company: 'he-thong/thong-tin-to-chuc',
   permissions: 'he-thong/phan-quyen',
+  provinces: 'he-thong/danh-sach-tinh-thanh',
   articleSettings: 'quan-ly-viet-bai/thiet-lap-bai-viet',
   articles: 'quan-ly-viet-bai/bai-viet',
+  articleStats: 'quan-ly-viet-bai/bc-thong-ke-bai-viet',
+  matTranThietLapCaiDat: 'mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat',
+  matTranOfficerList: 'mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo',
+  matTranRewardList: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong',
+  matTranTrainingList: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan',
+  matTranTerm: 'mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky',
+  tasks: 'quan-ly-giao-viec/cong-viec',
+  taskReports: 'quan-ly-giao-viec/bao-cao-cong-viec',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */
@@ -51,9 +69,9 @@ export function mapAppActionToActionType(action: AppAction): ActionType {
  */
 function legacyCan(user: User, action: AppAction, resource: AppResource): boolean {
   void user;
-  if (action === 'view') return true;
   if (resource === 'profile' && (action === 'edit' || action === 'view')) return true;
   if (resource === 'notifications' && action === 'view') return true;
+  if (action === 'view') return true;
   return false;
 }
 

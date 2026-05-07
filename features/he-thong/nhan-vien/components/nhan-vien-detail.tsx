@@ -100,6 +100,7 @@ const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
             src={data.hinh_anh || getAvatarUrl(data.ho_va_ten, 96)}
             alt={data.ho_va_ten}
             className="h-16 w-16 rounded-xl object-cover border border-border shadow-md shrink-0"
+            loading="lazy"
           />
           <div className="flex-1 min-w-0 flex flex-col gap-0.5">
             <div className="flex items-start justify-between gap-2 min-w-0">

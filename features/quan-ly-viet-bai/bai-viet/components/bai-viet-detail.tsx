@@ -7,7 +7,7 @@ import { formatCurrency, formatDateShort, formatDateTimeShort } from '@/lib/util
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
-import DetailFieldGrid from '@/components/shared/DetailFieldGrid';
+import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 
@@ -90,6 +90,7 @@ const BaiVietDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
           <DetailField label={txt('articleList.store.nguonDangCol')} value={data.ten_nguon_dang} />
           <DetailField label={txt('articleList.store.trangDangCol')} value={data.ten_trang_dang} />
           <DetailField
+            className={DETAIL_FIELD_SPAN_FULL}
             label={txt('articleList.store.linkCol')}
             value={
               <a

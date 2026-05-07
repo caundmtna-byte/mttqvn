@@ -77,4 +77,12 @@ describe('can', () => {
     expect(can(member, 'view', 'articles')).toBe(true);
     expect(can(member, 'create', 'articles')).toBe(false);
   });
+
+  it('matrix: member with view on bc-thong-ke-bai-viet can view articleStats', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'quan-ly-viet-bai/bc-thong-ke-bai-viet': ['view'],
+    });
+    expect(can(member, 'view', 'articleStats')).toBe(true);
+    expect(can(member, 'edit', 'articleStats')).toBe(false);
+  });
 });

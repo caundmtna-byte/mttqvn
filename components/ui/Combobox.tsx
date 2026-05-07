@@ -144,7 +144,11 @@ const Combobox: React.FC<ComboboxProps> = ({
         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-1.5 flex items-center gap-1.5 text-foreground">
           {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
           {label}
-          {required && <span className="text-red-500 ml-0.5">*</span>}
+          {required && (
+            <span className="text-red-600 dark:text-red-400 font-semibold ml-0.5" aria-hidden="true">
+              *
+            </span>
+          )}
         </label>
       )}
       

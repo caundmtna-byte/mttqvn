@@ -19,9 +19,11 @@ import { DepartmentTableRowActions } from './department-table-row-actions';
 import { MobileListCard } from '../../../../components/shared/MobileListCard';
 import { useDepartmentStore } from '../store/useDepartmentStore';
 import { useHierarchyRootFilter } from '../../../../lib/useHierarchyRootFilter';
-import { EmployeeColumnHeaderFilter } from '../../nhan-vien/components/EmployeeColumnHeaderFilter';
-import { EmployeeColumnHeaderSortMenu } from '../../nhan-vien/components/EmployeeColumnHeaderSortMenu';
-import { EmployeeColumnHeaderSearch } from '../../nhan-vien/components/EmployeeColumnHeaderSearch';
+import {
+  ColumnHeaderFilter,
+  ColumnHeaderSortMenu,
+  ColumnHeaderSearch,
+} from '@/components/shared/column-header';
 
 interface Props {
   data: Department[];
@@ -99,7 +101,7 @@ const DepartmentList: React.FC<Props> = ({
       const cs = filters.columnSearch;
       const colSearchActive = Boolean(cs[col.id]?.trim());
       const columnSearchEl = (
-        <EmployeeColumnHeaderSearch
+        <ColumnHeaderSearch
           variant="inDropdown"
           value={cs[col.id] ?? ''}
           onChange={(v) =>
@@ -115,7 +117,7 @@ const DepartmentList: React.FC<Props> = ({
       switch (col.id) {
         case 'ten_phong_ban':
           return (
-            <EmployeeColumnHeaderFilter
+            <ColumnHeaderFilter
               options={phongOptionsWithCount}
               value={filters.id_phong_goc}
               onChange={(v) => setFilter('id_phong_goc', v)}
@@ -127,7 +129,7 @@ const DepartmentList: React.FC<Props> = ({
           );
         case 'trang_thai':
           return (
-            <EmployeeColumnHeaderFilter
+            <ColumnHeaderFilter
               options={statusOptions}
               value={filters.status}
               onChange={(v) => setFilter('status', v)}
@@ -139,7 +141,7 @@ const DepartmentList: React.FC<Props> = ({
           );
         default:
           return (
-            <EmployeeColumnHeaderSortMenu
+            <ColumnHeaderSortMenu
               ariaLabel={col.label}
               sortColumnId={col.id}
               sort={sort}

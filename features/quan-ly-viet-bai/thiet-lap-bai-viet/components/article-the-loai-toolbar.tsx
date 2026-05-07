@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, Banknote } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import { txt } from '@/lib/text';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
+import FilterChipSingleSelect from '@/components/shared/FilterChipSingleSelect';
 import { BTN_ADD } from '@/lib/button-labels';
 import { useArticleTheLoaiStore } from '../store/useArticleTheLoaiStore';
 import { countTheLoaiColumnSearchActive } from '../utils/column-search-the-loai';
@@ -15,9 +16,17 @@ interface Props {
   onDeleteMany: (ids: string[]) => void;
   onPageBack: () => void;
   tabsSlot: React.ReactNode;
+  donGiaCounts: { free: number; paid: number };
 }
 
-const ArticleTheLoaiToolbar: React.FC<Props> = ({ onAdd, onExport, onDeleteMany, onPageBack, tabsSlot }) => {
+const ArticleTheLoaiToolbar: React.FC<Props> = ({
+  onAdd,
+  onExport,
+  onDeleteMany,
+  onPageBack,
+  tabsSlot,
+  donGiaCounts,
+}) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('articleSettings');
 
   const {
@@ -33,15 +42,58 @@ const ArticleTheLoaiToolbar: React.FC<Props> = ({ onAdd, onExport, onDeleteMany,
     clearSelection,
   } = useArticleTheLoaiStore();
 
+  const donGiaChipOptions = useMemo(
+    () => [
+      { label: txt('page.articleSettings.filterDonGiaFree'), value: 'free', count: donGiaCounts.free },
+      { label: txt('page.articleSettings.filterDonGiaPaid'), value: 'paid', count: donGiaCounts.paid },
+    ],
+    [donGiaCounts.free, donGiaCounts.paid],
+  );
+
   const activeFilterCount = useMemo(() => {
-    const colN = countTheLoaiColumnSearchActive(filters.columnSearch);
-    return (searchTerm ? 1 : 0) + colN;
-  }, [searchTerm, filters.columnSearch]);
+    const colN = countTheLoaiColumnSearchActive(filters.columnSearch, filters.don_gia_bucket);
+    const bucketOn = filters.don_gia_bucket === 'free' || filters.don_gia_bucket === 'paid' ? 1 : 0;
+    return (searchTerm ? 1 : 0) + colN + bucketOn;
+  }, [searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setFilter('columnSearch', {});
+    setFilter('don_gia_bucket', '');
   };
+
+  const filterGroups = useMemo(
+    () => [
+      {
+        key: 'don_gia_bucket',
+        label: txt('page.articleSettings.colDonGia'),
+        icon: Banknote,
+        options: donGiaChipOptions,
+        value: filters.don_gia_bucket ? [filters.don_gia_bucket] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('don_gia_bucket', pick === 'free' || pick === 'paid' ? pick : '');
+        },
+      },
+    ],
+    [donGiaChipOptions, filters.don_gia_bucket, setFilter],
+  );
+
+  const filtersSlot = useMemo(
+    () => (
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipSingleSelect
+          options={donGiaChipOptions}
+          value={filters.don_gia_bucket || null}
+          onChange={(v) => setFilter('don_gia_bucket', v === 'free' || v === 'paid' ? v : '')}
+          placeholder={txt('page.articleSettings.filterDonGiaChipPlaceholder')}
+          icon={Banknote}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
+        />
+      </div>
+    ),
+    [donGiaChipOptions, filters.don_gia_bucket, setFilter],
+  );
 
   const mobileActions = useMemo(
     () =>
@@ -92,6 +144,8 @@ const ArticleTheLoaiToolbar: React.FC<Props> = ({ onAdd, onExport, onDeleteMany,
       searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
+      filters={filtersSlot}
+      filterGroups={filterGroups}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}
       columns={columns}
       onToggleColumn={toggleColumn}

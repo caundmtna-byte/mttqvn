@@ -1,7 +1,7 @@
 import React from 'react';
 import { txt } from '../../lib/text';
 import { useNavigate } from 'react-router-dom';
-import { Users, Building, Shield, Briefcase } from 'lucide-react';
+import { Users, Building, Shield, Briefcase, MapPin } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 
 const SystemDashboard: React.FC = () => {
@@ -50,6 +50,13 @@ const SystemDashboard: React.FC = () => {
           icon: Shield,
           color: 'bg-rose-500',
           action: () => navigate('/he-thong/phan-quyen'),
+        },
+        {
+          title: txt('page.systemDashboard.provinceList'),
+          description: txt('page.systemDashboard.provinceListDesc'),
+          icon: MapPin,
+          color: 'bg-sky-500',
+          action: () => navigate('/he-thong/danh-sach-tinh-thanh'),
         },
       ],
     },

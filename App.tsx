@@ -2,22 +2,31 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from './components/layout/Layout';
-import Login from './pages/Login';
-import Profile from './pages/Profile';
 import ConfirmDialog from './components/shared/ConfirmDialog';
 import PwaRegister from './components/shared/PwaRegister';
 
-import Home from './pages/Home';
-import HomeModulePlaceholder from './pages/HomeModulePlaceholder';
-import LicenseInfo from './pages/LicenseInfo';
-import NotificationPage from './pages/NotificationPage';
-import SystemDashboard from './pages/dashboards/SystemDashboard';
-import QuanLyVietBaiDashboard from './pages/dashboards/QuanLyVietBaiDashboard';
-import TrangThongTinKhacDashboard from './pages/dashboards/TrangThongTinKhacDashboard';
-import VietBaiSubPlaceholder from './pages/quan-ly-viet-bai/VietBaiSubPlaceholder';
-
+const Login = lazy(() => import('./pages/Login'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Home = lazy(() => import('./pages/Home'));
+const MatTranToQuocDashboard = lazy(() => import('./pages/dashboards/MatTranToQuocDashboard'));
+const QuanLyGiaoViecDashboard = lazy(() => import('./pages/dashboards/QuanLyGiaoViecDashboard'));
+const LicenseInfo = lazy(() => import('./pages/LicenseInfo'));
+const NotificationPage = lazy(() => import('./pages/NotificationPage'));
+const SystemDashboard = lazy(() => import('./pages/dashboards/SystemDashboard'));
+const QuanLyVietBaiDashboard = lazy(() => import('./pages/dashboards/QuanLyVietBaiDashboard'));
+const TrangThongTinKhacDashboard = lazy(() => import('./pages/dashboards/TrangThongTinKhacDashboard'));
 const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet-lap-bai-viet/index'));
 const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
+const HoaHongVietBaiPage = lazy(() => import('./features/quan-ly-viet-bai/hoa-hong-viet-bai/index'));
+const BcThongKeBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/bc-thong-ke-bai-viet/index'));
+const CongViecPage = lazy(() => import('./features/quan-ly-giao-viec/cong-viec/index'));
+const BaoCaoCongViecPage = lazy(() => import('./features/quan-ly-giao-viec/bao-cao-cong-viec/index'));
+const MatTranToQuocModulePlaceholder = lazy(() => import('./pages/mat-tran-to-quoc/MatTranToQuocModulePlaceholder'));
+const ThietLapCaiDatPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-cai-dat/index'));
+const DanhSachCanBoPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-can-bo/index'));
+const DanhSachKhenThuongPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-khen-thuong/index'));
+const NhiemKyPage = lazy(() => import('./features/mat-tran-to-quoc/nhiem-ky/index'));
+const DanhSachTapHuanPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tap-huan/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import {
@@ -32,6 +41,7 @@ import { PermissionMatrixSynchronizer } from './components/auth/PermissionMatrix
 const EmployeePage = lazy(() => import('./features/he-thong/nhan-vien/index'));
 const ThongTinToChucPage = lazy(() => import('./features/he-thong/thong-tin-to-chuc/index'));
 const SecurityPage = lazy(() => import('./features/he-thong/phan-quyen/index'));
+const DanhSachTinhThanhPage = lazy(() => import('./features/he-thong/danh-sach-tinh-thanh/index'));
 const DepartmentPage = lazy(() => import('./features/he-thong/phong-ban/index'));
 const PositionPage = lazy(() => import('./features/he-thong/chuc-vu/index'));
 
@@ -66,12 +76,22 @@ const App = () => {
                 <Suspense fallback={<PageFallback />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/mat-tran-to-quoc" element={<HomeModulePlaceholder />} />
+                    <Route path="/mat-tran-to-quoc" element={<MatTranToQuocDashboard />} />
+                    <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan" element={<DanhSachTapHuanPage />} />
+                    <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong" element={<DanhSachKhenThuongPage />} />
+                    <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky" element={<NhiemKyPage />} />
+                    <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<MatTranToQuocModulePlaceholder />} />
+                    <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<MatTranToQuocModulePlaceholder />} />
+                    <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
+                    <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
                     <Route path="/quan-ly-viet-bai" element={<QuanLyVietBaiDashboard />} />
                     <Route path="/quan-ly-viet-bai/bai-viet" element={<BaiVietDanhSachPage />} />
-                    <Route path="/quan-ly-viet-bai/hoa-hong-viet-bai" element={<VietBaiSubPlaceholder />} />
-                    <Route path="/quan-ly-viet-bai/bc-thong-ke-bai-viet" element={<VietBaiSubPlaceholder />} />
+                    <Route path="/quan-ly-viet-bai/hoa-hong-viet-bai" element={<HoaHongVietBaiPage />} />
+                    <Route path="/quan-ly-viet-bai/bc-thong-ke-bai-viet" element={<BcThongKeBaiVietPage />} />
                     <Route path="/quan-ly-viet-bai/thiet-lap-bai-viet" element={<ThietLapBaiVietPage />} />
+                    <Route path="/quan-ly-giao-viec" element={<QuanLyGiaoViecDashboard />} />
+                    <Route path="/quan-ly-giao-viec/cong-viec" element={<CongViecPage />} />
+                    <Route path="/quan-ly-giao-viec/bao-cao-cong-viec" element={<BaoCaoCongViecPage />} />
                     <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
                     <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 
@@ -82,6 +102,7 @@ const App = () => {
                     <Route path="/he-thong/thong-tin-to-chuc" element={<ThongTinToChucPage />} />
                     <Route path="/he-thong/thong-tin-cong-ty" element={<Navigate to="/he-thong/thong-tin-to-chuc" replace />} />
                     <Route path="/he-thong/phan-quyen" element={<SecurityPage />} />
+                    <Route path="/he-thong/danh-sach-tinh-thanh" element={<DanhSachTinhThanhPage />} />
 
                     <Route path="/nhan-vien" element={<Navigate to="/he-thong/nhan-vien" replace />} />
                     <Route path="/phong-ban" element={<Navigate to="/he-thong/phong-ban" replace />} />

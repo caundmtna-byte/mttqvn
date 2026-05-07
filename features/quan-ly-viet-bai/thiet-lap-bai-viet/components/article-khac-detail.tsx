@@ -6,7 +6,7 @@ import { formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
-import DetailFieldGrid from '@/components/shared/DetailFieldGrid';
+import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { BaiVietThietLapKhac, BaiVietThietLapKhacLoai } from '../core/types';
@@ -95,7 +95,13 @@ const ArticleKhacDetail: React.FC<Props> = ({ data, sectionLabel, onClose, onEdi
           <DetailFieldGrid>
             <DetailField label={txt('page.articleSettings.colTen')} value={data.ten} icon={<Settings2 size={12} />} />
             <DetailField label={txt('page.articleSettings.colThuTu')} value={String(data.thu_tu)} icon={<ListOrdered size={12} />} />
-            <DetailField label={txt('page.articleSettings.colMoTa')} value={data.mo_ta ?? ''} icon={<FileText size={12} />} emptyText="—" />
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('page.articleSettings.colMoTa')}
+              value={data.mo_ta ?? ''}
+              icon={<FileText size={12} />}
+              emptyText="—"
+            />
           </DetailFieldGrid>
         </DetailSection>
 

@@ -9,7 +9,7 @@ import Textarea from '@/components/ui/Textarea';
 import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
-import FormGrid from '@/components/shared/FormGrid';
+import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { theLoaiSchema, type TheLoaiFormValues } from '../core/schema';
 import type { BaiVietTheLoai } from '../core/types';
 import { useCreateTheLoai, useUpdateTheLoai } from '../hooks/use-the-loai';
@@ -90,18 +90,12 @@ const TheLoaiForm: React.FC<Props> = ({ initialData, onClose }) => {
     >
       <form id="article-the-loai-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         <FormSection title={txt('page.articleSettings.detailBasic')} icon={<Tags size={14} />} variant="primary">
-          <FormGrid cols={1}>
+          <FormGrid cols={2}>
             <Input
               label={txt('page.articleSettings.formTenTheLoai')}
               icon={<Tags size={12} />}
               {...register('ten_the_loai')}
               error={errors.ten_the_loai?.message}
-            />
-            <Textarea
-              label={txt('page.articleSettings.colMoTa')}
-              icon={<FileText size={12} />}
-              {...register('mo_ta')}
-              rows={3}
             />
             <Controller
               name="don_gia"
@@ -117,6 +111,14 @@ const TheLoaiForm: React.FC<Props> = ({ initialData, onClose }) => {
                 />
               )}
             />
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Textarea
+                label={txt('page.articleSettings.colMoTa')}
+                icon={<FileText size={12} />}
+                {...register('mo_ta')}
+                rows={3}
+              />
+            </div>
           </FormGrid>
         </FormSection>
       </form>

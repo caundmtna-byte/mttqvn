@@ -18,7 +18,7 @@ export function usePositionFilterCounts(
 ) {
   return useMemo(() => {
     const matchesSearch = (p: Position) =>
-      matchesSearchTerm(p as Record<string, unknown>, searchTerm, POSITION_SEARCHABLE_KEYS);
+      matchesSearchTerm(p as unknown as Record<string, unknown>, searchTerm, POSITION_SEARCHABLE_KEYS);
 
     const matchesDept = (p: Position) =>
       filters.phong_ban_id.length === 0 ||

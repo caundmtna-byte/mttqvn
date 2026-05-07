@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, memo } from 'react';
+import React, { useCallback, useState, memo } from 'react';
 import { Tags, Banknote } from 'lucide-react';
 import { txt } from '@/lib/text';
 import GenericTable from '@/components/shared/GenericTable';
@@ -6,8 +6,7 @@ import type { ColumnConfig } from '@/store/createGenericStore';
 import { useArticleTheLoaiStore } from '../store/useArticleTheLoaiStore';
 import type { BaiVietTheLoai } from '../core/types';
 import { ArticleTheLoaiRowActions } from './article-the-loai-row-actions';
-import { EmployeeColumnHeaderSortMenu } from '../../../he-thong/nhan-vien/components/EmployeeColumnHeaderSortMenu';
-import { EmployeeColumnHeaderSearch } from '../../../he-thong/nhan-vien/components/EmployeeColumnHeaderSearch';
+import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import { formatDateShort } from '@/lib/utils';
 
 function formatVnd(n: number): string {
@@ -55,7 +54,7 @@ const ArticleTheLoaiTable = memo(function ArticleTheLoaiTable({
       const cs = filters.columnSearch;
       const colSearchActive = Boolean(cs[col.id]?.trim());
       const columnSearchEl = (
-        <EmployeeColumnHeaderSearch
+        <ColumnHeaderSearch
           variant="inDropdown"
           value={cs[col.id] ?? ''}
           onChange={(v) =>
@@ -68,7 +67,7 @@ const ArticleTheLoaiTable = memo(function ArticleTheLoaiTable({
         />
       );
       return (
-        <EmployeeColumnHeaderSortMenu
+        <ColumnHeaderSortMenu
           ariaLabel={col.label}
           sortColumnId={col.id}
           sort={sort}

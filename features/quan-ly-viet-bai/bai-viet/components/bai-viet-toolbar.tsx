@@ -1,28 +1,37 @@
 import React, { useMemo } from 'react';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, FolderOpen } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
+import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { useBaiVietDanhSachStore } from '../store/useBaiVietDanhSachStore';
 import { countBaiVietColumnSearchActive } from '../utils/column-search-count';
+
+interface ChipOption {
+  label: string;
+  value: string;
+  count?: number;
+}
 
 interface Props {
   onPageBack: () => void;
   tabsSlot: React.ReactNode;
+  theLoaiOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
 }
 
-const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, onAdd, onExport, onDeleteMany }) => {
+const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, theLoaiOptions, onAdd, onExport, onDeleteMany }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('articles');
 
   const {
     searchTerm,
     setSearchTerm,
     filters,
+    setFilter,
     columns,
     toggleColumn,
     reorderColumns,
@@ -34,13 +43,49 @@ const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, onAdd, onExport
   const selectedCount = selectedIds.size;
 
   const activeFilterCount = useMemo(() => {
-    return (searchTerm ? 1 : 0) + countBaiVietColumnSearchActive(filters.columnSearch);
-  }, [searchTerm, filters.columnSearch]);
+    return (
+      (searchTerm ? 1 : 0) +
+      countBaiVietColumnSearchActive(filters.columnSearch, filters.id_the_loai) +
+      (filters.id_the_loai.length > 0 ? 1 : 0)
+    );
+  }, [searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
-    useBaiVietDanhSachStore.getState().setFilter('columnSearch', {});
+    const st = useBaiVietDanhSachStore.getState();
+    st.setFilter('columnSearch', {});
+    st.setFilter('id_the_loai', []);
   };
+
+  const filtersSlot = useMemo(
+    () => (
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipMultiSelect
+          options={theLoaiOptions}
+          value={filters.id_the_loai}
+          onChange={(val) => setFilter('id_the_loai', val)}
+          placeholder={txt('articleList.store.theLoaiCol')}
+          icon={FolderOpen}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,30vw)] sm:max-w-[280px]"
+        />
+      </div>
+    ),
+    [theLoaiOptions, filters.id_the_loai, setFilter],
+  );
+
+  const filterGroups = useMemo(
+    () => [
+      {
+        key: 'id_the_loai',
+        label: txt('articleList.store.theLoaiCol'),
+        icon: FolderOpen,
+        options: theLoaiOptions,
+        value: filters.id_the_loai,
+        onChange: (val: string[]) => setFilter('id_the_loai', val),
+      },
+    ],
+    [theLoaiOptions, filters.id_the_loai, setFilter],
+  );
 
   const renderActions = (
     <>
@@ -78,6 +123,8 @@ const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, onAdd, onExport
       onSearchChange={setSearchTerm}
       onClearSelection={clearSelection}
       actions={renderActions}
+      filters={filtersSlot}
+      filterGroups={filterGroups}
       onAdd={canCreate ? onAdd : undefined}
       searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}

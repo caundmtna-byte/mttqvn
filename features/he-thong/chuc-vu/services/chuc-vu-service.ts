@@ -12,83 +12,8 @@ import {
 } from '../core/supabase-select';
 import { txt } from '../../../../lib/text';
 
-const ts = () => new Date().toISOString();
-
-// --- Mock Data: Chức vụ liên kết Phòng ban + Cấp bậc ---
-const MOCK_POSITIONS: Position[] = [
-  // Phòng Ban Giám đốc (dep-0)
-  { id: "pos-1", ten_chuc_vu: "Tổng Giám Đốc", cap_bac: "1", ten_cap_bac: "Giám đốc", phong_ban_id: "dep-0", ten_phong_ban: "Phòng Ban Giám đốc", mo_ta: "Điều hành toàn bộ hoạt động công ty", thu_tu: 1, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-2", ten_chuc_vu: "Phó Tổng Giám Đốc", cap_bac: "2", ten_cap_bac: "Phó giám đốc", phong_ban_id: "dep-0", ten_phong_ban: "Phòng Ban Giám đốc", mo_ta: "Hỗ trợ Tổng Giám đốc điều hành", thu_tu: 2, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-3", ten_chuc_vu: "Trưởng Nhóm Điều hành", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-0-1", ten_phong_ban: "Nhóm điều hành", mo_ta: "Điều phối công việc điều hành", thu_tu: 3, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-4", ten_chuc_vu: "Trưởng Nhóm Trợ lý", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-0-2", ten_phong_ban: "Nhóm trợ lý", mo_ta: "Quản lý đội trợ lý Giám đốc", thu_tu: 4, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-5", ten_chuc_vu: "Trợ lý Giám đốc", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-0-2", ten_phong_ban: "Nhóm trợ lý", mo_ta: "Hỗ trợ hành chính, lịch làm việc", thu_tu: 5, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-6", ten_chuc_vu: "Chuyên viên Điều hành", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-0-1", ten_phong_ban: "Nhóm điều hành", mo_ta: "Theo dõi tiến độ, báo cáo", thu_tu: 6, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // Phòng Kỹ thuật (dep-1)
-  { id: "pos-10", ten_chuc_vu: "Trưởng Phòng Kỹ thuật", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-1", ten_phong_ban: "Phòng Kỹ thuật", mo_ta: "Quản lý toàn bộ mảng kỹ thuật", thu_tu: 10, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-11", ten_chuc_vu: "Phó Phòng Kỹ thuật", cap_bac: "2", ten_cap_bac: "Phó giám đốc", phong_ban_id: "dep-1", ten_phong_ban: "Phòng Kỹ thuật", mo_ta: "Hỗ trợ trưởng phòng kỹ thuật", thu_tu: 11, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-12", ten_chuc_vu: "Trưởng Nhóm Phát triển", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-1-1", ten_phong_ban: "Nhóm Phát triển phần mềm", mo_ta: "Lead team dev, review code", thu_tu: 12, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-13", ten_chuc_vu: "Trưởng Nhóm Hạ tầng", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-1-2", ten_phong_ban: "Nhóm Hạ tầng IT", mo_ta: "Quản lý hệ thống, DevOps", thu_tu: 13, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-14", ten_chuc_vu: "Lập trình viên Senior", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1-1", ten_phong_ban: "Nhóm Phát triển phần mềm", mo_ta: "Phát triển phần mềm cốt lõi", thu_tu: 14, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-15", ten_chuc_vu: "Lập trình viên Junior", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1-1", ten_phong_ban: "Nhóm Phát triển phần mềm", mo_ta: null, thu_tu: 15, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-16", ten_chuc_vu: "Quản trị hệ thống", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1-2", ten_phong_ban: "Nhóm Hạ tầng IT", mo_ta: "Vận hành server, mạng", thu_tu: 16, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // Phòng Nhân sự (dep-2)
-  { id: "pos-20", ten_chuc_vu: "Trưởng Phòng Nhân sự", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-2", ten_phong_ban: "Phòng Nhân sự", mo_ta: "Quản lý tuyển dụng, đào tạo, chính sách", thu_tu: 20, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-21", ten_chuc_vu: "Phó Phòng Nhân sự", cap_bac: "2", ten_cap_bac: "Phó giám đốc", phong_ban_id: "dep-2", ten_phong_ban: "Phòng Nhân sự", mo_ta: null, thu_tu: 21, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-22", ten_chuc_vu: "Chuyên viên Tuyển dụng", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-2-1", ten_phong_ban: "Nhóm Tuyển dụng", mo_ta: "Tuyển dụng, phỏng vấn", thu_tu: 22, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-23", ten_chuc_vu: "Chuyên viên Đào tạo", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-2-2", ten_phong_ban: "Nhóm Đào tạo", mo_ta: "Xây dựng và triển khai đào tạo", thu_tu: 23, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // Phòng Tài chính - Kế toán (dep-3)
-  { id: "pos-30", ten_chuc_vu: "Trưởng Phòng Tài chính", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-3", ten_phong_ban: "Phòng Tài chính - Kế toán", mo_ta: "Quản lý tài chính, kế toán", thu_tu: 30, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-31", ten_chuc_vu: "Kế toán trưởng", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-3-1", ten_phong_ban: "Nhóm Kế toán", mo_ta: "Điều hành công tác kế toán", thu_tu: 31, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-32", ten_chuc_vu: "Kế toán viên", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-3-1", ten_phong_ban: "Nhóm Kế toán", mo_ta: null, thu_tu: 32, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-33", ten_chuc_vu: "Chuyên viên Tài chính", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-3-2", ten_phong_ban: "Nhóm Tài chính", mo_ta: "Phân tích, dự báo tài chính", thu_tu: 33, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // Phòng Kinh doanh (dep-4)
-  { id: "pos-40", ten_chuc_vu: "Trưởng Phòng Kinh doanh", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-4", ten_phong_ban: "Phòng Kinh doanh", mo_ta: "Chỉ đạo hoạt động kinh doanh", thu_tu: 40, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-41", ten_chuc_vu: "Trưởng Nhóm Kinh doanh B2B", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-4-1", ten_phong_ban: "Nhóm Kinh doanh B2B", mo_ta: null, thu_tu: 41, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-42", ten_chuc_vu: "Trưởng Nhóm Kinh doanh B2C", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-4-2", ten_phong_ban: "Nhóm Kinh doanh B2C", mo_ta: null, thu_tu: 42, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-43", ten_chuc_vu: "Nhân viên Kinh doanh", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-4-1", ten_phong_ban: "Nhóm Kinh doanh B2B", mo_ta: "Chăm sóc khách hàng doanh nghiệp", thu_tu: 43, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-44", ten_chuc_vu: "Nhân viên B2C", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-4-2", ten_phong_ban: "Nhóm Kinh doanh B2C", mo_ta: null, thu_tu: 44, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // Phòng Kho vận (dep-5)
-  { id: "pos-50", ten_chuc_vu: "Trưởng Phòng Kho vận", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-5", ten_phong_ban: "Phòng Kho vận", mo_ta: "Quản lý kho, xuất nhập", thu_tu: 50, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-51", ten_chuc_vu: "Trưởng Nhóm Nhập kho", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-5-1", ten_phong_ban: "Nhóm Nhập kho", mo_ta: null, thu_tu: 51, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-52", ten_chuc_vu: "Trưởng Nhóm Xuất kho", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-5-2", ten_phong_ban: "Nhóm Xuất kho", mo_ta: null, thu_tu: 52, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-53", ten_chuc_vu: "Nhân viên Kho", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-5-1", ten_phong_ban: "Nhóm Nhập kho", mo_ta: "Kiểm nhận, sắp xếp hàng", thu_tu: 53, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // Phòng Marketing (dep-6)
-  { id: "pos-60", ten_chuc_vu: "Trưởng Phòng Marketing", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-6", ten_phong_ban: "Phòng Marketing", mo_ta: "Chiến lược marketing, thương hiệu", thu_tu: 60, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-61", ten_chuc_vu: "Trưởng Nhóm Digital Marketing", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-6-1", ten_phong_ban: "Nhóm Digital Marketing", mo_ta: null, thu_tu: 61, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-62", ten_chuc_vu: "Trưởng Nhóm Thương hiệu", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-6-2", ten_phong_ban: "Nhóm Thương hiệu", mo_ta: null, thu_tu: 62, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-63", ten_chuc_vu: "Chuyên viên Marketing", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-6-1", ten_phong_ban: "Nhóm Digital Marketing", mo_ta: "Content, quảng cáo online", thu_tu: 63, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // Phòng Hành chính (dep-7)
-  { id: "pos-70", ten_chuc_vu: "Trưởng Phòng Hành chính", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-7", ten_phong_ban: "Phòng Hành chính", mo_ta: "Quản lý hành chính, văn phòng", thu_tu: 70, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-71", ten_chuc_vu: "Phó Phòng Hành chính", cap_bac: "2", ten_cap_bac: "Phó giám đốc", phong_ban_id: "dep-7", ten_phong_ban: "Phòng Hành chính", mo_ta: null, thu_tu: 71, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-72", ten_chuc_vu: "Trưởng Nhóm Văn phòng", cap_bac: "3", ten_cap_bac: "Trưởng phòng", phong_ban_id: "dep-7-1", ten_phong_ban: "Nhóm Văn phòng", mo_ta: "Văn thư, tài sản, hậu cần", thu_tu: 72, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-73", ten_chuc_vu: "Nhân viên Hành chính", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-7-1", ten_phong_ban: "Nhóm Văn phòng", mo_ta: null, thu_tu: 73, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-74", ten_chuc_vu: "Nhân viên Tổ chức sự kiện", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-7-2", ten_phong_ban: "Nhóm Tổ chức sự kiện", mo_ta: null, thu_tu: 74, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  // --- Thêm ~20 chức vụ mẫu ---
-  { id: "pos-80", ten_chuc_vu: "Lập trình viên Frontend", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1-1", ten_phong_ban: "Nhóm Phát triển phần mềm", mo_ta: "Phát triển giao diện người dùng", thu_tu: 80, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-81", ten_chuc_vu: "Lập trình viên Backend", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1-1", ten_phong_ban: "Nhóm Phát triển phần mềm", mo_ta: "Phát triển API, xử lý nghiệp vụ", thu_tu: 81, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-82", ten_chuc_vu: "Chuyên viên Kiểm thử", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1-1", ten_phong_ban: "Nhóm Phát triển phần mềm", mo_ta: "Kiểm thử chất lượng phần mềm", thu_tu: 82, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-83", ten_chuc_vu: "Chuyên viên Phân tích nghiệp vụ", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1", ten_phong_ban: "Phòng Kỹ thuật", mo_ta: "Phân tích yêu cầu, tài liệu", thu_tu: 83, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-84", ten_chuc_vu: "Chuyên viên Chính sách & Đãi ngộ", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-2", ten_phong_ban: "Phòng Nhân sự", mo_ta: "Xây dựng chính sách lương, phúc lợi", thu_tu: 84, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-85", ten_chuc_vu: "Chuyên viên Nhân sự tổng hợp", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-2", ten_phong_ban: "Phòng Nhân sự", mo_ta: "Hành chính nhân sự, hồ sơ", thu_tu: 85, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-86", ten_chuc_vu: "Thủ quỹ", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-3-2", ten_phong_ban: "Nhóm Tài chính", mo_ta: "Quản lý quỹ tiền mặt, đối chiếu", thu_tu: 86, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-87", ten_chuc_vu: "Chuyên viên Kiểm soát nội bộ", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-3", ten_phong_ban: "Phòng Tài chính - Kế toán", mo_ta: "Kiểm soát rủi ro, tuân thủ", thu_tu: 87, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-88", ten_chuc_vu: "Nhân viên Hỗ trợ Kinh doanh", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-4", ten_phong_ban: "Phòng Kinh doanh", mo_ta: "Chuẩn bị báo giá, hồ sơ thầu", thu_tu: 88, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-89", ten_chuc_vu: "Nhân viên Xuất kho", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-5-2", ten_phong_ban: "Nhóm Xuất kho", mo_ta: "Đóng gói, xuất hàng, đối soát", thu_tu: 89, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-90", ten_chuc_vu: "Thủ kho", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-5", ten_phong_ban: "Phòng Kho vận", mo_ta: "Quản lý tồn kho, sổ kho", thu_tu: 90, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-91", ten_chuc_vu: "Chuyên viên Thiết kế", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-6-2", ten_phong_ban: "Nhóm Thương hiệu", mo_ta: "Thiết kế đồ họa, nhận diện thương hiệu", thu_tu: 91, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-92", ten_chuc_vu: "Copywriter", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-6-1", ten_phong_ban: "Nhóm Digital Marketing", mo_ta: "Viết nội dung quảng cáo, SEO", thu_tu: 92, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-93", ten_chuc_vu: "Nhân viên Truyền thông", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-6", ten_phong_ban: "Phòng Marketing", mo_ta: "Quan hệ báo chí, truyền thông nội bộ", thu_tu: 93, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-94", ten_chuc_vu: "Lễ tân", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-7-1", ten_phong_ban: "Nhóm Văn phòng", mo_ta: "Đón tiếp khách, tổng đài", thu_tu: 94, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-95", ten_chuc_vu: "Chuyên viên Văn thư", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-7-1", ten_phong_ban: "Nhóm Văn phòng", mo_ta: "Soạn thảo, lưu trữ văn bản", thu_tu: 95, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-96", ten_chuc_vu: "Tài xế", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-5", ten_phong_ban: "Phòng Kho vận", mo_ta: "Vận chuyển hàng hóa", thu_tu: 96, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-97", ten_chuc_vu: "Thư ký văn phòng", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-0-2", ten_phong_ban: "Nhóm trợ lý", mo_ta: "Sắp xếp lịch, soạn thảo văn bản", thu_tu: 97, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-98", ten_chuc_vu: "Chuyên viên DevOps", cap_bac: "4", ten_cap_bac: "Nhân viên", phong_ban_id: "dep-1-2", ten_phong_ban: "Nhóm Hạ tầng IT", mo_ta: "CI/CD, triển khai, giám sát", thu_tu: 98, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-  { id: "pos-99", ten_chuc_vu: "Phó Phòng Tài chính", cap_bac: "2", ten_cap_bac: "Phó giám đốc", phong_ban_id: "dep-3", ten_phong_ban: "Phòng Tài chính - Kế toán", mo_ta: "Hỗ trợ trưởng phòng tài chính", thu_tu: 99, trang_thai: 'Đang hoạt động', tg_tao: ts(), tg_cap_nhat: ts() },
-];
-
 const repo = createRepository<Position>({
   tableName: 'var_chuc_vu',
-  mockData: MOCK_POSITIONS,
   select: POSITION_SELECT_FULL,
   delay: 600,
 });
@@ -109,15 +34,23 @@ function flattenSupabaseRow(row: Record<string, unknown>): Position {
   } as Position;
 }
 
+/** Chuẩn hoá cap_bac (int2 từ PostgREST: number / bigint / chuỗi số) → chuỗi hiển thị/lưu form. */
+function normalizeCapBacFromApi(raw: unknown): string | null {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'bigint') return String(raw);
+  if (typeof raw === 'number' && Number.isFinite(raw)) return String(Math.trunc(raw));
+  const s = String(raw).trim();
+  if (s === '') return null;
+  if (/^-?\d+$/.test(s)) return s;
+  return s;
+}
+
 function normalizePositionRow(raw: Position): Position {
   return {
     ...raw,
     id: String(raw.id),
     phong_ban_id: raw.phong_ban_id == null || raw.phong_ban_id === '' ? null : String(raw.phong_ban_id),
-    cap_bac:
-      raw.cap_bac == null || raw.cap_bac === ''
-        ? null
-        : String(typeof raw.cap_bac === 'number' ? raw.cap_bac : raw.cap_bac),
+    cap_bac: normalizeCapBacFromApi(raw.cap_bac as unknown),
     thu_tu: typeof raw.thu_tu === 'number' ? raw.thu_tu : Number(raw.thu_tu),
   };
 }
@@ -139,9 +72,10 @@ function normInt16Fk(v: string | null | undefined): number | null {
 async function enrichPosition(raw: Position): Promise<Position> {
   const base = normalizePositionRow(raw);
   const levels = await getJobLevels();
+  const capKey = base.cap_bac != null && String(base.cap_bac).trim() !== '' ? String(base.cap_bac).trim() : '';
   const ten_cap =
-    base.cap_bac != null && base.cap_bac !== ''
-      ? levels.find((l) => l.id === String(base.cap_bac))?.ten_cap_bac
+    capKey !== ''
+      ? levels.find((l) => String(l.id).trim() === capKey)?.ten_cap_bac
       : undefined;
   if (!isSupabase()) {
     const depts = await getDepartments();
@@ -243,18 +177,20 @@ export const updatePosition = async (id: string, data: PositionFormValues): Prom
 };
 
 export const updatePositionStatus = async (ids: string[], status: TrangThaiHoatDong): Promise<Position | undefined> => {
-  let result: Position | undefined;
   const now = new Date().toISOString();
-  for (const id of ids) {
-    const u = await repo.update(
-      id,
-      { trang_thai: status, tg_cap_nhat: now },
-      { returningSelect: POSITION_RETURNING_STATUS_ONLY },
-    );
-    if (ids.length === 1) result = u as Position;
-  }
-  if (result && isSupabase()) result = flattenSupabaseRow(result as unknown as Record<string, unknown>);
-  return result ? enrichPosition(result) : undefined;
+  const results = await Promise.all(
+    ids.map((id) =>
+      repo.update(
+        id,
+        { trang_thai: status, tg_cap_nhat: now },
+        { returningSelect: POSITION_RETURNING_STATUS_ONLY },
+      ),
+    ),
+  );
+  if (ids.length !== 1) return undefined;
+  let result = results[0] as Position;
+  if (isSupabase()) result = flattenSupabaseRow(result as unknown as Record<string, unknown>);
+  return enrichPosition(result);
 };
 
 export const deletePositions = async (ids: string[]): Promise<void> => {

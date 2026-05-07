@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, Banknote, Calendar, Link2 } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -9,7 +9,7 @@ import Combobox from '@/components/ui/Combobox';
 import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
-import FormGrid from '@/components/shared/FormGrid';
+import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
 import { useTheLoais } from '../../thiet-lap-bai-viet/hooks/use-the-loai';
 import { useThietLapKhacAll } from '../../thiet-lap-bai-viet/hooks/use-thiet-lap-khac';
@@ -68,7 +68,6 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors },
     reset,
@@ -77,7 +76,7 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
     defaultValues: DEFAULT_VALUES,
   });
 
-  const watchedTheLoai = watch('id_the_loai');
+  const watchedTheLoai = useWatch({ control, name: 'id_the_loai' });
 
   useEffect(() => {
     if (initialData) {
@@ -144,14 +143,16 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
       ) : null}
       <form id="bai-viet-danh-sach-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <FormSection title={txt('articleList.detail.sectionInfo')} icon={<FileText size={14} />} variant="primary">
-          <FormGrid cols={1}>
-            <Input
-              label={txt('articleList.form.tenBai')}
-              required
-              icon={<FileText size={12} />}
-              {...register('ten_bai')}
-              error={errors.ten_bai?.message}
-            />
+          <FormGrid cols={2}>
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Input
+                label={txt('articleList.form.tenBai')}
+                required
+                icon={<FileText size={12} />}
+                {...register('ten_bai')}
+                error={errors.ten_bai?.message}
+              />
+            </div>
             <Controller
               name="id_the_loai"
               control={control}
@@ -205,29 +206,33 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
                 />
               )}
             />
-            <Controller
-              name="id_nguon_dang"
-              control={control}
-              render={({ field }) => (
-                <Combobox
-                  label={txt('articleList.form.nguonDang')}
-                  required
-                  clearable={false}
-                  options={nguonDangOptions}
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={errors.id_nguon_dang?.message}
-                />
-              )}
-            />
-            <Input
-              label={txt('articleList.form.link')}
-              required
-              icon={<Link2 size={12} />}
-              placeholder="https://"
-              {...register('link')}
-              error={errors.link?.message}
-            />
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Controller
+                name="id_nguon_dang"
+                control={control}
+                render={({ field }) => (
+                  <Combobox
+                    label={txt('articleList.form.nguonDang')}
+                    required
+                    clearable={false}
+                    options={nguonDangOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.id_nguon_dang?.message}
+                  />
+                )}
+              />
+            </div>
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Input
+                label={txt('articleList.form.link')}
+                required
+                icon={<Link2 size={12} />}
+                placeholder="https://"
+                {...register('link')}
+                error={errors.link?.message}
+              />
+            </div>
           </FormGrid>
         </FormSection>
       </form>

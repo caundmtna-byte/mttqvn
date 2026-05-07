@@ -53,7 +53,7 @@ Nếu bỏ hẳn `filters` (chip desktop) mà không sửa logic, **nút Filter 
    - Accessibility: `aria-label` cho nút lọc, `aria-expanded` khi mở popover.
 
 4. **Component mới (gợi ý)**  
-   - `features/he-thong/nhan-vien/components/EmployeeColumnHeaderFilter.tsx` (hoặc dưới `components/shared/` nếu tái sử dụng sau):  
+   - `components/shared/column-header/ColumnHeaderFilter.tsx` (đã tách khỏi module nhân viên):  
      - Nút icon nhỏ (`Filter` / `ListFilter` từ lucide).  
      - Popover (dùng Radix/shadcn nếu có) chứa nội dung tương đương logic `FilterChipMultiSelect` (multi + “Chọn tất cả” / “Xóa chọn” nếu đã là chuẩn dự án).  
      - Trạng thái active (dot/badge) khi filter cột đó có giá trị.
@@ -74,7 +74,7 @@ Nếu bỏ hẳn `filters` (chip desktop) mà không sửa logic, **nút Filter 
 
 1. Sửa `GenericToolbar` (tách mobile vs desktop filters) — **bắt buộc trước** khi gỡ chip desktop.  
 2. Thêm API header phụ trên `GenericTable` + xử lý stopPropagation.  
-3. Implement `EmployeeColumnHeaderFilter` + nối 3 cột trong `EmployeeTable`.  
+3. Implement `ColumnHeaderFilter` + nối 3 cột trong `EmployeeTable`.  
 4. Cập nhật `EmployeeToolbar`: bỏ chip desktop, giữ mobile.  
 5. Kiểm tra `use-filter-counts`, `activeFilterCount`, `handleClearAllFilters`.
 

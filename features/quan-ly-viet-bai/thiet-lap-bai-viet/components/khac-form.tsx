@@ -8,7 +8,7 @@ import Textarea from '@/components/ui/Textarea';
 import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
-import FormGrid from '@/components/shared/FormGrid';
+import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { thietLapKhacSchema, type ThietLapKhacFormValues } from '../core/schema';
 import type { BaiVietThietLapKhac, BaiVietThietLapKhacLoai } from '../core/types';
 import { useCreateThietLapKhac, useUpdateThietLapKhac } from '../hooks/use-thiet-lap-khac';
@@ -96,14 +96,13 @@ const KhacForm: React.FC<Props> = ({ loai, initialData, onClose }) => {
       <form id="article-khac-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         <input type="hidden" {...register('loai')} />
         <FormSection title={txt('page.articleSettings.detailBasic')} icon={<Settings2 size={14} />} variant="primary">
-          <FormGrid cols={1}>
+          <FormGrid cols={2}>
             <Input
               label={txt('page.articleSettings.formTen')}
               icon={<Settings2 size={12} />}
               {...register('ten')}
               error={errors.ten?.message}
             />
-            <Textarea label={txt('page.articleSettings.colMoTa')} icon={<FileText size={12} />} {...register('mo_ta')} rows={2} />
             <Input
               label={txt('page.articleSettings.formThuTu')}
               type="number"
@@ -112,6 +111,9 @@ const KhacForm: React.FC<Props> = ({ loai, initialData, onClose }) => {
               {...register('thu_tu', { valueAsNumber: true })}
               error={errors.thu_tu?.message}
             />
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Textarea label={txt('page.articleSettings.colMoTa')} icon={<FileText size={12} />} {...register('mo_ta')} rows={2} />
+            </div>
           </FormGrid>
         </FormSection>
       </form>

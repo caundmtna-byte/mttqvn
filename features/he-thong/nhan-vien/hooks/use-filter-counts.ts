@@ -35,7 +35,7 @@ export function useFilterCounts(
 ): FilterCounts {
   return useMemo(() => {
     const passesText = (e: Employee) => {
-      if (!matchesSearchTerm(e as Record<string, unknown>, searchTerm, SEARCHABLE_KEYS)) return false;
+      if (!matchesSearchTerm(e as unknown as Record<string, unknown>, searchTerm, SEARCHABLE_KEYS)) return false;
       if (!employeeMatchesColumnSearch(e, filters.columnSearch)) return false;
       return true;
     };

@@ -130,7 +130,7 @@ const ThongTinToChucForm: React.FC<ThongTinToChucFormProps> = ({ initialValues, 
             >
               {logoPreview ? (
                 <div className="relative group/preview" role="presentation" onClick={(e) => e.stopPropagation()}>
-                  <img src={logoPreview} alt="App Logo" className="h-24 w-24 object-contain" />
+                  <img src={logoPreview} alt="App Logo" className="h-24 w-24 object-contain" loading="lazy" />
                   <button
                     type="button"
                     onClick={removeLogo}

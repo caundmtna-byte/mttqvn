@@ -6,8 +6,7 @@ import type { ColumnConfig, GenericState } from '@/store/createGenericStore';
 import type { BaiVietThietLapKhac } from '../core/types';
 import type { ArticleKhacFilters } from '../core/types';
 import { ArticleKhacRowActions } from './article-khac-row-actions';
-import { EmployeeColumnHeaderSortMenu } from '../../../he-thong/nhan-vien/components/EmployeeColumnHeaderSortMenu';
-import { EmployeeColumnHeaderSearch } from '../../../he-thong/nhan-vien/components/EmployeeColumnHeaderSearch';
+import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import { formatDateShort } from '@/lib/utils';
 
 interface Props {
@@ -53,7 +52,7 @@ const ArticleKhacTable = memo(function ArticleKhacTable({
       const cs = filters.columnSearch;
       const colSearchActive = Boolean(cs[col.id]?.trim());
       const columnSearchEl = (
-        <EmployeeColumnHeaderSearch
+        <ColumnHeaderSearch
           variant="inDropdown"
           value={cs[col.id] ?? ''}
           onChange={(v) =>
@@ -66,7 +65,7 @@ const ArticleKhacTable = memo(function ArticleKhacTable({
         />
       );
       return (
-        <EmployeeColumnHeaderSortMenu
+        <ColumnHeaderSortMenu
           ariaLabel={col.label}
           sortColumnId={col.id}
           sort={sort}

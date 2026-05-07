@@ -3,6 +3,9 @@ import { RoleFormValues } from '../core/schema';
 import { txt } from '../../../../lib/text';
 import { createRepository } from '@/lib/data/create-repository';
 import { ROLE_RETURNING_FULL, ROLE_SELECT_FULL } from '../core/supabase-select';
+import { isSupabase } from '@/lib/data/config';
+import { getSupabase } from '@/lib/supabase/client';
+import { handleSupabaseError } from '@/lib/supabase/errors';
 import {
   PERMISSION_FUNCTIONS,
   PERMISSION_ACTIONS,
@@ -20,53 +23,31 @@ export function getModuleName(moduleId: string): string {
   return m?.nameKey ?? moduleId;
 }
 
-function buildMockRoles(): PositionPermission[] {
-  const fullPerms = SYSTEM_MODULES_CONFIG.map((m) => ({
-    module_id: m.id,
-    module_name: getModuleName(m.id),
-    actions: [...PERMISSION_ACTIONS] as ActionType[],
-  }));
-  return [
-    {
-      id: 'pos-1',
-      id_chuc_vu: 'pos-1',
-      ma_chuc_vu: 'CEO',
-      ten_chuc_vu: 'Tổng Giám Đốc',
-      ten_phong_ban: 'Ban Giám Đốc',
-      thu_tu_phong_ban: 0,
-      thu_tu_chuc_vu: 1,
-      mo_ta: txt('permission.module.fullSystemDesc'),
-      so_nhan_vien: 1,
-      quyen_han: fullPerms,
-      trang_thai: 'Đang hoạt động',
-      tg_cap_nhat: '2024-01-01T00:00:00Z',
-    },
-    {
-      id: 'pos-3',
-      id_chuc_vu: 'pos-3',
-      ma_chuc_vu: 'HR_MANAGER',
-      ten_chuc_vu: 'Trưởng Phòng Nhân Sự',
-      ten_phong_ban: 'Phòng Hành Chính Nhân Sự',
-      thu_tu_phong_ban: 1,
-      thu_tu_chuc_vu: 2,
-      mo_ta: txt('permission.module.hrManagerDesc'),
-      so_nhan_vien: 2,
-      quyen_han: fullPerms,
-      trang_thai: 'Đang hoạt động',
-      tg_cap_nhat: '2024-02-15T09:30:00Z',
-    },
-  ];
-}
-
 const roleRepo = createRepository<PositionPermission>({
   tableName: 'he_thong_phan_quyen',
-  mockData: buildMockRoles(),
   select: ROLE_SELECT_FULL,
   delay: 500,
 });
 
 export const getRoles = async (): Promise<PositionPermission[]> => {
   return roleRepo.getAll();
+};
+
+/** Lấy một role theo id_chuc_vu — filter server-side trên Supabase, tránh load toàn bảng. */
+export const getRoleByChucVu = async (id_chuc_vu: string): Promise<PositionPermission | null> => {
+  if (isSupabase()) {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error('Supabase client is not configured.');
+    const { data, error } = await supabase
+      .from('he_thong_phan_quyen')
+      .select(ROLE_SELECT_FULL)
+      .eq('id_chuc_vu', id_chuc_vu)
+      .maybeSingle();
+    if (error) handleSupabaseError(error);
+    return (data as PositionPermission | null) ?? null;
+  }
+  const all = await roleRepo.getAll();
+  return all.find((r) => r.id_chuc_vu === id_chuc_vu) ?? null;
 };
 
 export const createRole = async (

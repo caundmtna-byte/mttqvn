@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
+import { listQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
+import type { BaiVietDanhSach } from '../core/types';
 import type { BaiVietDanhSachFormValues } from '../core/schema';
 import {
   createBaiVietDanhSach,
@@ -14,10 +16,12 @@ import {
 
 const listKey = queryKeys.baiVietDanhSach.all;
 
-export const useBaiVietDanhSachList = () =>
+export const useBaiVietDanhSachList = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: listKey,
     queryFn: getBaiVietDanhSachList,
+    enabled: options?.enabled !== false,
+    ...listQueryOptions,
   });
 
 export const useBaiVietDanhSachDetail = (id: string | null) =>
@@ -25,6 +29,7 @@ export const useBaiVietDanhSachDetail = (id: string | null) =>
     queryKey: queryKeys.baiVietDanhSach.detail(id ?? ''),
     queryFn: () => (id ? getBaiVietDanhSachById(id) : Promise.resolve(null)),
     enabled: Boolean(id),
+    ...listQueryOptions,
   });
 
 export const useCreateBaiVietDanhSach = (onSuccess?: () => void) => {
@@ -32,8 +37,8 @@ export const useCreateBaiVietDanhSach = (onSuccess?: () => void) => {
   return useMutation({
     mutationFn: ({ data, idNguoiTao }: { data: BaiVietDanhSachFormValues; idNguoiTao: string }) =>
       createBaiVietDanhSach(data, idNguoiTao),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
+    onSuccess: (created) => {
+      queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (old) => [...(old ?? []), created]);
       toast.success(txt('articleList.toast.create'));
       onSuccess?.();
     },
@@ -46,9 +51,11 @@ export const useUpdateBaiVietDanhSach = (onSuccess?: () => void) => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: BaiVietDanhSachFormValues }) =>
       updateBaiVietDanhSach(id, data),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.baiVietDanhSach.detail(id) });
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (old) =>
+        old?.map((x) => (x.id === id ? updated : x)),
+      );
+      queryClient.setQueryData(queryKeys.baiVietDanhSach.detail(id), updated);
       toast.success(txt('articleList.toast.update'));
       onSuccess?.();
     },
@@ -61,9 +68,11 @@ export const useDeleteBaiVietDanhSachMany = () => {
   return useMutation({
     mutationFn: deleteBaiVietDanhSachMany,
     onSuccess: (_, ids) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (old) =>
+        old?.filter((x) => !ids.includes(x.id)),
+      );
       for (const id of ids) {
-        void queryClient.removeQueries({ queryKey: queryKeys.baiVietDanhSach.detail(id) });
+        queryClient.removeQueries({ queryKey: queryKeys.baiVietDanhSach.detail(id) });
       }
       toast.success(txt('articleList.toast.delete', { count: ids.length }));
     },

@@ -9,7 +9,7 @@ import { formatDate, formatDateTimeShort } from '../../../../lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '../../../../components/shared/GenericDrawer';
 import DetailSection from '../../../../components/shared/DetailSection';
 import DetailField from '../../../../components/shared/DetailField';
-import DetailFieldGrid from '../../../../components/shared/DetailFieldGrid';
+import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '../../../../components/shared/DetailFieldGrid';
 import DetailToolbar, { DetailToolbarAction } from '../../../../components/shared/DetailToolbar';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '../../../../lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
@@ -125,10 +125,23 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
         <DetailSection title={txt('position.detail.basicInfo')} icon={<Briefcase size={14} />} variant="primary">
           <DetailFieldGrid>
             <DetailField label={txt('position.form.name')} value={data.ten_chuc_vu} icon={<Briefcase size={12} />} />
-            <DetailField label={txt('position.detail.level')} value={data.ten_cap_bac ?? '—'} icon={<Layers size={12} />} emptyText="—" />
+            <DetailField
+              label={txt('position.detail.level')}
+              value={
+                data.cap_bac != null && String(data.cap_bac).trim() !== '' ? String(data.cap_bac).trim() : '—'
+              }
+              icon={<Layers size={12} />}
+              emptyText="—"
+            />
             <DetailField label={txt('position.detail.department')} value={data.ten_phong_ban ?? '—'} icon={<Building2 size={12} />} emptyText="—" />
             <DetailField label={txt('position.detail.order')} value={String(data.thu_tu ?? 0)} icon={<ArrowUpFromLine size={12} />} />
-            <DetailField label={txt('position.detail.description')} value={data.mo_ta ?? ''} icon={<FileText size={12} />} emptyText="—" />
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('position.detail.description')}
+              value={data.mo_ta ?? ''}
+              icon={<FileText size={12} />}
+              emptyText="—"
+            />
             <DetailField label={txt('common.status')} value={isActive ? txt('position.active') : txt('position.inactive')} icon={<Power size={12} />} />
           </DetailFieldGrid>
         </DetailSection>

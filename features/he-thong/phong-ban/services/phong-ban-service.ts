@@ -1,6 +1,5 @@
 import { Department } from '../core/types';
 import { DepartmentFormValues } from '../core/schema';
-import { MOCK_DEPARTMENTS } from '@/mocks/he-thong';
 import { createRepository } from '@/lib/data/create-repository';
 import { isSupabase } from '@/lib/data/config';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
@@ -13,7 +12,6 @@ import { txt } from '../../../../lib/text';
 
 const repo = createRepository<Department>({
   tableName: 'var_phong_ban',
-  mockData: MOCK_DEPARTMENTS,
   select: DEPARTMENT_SELECT_FULL,
   delay: 600,
 });
@@ -168,16 +166,14 @@ export const importDepartments = async (
 ): Promise<{ created: number; errors: string[] }> => {
   const errors: string[] = [];
   let created = 0;
+  const all = await getDepartments(); // fetch 1 lần cho toàn bộ import
   for (let i = 0; i < rows.length; i++) {
     try {
       const data = rows[i];
       const idCha = resolveChaIdForm(data.cha_id);
-      if (idCha) {
-        const all = await getDepartments();
-        if (!all.some((d) => d.id === idCha)) {
-          errors.push(`Dòng ${i + 2}: Phòng cha không tồn tại`);
-          continue;
-        }
+      if (idCha && !all.some((d) => d.id === idCha)) {
+        errors.push(`Dòng ${i + 2}: Phòng cha không tồn tại`);
+        continue;
       }
       await createDepartment({ ...data, cha_id: idCha ?? undefined });
       created++;

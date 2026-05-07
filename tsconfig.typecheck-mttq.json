@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {},
+  "include": [
+    "env.d.ts",
+    "components/**/*",
+    "lib/**/*",
+    "store/**/*",
+    "hooks/**/*",
+    "types/**/*",
+    "features/mat-tran-to-quoc/**/*",
+    "features/he-thong/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "supabase/functions",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+}

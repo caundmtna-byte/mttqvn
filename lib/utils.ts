@@ -240,10 +240,10 @@ export function exportToPDF(data: Record<string, unknown>[], filename: string, t
     import('jspdf'),
     import('jspdf-autotable')
   ]).then(([jspdfModule, autoTableModule]) => {
-    const jsPDF = (jspdfModule as { default?: typeof import('jspdf') }).default;
-    if (!jsPDF) return;
+    type JsPDFCtor = new (opts?: import('jspdf').jsPDFOptions) => import('jspdf').jsPDF;
+    const JsPDF = jspdfModule.default as unknown as JsPDFCtor;
     const headers = Object.keys(data[0]);
-    const doc = new jsPDF({ orientation: headers.length > 5 ? 'l' : 'p', unit: 'mm', format: 'a4' });
+    const doc = new JsPDF({ orientation: headers.length > 5 ? 'l' : 'p', unit: 'mm', format: 'a4' });
     if (title) { doc.setFontSize(12); doc.text(title, 14, 15); }
     const autoTable = autoTableModule.default;
     autoTable(doc, {
@@ -267,12 +267,9 @@ export function exportToCSV(data: Record<string, unknown>[], filename: string) {
   const csvContent = [
     headers.join(','),
     ...data.map(row => headers.map(fieldName => {
-      let cell = row[fieldName];
-      // Xử lý null/undefined
-      if (cell === null || cell === undefined) cell = '';
-      // Convert sang string và escape dấu ngoặc kép
-      cell = cell.toString().replace(/"/g, '""');
-      // Bọc trong ngoặc kép nếu có ký tự đặc biệt
+      const raw = row[fieldName];
+      let cell = raw === null || raw === undefined ? '' : String(raw);
+      cell = cell.replace(/"/g, '""');
       if (cell.search(/("|,|\n)/g) >= 0) cell = `"${cell}"`;
       return cell;
     }).join(','))

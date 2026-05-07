@@ -1,17 +1,19 @@
 import React, { useMemo } from 'react';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, AlignLeft } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import { txt } from '@/lib/text';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
+import FilterChipSingleSelect from '@/components/shared/FilterChipSingleSelect';
 import { BTN_ADD } from '@/lib/button-labels';
 import type { GenericState } from '@/store/createGenericStore';
-import type { ArticleKhacFilters } from '../core/types';
+import type { ArticleKhacFilters, BaiVietThietLapKhac } from '../core/types';
 import { countKhacColumnSearchActive } from '../utils/column-search-khac';
 
 interface Props {
   store: GenericState<ArticleKhacFilters>;
+  items?: BaiVietThietLapKhac[] | null;
   /** Tiêu đề nhóm (vd. Trang đăng / Nguồn đăng) — hiển thị trong cùng hàng toolbar với tìm kiếm. */
   sectionTitle: string;
   onAdd: () => void;
@@ -30,7 +32,9 @@ const sectionTitleSlot = (title: string) => (
   </div>
 );
 
-const ArticleKhacToolbar: React.FC<Props> = ({ store, sectionTitle, onAdd, onExport, onDeleteMany }) => {
+const ArticleKhacToolbar: React.FC<Props> = ({ store, items, sectionTitle, onAdd, onExport, onDeleteMany }) => {
+  const itemRows = Array.isArray(items) ? items : [];
+
   const { canCreate, canExport, canDelete } = useResourcePermissions('articleSettings');
 
   const {
@@ -46,15 +50,69 @@ const ArticleKhacToolbar: React.FC<Props> = ({ store, sectionTitle, onAdd, onExp
     clearSelection,
   } = store;
 
+  const moTaCounts = useMemo(() => {
+    let has = 0;
+    let empty = 0;
+    for (const r of itemRows) {
+      const mo = (r.mo_ta ?? '').trim();
+      if (mo) has += 1;
+      else empty += 1;
+    }
+    return { has, empty };
+  }, [itemRows]);
+
+  const moTaChipOptions = useMemo(
+    () => [
+      { label: txt('page.articleSettings.filterMoTaHas'), value: 'has', count: moTaCounts.has },
+      { label: txt('page.articleSettings.filterMoTaEmpty'), value: 'empty', count: moTaCounts.empty },
+    ],
+    [moTaCounts.has, moTaCounts.empty],
+  );
+
   const activeFilterCount = useMemo(() => {
-    const colN = countKhacColumnSearchActive(filters.columnSearch);
-    return (searchTerm ? 1 : 0) + colN;
-  }, [searchTerm, filters.columnSearch]);
+    const colN = countKhacColumnSearchActive(filters.columnSearch, filters.mo_ta_bucket);
+    const bucketOn = filters.mo_ta_bucket === 'has' || filters.mo_ta_bucket === 'empty' ? 1 : 0;
+    return (searchTerm ? 1 : 0) + colN + bucketOn;
+  }, [searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setFilter('columnSearch', {});
+    setFilter('mo_ta_bucket', '');
   };
+
+  const filterGroups = useMemo(
+    () => [
+      {
+        key: 'mo_ta_bucket',
+        label: txt('page.articleSettings.colMoTa'),
+        icon: AlignLeft,
+        options: moTaChipOptions,
+        value: filters.mo_ta_bucket ? [filters.mo_ta_bucket] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('mo_ta_bucket', pick === 'has' || pick === 'empty' ? pick : '');
+        },
+      },
+    ],
+    [moTaChipOptions, filters.mo_ta_bucket, setFilter],
+  );
+
+  const filtersSlot = useMemo(
+    () => (
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipSingleSelect
+          options={moTaChipOptions}
+          value={filters.mo_ta_bucket || null}
+          onChange={(v) => setFilter('mo_ta_bucket', v === 'has' || v === 'empty' ? v : '')}
+          placeholder={txt('page.articleSettings.filterMoTaChipPlaceholder')}
+          icon={AlignLeft}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
+        />
+      </div>
+    ),
+    [moTaChipOptions, filters.mo_ta_bucket, setFilter],
+  );
 
   const mobileActions = useMemo(
     () =>
@@ -106,6 +164,8 @@ const ArticleKhacToolbar: React.FC<Props> = ({ store, sectionTitle, onAdd, onExp
       searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
+      filters={filtersSlot}
+      filterGroups={filterGroups}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}
       columns={columns}
       onToggleColumn={toggleColumn}

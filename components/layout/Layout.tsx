@@ -14,49 +14,18 @@ import { NotificationBell } from '../notification';
 import { useAuthStore, useUIStore } from '../../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
-import { cn, getAvatarUrl } from '../../lib/utils';
+import { cn } from '../../lib/utils';
 import Combobox, { type Option } from '../ui/Combobox';
 import { hslToHex, PRIMARY_COLOR_MAP } from '../../lib/theme-utils';
 import Breadcrumbs from '../shared/Breadcrumbs';
 import MobileBottomNav from './MobileBottomNav';
 import { CommandPalette } from './CommandPalette';
 import { SIDEBAR_MENU } from '../../lib/sidebar-menu';
-import { useEmployees } from '../../features/he-thong/nhan-vien/hooks/use-nhan-vien';
-import { supabaseEmailToLoginName } from '@/lib/auth-email';
 import { toast } from 'sonner';
 
 /** Sidebar width: expanded 240px (gọn), collapsed 64px (4rem, 8px grid) */
 const SIDEBAR_WIDTH_EXPANDED = 240;
 const SIDEBAR_WIDTH_COLLAPSED = 64;
-
-/** Chỉ vùng avatar subscribe `useEmployees` — tránh refetch nhân viên làm re-render cả Layout/sidebar. */
-const LayoutHeaderAvatarImg: React.FC<{
-  user: {
-    id?: string | null;
-    email?: string | null;
-    full_name?: string | null;
-    avatar_url?: string | null;
-  } | null;
-}> = ({ user }) => {
-  const { data: employees = [] } = useEmployees();
-  const currentEmployee =
-    user == null
-      ? null
-      : employees.find((e) => {
-          const u = user.username?.trim().toLowerCase();
-          if (u && e.ten_tai_khoan.trim().toLowerCase() === u) return true;
-          const fromEmail = supabaseEmailToLoginName(user.email ?? '');
-          return Boolean(fromEmail && e.ten_tai_khoan.trim().toLowerCase() === fromEmail);
-        }) ?? null;
-  const displayNameForAvatar = currentEmployee?.ho_va_ten ?? user?.full_name ?? txt('nav.guestUser');
-  return (
-    <img
-      src={currentEmployee?.hinh_anh || user?.avatar_url || getAvatarUrl(displayNameForAvatar)}
-      alt={txt('nav.userAvatarAlt')}
-      className="h-7 w-7 rounded-lg ring-1 ring-border shadow-sm object-cover"
-    />
-  );
-};
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuthStore();
@@ -180,7 +149,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     [],
   );
 
-  const sidebarTransition = { duration: 0.15, ease: "circOut" };
+  const sidebarTransition = { duration: 0.15, ease: 'circOut' as const };
 
   return (
     <div className="flex h-[100dvh] bg-background font-sans text-foreground selection:bg-primary/20 selection:text-primary overflow-x-hidden min-h-0">
@@ -361,7 +330,9 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                 className="min-h-[44px] flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-lg hover:bg-muted border border-transparent hover:border-border transition-colors group"
               >
                 <div className="relative shrink-0">
-                  <LayoutHeaderAvatarImg user={user} />
+                  <div className="h-7 w-7 rounded-lg ring-1 ring-border shadow-sm bg-muted flex items-center justify-center">
+                    <User size={14} className="text-muted-foreground" />
+                  </div>
                   <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-[1.5px] border-card rounded-full"></div>
                 </div>
                 <div className="hidden md:block text-left">

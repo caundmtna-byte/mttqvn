@@ -7,6 +7,9 @@ interface FormGridProps {
   className?: string;
 }
 
+/** Bọc một field chiếm cả hàng khi `FormGrid` dùng `cols={2}` (tiêu đề, textarea, URL, multi-select). */
+export const FORM_GRID_SPAN_FULL = 'sm:col-span-2 w-full min-w-0';
+
 /** Lưới form: 1 cột mobile, 2–3 cột desktop */
 const FormGrid: React.FC<FormGridProps> = ({ children, cols = 2, className }) => {
   const gridClass =

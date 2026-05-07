@@ -203,6 +203,7 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
                   src={img.src}
                   alt={img.name || 'Image'}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
                 {/* Overlay */}
                 {!disabled && (

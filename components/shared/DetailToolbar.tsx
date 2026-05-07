@@ -53,7 +53,12 @@ const DetailToolbar: React.FC<DetailToolbarProps> = ({ actions, columns, classNa
                                                     action.variant === 'ghost' ? "bg-transparent text-muted-foreground border-transparent hover:bg-muted" :
                                                         "bg-muted/80 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
                     )}>
-                        {React.cloneElement(action.icon as React.ReactElement, { size: 16, strokeWidth: 2 })}
+                        {React.isValidElement(action.icon)
+                          ? React.cloneElement(action.icon as React.ReactElement<{ size?: number; strokeWidth?: number }>, {
+                              size: 16,
+                              strokeWidth: 2,
+                            })
+                          : action.icon}
                     </div>
                     <span className={cn(
                         "text-xs font-medium text-center transition-colors break-words w-full px-1 leading-tight",

@@ -5,6 +5,7 @@ import Button from '../../../../components/ui/Button';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import GenericToolbar from '../../../../components/shared/GenericToolbar';
+import FilterChipMultiSelect from '../../../../components/shared/FilterChipMultiSelect';
 import { BTN_ADD } from '../../../../lib/button-labels';
 import { useDepartments } from '../../phong-ban/hooks/use-phong-ban';
 import { usePositions } from '../../chuc-vu/hooks/use-chuc-vu';
@@ -103,6 +104,38 @@ const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onDeleteMany, onSt
     [departmentOptions, positionOptions, statusOptions, filters, setFilter],
   );
 
+  const filtersSlot = useMemo(
+    () => (
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipMultiSelect
+          options={departmentOptions}
+          value={filters.id_phong_ban}
+          onChange={(val) => setFilter('id_phong_ban', val)}
+          placeholder={txt('employee.toolbar.department')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,26vw)] sm:max-w-[260px]"
+        />
+        <FilterChipMultiSelect
+          options={positionOptions}
+          value={filters.id_chuc_vu}
+          onChange={(val) => setFilter('id_chuc_vu', val)}
+          placeholder={txt('employee.toolbar.position')}
+          icon={Briefcase}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,26vw)] sm:max-w-[260px]"
+        />
+        <FilterChipMultiSelect
+          options={statusOptions}
+          value={filters.trang_thai}
+          onChange={(val) => setFilter('trang_thai', val)}
+          placeholder={txt('employee.toolbar.status')}
+          icon={Tag}
+          className="shrink-0 w-full min-w-0 sm:w-[min(180px,24vw)] sm:max-w-[220px]"
+        />
+      </div>
+    ),
+    [departmentOptions, positionOptions, statusOptions, filters.id_phong_ban, filters.id_chuc_vu, filters.trang_thai, setFilter],
+  );
+
   const renderActions = (
     <>
       {canCreate && (
@@ -148,6 +181,7 @@ const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onDeleteMany, onSt
       onSearchChange={setSearchTerm}
       onClearSelection={clearSelection}
       actions={renderActions}
+      filters={filtersSlot}
       filterGroups={filterGroups}
       onAdd={canCreate ? onAdd : undefined}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

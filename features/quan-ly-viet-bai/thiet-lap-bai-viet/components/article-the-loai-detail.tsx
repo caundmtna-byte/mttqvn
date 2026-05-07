@@ -6,7 +6,7 @@ import { formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
-import DetailFieldGrid from '@/components/shared/DetailFieldGrid';
+import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { BaiVietTheLoai } from '../core/types';
@@ -93,7 +93,13 @@ const ArticleTheLoaiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
           <DetailFieldGrid>
             <DetailField label={txt('page.articleSettings.colTenTheLoai')} value={data.ten_the_loai} icon={<Tags size={12} />} />
             <DetailField label={txt('page.articleSettings.colDonGia')} value={formatMoney(data.don_gia)} icon={<Banknote size={12} />} />
-            <DetailField label={txt('page.articleSettings.colMoTa')} value={data.mo_ta ?? ''} icon={<FileText size={12} />} emptyText="—" />
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('page.articleSettings.colMoTa')}
+              value={data.mo_ta ?? ''}
+              icon={<FileText size={12} />}
+              emptyText="—"
+            />
           </DetailFieldGrid>
         </DetailSection>
 

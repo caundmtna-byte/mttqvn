@@ -1,0 +1,1 @@
+const i="@gmail.com";function a(n){const t=n.trim();return t&&`${t.includes("@")?t.split("@")[0].trim():t}${i}`}function s(n){const t=n.trim().toLowerCase();if(!t)return"";const o=t.indexOf("@");return o>=0?t.slice(0,o):t}export{a as l,s};

@@ -26,7 +26,6 @@ import { useBaiVietDanhSachStore } from './store/useBaiVietDanhSachStore';
 import type { BaiVietDanhSach, BaiVietListScope } from './core/types';
 import { BAI_VIET_DANH_SACH_SEARCHABLE_KEYS } from './utils/search-keys';
 import { baiVietMatchesColumnSearch } from './utils/column-search';
-import { countBaiVietColumnSearchActive } from './utils/column-search-count';
 import BaiVietToolbar from './components/bai-viet-toolbar';
 import BaiVietTable from './components/bai-viet-table';
 
@@ -91,7 +90,8 @@ const BaiVietDanhSachPage: React.FC = () => {
         term,
         BAI_VIET_DANH_SACH_SEARCHABLE_KEYS,
       );
-      const matchesCol = baiVietMatchesColumnSearch(item, f.columnSearch);
+      if (f.id_the_loai?.length && !f.id_the_loai.includes(String(item.id_the_loai))) return false;
+      const matchesCol = baiVietMatchesColumnSearch(item, f);
       return matchesSearch && matchesCol;
     },
     [listScope, nhanVienId],
@@ -238,12 +238,34 @@ const BaiVietDanhSachPage: React.FC = () => {
     [tabs, listScope],
   );
 
+  const scopeRows = useMemo(() => {
+    if (listScope === TAB_MINE && nhanVienId) {
+      return rows.filter((r) => String(r.id_nguoi_tao) === nhanVienId);
+    }
+    return rows;
+  }, [rows, listScope, nhanVienId]);
+
+  const theLoaiChipOptions = useMemo(() => {
+    const map = new Map<string, { label: string; count: number }>();
+    for (const r of scopeRows) {
+      const id = String(r.id_the_loai);
+      const label = (r.ten_the_loai ?? '').trim() || id;
+      const cur = map.get(id);
+      if (cur) cur.count += 1;
+      else map.set(id, { label, count: 1 });
+    }
+    return [...map.entries()]
+      .map(([value, { label, count }]) => ({ value, label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [scopeRows]);
+
   return (
     <div className="flex flex-col h-page relative">
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <BaiVietToolbar
           onPageBack={() => navigate('/quan-ly-viet-bai')}
           tabsSlot={tabsSlot}
+          theLoaiOptions={theLoaiChipOptions}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');

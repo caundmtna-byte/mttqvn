@@ -21,6 +21,7 @@ export const ui = {
     "licenseInfo": "Thông tin bản quyền",
     "matTranToQuoc": "Mặt trận tổ quốc",
     "quanLyVietBai": "Quản lý viết bài",
+    "quanLyGiaoViec": "Quản lý giao việc",
     "trangThongTinKhac": "Trang thông tin khác",
     "system": "Hệ thống",
     "skipToMain": "Chuyển đến nội dung chính",
@@ -49,7 +50,9 @@ export const ui = {
       "groupGeneral": "Chung",
       "groupSystem": "Hệ thống",
       "groupAccount": "Tài khoản",
-      "groupArticleMgmt": "Quản lý viết bài"
+      "groupArticleMgmt": "Quản lý viết bài",
+      "groupTaskMgmt": "Quản lý giao việc",
+      "groupMatTranToQuoc": "Mặt trận tổ quốc"
     }
   },
   "shared": {
@@ -132,7 +135,9 @@ export const ui = {
       "adminFallback": "Quản trị viên",
       "systemModuleDesc": "Cấu hình, phân quyền và nhân sự.",
       "licenseInfoDesc": "Quản lý sở hữu trí tuệ và thông tin nhà phát triển.",
-      "placeholderModuleDesc": "Nội dung đang được cập nhật."
+      "placeholderModuleDesc": "Nội dung đang được cập nhật.",
+      "taskMgmtModuleDesc": "Công việc, giao việc và báo cáo tiến độ.",
+      "matTranModuleDesc": "Tập huấn, khen thưởng, ủy viên ủy ban và thiết lập cán bộ."
     },
     "license": {
       "title": "Thông tin Bản quyền",
@@ -279,7 +284,71 @@ export const ui = {
       "companyInfo": "Thông tin tổ chức",
       "companyInfoDesc": "Logo, tên ứng dụng MTTQVN và thông tin liên hệ hiển thị trên hệ thống.",
       "permission": "Phân quyền",
-      "permissionDesc": "Vai trò và quyền hạn."
+      "permissionDesc": "Vai trò và quyền hạn.",
+      "provinceList": "Tỉnh thành – xã phường",
+      "provinceListDesc": "Danh mục tỉnh/thành và xã/phường: import, xuất, phân quyền theo module.",
+      "backToSystem": "Quay lại Hệ thống"
+    },
+    "taskDashboard": {
+      "groupMain": "Giao việc & báo cáo",
+      "tasks": "Công việc",
+      "tasksDesc": "Danh sách, trạng thái và chi tiết công việc được giao.",
+      "taskReport": "Báo cáo công việc",
+      "taskReportDesc": "Thống kê theo thời gian, người thực hiện và trạng thái.",
+      "backToParent": "Quay lại Quản lý giao việc"
+    },
+    "matTranDashboard": {
+      "groupTrainingReward": "Tập huấn & Khen thưởng",
+      "groupCommittee": "Ủy viên ủy ban",
+      "groupOtherSettings": "Thiết lập khác",
+      "trainingList": "Danh sách tập huấn",
+      "trainingListDesc": "Theo dõi các đợt tập huấn và danh sách tham gia.",
+      "rewardList": "Danh sách khen thưởng",
+      "rewardListDesc": "Danh mục khen thưởng đã duyệt và chi tiết.",
+      "term": "Nhiệm kỳ",
+      "termDesc": "Các nhiệm kỳ ủy ban Mặt trận Tổ quốc.",
+      "session": "Kỳ họp",
+      "sessionDesc": "Lịch và nội dung các kỳ họp ủy ban.",
+      "committeeMembers": "Ủy viên ủy ban",
+      "committeeMembersDesc": "Hồ sơ và danh sách ủy viên.",
+      "officerList": "Danh sách cán bộ",
+      "officerListDesc": "Cán bộ thuộc phạm vi thiết lập Mặt trận Tổ quốc.",
+      "setupSettings": "Thiết lập cài đặt",
+      "setupSettingsDesc": "Cấu hình và tùy chọn chung cho phạm vi Mặt trận Tổ quốc.",
+      "backToParent": "Quay lại Mặt trận tổ quốc"
+    },
+    "matTranThietLap": {
+      "tabCapQuanLy": "Cấp quản lý",
+      "tabToChuc": "Tổ chức",
+      "tabDanToc": "Dân tộc",
+      "tabTrinhDo": "Trình độ",
+      "tabLyLuanChinhTri": "Lý luận chính trị",
+      "tabChucVu": "Chức vụ",
+      "tabTrangThai": "Trạng thái",
+      "addItem": "Thêm mục",
+      "editItem": "Sửa mục",
+      "formCreateSubtitle": "Thêm danh mục",
+      "formEditSubtitle": "Cập nhật danh mục",
+      "detailTitle": "Chi tiết thiết lập",
+      "empty": "Chưa có bản ghi",
+      "deleteTitle": "Xóa mục",
+      "deleteMessage": "Bạn có chắc muốn xóa mục này? Hành động không hoàn tác.",
+      "bulkDeleteTitle": "Xóa nhiều mục",
+      "bulkDeleteMessage": "Bạn có chắc muốn xóa {{count}} mục đã chọn? Hành động không hoàn tác.",
+      "toast": {
+        "create": "Đã thêm mục",
+        "update": "Đã cập nhật mục",
+        "delete": "Đã xóa {{count}} mục"
+      },
+      "service": {
+        "notFound": "Không tìm thấy bản ghi thiết lập"
+      },
+      "validation": {
+        "tenRequired": "Nhập tên"
+      },
+      "filterMoTaChipPlaceholder": "Mô tả",
+      "filterMoTaHas": "Có mô tả",
+      "filterMoTaEmpty": "Không mô tả"
     },
     "articleDashboard": {
       "groupMain": "Nội dung & cấu hình",
@@ -358,7 +427,13 @@ export const ui = {
       "formTheLoaiCreateSubtitle": "Thêm thể loại mới cho hệ thống",
       "formTheLoaiEditSubtitle": "Cập nhật thể loại",
       "formKhacCreateSubtitle": "Thêm mục thiết lập mới",
-      "formKhacEditSubtitle": "Cập nhật thiết lập"
+      "formKhacEditSubtitle": "Cập nhật thiết lập",
+      "filterDonGiaChipPlaceholder": "Đơn giá",
+      "filterDonGiaFree": "Miễn phí (0 ₫)",
+      "filterDonGiaPaid": "Có phí",
+      "filterMoTaChipPlaceholder": "Mô tả",
+      "filterMoTaHas": "Có mô tả",
+      "filterMoTaEmpty": "Không mô tả"
     }
   },
   "notification": {
@@ -378,6 +453,7 @@ export const ui = {
     "goHome": "Về trang chủ",
     "matTranToQuoc": "Mặt trận tổ quốc",
     "quanLyVietBai": "Quản lý viết bài",
+    "quanLyGiaoViec": "Quản lý giao việc",
     "trangThongTinKhac": "Trang thông tin khác",
     "systemAdmin": "Hệ thống",
     "employee": "Nhân sự",
@@ -385,11 +461,21 @@ export const ui = {
     "position": "Chức vụ",
     "companyInfo": "Thông tin tổ chức",
     "permission": "Phân quyền",
+    "provinceList": "Tỉnh thành – xã phường",
     "profile": "Hồ sơ cá nhân",
     "articleArticles": "Bài viết",
     "articleCommission": "Hoa hồng viết bài",
     "articleStats": "BC thống kê bài viết",
-    "articleSettings": "Thiết lập bài viết"
+    "articleSettings": "Thiết lập bài viết",
+    "taskCongViec": "Công việc",
+    "taskBaoCaoCongViec": "Báo cáo công việc",
+    "matTranTrainingList": "Danh sách tập huấn",
+    "matTranRewardList": "Danh sách khen thưởng",
+    "matTranTerm": "Nhiệm kỳ",
+    "matTranSession": "Kỳ họp",
+    "matTranCommitteeMembers": "Ủy viên ủy ban",
+    "matTranOfficerList": "Danh sách cán bộ",
+    "matTranSetupSettings": "Thiết lập cài đặt"
   },
   "clock": {
     "sunday": "Chủ nhật",
@@ -417,6 +503,11 @@ export const ui = {
     "statusChangeManyConfirm": "Đổi trạng thái {{count}} bản ghi sang {{status}}?",
     "back": "Quay lại",
     "search": "Tìm kiếm...",
+    /** Menu sort trên header cột (GenericTable) — dùng chung mọi module */
+    "sortAsc": "Sắp xếp A đến Z",
+    "sortDesc": "Sắp xếp Z đến A",
+    /** Placeholder ô tìm trong header cột (dropdown + inline) — dùng chung mọi module */
+    "columnHeaderSearchPlaceholder": "Lọc…",
     "searchPlaceholder": "Tìm kiếm . . .",
     "searchShortcut": "Tìm kiếm... (nhấn /)",
     "unknown": "Không xác định",
@@ -491,6 +582,21 @@ export const ui = {
         "faq":
           "Tại sao không thêm được bài? Kiểm tra tài khoản đã gắn nhân viên (nhan_vien_id). Làm sao chỉ xem bài của mình? Dùng tab Của tôi.",
         "contact": "Liên hệ quản trị hệ thống hoặc phòng hành chính nếu cần điều chỉnh phân quyền hoặc thiết lập danh mục.",
+      },
+      "quanLyGiaoViec_congViec": {
+        "intro": "Theo dõi công việc được giao: mức độ, thời hạn, tiến độ theo hạn, người trách nhiệm và người hỗ trợ.",
+        "overview":
+          "Dữ liệu lưu trên bảng cong_viec_danh_sach (Supabase). Người tạo phiếu là người giao việc; một nhân viên trách nhiệm chính và danh sách nhân viên hỗ trợ. Cột tiến độ hiển thị theo thời hạn (còn bao nhiêu ngày, quá hạn, đã hoàn thành…), không dùng phần trăm trên danh sách.",
+        "permissions":
+          "Theo ma trận phân quyền module Danh sách công việc: Xem, Thêm, Sửa, Xóa, Xuất. Tab chỉ lọc giao diện (Tôi làm / Tôi hỗ trợ / Tôi giao); quyền thao tác vẫn theo module.",
+        "workflow": "Thêm công việc (form: thông tin chính, không nhập trạng thái/kết quả) → Lưu. Báo cáo và đổi trạng thái từ chi tiết (nút Báo cáo). Hủy việc từ chi tiết có xác nhận. Sửa thông tin chung từ nút Sửa hoặc xóa bản ghi khi được phép.",
+        "quickStart":
+          "1) Vào Quản lý giao việc → Công việc. 2) Chọn tab phù hợp. 3) Thêm công việc, gán người trách nhiệm và người hỗ trợ. 4) Mở chi tiết để báo cáo kết quả / trạng thái hoặc hủy công việc.",
+        "glossary":
+          "Tôi làm: bạn là người trách nhiệm. Tôi hỗ trợ: bạn nằm trong danh sách hỗ trợ. Tôi giao: bạn là người tạo phiếu. Báo cáo: cập nhật trạng thái và phần kết quả (mô tả, link, ngày hoàn thành khi chọn Hoàn thành).",
+        "faq":
+          "Không thấy việc trên tab? Kiểm tra đúng tab và tài khoản đã gắn nhân viên (nhan_vien_id). Không thêm được? Cần quyền Thêm và hồ sơ nhân viên.",
+        "contact": "Liên hệ quản trị hệ thống để gán quyền module hoặc liên kết tài khoản với hồ sơ nhân viên.",
       },
     },
   },

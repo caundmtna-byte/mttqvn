@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Home as HomeIcon, Copyright, Layers, Flag, FilePenLine, LayoutGrid } from 'lucide-react';
+import { Home as HomeIcon, Copyright, Layers, Flag, FilePenLine, ClipboardList, LayoutGrid } from 'lucide-react';
 
 export interface MenuItem {
   path: string;
@@ -21,7 +21,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
   {
     path: '/mat-tran-to-quoc',
     nameKey: 'nav.matTranToQuoc',
-    descriptionKey: 'page.home.placeholderModuleDesc',
+    descriptionKey: 'page.home.matTranModuleDesc',
     icon: Flag,
     gradient: 'bg-gradient-to-br from-rose-600 to-rose-900 dark:from-rose-500 dark:to-rose-800',
   },
@@ -31,6 +31,13 @@ export const SIDEBAR_MENU: MenuItem[] = [
     descriptionKey: 'page.home.placeholderModuleDesc',
     icon: FilePenLine,
     gradient: 'bg-gradient-to-br from-violet-600 to-violet-900 dark:from-violet-500 dark:to-violet-800',
+  },
+  {
+    path: '/quan-ly-giao-viec',
+    nameKey: 'nav.quanLyGiaoViec',
+    descriptionKey: 'page.home.taskMgmtModuleDesc',
+    icon: ClipboardList,
+    gradient: 'bg-gradient-to-br from-amber-600 to-amber-900 dark:from-amber-500 dark:to-amber-800',
   },
   {
     path: '/trang-thong-tin-khac',

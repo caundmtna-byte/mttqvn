@@ -13,6 +13,6 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'tg_cap_nhat', label: txt('page.articleSettings.colTgCapNhat'), visible: true, ...P.datetime, order: 4 },
 ];
 
-const initialFilters: ArticleKhacFilters = { columnSearch: {} };
+const initialFilters: ArticleKhacFilters = { columnSearch: {}, mo_ta_bucket: '' };
 
 export const useKhacNguonStore = createGenericStore<ArticleKhacFilters>(initialFilters, DEFAULT_COLUMNS);

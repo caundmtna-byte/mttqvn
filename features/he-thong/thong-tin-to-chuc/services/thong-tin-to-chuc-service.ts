@@ -1,13 +1,17 @@
 import { getSupabase } from '@/lib/supabase/client';
 import { isSupabase } from '@/lib/data/config';
+import type { Database } from '@/lib/supabase/database.types';
 import type { CompanyInfo } from '@/store/useStore';
 import { DEFAULT_COMPANY_INFO } from '@/store/useStore';
 import type { CompanyFormValues } from '../core/types';
 import { THONG_TIN_TO_CHUC_ROW_COLUMNS } from '../core/supabase-select';
 
-const SINGLETON_ID = 1;
+type ThongTinRow = Database['public']['Tables']['var_thong_tin_to_chuc']['Row'];
+type ThongTinUpdate = Database['public']['Tables']['var_thong_tin_to_chuc']['Update'];
 
-function mapRowToCompanyInfo(row: Record<string, unknown>): CompanyInfo {
+const SINGLETON_ID: ThongTinRow['id'] = '1';
+
+function mapRowToCompanyInfo(row: ThongTinRow): CompanyInfo {
   return {
     appName: String(row.ten_ung_dung ?? ''),
     appDescription: String(row.mo_ta_ngan ?? ''),
@@ -20,7 +24,7 @@ function mapRowToCompanyInfo(row: Record<string, unknown>): CompanyInfo {
   };
 }
 
-function formToDbPayload(data: CompanyFormValues & { appLogo: string | null }): Record<string, unknown> {
+function formToDbPayload(data: CompanyFormValues & { appLogo: string | null }): ThongTinUpdate {
   return {
     ten_ung_dung: data.appName.trim(),
     mo_ta_ngan: data.appDescription?.trim() || null,
@@ -49,7 +53,7 @@ export async function getThongTinToChuc(): Promise<CompanyInfo> {
 
   if (error) throw new Error(error.message);
   if (!data || typeof data !== 'object') return { ...DEFAULT_COMPANY_INFO };
-  return mapRowToCompanyInfo(data as Record<string, unknown>);
+  return mapRowToCompanyInfo(data as unknown as ThongTinRow);
 }
 
 /** Lưu cấu hình (cập nhật dòng id = 1). */
@@ -80,5 +84,5 @@ export async function saveThongTinToChuc(data: CompanyFormValues & { appLogo: st
     .single();
 
   if (error) throw new Error(error.message);
-  return mapRowToCompanyInfo(row as unknown as Record<string, unknown>);
+  return mapRowToCompanyInfo(row as unknown as ThongTinRow);
 }

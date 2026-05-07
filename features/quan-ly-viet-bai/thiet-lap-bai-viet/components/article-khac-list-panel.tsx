@@ -86,7 +86,10 @@ export function ArticleKhacListPanelInner({
         term,
         [...ARTICLE_KHAC_SEARCH_KEYS],
       );
-      const matchesCol = khacMatchesColumnSearch(item, f.columnSearch);
+      const mo = (item.mo_ta ?? '').trim();
+      if (f.mo_ta_bucket === 'has' && !mo) return false;
+      if (f.mo_ta_bucket === 'empty' && mo) return false;
+      const matchesCol = khacMatchesColumnSearch(item, f.columnSearch, f.mo_ta_bucket);
       return matchesSearch && matchesCol;
     },
     [],
@@ -211,6 +214,7 @@ export function ArticleKhacListPanelInner({
       <div className="flex flex-col min-h-0 sm:min-h-[12rem] rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <ArticleKhacToolbar
           store={store}
+          items={items}
           sectionTitle={txt(titleKey)}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}

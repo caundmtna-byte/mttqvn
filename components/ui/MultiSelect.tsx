@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useId, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useId, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { txt } from '../../lib/text';
 import { ChevronDown, Check, X, Search, Plus, Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -83,11 +84,51 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   }, [isOpen, setOpen]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  /** Vị trí panel khi render qua portal (tránh bị cắt bởi overflow-x trên toolbar). */
+  const [fixedPanelRect, setFixedPanelRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownPanelRef = useRef<HTMLDivElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
+
+  const updateFixedPanelRect = useCallback(() => {
+    if (dropdownOnly) return;
+    const root = containerRef.current;
+    if (!root || !isOpen) return;
+    const r = root.getBoundingClientRect();
+    const minW = 200;
+    const width = Math.max(r.width, minW);
+    const pad = 8;
+    let left = r.left;
+    if (left + width > window.innerWidth - pad) {
+      left = Math.max(pad, window.innerWidth - pad - width);
+    }
+    setFixedPanelRect({ top: r.bottom + 4, left, width });
+  }, [dropdownOnly, isOpen]);
+
+  useLayoutEffect(() => {
+    if (!isOpen || dropdownOnly) {
+      setFixedPanelRect(null);
+      return;
+    }
+    const root = containerRef.current;
+    if (!root) return;
+    updateFixedPanelRect();
+    const ro = new ResizeObserver(() => updateFixedPanelRect());
+    ro.observe(root);
+    window.addEventListener('scroll', updateFixedPanelRect, true);
+    window.addEventListener('resize', updateFixedPanelRect);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('scroll', updateFixedPanelRect, true);
+      window.removeEventListener('resize', updateFixedPanelRect);
+    };
+  }, [isOpen, dropdownOnly, updateFixedPanelRect]);
 
   useEffect(() => {
     if (!isOpen || suppressSearchAutofocus) return;
@@ -95,14 +136,16 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   }, [isOpen, suppressSearchAutofocus]);
 
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const t = event.target as Node;
+      if (containerRef.current?.contains(t)) return;
+      if (dropdownPanelRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [setOpen]);
+  }, [isOpen, setOpen]);
 
   /** `passive: false` để `preventDefault` chặn cuộn bảng khi list ngắn / vùng sort+search. */
   useEffect(() => {
@@ -192,6 +235,167 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       ? { role: 'group' as const }
       : { id: listboxId, role: 'listbox' as const };
 
+  const dropdownPanelInner = (
+    <>
+      {resolvedTopContent && (
+        <div
+          className={cn(
+            'bg-muted/20 p-1.5',
+            !omitFilterSections && 'border-b border-border',
+          )}
+        >
+          {resolvedTopContent}
+        </div>
+      )}
+      {!omitFilterSections && (
+        <>
+          <div className="p-1.5 border-b border-border">
+            <div className="relative">
+              <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="w-full pl-7 pr-3 py-1.5 text-xs text-foreground border border-border rounded-lg bg-background placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                placeholder="Tìm kiếm..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div
+            ref={optionsListRef}
+            {...(hasTopContent ? { id: listboxId, role: 'listbox' as const } : {})}
+            className="max-h-[220px] overflow-y-auto overscroll-contain custom-scrollbar p-1"
+          >
+            {filteredOptions.length > 0 && (
+              <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground border-b border-border mb-0.5">
+                <button
+                  type="button"
+                  className="flex items-center flex-1 min-w-0 hover:bg-muted/50 rounded-lg cursor-pointer py-0.5 -my-0.5 px-1 -mx-1 text-left"
+                  onClick={handleSelectAll}
+                >
+                  <div
+                    className={cn(
+                      'w-3.5 h-3.5 rounded border flex items-center justify-center mr-2 transition-colors shrink-0',
+                      value.length === filteredOptions.length && filteredOptions.length > 0
+                        ? 'bg-primary border-primary text-primary-foreground'
+                        : 'border-border bg-card',
+                    )}
+                  >
+                    {value.length === filteredOptions.length && filteredOptions.length > 0 && <Check size={9} />}
+                  </div>
+                  <span className="truncate">{txt('common.selectAll')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange([]);
+                  }}
+                  className="shrink-0 text-xs font-medium text-primary hover:underline py-0.5 px-1"
+                >
+                  {txt('common.clearSelection')}
+                </button>
+              </div>
+            )}
+
+            {filteredOptions.length === 0 && !showCreateOption ? (
+              <div className="py-3 text-center text-xs text-muted-foreground">Không tìm thấy</div>
+            ) : (
+              <>
+                {filteredOptions.map((option) => {
+                  const isSelected = value.includes(option.value);
+                  const hasCount = option.count !== undefined;
+                  const isZeroCount = hasCount && option.count === 0 && !isSelected;
+                  return (
+                    <div
+                      key={option.value}
+                      role="option"
+                      aria-selected={isSelected}
+                      aria-disabled={isZeroCount}
+                      tabIndex={isZeroCount ? -1 : 0}
+                      onClick={() => !isZeroCount && handleSelect(option.value)}
+                      onKeyDown={(e) => {
+                        if (isZeroCount) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSelect(option.value);
+                        }
+                      }}
+                      className={cn(
+                        'flex items-center px-2 py-1.5 text-xs rounded-lg transition-colors',
+                        isZeroCount ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+                        isSelected ? 'bg-primary/5 text-primary' : !isZeroCount && 'text-foreground hover:bg-muted/50',
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'w-3.5 h-3.5 rounded border flex items-center justify-center mr-2 transition-colors shrink-0',
+                          isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-border bg-card',
+                        )}
+                      >
+                        {isSelected && <Check size={9} />}
+                      </div>
+                      {option.icon && <option.icon size={13} className="mr-1.5 text-muted-foreground" />}
+                      <span className="truncate">{option.label}</span>
+                      {hasCount && (
+                        <span
+                          className={cn(
+                            'ml-auto shrink-0 text-xs font-medium tabular-nums pl-2',
+                            isSelected ? 'text-primary/70' : 'text-muted-foreground',
+                          )}
+                        >
+                          {option.count}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+                {showCreateOption && (
+                  <div
+                    role="button"
+                    tabIndex={isCreating ? -1 : 0}
+                    onClick={isCreating ? undefined : handleCreateOption}
+                    onKeyDown={(e) => {
+                      if (isCreating) return;
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleCreateOption();
+                      }
+                    }}
+                    className={cn(
+                      'flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-colors',
+                      isCreating ? 'opacity-60 cursor-wait' : 'cursor-pointer text-primary hover:bg-primary/10',
+                    )}
+                  >
+                    {isCreating ? (
+                      <Loader2 size={14} className="animate-spin shrink-0" />
+                    ) : (
+                      <Plus size={14} className="shrink-0" />
+                    )}
+                    <span className="truncate">{createOptionLabel.replace(/%s/g, searchTrim)}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {hasValue && (
+            <div className="px-2 py-1.5 bg-muted/30 border-t border-border flex justify-between items-center text-xs text-muted-foreground">
+              <span className="tabular-nums">
+                {value.length} / {options.length} đã chọn
+              </span>
+              <button type="button" onClick={() => setOpen(false)} className="text-primary font-medium hover:underline text-xs">
+                Xong
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+
   return (
     <div
       className={cn(dropdownOnly ? "relative min-w-0" : "relative min-w-[140px]", className)}
@@ -249,169 +453,39 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       </button>
       )}
 
-      {isOpen && (
-        // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- chặn bubble đóng khi tương tác trong panel dropdown
-        <div
-          ref={dropdownPanelRef}
-          {...panelA11y}
-          className={cn(
-            "absolute mt-1 overscroll-contain bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200",
-            dropdownOnly
-              ? "top-full right-0 z-[60] w-[min(280px,calc(100vw-2rem))] min-w-[220px]"
-              : "top-full left-0 z-50 w-full min-w-[200px]"
-          )}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {resolvedTopContent && (
-            <div
-              className={cn(
-                'bg-muted/20 p-1.5',
-                !omitFilterSections && 'border-b border-border',
-              )}
-            >
-              {resolvedTopContent}
-            </div>
-          )}
-          {!omitFilterSections && (
-          <>
-          {/* Search */}
-          <div className="p-1.5 border-b border-border">
-            <div className="relative">
-              <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                className="w-full pl-7 pr-3 py-1.5 text-xs text-foreground border border-border rounded-lg bg-background placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                placeholder="Tìm kiếm..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          {/* Options */}
+      {isOpen &&
+        (dropdownOnly ? (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- chặn bubble đóng khi tương tác trong panel dropdown
           <div
-            ref={optionsListRef}
-            {...(hasTopContent ? { id: listboxId, role: 'listbox' as const } : {})}
-            className="max-h-[220px] overflow-y-auto overscroll-contain custom-scrollbar p-1"
+            ref={dropdownPanelRef}
+            {...panelA11y}
+            className={cn(
+              'absolute top-full right-0 z-[60] mt-1 w-[min(280px,calc(100vw-2rem))] min-w-[220px] overscroll-contain bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200',
+            )}
+            onMouseDown={(e) => e.stopPropagation()}
           >
-            {filteredOptions.length > 0 && (
-              <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs font-medium text-muted-foreground border-b border-border mb-0.5">
-                <button
-                  type="button"
-                  className="flex items-center flex-1 min-w-0 hover:bg-muted/50 rounded-lg cursor-pointer py-0.5 -my-0.5 px-1 -mx-1 text-left"
-                  onClick={handleSelectAll}
-                >
-                  <div className={cn(
-                    "w-3.5 h-3.5 rounded border flex items-center justify-center mr-2 transition-colors shrink-0",
-                    value.length === filteredOptions.length && filteredOptions.length > 0 ? "bg-primary border-primary text-primary-foreground" : "border-border bg-card"
-                  )}>
-                    {value.length === filteredOptions.length && filteredOptions.length > 0 && <Check size={9} />}
-                  </div>
-                  <span className="truncate">{txt('common.selectAll')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onChange([]); }}
-                  className="shrink-0 text-xs font-medium text-primary hover:underline py-0.5 px-1"
-                >
-                  {txt('common.clearSelection')}
-                </button>
-              </div>
-            )}
-
-            {filteredOptions.length === 0 && !showCreateOption ? (
-              <div className="py-3 text-center text-xs text-muted-foreground">Không tìm thấy</div>
-            ) : (
-              <>
-              {filteredOptions.map((option) => {
-                const isSelected = value.includes(option.value);
-                const hasCount = option.count !== undefined;
-                const isZeroCount = hasCount && option.count === 0 && !isSelected;
-                return (
-                  <div
-                    key={option.value}
-                    role="option"
-                    aria-selected={isSelected}
-                    aria-disabled={isZeroCount}
-                    tabIndex={isZeroCount ? -1 : 0}
-                    onClick={() => !isZeroCount && handleSelect(option.value)}
-                    onKeyDown={(e) => {
-                      if (isZeroCount) return;
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleSelect(option.value);
-                      }
-                    }}
-                    className={cn(
-                      "flex items-center px-2 py-1.5 text-xs rounded-lg transition-colors",
-                      isZeroCount
-                        ? "opacity-40 cursor-not-allowed"
-                        : "cursor-pointer",
-                      isSelected ? "bg-primary/5 text-primary" : !isZeroCount && "text-foreground hover:bg-muted/50"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-3.5 h-3.5 rounded border flex items-center justify-center mr-2 transition-colors shrink-0",
-                      isSelected ? "bg-primary border-primary text-primary-foreground" : "border-border bg-card"
-                    )}>
-                      {isSelected && <Check size={9} />}
-                    </div>
-                    {option.icon && <option.icon size={13} className="mr-1.5 text-muted-foreground" />}
-                    <span className="truncate">{option.label}</span>
-                    {hasCount && (
-                      <span className={cn(
-                        "ml-auto shrink-0 text-xs font-medium tabular-nums pl-2",
-                        isSelected ? "text-primary/70" : "text-muted-foreground"
-                      )}>
-                        {option.count}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-              {showCreateOption && (
-                <div
-                  role="button"
-                  tabIndex={isCreating ? -1 : 0}
-                  onClick={isCreating ? undefined : handleCreateOption}
-                  onKeyDown={(e) => {
-                    if (isCreating) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleCreateOption();
-                    }
-                  }}
-                  className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg transition-colors",
-                    isCreating ? "opacity-60 cursor-wait" : "cursor-pointer text-primary hover:bg-primary/10"
-                  )}
-                >
-                  {isCreating ? (
-                    <Loader2 size={14} className="animate-spin shrink-0" />
-                  ) : (
-                    <Plus size={14} className="shrink-0" />
-                  )}
-                  <span className="truncate">
-                    {createOptionLabel.replace(/%s/g, searchTrim)}
-                  </span>
-                </div>
-              )}
-              </>
-            )}
+            {dropdownPanelInner}
           </div>
-          
-          {/* Footer */}
-          {hasValue && (
-            <div className="px-2 py-1.5 bg-muted/30 border-t border-border flex justify-between items-center text-xs text-muted-foreground">
-              <span className="tabular-nums">{value.length} / {options.length} đã chọn</span>
-              <button type="button" onClick={() => setOpen(false)} className="text-primary font-medium hover:underline text-xs">Xong</button>
-            </div>
-          )}
-          </>
-          )}
-        </div>
-      )}
+        ) : fixedPanelRect ? (
+          createPortal(
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+            <div
+              ref={dropdownPanelRef}
+              {...panelA11y}
+              style={{
+                position: 'fixed',
+                top: fixedPanelRect.top,
+                left: fixedPanelRect.left,
+                width: fixedPanelRect.width,
+              }}
+              className="z-[85] overscroll-contain bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 min-w-[200px] max-w-[calc(100vw-1rem)]"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              {dropdownPanelInner}
+            </div>,
+            document.body,
+          )
+        ) : null)}
     </div>
   );
 };

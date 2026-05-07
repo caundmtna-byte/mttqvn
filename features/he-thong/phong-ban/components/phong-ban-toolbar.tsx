@@ -6,6 +6,7 @@ import Tooltip from '../../../../components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useDepartmentStore } from '../store/useDepartmentStore';
 import GenericToolbar from '../../../../components/shared/GenericToolbar';
+import FilterChipMultiSelect from '../../../../components/shared/FilterChipMultiSelect';
 import { useHierarchyRootFilter } from '../../../../lib/useHierarchyRootFilter';
 import type { Department } from '../core/types';
 import { countDepartmentColumnSearchActive } from '../utils/column-search';
@@ -97,6 +98,30 @@ const PhongBanToolbar: React.FC<Props> = ({
     [filters.id_phong_goc, filters.status, setFilter, phongOptionsWithCount, statusOptions]
   );
 
+  const filtersSlot = useMemo(
+    () => (
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipMultiSelect
+          options={phongOptionsWithCount}
+          value={filters.id_phong_goc}
+          onChange={(val) => setFilter('id_phong_goc', val)}
+          placeholder={txt('department.toolbar.department')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,30vw)] sm:max-w-[280px]"
+        />
+        <FilterChipMultiSelect
+          options={statusOptions}
+          value={filters.status}
+          onChange={(val) => setFilter('status', val)}
+          placeholder={txt('common.status')}
+          icon={Tag}
+          className="shrink-0 w-full min-w-0 sm:w-[min(180px,24vw)] sm:max-w-[220px]"
+        />
+      </div>
+    ),
+    [phongOptionsWithCount, statusOptions, filters.id_phong_goc, filters.status, setFilter],
+  );
+
   const mobileActions = useMemo(
     () => [
       ...(canImport
@@ -175,10 +200,12 @@ const PhongBanToolbar: React.FC<Props> = ({
       onSearchChange={setSearchTerm}
       onClearSelection={clearSelection}
       actions={renderActions}
+      filters={filtersSlot}
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
       showBack
+      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       columns={columns}

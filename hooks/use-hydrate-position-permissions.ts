@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { fetchPositionPermissionGrants } from '@/lib/fetch-position-permission-grants';
+import { masterDataQueryOptions } from '@/lib/supabase/query-config';
 
 /**
  * Sau đăng nhập / đổi user: hydrate `grantsByModule` theo chức vụ (khi `VITE_USE_PERMISSION_MATRIX=true`).
+ * Dùng TanStack Query để cache kết quả 30 phút — re-mount không re-fetch.
  * Admin: không bật matrix (luật `can()` vẫn full); member: dùng phần tử đầu của `id_chuc_vu` nếu là mảng.
  */
 export function useHydratePositionPermissions(): void {
@@ -18,47 +21,23 @@ export function useHydratePositionPermissions(): void {
       ? user.id_chuc_vu[0] ?? ''
       : '';
 
+  const enabled =
+    hasHydrated && matrixEnabled && !!user && user.role !== 'admin' && !!chucVuKey;
+
+  const { data: grants } = useQuery({
+    queryKey: ['permission-grants', chucVuKey],
+    queryFn: () => fetchPositionPermissionGrants(chucVuKey),
+    enabled,
+    ...masterDataQueryOptions,
+  });
+
   useEffect(() => {
-    if (!hasHydrated) return;
-
-    if (!matrixEnabled) {
+    if (!enabled) {
       usePermissionGrantStore.getState().clearMatrix();
       return;
     }
-
-    if (!user) {
-      usePermissionGrantStore.getState().clearMatrix();
-      return;
+    if (grants) {
+      usePermissionGrantStore.getState().setMatrixGrants(grants);
     }
-
-    if (user.role === 'admin') {
-      usePermissionGrantStore.getState().clearMatrix();
-      return;
-    }
-
-    if (!chucVuKey) {
-      usePermissionGrantStore.getState().clearMatrix();
-      return;
-    }
-
-    const uid = user.id;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const grants = await fetchPositionPermissionGrants(chucVuKey);
-        if (cancelled) return;
-        if (useAuthStore.getState().user?.id !== uid) return;
-        usePermissionGrantStore.getState().setMatrixGrants(grants);
-      } catch {
-        if (cancelled) return;
-        if (useAuthStore.getState().user?.id !== uid) return;
-        usePermissionGrantStore.getState().clearMatrix();
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hasHydrated, matrixEnabled, user?.id, user?.role, chucVuKey]);
+  }, [enabled, grants]);
 }

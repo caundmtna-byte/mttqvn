@@ -153,6 +153,7 @@ const Profile: React.FC = () => {
                       src={avatarPreview ?? displayAvatar ?? getAvatarUrl(displayName, 128)}
                       alt={avatarAlt}
                       className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-[3px] sm:border-4 border-card shadow-lg object-cover"
+                      loading="lazy"
                     />
                     <span
                       className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-500 border-2 border-card rounded-full"

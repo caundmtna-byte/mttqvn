@@ -300,7 +300,6 @@ const DataField: React.FC<DataFieldProps> = ({
             required={required}
             disabled={disabled}
             className={className}
-            name={name}
             loadOptions={loadOptions}
             value={value as string | number | null}
             onChange={(v) => onChange(v)}

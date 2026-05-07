@@ -6,11 +6,9 @@ import {
   BAI_VIET_DANH_SACH_RETURNING_FULL,
   BAI_VIET_DANH_SACH_SELECT_FULL,
 } from '../core/supabase-select';
-import { MOCK_BAI_VIET_DANH_SACH } from '../mock-data';
 
 const repo = createRepository<BaiVietDanhSach>({
   tableName: 'bai_viet_danh_sach',
-  mockData: MOCK_BAI_VIET_DANH_SACH,
   select: BAI_VIET_DANH_SACH_SELECT_FULL,
   delay: 400,
 });

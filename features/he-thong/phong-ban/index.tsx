@@ -99,7 +99,7 @@ const DepartmentPage = () => {
         ? departments.find((p) => p.id === item.cha_id)?.ten_phong_ban ?? ''
         : '';
       const matchesSearch = matchesSearchTerm(
-        { ...(item as Record<string, unknown>), ten_phong_cha: parentName },
+        { ...(item as unknown as Record<string, unknown>), ten_phong_cha: parentName },
         term,
         DEPARTMENT_SEARCHABLE_KEYS
       );

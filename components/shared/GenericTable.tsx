@@ -73,6 +73,13 @@ interface GenericTableProps<T> {
   renderColumnHeaderAccessory?: (col: ColumnConfig) => React.ReactNode | null;
   /** Khi true và có `onSort`: nhãn cột chỉ là text (không nút sort / mũi tên); sort qua accessory (vd. menu sliders). */
   hideSortOnColumnLabel?: boolean;
+
+  /**
+   * Ngưỡng hiển thị bảng desktop vs card mobile.
+   * - `md` (mặc định): &lt;768px là card — giống Tailwind `md:`.
+   * - `sm`: &lt;640px là card — tablet ngang thấy bảng + lọc header cột (trade-off: bảng hẹp hơn).
+   */
+  listBreakpoint?: 'sm' | 'md';
 }
 
 /*
@@ -100,7 +107,13 @@ function GenericTable<T>({
   renderSummaryRow,
   renderColumnHeaderAccessory,
   hideSortOnColumnLabel = false,
+  listBreakpoint = 'md',
 }: GenericTableProps<T>) {
+
+  const bp = listBreakpoint;
+  const desktopTableWrapClass = bp === 'sm' ? 'hidden sm:block' : 'hidden md:block';
+  const mobileCardsWrapClass = bp === 'sm' ? 'sm:hidden' : 'md:hidden';
+  const footerToneClass = bp === 'sm' ? 'bg-card sm:bg-muted/10' : 'bg-card md:bg-muted/10';
 
   const visibleColumns = useMemo(() =>
     [...columns].filter(c => c.visible).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
@@ -257,7 +270,7 @@ function GenericTable<T>({
         <div className="shrink-0 py-3 px-3 sm:px-4 border-b border-border/50 bg-muted/20">
           <LoadingSpinnerWithText text={loadingText} centered />
         </div>
-        <div className="hidden md:block flex-1 min-h-0 overflow-auto custom-scrollbar">
+        <div className={cn('flex-1 min-h-0 overflow-auto custom-scrollbar', desktopTableWrapClass)}>
           <table
             className="text-sm border-separate border-spacing-0"
             style={{ minWidth: tableMinWidth, width: '100%' }}
@@ -288,7 +301,7 @@ function GenericTable<T>({
             </tbody>
           </table>
         </div>
-        <div className="md:hidden flex-1 space-y-3 px-3 pt-1 overflow-hidden">
+        <div className={cn('flex-1 space-y-3 px-3 pt-1 overflow-hidden', mobileCardsWrapClass)}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-card rounded-xl border border-border p-3.5 animate-pulse">
               <div className="flex items-center gap-3 mb-3">
@@ -311,7 +324,7 @@ function GenericTable<T>({
     <div className="flex flex-col h-full bg-card overflow-hidden">
 
       {/* 1. DESKTOP VIEW with scroll shadows */}
-      <div className="hidden md:block flex-1 min-h-0 relative">
+      <div className={cn('flex-1 min-h-0 relative', desktopTableWrapClass)}>
         {/* Scroll shadow overlays */}
         <div className={cn("absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-card/80 to-transparent z-[4] pointer-events-none transition-opacity", scrollShadow.left ? "opacity-100" : "opacity-0")} />
         <div className={cn("absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-card/80 to-transparent z-[4] pointer-events-none transition-opacity", scrollShadow.right ? "opacity-100" : "opacity-0")} />
@@ -573,7 +586,7 @@ function GenericTable<T>({
       </div>
 
       {/* 2. MOBILE VIEW */}
-      <div className="md:hidden flex-1 min-h-0 space-y-3 overflow-y-auto pb-3 px-3 pt-1">
+      <div className={cn('flex-1 min-h-0 space-y-3 overflow-y-auto pb-3 px-3 pt-1', mobileCardsWrapClass)}>
         {data.length === 0 ? (
           <div className="py-12"><EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} /></div>
         ) : (
@@ -591,7 +604,7 @@ function GenericTable<T>({
 
       {/* 3. FOOTER */}
       {totalRecords > 0 && (
-        <div className="border-t border-border bg-card md:bg-muted/10 px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 shrink-0">
+        <div className={cn('border-t border-border px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 shrink-0', footerToneClass)}>
 
           {/* Left: Record summary + selected count */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">

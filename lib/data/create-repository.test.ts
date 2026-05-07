@@ -17,7 +17,7 @@ describe('createRepository', () => {
     const { createRepository } = await import('./create-repository');
     type Row = { id: string; name: string };
     const repo = createRepository<Row>({
-      tableName: 'test_table',
+      tableName: 'var_nhan_vien',
       mockData: [{ id: '1', name: 'A' }],
       delay: 0,
     });

@@ -39,6 +39,10 @@ export interface HierarchyTableProps<T> {
   className?: string;
   /** Phụ kiện header cột (lọc/tìm/sắp xếp) — giống GenericTable */
   renderColumnHeaderAccessory?: (col: ColumnConfig) => React.ReactNode;
+  /** Hàng không chọn được (vd. tiêu đề nhóm) — select-all chỉ áp dụng hàng selectable */
+  isRowSelectable?: (item: T) => boolean;
+  /** Hàng không mở chi tiết khi click (vd. tiêu đề nhóm) */
+  isRowClickable?: (item: T) => boolean;
 }
 
 /**
@@ -61,11 +65,17 @@ export function HierarchyTable<T>({
   actionsColumnLabel,
   className,
   renderColumnHeaderAccessory,
+  isRowSelectable = () => true,
+  isRowClickable = () => true,
 }: HierarchyTableProps<T>) {
-  const currentPageIds = data.map(getId);
-  const isAllSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.has(id));
+  const selectableIds = useMemo(
+    () => data.filter((item) => isRowSelectable(item)).map((item) => getId(item)),
+    [data, getId, isRowSelectable]
+  );
+  const isAllSelected =
+    selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id));
   const isIndeterminate =
-    currentPageIds.some((id) => selectedIds.has(id)) && !isAllSelected;
+    selectableIds.some((id) => selectedIds.has(id)) && !isAllSelected;
   const actionsLabel = actionsColumnLabel ?? txt('common.actions');
   const showActionsCol = Boolean(renderActions || onEdit || onDelete);
   const actionsColWidthClass = renderActions ? 'w-[92px] min-w-[92px]' : 'w-20 min-w-[80px]';
@@ -104,10 +114,13 @@ export function HierarchyTable<T>({
               <input
                 type="checkbox"
                 checked={isAllSelected}
-                ref={(el) => el && (el.indeterminate = isIndeterminate)}
-                onChange={() => onToggleAllSelection(currentPageIds)}
+                disabled={selectableIds.length === 0}
+                ref={(el) => {
+                  if (el) el.indeterminate = isIndeterminate;
+                }}
+                onChange={() => onToggleAllSelection(selectableIds)}
                 onClick={(e) => e.stopPropagation()}
-                className="w-4 h-4 rounded border-border text-primary accent-primary"
+                className="w-4 h-4 rounded border-border text-primary accent-primary disabled:opacity-50"
                 aria-label={txt('common.selectAll')}
               />
             </th>
@@ -124,10 +137,9 @@ export function HierarchyTable<T>({
                       <span className="truncate">{col.label}</span>
                     </div>
                     {accessory ? (
-                      <div
-                        className="shrink-0"
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
+                      // Chỉ chặn mousedown lan lên header (sort); không phải control độc lập.
+                      // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- onMouseDown chỉ stopPropagation
+                      <div className="shrink-0" onMouseDown={(e) => e.stopPropagation()}>
                         {accessory}
                       </div>
                     ) : null}
@@ -153,15 +165,18 @@ export function HierarchyTable<T>({
             const level = getLevel(item);
             const isRoot = level === 1;
             const isSelected = selectedIds.has(id);
+            const rowSelectable = isRowSelectable(item);
+            const rowClickable = isRowClickable(item);
             return (
               <tr
                 key={id}
-                role="button"
-                tabIndex={0}
-                onClick={() => onView?.(item)}
-                onKeyDown={(e) => e.key === 'Enter' && onView?.(item)}
+                role={rowClickable ? 'button' : undefined}
+                tabIndex={rowClickable ? 0 : undefined}
+                onClick={() => rowClickable && onView?.(item)}
+                onKeyDown={(e) => rowClickable && e.key === 'Enter' && onView?.(item)}
                 className={cn(
-                  'group align-middle transition-colors hover:bg-muted/80 cursor-pointer',
+                  'group align-middle transition-colors hover:bg-muted/80',
+                  rowClickable ? 'cursor-pointer' : 'cursor-default',
                   isRoot ? 'bg-muted/40' : 'bg-card',
                   isSelected && 'bg-primary/5'
                 )}
@@ -175,13 +190,17 @@ export function HierarchyTable<T>({
                   )}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => onToggleSelection(id)}
-                    className="w-4 h-4 rounded border-border text-primary accent-primary"
-                    aria-label={txt('common.select')}
-                  />
+                  {rowSelectable ? (
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelection(id)}
+                      className="w-4 h-4 rounded border-border text-primary accent-primary"
+                      aria-label={txt('common.select')}
+                    />
+                  ) : (
+                    <span className="inline-block w-4 h-4 shrink-0" aria-hidden />
+                  )}
                 </td>
                 {columns.map((col) => renderCell(item, col))}
                 {showActionsCol && (

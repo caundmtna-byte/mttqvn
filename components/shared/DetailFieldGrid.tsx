@@ -7,6 +7,9 @@ interface DetailFieldGridProps {
   className?: string;
 }
 
+/** `DetailField` chiếm cả hàng trong lưới 2 cột (mô tả dài, liên kết). */
+export const DETAIL_FIELD_SPAN_FULL = 'sm:col-span-2 min-w-0';
+
 /** Lưới các DetailField: responsive 1 cột mobile → 2 cột tablet → 2-3 cột desktop */
 const DetailFieldGrid: React.FC<DetailFieldGridProps> = ({ children, cols = 2, className }) => {
   const gridClass =

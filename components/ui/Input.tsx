@@ -20,13 +20,18 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <label htmlFor={inputId} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-1.5 flex items-center gap-1.5">
             {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
             {label}
-            {required && <span className="text-destructive" aria-hidden="true">*</span>}
+            {required && (
+              <span className="text-red-600 dark:text-red-400 font-semibold" aria-hidden="true">
+                *
+              </span>
+            )}
           </label>
         )}
         <div className="relative">
           <input
             id={inputId}
             type={type}
+            aria-required={required ? true : undefined}
             aria-invalid={error ? true : undefined}
             aria-describedby={errorId}
             className={cn(

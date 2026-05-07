@@ -139,7 +139,7 @@ const EmployeePage: React.FC = () => {
   const filterFn = useCallback(
     (emp: Employee, term: string, f: typeof filters) => {
       const matchesSearch = matchesSearchTerm(
-        emp as Record<string, unknown>,
+        emp as unknown as Record<string, unknown>,
         term,
         NHAN_VIEN_SEARCHABLE_KEYS,
       );

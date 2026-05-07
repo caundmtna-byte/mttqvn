@@ -7,6 +7,8 @@ interface FormSectionProps {
   children: React.ReactNode;
   className?: string;
   variant?: 'primary' | 'muted';
+  /** Cùng hàng tiêu đề (nút Thêm dòng, …) — xem `Section`. */
+  headerRight?: React.ReactNode;
 }
 
 /** Section trong form – dùng chung Section (cùng style với DetailSection) */

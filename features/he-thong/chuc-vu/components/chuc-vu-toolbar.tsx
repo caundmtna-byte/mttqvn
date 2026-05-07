@@ -7,6 +7,7 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { TrangThaiHoatDong } from '../../../../lib/constants/trang-thai';
 import { usePositionStore } from '../store/usePositionStore';
 import GenericToolbar from '../../../../components/shared/GenericToolbar';
+import FilterChipMultiSelect from '../../../../components/shared/FilterChipMultiSelect';
 import { useDepartments } from '../../phong-ban/hooks/use-phong-ban';
 import { countColumnSearchActive } from '../utils/column-search';
 
@@ -72,7 +73,30 @@ const PositionToolbar: React.FC<Props> = ({
     [departments, deptCounts]
   );
 
-  /** Mobile: sheet lọc — desktop dùng header cột bảng (cùng state), không chip trên toolbar. */
+  const filtersSlot = useMemo(
+    () => (
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipMultiSelect
+          options={departmentOptions}
+          value={filters.phong_ban_id}
+          onChange={(val) => setFilter('phong_ban_id', val)}
+          placeholder={txt('employee.toolbar.department')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
+        <FilterChipMultiSelect
+          options={statusOptions}
+          value={filters.status}
+          onChange={(val) => setFilter('status', val)}
+          placeholder={txt('common.status')}
+          icon={Tag}
+          className="shrink-0 w-full min-w-0 sm:w-[min(180px,24vw)] sm:max-w-[220px]"
+        />
+      </div>
+    ),
+    [departmentOptions, statusOptions, filters.phong_ban_id, filters.status, setFilter],
+  );
+
   const filterGroups = useMemo(
     () => [
       {
@@ -137,6 +161,7 @@ const PositionToolbar: React.FC<Props> = ({
         onSearchChange={setSearchTerm}
         onClearSelection={clearSelection}
         actions={renderActions}
+        filters={filtersSlot}
         filterGroups={filterGroups}
         mobileActions={mobileActions}
         onAdd={canCreate ? onAdd : undefined}

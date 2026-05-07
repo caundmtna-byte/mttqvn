@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware';
 import type { AppFontFamily } from '../lib/theme/fonts';
 import { AuthState, User } from '../types';
 import { usePermissionGrantStore } from './usePermissionGrantStore';
@@ -16,15 +16,17 @@ function isRemembered(): boolean {
  * Mỗi lần đọc/ghi đều kiểm tra auth-remember tại thời điểm đó,
  * đảm bảo lựa chọn "Ghi nhớ" có hiệu lực ngay trong cùng phiên đăng nhập.
  */
-function createAuthPersistStorage() {
-  if (typeof window === 'undefined') return null;
+type AuthPersistSlice = Pick<AuthState, 'user' | 'isAuthenticated'>;
+
+function createAuthPersistStorage(): PersistStorage<AuthPersistSlice> | undefined {
+  if (typeof window === 'undefined') return undefined;
   return {
-    getItem: (name: string) => {
+    getItem: (name: string): StorageValue<AuthPersistSlice> | null => {
       const storage = isRemembered() ? localStorage : sessionStorage;
       const raw = storage.getItem(name);
-      return raw ? JSON.parse(raw) : null;
+      return raw ? (JSON.parse(raw) as StorageValue<AuthPersistSlice>) : null;
     },
-    setItem: (name: string, value: { state: unknown; version: number }) => {
+    setItem: (name: string, value: StorageValue<AuthPersistSlice>) => {
       const serialized = JSON.stringify(value);
       if (isRemembered()) {
         sessionStorage.removeItem(name);
@@ -56,8 +58,11 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       version: 2,
-      storage: createAuthPersistStorage() ?? undefined,
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      storage: createAuthPersistStorage(),
+      partialize: (state): Pick<AuthState, 'user' | 'isAuthenticated'> => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
       onRehydrateStorage: () => () => {
         useAuthStore.setState({ _hasHydrated: true });
       },

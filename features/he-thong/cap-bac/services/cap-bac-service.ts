@@ -2,13 +2,13 @@ import type { JobLevel } from '../core/types';
 
 const ts = () => new Date().toISOString();
 
-/** Id dạng chuỗi số khớp cột `cap_bac` SMALLINT trên Supabase (không bảng var_cap_bac). */
-const MOCK_LEVELS: JobLevel[] = [
+/** Nhãn preset cho mã `cap_bac` (1–4) trên `var_chuc_vu`; không đồng bộ từ bảng DB riêng. */
+const PRESET_CAP_BAC_BY_RANK: JobLevel[] = [
   {
     id: '1',
     ma_cap_bac: 'GD',
     ten_cap_bac: 'Giám đốc',
-    mo_ta: 'Placeholder — module cấp bậc đã gỡ',
+    mo_ta: null,
     thu_tu: 1,
     trang_thai: 'Đang hoạt động',
     tg_tao: ts(),
@@ -47,5 +47,5 @@ const MOCK_LEVELS: JobLevel[] = [
 ];
 
 export async function getJobLevels(): Promise<JobLevel[]> {
-  return MOCK_LEVELS;
+  return PRESET_CAP_BAC_BY_RANK;
 }

@@ -47,8 +47,62 @@ export const queryKeys = {
   baiVietThietLapKhac: {
     all: ['bai-viet-thiet-lap-khac'] as const,
   },
+  mttqThietLap: {
+    all: ['mttq-thiet-lap'] as const,
+  },
   baiVietDanhSach: {
     all: ['bai-viet-danh-sach'] as const,
     detail: (id: string) => ['bai-viet-danh-sach', 'detail', id] as const,
+  },
+  congViecDanhSach: {
+    all: ['cong-viec-danh-sach'] as const,
+    detail: (id: string) => ['cong-viec-danh-sach', 'detail', id] as const,
+  },
+  congViecBaoCao: {
+    /** Prefix dùng để invalidate toàn bộ báo cáo công việc khi CRUD bảng nguồn. */
+    all: ['cong-viec-bao-cao'] as const,
+    kpi: (args: unknown) => ['cong-viec-bao-cao', 'kpi', args] as const,
+    trend: (args: unknown, bucket: string) =>
+      ['cong-viec-bao-cao', 'trend', bucket, args] as const,
+    phanBoTrangThai: (args: unknown) =>
+      ['cong-viec-bao-cao', 'phan-bo-trang-thai', args] as const,
+    phanBoMucDo: (args: unknown) =>
+      ['cong-viec-bao-cao', 'phan-bo-muc-do', args] as const,
+    topTrachNhiem: (args: unknown, topN: number) =>
+      ['cong-viec-bao-cao', 'top-trach-nhiem', topN, args] as const,
+    topNguoiTao: (args: unknown, topN: number) =>
+      ['cong-viec-bao-cao', 'top-nguoi-tao', topN, args] as const,
+    lookup: (args: unknown, opts: unknown) =>
+      ['cong-viec-bao-cao', 'lookup', opts, args] as const,
+    filterOptions: (range: { p_start: string; p_end: string }) =>
+      ['cong-viec-bao-cao', 'filter-options', range] as const,
+  },
+  mttqCanBo: {
+    all: ['mttq-can-bo'] as const,
+    detail: (id: string) => ['mttq-can-bo', 'detail', id] as const,
+  },
+  mttqKhenThuong: {
+    all: ['mttq-khen-thuong'] as const,
+    detail: (id: string) => ['mttq-khen-thuong', 'detail', id] as const,
+    /** Dòng khen thưởng gắn một cán bộ — dùng detail cán bộ + invalidate theo prefix `by-can-bo`. */
+    byCanBo: (canBoId: string) => ['mttq-khen-thuong', 'by-can-bo', canBoId] as const,
+    byCanBoPrefix: ['mttq-khen-thuong', 'by-can-bo'] as const,
+  },
+  mttqLopTapHuan: {
+    all: ['mttq-lop-tap-huan'] as const,
+    detail: (id: string) => ['mttq-lop-tap-huan', 'detail', id] as const,
+  },
+  mttqNhiemKy: {
+    all: ['mttq-nhiem-ky'] as const,
+    detail: (id: string) => ['mttq-nhiem-ky', 'detail', id] as const,
+  },
+  tinhThanh: {
+    all: ['tinh-thanh'] as const,
+  },
+  xaPhuong: {
+    all: ['xa-phuong'] as const,
+    /** Danh sách toàn bộ xã/phường (tab xã, không lọc tỉnh). */
+    listAll: ['xa-phuong', 'list-all'] as const,
+    byTinh: (idTinhThanh: string) => ['xa-phuong', 'by-tinh', idTinhThanh] as const,
   },
 } as const;

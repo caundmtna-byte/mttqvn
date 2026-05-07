@@ -12,9 +12,11 @@ import { useDepartments } from '../../phong-ban/hooks/use-phong-ban';
 import { usePositions } from '../../chuc-vu/hooks/use-chuc-vu';
 import { useFilterCounts } from '../hooks/use-filter-counts';
 import { STATUS_BADGE_CONFIG, STATUS_OPTIONS } from '../core/constants';
-import { EmployeeColumnHeaderFilter } from './EmployeeColumnHeaderFilter';
-import { EmployeeColumnHeaderSortMenu } from './EmployeeColumnHeaderSortMenu';
-import { EmployeeColumnHeaderSearch } from './EmployeeColumnHeaderSearch';
+import {
+  ColumnHeaderFilter,
+  ColumnHeaderSortMenu,
+  ColumnHeaderSearch,
+} from '@/components/shared/column-header';
 import { EmployeeTableRowActions } from './employee-table-row-actions';
 
 interface Props {
@@ -79,7 +81,7 @@ const EmployeeTable = memo(function EmployeeTable({
       const cs = filters.columnSearch;
       const colSearchActive = Boolean(cs[col.id]?.trim());
       const columnSearchEl = (
-        <EmployeeColumnHeaderSearch
+        <ColumnHeaderSearch
           variant="inDropdown"
           value={cs[col.id] ?? ''}
           onChange={(v) =>
@@ -95,7 +97,7 @@ const EmployeeTable = memo(function EmployeeTable({
       switch (col.id) {
         case 'ten_phong_ban':
           return (
-            <EmployeeColumnHeaderFilter
+            <ColumnHeaderFilter
               options={departmentOptions}
               value={filters.id_phong_ban}
               onChange={(v) => setFilter('id_phong_ban', v)}
@@ -107,7 +109,7 @@ const EmployeeTable = memo(function EmployeeTable({
           );
         case 'ten_bo_phan':
           return (
-            <EmployeeColumnHeaderSortMenu
+            <ColumnHeaderSortMenu
               ariaLabel={col.label}
               sortColumnId={col.id}
               sort={sort}
@@ -118,7 +120,7 @@ const EmployeeTable = memo(function EmployeeTable({
           );
         case 'ten_chuc_vu':
           return (
-            <EmployeeColumnHeaderFilter
+            <ColumnHeaderFilter
               options={positionOptions}
               value={filters.id_chuc_vu}
               onChange={(v) => setFilter('id_chuc_vu', v)}
@@ -130,7 +132,7 @@ const EmployeeTable = memo(function EmployeeTable({
           );
         case 'trang_thai':
           return (
-            <EmployeeColumnHeaderFilter
+            <ColumnHeaderFilter
               options={statusOptions}
               value={filters.trang_thai}
               onChange={(v) => setFilter('trang_thai', v)}
@@ -142,7 +144,7 @@ const EmployeeTable = memo(function EmployeeTable({
           );
         default:
           return (
-            <EmployeeColumnHeaderSortMenu
+            <ColumnHeaderSortMenu
               ariaLabel={col.label}
               sortColumnId={col.id}
               sort={sort}
@@ -173,6 +175,7 @@ const EmployeeTable = memo(function EmployeeTable({
               src={item.hinh_anh || getAvatarUrl(item.ho_va_ten)}
               className="w-8 h-8 rounded-full border border-border shadow-sm object-cover shrink-0"
               alt={item.ho_va_ten}
+              loading="lazy"
             />
             <span className="font-semibold text-foreground text-sm truncate">{item.ho_va_ten}</span>
           </div>
@@ -236,6 +239,7 @@ const EmployeeTable = memo(function EmployeeTable({
             src={item.hinh_anh || getAvatarUrl(item.ho_va_ten ?? '')}
             className="h-12 w-12 rounded-xl border border-border object-cover shadow-sm"
             alt={item.ho_va_ten}
+            loading="lazy"
           />
           <div
             className={cn(

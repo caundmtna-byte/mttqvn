@@ -14,7 +14,7 @@ export default defineConfig(() => {
         host: '0.0.0.0',
       },
       build: {
-        chunkSizeWarningLimit: 3500,
+        chunkSizeWarningLimit: 1000,
         rollupOptions: {
           output: {
             manualChunks(id) {
@@ -63,11 +63,9 @@ export default defineConfig(() => {
               },
             ],
           },
-          minify: false, // tránh lỗi "Unable to write service worker" / terser renderChunk early exit
           workbox: {
-            mode: 'development', // không dùng terser khi build SW → tránh lỗi "Unfinished hook (terser) renderChunk"
             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-            maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8 MiB (chunk chính ~5.8 MB)
+            maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MiB — file lớn hơn không cache SW nhưng vẫn tải qua network
             runtimeCaching: [
               {
                 urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

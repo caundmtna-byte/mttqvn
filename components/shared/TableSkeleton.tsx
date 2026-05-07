@@ -40,9 +40,10 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({
   columnWithSubline,
   className,
 }) => {
-  const cols = typeof columns === 'number'
-    ? Array.from({ length: columns }, () => ({}))
-    : columns;
+  const cols: TableSkeletonColumn[] =
+    typeof columns === 'number'
+      ? Array.from({ length: columns }, (): TableSkeletonColumn => ({}))
+      : columns;
 
   const dataColsForMin = cols.map((c) => ({
     width: undefined as number | undefined,

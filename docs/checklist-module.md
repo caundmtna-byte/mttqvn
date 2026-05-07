@@ -156,12 +156,14 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 - [ ] Pattern khuyến nghị: **một nút Sửa** + **`RowActionsOverflowMenu`** (`components/shared/row-actions`) — thêm quyền `aria-label`, tooltip.
 - [ ] `minWidth` cột `actions` đủ cho icon; không để vỡ layout khi tên dài (truncate ở cột text).
 
-### 7.4 Lọc / sort theo header cột (bắt buộc nếu module dùng Pattern B)
+### 7.4 Lọc / sort theo header cột (chuẩn listview — tham khảo **Nhân viên**)
 
-- [ ] Bảng hỗ trợ **`renderColumnHeaderAccessory`** (đã có trên `GenericTable`, `HierarchyTable`).
-- [ ] Mỗi cột cần lọc: accessory = sort menu + ô tìm / MultiSelect (reuse `EmployeeColumnHeaderSearch`, `EmployeeColumnHeaderFilter`, … hoặc tách shared sau).
-- [ ] **`columnSearch`** (và logic đếm active) đồng bộ với toolbar **Xóa tất cả** và export (dữ liệu xuất = dữ liệu đã lọc **giống** list).
-- [ ] Sort sau filter (hoặc server sort): thứ tự rõ ràng trong `index`/hook — tránh sort trên full list rồi mới filter (sai kết quả).
+- [ ] Bảng hỗ trợ **`renderColumnHeaderAccessory`** trên `GenericTable` (và `hideSortOnColumnLabel` khi sort nằm trong menu header).
+- [ ] **Mỗi cột dữ liệu** (trừ `actions`): nút **sliders** (`ColumnHeaderSortMenu`) → **Sắp xếp A→Z / Z→A** + **ô tìm theo cột** (`ColumnHeaderSearch` trong dropdown). Tham chiếu: `features/he-thong/nhan-vien/components/nhan-vien-table.tsx` + `@/components/shared/column-header`.
+- [ ] Cột **enum / trạng thái** cần tick nhiều giá trị: **`ColumnHeaderFilter`** (sort + MultiSelect + tìm trong dropdown) — cùng `filters.<key>` với **FilterChip** trên toolbar nếu module vẫn dùng chip (vd. **Danh sách khen thưởng**: `mttq-khen-thuong-table.tsx` + `utils/column-search.ts`).
+- [ ] **`columnSearch`**: util `*_matchesColumnSearch` + `count*ColumnSearchActive` — **không** áp text search trùng key với cột đã dùng `ColumnHeaderFilter` (khai báo danh sách skip trong util, xem `nhan-vien/utils/column-search.ts`).
+- [ ] **`filterFn`**: `columnSearch` **AND** chip/toolbar filters; **sort sau filter** trong `index` (hoặc server) — tránh sort full list rồi mới filter.
+- [ ] Toolbar: **`activeFilterCount`** gồm `columnSearch` (theo util đếm); **`onClearAllFilters`**: xóa `searchTerm`, `columnSearch`, các filter chip, và **reset sort** (`setSort(null, null)`) nếu sort client — đồng bộ **Export** với list đã lọc.
 
 ---
 
@@ -199,7 +201,7 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 ### 9.1 Thứ tự block (từ trên xuống)
 
 - [ ] **Summary card** (trên **DetailToolbar**): bố cục **chuẩn template** — **hàng 1:** icon + **title + badge trạng thái** cùng hàng (flex, badge không “lơ lửng”); **hàng 2:** mã / mã số (`subtitle` hoặc `DetailField` tương đương); meta (ngày, cấp, …) tiếp theo nếu có. Tham chiếu trực quan: module **Chức vụ** (`chuc-vu-detail`).
-- [ ] **DetailToolbar**: hành động “nổi bật” (đổi trạng thái, thêm bản ghi con, …) — chỉ hiện khi `canEdit` / đúng nghiệp vụ.
+- [ ] **DetailToolbar**: hành động “nổi bật” (đổi trạng thái, thêm bản ghi con, …) — chỉ hiện khi `canEdit` / đúng nghiệp vụ. **Đổi / chuyển trạng thái** → popup modal (`GenericDrawer` `variant="modal"`), không dùng drawer trượt — `docs/patterns-detail-status-change.md`.
 - [ ] **DetailSection** + **DetailField**: nhóm “Thông tin chung”, “Liên hệ”, … — mỗi field một label + value.
 
 ### 9.2 Chi tiết hiển thị

@@ -332,7 +332,11 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                               <tr key={ri} className="border-b border-border/30">
                                 {sheetHeaders.map((_, ci) => (
                                   <td key={ci} className="px-2 py-1.5 text-foreground whitespace-nowrap max-w-[150px] truncate">
-                                    {row[ci] ?? <span className="text-muted-foreground/40">--</span>}
+                                    {row[ci] != null && row[ci] !== '' ? (
+                                      String(row[ci] as string | number | boolean)
+                                    ) : (
+                                      <span className="text-muted-foreground/40">--</span>
+                                    )}
                                   </td>
                                 ))}
                               </tr>

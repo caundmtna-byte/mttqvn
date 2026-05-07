@@ -38,7 +38,6 @@ const now = () => new Date().toISOString();
 
 const repo = createRepository<Employee>({
   tableName: 'var_nhan_vien',
-  mockData: [],
   select: EMPLOYEE_SELECT_FULL,
   delay: 200,
 });
@@ -93,9 +92,17 @@ export const getEmployees = async (params: GetEmployeesParams = {}): Promise<Emp
 };
 
 export const getEmployeeById = async (id: string): Promise<Employee | undefined> => {
-  const row = await repo.getById(id);
+  const [row, depts, positions] = await Promise.all([
+    repo.getById(id),
+    getDepartments(),
+    getPositions(),
+  ]);
   if (!row) return undefined;
-  return enrichEmployee(row);
+  const lookups = {
+    depts: depts.map((d) => ({ id: d.id, ten_phong_ban: d.ten_phong_ban })),
+    positions: positions.map((p) => ({ id: p.id, ten_chuc_vu: p.ten_chuc_vu })),
+  };
+  return enrichEmployee(row, lookups);
 };
 
 function normInt8Fk(v: string | null | undefined): number | null {
@@ -118,24 +125,38 @@ function toRowPayload(data: EmployeeFormValues) {
   };
 }
 
+async function fetchLookups() {
+  const [depts, positions] = await Promise.all([getDepartments(), getPositions()]);
+  return {
+    depts: depts.map((d) => ({ id: d.id, ten_phong_ban: d.ten_phong_ban })),
+    positions: positions.map((p) => ({ id: p.id, ten_chuc_vu: p.ten_chuc_vu })),
+  };
+}
+
 async function insertEmployeeRow(data: EmployeeFormValues): Promise<Employee> {
-  const inserted = await repo.insert(
-    toRowPayload(data) as unknown as Omit<Employee, 'id'> & { id?: string },
-    { returningSelect: EMPLOYEE_RETURNING_FULL },
-  );
-  return enrichEmployee(inserted);
+  const [inserted, lookups] = await Promise.all([
+    repo.insert(
+      toRowPayload(data) as unknown as Omit<Employee, 'id'> & { id?: string },
+      { returningSelect: EMPLOYEE_RETURNING_FULL },
+    ),
+    fetchLookups(),
+  ]);
+  return enrichEmployee(inserted, lookups);
 }
 
 async function updateEmployeeRow(id: string, data: EmployeeFormValues): Promise<Employee> {
-  const updated = await repo.update(
-    id,
-    {
-      ...toRowPayload(data),
-      tg_cap_nhat: now(),
-    } as unknown as Partial<Employee>,
-    { returningSelect: EMPLOYEE_RETURNING_FULL },
-  );
-  return enrichEmployee(updated);
+  const [updated, lookups] = await Promise.all([
+    repo.update(
+      id,
+      {
+        ...toRowPayload(data),
+        tg_cap_nhat: now(),
+      } as unknown as Partial<Employee>,
+      { returningSelect: EMPLOYEE_RETURNING_FULL },
+    ),
+    fetchLookups(),
+  ]);
+  return enrichEmployee(updated, lookups);
 }
 
 /**
@@ -233,27 +254,23 @@ export const updateEmployeeStatus = async (
   status: TrangThaiNhanVien,
 ): Promise<void> => {
   const timestamp = now();
-  for (const id of ids) {
-    await repo.update(
-      id,
-      { trang_thai: status, tg_cap_nhat: timestamp } as unknown as Partial<Employee>,
-      { returningSelect: EMPLOYEE_RETURNING_STATUS_ONLY },
-    );
-  }
+  await Promise.all(
+    ids.map((id) =>
+      repo.update(
+        id,
+        { trang_thai: status, tg_cap_nhat: timestamp } as unknown as Partial<Employee>,
+        { returningSelect: EMPLOYEE_RETURNING_STATUS_ONLY },
+      ),
+    ),
+  );
 };
 
 async function safeDeleteAuthUsersByIds(ids: string[]): Promise<void> {
   if (!isSupabase() || ids.length === 0) return;
-  const usernames: string[] = [];
-  for (const id of ids) {
-    try {
-      const row = await repo.getById(id);
-      const u = String((row as Employee | null)?.ten_tai_khoan ?? '').trim().toLowerCase();
-      if (u) usernames.push(u);
-    } catch {
-      // bỏ qua lỗi tra cứu — vẫn tiếp tục xoá DB.
-    }
-  }
+  const rows = await Promise.all(ids.map((id) => repo.getById(id).catch(() => null)));
+  const usernames = rows
+    .map((row) => String((row as Employee | null)?.ten_tai_khoan ?? '').trim().toLowerCase())
+    .filter(Boolean);
   await Promise.all(
     usernames.map((u) =>
       deleteAuthUser(u).catch(() => {

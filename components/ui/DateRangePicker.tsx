@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo, useId } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useId, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -50,15 +51,52 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   customPresetId = 'custom',
 }) => {
   const [open, setOpen] = useState(false);
+  /** Panel portal — tránh bị cắt bởi overflow-x trên toolbar (đồng bộ z với MultiSelect filter chip). */
+  const [fixedPanelRect, setFixedPanelRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const customStartId = useId();
   const customEndId = useId();
 
-  // Close on click outside
+  const POPOVER_WIDTH = 400;
+
+  const updatePopoverPosition = useCallback(() => {
+    const root = ref.current;
+    if (!root || !open) return;
+    const r = root.getBoundingClientRect();
+    const pad = 8;
+    let left = r.left;
+    if (left + POPOVER_WIDTH > window.innerWidth - pad) {
+      left = Math.max(pad, window.innerWidth - pad - POPOVER_WIDTH);
+    }
+    setFixedPanelRect({ top: r.bottom + 6, left, width: POPOVER_WIDTH });
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    const root = ref.current;
+    if (!root) return;
+    updatePopoverPosition();
+    const ro = new ResizeObserver(() => updatePopoverPosition());
+    ro.observe(root);
+    window.addEventListener('scroll', updatePopoverPosition, true);
+    window.addEventListener('resize', updatePopoverPosition);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('scroll', updatePopoverPosition, true);
+      window.removeEventListener('resize', updatePopoverPosition);
+    };
+  }, [open, updatePopoverPosition]);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t)) return;
+      if (popoverRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -102,71 +140,92 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <ChevronDown size={12} className={cn('shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
 
-      {/* Popover */}
-      {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-card rounded-xl shadow-xl border border-border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="flex">
-            {/* Left column: From / To */}
-            <div className="w-[180px] p-3 space-y-2.5 border-r border-border">
-              <div>
-                <label htmlFor={customStartId} className="text-xs font-medium text-muted-foreground mb-1 block">Từ ngày</label>
-                <input
-                  id={customStartId}
-                  type="date"
-                  value={value.customStart}
-                  onChange={(e) =>
-                    onChange({ preset: customPresetId, customStart: e.target.value, customEnd: value.customEnd })
-                  }
-                  className="w-full h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-                />
+      {open &&
+        fixedPanelRect &&
+        createPortal(
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onMouseDown chỉ stopPropagation (không đóng khi chọn ngày)
+          <div
+            ref={popoverRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={placeholder}
+            tabIndex={-1}
+            style={{
+              position: 'fixed',
+              top: fixedPanelRect.top,
+              left: fixedPanelRect.left,
+              width: fixedPanelRect.width,
+            }}
+            className="z-[85] bg-card rounded-xl shadow-xl border border-border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex w-full min-w-0">
+              <div className="w-[180px] shrink-0 p-3 space-y-2.5 border-r border-border">
+                <div>
+                  <label htmlFor={customStartId} className="text-xs font-medium text-muted-foreground mb-1 block">
+                    Từ ngày
+                  </label>
+                  <input
+                    id={customStartId}
+                    type="date"
+                    value={value.customStart}
+                    onChange={(e) =>
+                      onChange({ preset: customPresetId, customStart: e.target.value, customEnd: value.customEnd })
+                    }
+                    className="w-full h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                  />
+                </div>
+                <div>
+                  <label htmlFor={customEndId} className="text-xs font-medium text-muted-foreground mb-1 block">
+                    Đến ngày
+                  </label>
+                  <input
+                    id={customEndId}
+                    type="date"
+                    value={value.customEnd}
+                    onChange={(e) =>
+                      onChange({ preset: customPresetId, customStart: value.customStart, customEnd: e.target.value })
+                    }
+                    className="w-full h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                  />
+                </div>
+                {isCustom && value.customStart && value.customEnd && (
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="w-full h-7 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    Áp dụng
+                  </button>
+                )}
               </div>
-              <div>
-                <label htmlFor={customEndId} className="text-xs font-medium text-muted-foreground mb-1 block">Đến ngày</label>
-                <input
-                  id={customEndId}
-                  type="date"
-                  value={value.customEnd}
-                  onChange={(e) =>
-                    onChange({ preset: customPresetId, customStart: value.customStart, customEnd: e.target.value })
-                  }
-                  className="w-full h-8 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-                />
-              </div>
-              {isCustom && value.customStart && value.customEnd && (
-                <button
-                  onClick={() => setOpen(false)}
-                  className="w-full h-7 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
-                >
-                  Áp dụng
-                </button>
-              )}
-            </div>
 
-            {/* Right column: Preset grid (2 cols) */}
-            <div className="w-[200px] p-2">
-              <p className="text-xs font-semibold text-muted-foreground px-1.5 mb-1.5">Chọn nhanh</p>
-              <div className="grid grid-cols-2 gap-1">
-                {presets
-                  .filter((p) => p.id !== customPresetId)
-                  .map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => handlePreset(p.id)}
-                      className={cn(
-                        'h-7 px-2 rounded-lg text-xs font-medium transition-all text-left truncate',
-                        value.preset === p.id
-                          ? 'bg-primary/10 text-primary border border-primary/20'
-                          : 'text-foreground hover:bg-muted border border-transparent'
-                      )}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+              <div className="w-[200px] shrink-0 p-2">
+                <p className="text-xs font-semibold text-muted-foreground px-1.5 mb-1.5">Chọn nhanh</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {presets
+                    .filter((p) => p.id !== customPresetId)
+                    .map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handlePreset(p.id)}
+                        className={cn(
+                          'h-7 px-2 rounded-lg text-xs font-medium transition-all text-left truncate',
+                          value.preset === p.id
+                            ? 'bg-primary/10 text-primary border border-primary/20'
+                            : 'text-foreground hover:bg-muted border border-transparent',
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

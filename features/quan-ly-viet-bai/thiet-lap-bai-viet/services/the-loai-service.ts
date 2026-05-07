@@ -2,12 +2,10 @@ import { createRepository } from '@/lib/data/create-repository';
 import type { BaiVietTheLoai } from '../core/types';
 import type { TheLoaiFormValues } from '../core/schema';
 import { THE_LOAI_RETURNING_FULL, THE_LOAI_SELECT_FULL } from '../core/supabase-select';
-import { MOCK_BAI_VIET_THE_LOAI } from '../mock-data';
 import { txt } from '@/lib/text';
 
 const repo = createRepository<BaiVietTheLoai>({
   tableName: 'bai_viet_thiet_lap_the_loai',
-  mockData: MOCK_BAI_VIET_THE_LOAI,
   select: THE_LOAI_SELECT_FULL,
   delay: 400,
 });

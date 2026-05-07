@@ -226,6 +226,7 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
                 src={value}
                 alt="Preview"
                 className={cn('w-full h-full object-cover', shapeClass)}
+                loading="lazy"
               />
             </motion.div>
           ) : (

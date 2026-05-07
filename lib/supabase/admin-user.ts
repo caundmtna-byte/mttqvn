@@ -40,7 +40,7 @@ async function callAdminUser(action: AdminAction, username: string, extra?: { pa
     },
     body: JSON.stringify({ action, username: username.trim().toLowerCase(), ...extra }),
   });
-  let json: AdminResponse = {};
+  let json: AdminResponse;
   try {
     json = (await res.json()) as AdminResponse;
   } catch {

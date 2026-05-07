@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import type { Json, PublicTableName } from '@/lib/supabase/database.types';
 import type { IRepository, RepositoryMutationOptions, RepositoryQueryOptions } from './repository';
 
 /** Giới hạn mặc định mỗi lần getAll — tránh tải bảng lớn một lượt (PostgREST/Supabase). Tăng limit trong RepositoryQueryOptions nếu cần. */
@@ -17,7 +18,7 @@ function ensureClient() {
  */
 export class SupabaseRepository<T extends { id: string }> implements IRepository<T> {
   constructor(
-    private readonly tableName: string,
+    private readonly tableName: PublicTableName,
     private readonly options?: { select?: string },
   ) {}
 
@@ -41,7 +42,7 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
     query = query.range(offset, offset + pageSize - 1);
     const { data, error } = await query;
     if (error) handleSupabaseError(error);
-    return (data ?? []) as T[];
+    return (data ?? []) as unknown as T[];
   }
 
   async getById(id: string): Promise<T | null> {
@@ -52,12 +53,12 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
       .eq('id', id)
       .maybeSingle();
     if (error) handleSupabaseError(error);
-    return data as T | null;
+    return data as unknown as T | null;
   }
 
   async insert(row: Omit<T, 'id'> & { id?: string }, opts?: RepositoryMutationOptions): Promise<T> {
     const supabase = ensureClient();
-    const payload = { ...row } as Record<string, unknown>;
+    const payload = { ...row } as Record<string, Json>;
     if (payload.id === undefined) delete payload.id;
     const { data, error } = await supabase
       .from(this.tableName)
@@ -65,12 +66,12 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
       .select(this.mutationSelect(opts))
       .single();
     if (error) handleSupabaseError(error);
-    return data as T;
+    return data as unknown as T;
   }
 
   async update(id: string, partial: Partial<T>, opts?: RepositoryMutationOptions): Promise<T> {
     const supabase = ensureClient();
-    const payload = { ...partial } as Record<string, unknown>;
+    const payload = { ...partial } as Record<string, Json>;
     delete payload.id;
     const { data, error } = await supabase
       .from(this.tableName)
@@ -79,7 +80,7 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
       .select(this.mutationSelect(opts))
       .single();
     if (error) handleSupabaseError(error);
-    return data as T;
+    return data as unknown as T;
   }
 
   async remove(ids: string[]): Promise<void> {
@@ -92,12 +93,12 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
   async upsert(rows: (Omit<T, 'id'> & { id?: string }) | ((Omit<T, 'id'> & { id?: string })[])): Promise<T[]> {
     const supabase = ensureClient();
     const arr = Array.isArray(rows) ? rows : [rows];
-    const payload = arr.map((r) => ({ ...r } as Record<string, unknown>));
+    const payload = arr.map((r) => ({ ...r } as Record<string, Json>));
     const { data, error } = await supabase
       .from(this.tableName)
       .upsert(payload, { onConflict: 'id' })
       .select(this.select);
     if (error) handleSupabaseError(error);
-    return (data ?? []) as T[];
+    return (data ?? []) as unknown as T[];
   }
 }

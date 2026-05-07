@@ -22,6 +22,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 
 const initialFilters: ArticleTheLoaiFilters = {
   columnSearch: {},
+  don_gia_bucket: '',
 };
 
 export const useArticleTheLoaiStore = createGenericStore<ArticleTheLoaiFilters>(initialFilters, DEFAULT_COLUMNS);
