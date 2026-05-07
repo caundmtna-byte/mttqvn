@@ -1,1 +1,0 @@
-import{t as e}from"./index-7c58PzMw.js";const o=["Hoạt động","Khóa"],a=[{get label(){return e("employee.statusActive")},value:"Hoạt động"},{get label(){return e("employee.statusLocked")},value:"Khóa"}],l={"Hoạt động":{get label(){return e("employee.statusActive")},color:"emerald"},Khóa:{get label(){return e("employee.statusLocked")},color:"rose"}};export{l as S,o as T,a};

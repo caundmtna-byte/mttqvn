@@ -20,6 +20,8 @@ import { matTranCanBo } from '../../features/mat-tran-to-quoc/danh-sach-can-bo/t
 import { matTranKhenThuong } from '../../features/mat-tran-to-quoc/danh-sach-khen-thuong/text';
 import { matTranTapHuan } from '../../features/mat-tran-to-quoc/danh-sach-tap-huan/text';
 import { matTranNhiemKy } from '../../features/mat-tran-to-quoc/nhiem-ky/text';
+import { matTranKyHop } from '../../features/mat-tran-to-quoc/ky-hop/text';
+import { matTranUyVienUyBan } from '../../features/mat-tran-to-quoc/uy-vien-uy-ban/text';
 import { diaBan } from '../../features/he-thong/danh-sach-tinh-thanh/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
@@ -56,6 +58,8 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('matTranKhenThuong', matTranKhenThuong),
   ...flatten('matTranTapHuan', matTranTapHuan),
   ...flatten('matTranNhiemKy', matTranNhiemKy),
+  ...flatten('matTranKyHop', matTranKyHop),
+  ...flatten('matTranUyVienUyBan', matTranUyVienUyBan),
   ...flatten('tenure', tenure),
   ...flatten('taiLieu', taiLieu),
   ...flatten('diaBan', diaBan),
@@ -105,6 +109,7 @@ export {
   matTranKhenThuong,
   matTranTapHuan,
   matTranNhiemKy,
+  matTranKyHop,
   diaBan,
 };
 export { fmt };

@@ -337,7 +337,9 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-xs font-semibold text-foreground leading-tight">{user?.full_name || txt('nav.guestUser')}</p>
-                  <p className="text-xs font-normal text-muted-foreground leading-tight">{user?.role === 'admin' ? txt('nav.roleAdmin') : txt('nav.roleMember')}</p>
+                  <p className="text-xs font-normal text-muted-foreground leading-tight">
+                    {user?.ten_chuc_vu?.trim() || txt('employee.unassigned')}
+                  </p>
                 </div>
                 <ChevronDown size={12} className={cn("text-muted-foreground/50 hidden md:block transition-transform", isUserMenuOpen ? "rotate-180" : "")} />
               </button>
@@ -352,6 +354,9 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                   >
                     <div className="px-3 py-2.5 border-b border-border md:hidden">
                       <p className="text-xs font-semibold text-foreground">{user?.full_name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {user?.ten_chuc_vu?.trim() || txt('employee.unassigned')}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-0.5">{user?.email}</p>
                     </div>
                     <div className="space-y-0.5">

@@ -16,6 +16,8 @@ export interface User {
   id_bo_phan?: string | null;
   /** Id chức vụ — module mới: 1 chức vụ; hỗ trợ array ở các module cũ. */
   id_chuc_vu?: string | string[] | null;
+  /** Tên chức vụ (`var_chuc_vu.ten_chuc_vu`), đồng bộ lúc đăng nhập / session. */
+  ten_chuc_vu?: string | null;
   /** Trạng thái tài khoản trong `var_nhan_vien` (tiếng Việt có dấu) */
   trang_thai?: 'Hoạt động' | 'Khóa';
 }

@@ -26,6 +26,8 @@ export type AppResource =
   | 'matTranRewardList'
   | 'matTranTrainingList'
   | 'matTranTerm'
+  | 'matTranSession'
+  | 'matTranCommitteeMembers'
   | 'tasks'
   | 'taskReports'
   | 'profile'
@@ -51,6 +53,8 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranRewardList: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong',
   matTranTrainingList: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan',
   matTranTerm: 'mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky',
+  matTranSession: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop',
+  matTranCommitteeMembers: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
   tasks: 'quan-ly-giao-viec/cong-viec',
   taskReports: 'quan-ly-giao-viec/bao-cao-cong-viec',
 };

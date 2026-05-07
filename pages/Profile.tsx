@@ -74,7 +74,10 @@ const Profile: React.FC = () => {
     setAvatarPreview(null);
   };
 
-  const roleLabel = user?.role === 'admin' ? txt('nav.roleAdmin') : txt('page.profile.roleUser');
+  const roleLabel =
+    currentEmployee?.ten_chuc_vu?.trim() ||
+    user?.ten_chuc_vu?.trim() ||
+    txt('employee.unassigned');
   const avatarAlt = displayName
     ? txt('page.profile.avatarAlt', { name: displayName })
     : txt('page.profile.avatarAltFallback');

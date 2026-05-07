@@ -96,6 +96,16 @@ export const queryKeys = {
     all: ['mttq-nhiem-ky'] as const,
     detail: (id: string) => ['mttq-nhiem-ky', 'detail', id] as const,
   },
+  mttqKyHop: {
+    all: ['mttq-ky-hop'] as const,
+    detail: (id: string) => ['mttq-ky-hop', 'detail', id] as const,
+    byNhiemKy: (nhiemKyId: string) => ['mttq-ky-hop', 'by-nhiem-ky', nhiemKyId] as const,
+  },
+  mttqUyVienUyBan: {
+    all: ['mttq-uy-vien-uy-ban'] as const,
+    detail: (id: string) => ['mttq-uy-vien-uy-ban', 'detail', id] as const,
+    byNhiemKy: (nhiemKyId: string) => ['mttq-uy-vien-uy-ban', 'by-nhiem-ky', nhiemKyId] as const,
+  },
   tinhThanh: {
     all: ['tinh-thanh'] as const,
   },

@@ -37,6 +37,8 @@ export interface VarNhanVienAuthRow {
   id_phong_ban: string | null;
   id_bo_phan: string | null;
   id_chuc_vu: string | null;
+  /** Tên chức vụ sau khi tra `var_chuc_vu` (không có FK embed trên `var_nhan_vien`). */
+  ten_chuc_vu?: string | null;
   trang_thai: 'Hoạt động' | 'Khóa';
 }
 
@@ -50,7 +52,16 @@ export async function getEmployeeByUsername(username: string): Promise<VarNhanVi
     .ilike('ten_tai_khoan', username.trim())
     .maybeSingle();
   if (error) return null;
-  return (data as VarNhanVienAuthRow | null) ?? null;
+  const row = (data as VarNhanVienAuthRow | null) ?? null;
+  if (!row?.id_chuc_vu) return row;
+  const { data: cv, error: cvErr } = await supabase
+    .from('var_chuc_vu')
+    .select('ten_chuc_vu')
+    .eq('id', row.id_chuc_vu)
+    .maybeSingle();
+  if (cvErr || !cv) return row;
+  const ten = (cv as { ten_chuc_vu?: string }).ten_chuc_vu;
+  return { ...row, ten_chuc_vu: ten?.trim() ? ten : null };
 }
 
 /**
@@ -83,6 +94,7 @@ function buildAppUser(authUser: { id: string; email?: string; user_metadata?: Re
     id_phong_ban: nhanVien?.id_phong_ban ?? null,
     id_bo_phan: nhanVien?.id_bo_phan ?? null,
     id_chuc_vu: nhanVien?.id_chuc_vu ?? null,
+    ten_chuc_vu: nhanVien?.ten_chuc_vu ?? null,
     trang_thai: nhanVien?.trang_thai,
   };
 }
@@ -97,6 +109,7 @@ const mockUser: User = {
   id_phong_ban: null,
   id_bo_phan: null,
   id_chuc_vu: null,
+  ten_chuc_vu: null,
   trang_thai: 'Hoạt động',
 };
 

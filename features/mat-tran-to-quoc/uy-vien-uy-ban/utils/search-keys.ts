@@ -1,0 +1,22 @@
+/** Các key dùng cho ô tìm kiếm tổng trên danh sách ủy viên ủy ban. */
+export const MTTQ_UY_VIEN_UY_BAN_SEARCHABLE_KEYS: string[] = [
+  'ma_uv',
+  'ngay_sinh',
+  'ten_nhiem_ky',
+  'ho_va_ten',
+  'ten_don_vi',
+  'chuc_vu_don_vi',
+  'gioi_tinh',
+  'trang_thai_tham_gia',
+  'van_hoa',
+  'trinh_do_cm',
+  'trinh_do_llct',
+  'dan_toc',
+  'ton_giao',
+  'que_quan',
+  'noi_o_hien_nay',
+  'so_dien_thoai',
+  'ghi_chu',
+  'ho_va_ten_nguoi_tao',
+  'ten_tai_khoan_nguoi_tao',
+];

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from './components/layout/Layout';
 import ConfirmDialog from './components/shared/ConfirmDialog';
@@ -21,11 +21,12 @@ const HoaHongVietBaiPage = lazy(() => import('./features/quan-ly-viet-bai/hoa-ho
 const BcThongKeBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/bc-thong-ke-bai-viet/index'));
 const CongViecPage = lazy(() => import('./features/quan-ly-giao-viec/cong-viec/index'));
 const BaoCaoCongViecPage = lazy(() => import('./features/quan-ly-giao-viec/bao-cao-cong-viec/index'));
-const MatTranToQuocModulePlaceholder = lazy(() => import('./pages/mat-tran-to-quoc/MatTranToQuocModulePlaceholder'));
 const ThietLapCaiDatPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-cai-dat/index'));
 const DanhSachCanBoPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-can-bo/index'));
 const DanhSachKhenThuongPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-khen-thuong/index'));
 const NhiemKyPage = lazy(() => import('./features/mat-tran-to-quoc/nhiem-ky/index'));
+const UyVienUyBanPage = lazy(() => import('./features/mat-tran-to-quoc/uy-vien-uy-ban/index'));
+const KyHopPage = lazy(() => import('./features/mat-tran-to-quoc/ky-hop/index'));
 const DanhSachTapHuanPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tap-huan/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -37,6 +38,7 @@ import {
   useResolvedTheme,
 } from './lib/app-sync';
 import { PermissionMatrixSynchronizer } from './components/auth/PermissionMatrixSynchronizer';
+import { AuthSessionSynchronizer } from './components/auth/AuthSessionSynchronizer';
 
 const EmployeePage = lazy(() => import('./features/he-thong/nhan-vien/index'));
 const ThongTinToChucPage = lazy(() => import('./features/he-thong/thong-tin-to-chuc/index'));
@@ -51,6 +53,17 @@ const PageFallback = () => (
   </div>
 );
 
+/** Layout + bảo vệ đăng nhập — dùng Outlet thay vì Routes lồng trong `path="/*"` để các path tuyệt đối khớp đúng (RR 6/7). */
+const AppShell = () => (
+  <ProtectedRoute>
+    <Layout>
+      <Suspense fallback={<PageFallback />}>
+        <Outlet />
+      </Suspense>
+    </Layout>
+  </ProtectedRoute>
+);
+
 const App = () => {
   const resolvedTheme = useResolvedTheme();
   return (
@@ -60,6 +73,7 @@ const App = () => {
       <ThongTinToChucSynchronizer />
       <LanguageSynchronizer />
       <PermissionMatrixSynchronizer />
+      <AuthSessionSynchronizer />
       <ConfirmDialog />
       <PwaRegister />
       <Toaster position="top-right" richColors theme={resolvedTheme} />
@@ -68,57 +82,46 @@ const App = () => {
         <Route path="/login" element={<Navigate to="/dang-nhap" replace />} />
         <Route path="/dang-ky" element={<Navigate to="/dang-nhap" replace />} />
         <Route path="/register" element={<Navigate to="/dang-nhap" replace />} />
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Suspense fallback={<PageFallback />}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/mat-tran-to-quoc" element={<MatTranToQuocDashboard />} />
-                    <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan" element={<DanhSachTapHuanPage />} />
-                    <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong" element={<DanhSachKhenThuongPage />} />
-                    <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky" element={<NhiemKyPage />} />
-                    <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<MatTranToQuocModulePlaceholder />} />
-                    <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<MatTranToQuocModulePlaceholder />} />
-                    <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
-                    <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
-                    <Route path="/quan-ly-viet-bai" element={<QuanLyVietBaiDashboard />} />
-                    <Route path="/quan-ly-viet-bai/bai-viet" element={<BaiVietDanhSachPage />} />
-                    <Route path="/quan-ly-viet-bai/hoa-hong-viet-bai" element={<HoaHongVietBaiPage />} />
-                    <Route path="/quan-ly-viet-bai/bc-thong-ke-bai-viet" element={<BcThongKeBaiVietPage />} />
-                    <Route path="/quan-ly-viet-bai/thiet-lap-bai-viet" element={<ThietLapBaiVietPage />} />
-                    <Route path="/quan-ly-giao-viec" element={<QuanLyGiaoViecDashboard />} />
-                    <Route path="/quan-ly-giao-viec/cong-viec" element={<CongViecPage />} />
-                    <Route path="/quan-ly-giao-viec/bao-cao-cong-viec" element={<BaoCaoCongViecPage />} />
-                    <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
-                    <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
+        <Route element={<AppShell />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/mat-tran-to-quoc" element={<MatTranToQuocDashboard />} />
+          <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan" element={<DanhSachTapHuanPage />} />
+          <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong" element={<DanhSachKhenThuongPage />} />
+          <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky" element={<NhiemKyPage />} />
+          <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<KyHopPage />} />
+          <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<UyVienUyBanPage />} />
+          <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
+          <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
+          <Route path="/quan-ly-viet-bai" element={<QuanLyVietBaiDashboard />} />
+          <Route path="/quan-ly-viet-bai/bai-viet" element={<BaiVietDanhSachPage />} />
+          <Route path="/quan-ly-viet-bai/hoa-hong-viet-bai" element={<HoaHongVietBaiPage />} />
+          <Route path="/quan-ly-viet-bai/bc-thong-ke-bai-viet" element={<BcThongKeBaiVietPage />} />
+          <Route path="/quan-ly-viet-bai/thiet-lap-bai-viet" element={<ThietLapBaiVietPage />} />
+          <Route path="/quan-ly-giao-viec" element={<QuanLyGiaoViecDashboard />} />
+          <Route path="/quan-ly-giao-viec/cong-viec" element={<CongViecPage />} />
+          <Route path="/quan-ly-giao-viec/bao-cao-cong-viec" element={<BaoCaoCongViecPage />} />
+          <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
+          <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 
-                    <Route path="/he-thong" element={<SystemDashboard />} />
-                    <Route path="/he-thong/nhan-vien" element={<EmployeePage />} />
-                    <Route path="/he-thong/phong-ban" element={<DepartmentPage />} />
-                    <Route path="/he-thong/chuc-vu" element={<PositionPage />} />
-                    <Route path="/he-thong/thong-tin-to-chuc" element={<ThongTinToChucPage />} />
-                    <Route path="/he-thong/thong-tin-cong-ty" element={<Navigate to="/he-thong/thong-tin-to-chuc" replace />} />
-                    <Route path="/he-thong/phan-quyen" element={<SecurityPage />} />
-                    <Route path="/he-thong/danh-sach-tinh-thanh" element={<DanhSachTinhThanhPage />} />
+          <Route path="/he-thong" element={<SystemDashboard />} />
+          <Route path="/he-thong/nhan-vien" element={<EmployeePage />} />
+          <Route path="/he-thong/phong-ban" element={<DepartmentPage />} />
+          <Route path="/he-thong/chuc-vu" element={<PositionPage />} />
+          <Route path="/he-thong/thong-tin-to-chuc" element={<ThongTinToChucPage />} />
+          <Route path="/he-thong/thong-tin-cong-ty" element={<Navigate to="/he-thong/thong-tin-to-chuc" replace />} />
+          <Route path="/he-thong/phan-quyen" element={<SecurityPage />} />
+          <Route path="/he-thong/danh-sach-tinh-thanh" element={<DanhSachTinhThanhPage />} />
 
-                    <Route path="/nhan-vien" element={<Navigate to="/he-thong/nhan-vien" replace />} />
-                    <Route path="/phong-ban" element={<Navigate to="/he-thong/phong-ban" replace />} />
-                    <Route path="/chuc-vu" element={<Navigate to="/he-thong/chuc-vu" replace />} />
-                    <Route path="/thong-tin-cong-ty" element={<Navigate to="/he-thong/thong-tin-to-chuc" replace />} />
-                    <Route path="/phan-quyen" element={<Navigate to="/he-thong/phan-quyen" replace />} />
+          <Route path="/nhan-vien" element={<Navigate to="/he-thong/nhan-vien" replace />} />
+          <Route path="/phong-ban" element={<Navigate to="/he-thong/phong-ban" replace />} />
+          <Route path="/chuc-vu" element={<Navigate to="/he-thong/chuc-vu" replace />} />
+          <Route path="/thong-tin-cong-ty" element={<Navigate to="/he-thong/thong-tin-to-chuc" replace />} />
+          <Route path="/phan-quyen" element={<Navigate to="/he-thong/phan-quyen" replace />} />
 
-                    <Route path="/ho-so" element={<Profile />} />
-                    <Route path="/thong-bao" element={<NotificationPage />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+          <Route path="/ho-so" element={<Profile />} />
+          <Route path="/thong-bao" element={<NotificationPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Routes>
     </>
   );
