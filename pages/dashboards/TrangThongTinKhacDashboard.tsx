@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Newspaper, MessageCircle } from 'lucide-react';
 import { txt } from '../../lib/text';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
+import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
+import type { ModuleItem } from '../../components/dashboard/SubModuleCard';
+import { useAuthStore } from '../../store/useStore';
+import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
+import { can } from '../../lib/permissions';
+import { appResourceForDashboardNavigatePath } from '../../lib/nav-module-visibility';
 
 const MTTQ_PORTAL_URL = 'http://mattrannghean.org.vn/cms/portal/folder/home';
 const ZALO_OA_URL = 'https://oa.zalo.me/home';
@@ -11,27 +17,60 @@ function openExternal(url: string) {
 }
 
 const TrangThongTinKhacDashboard: React.FC = () => {
-  const groups = [
-    {
-      groupTitle: txt('page.externalLinksDashboard.groupMain'),
-      items: [
-        {
-          title: txt('page.externalLinksDashboard.mttqNews'),
-          description: txt('page.externalLinksDashboard.mttqNewsDesc'),
-          icon: Newspaper,
-          color: 'bg-teal-500',
-          action: () => openExternal(MTTQ_PORTAL_URL),
-        },
-        {
-          title: txt('page.externalLinksDashboard.zaloOa'),
-          description: txt('page.externalLinksDashboard.zaloOaDesc'),
-          icon: MessageCircle,
-          color: 'bg-indigo-500',
-          action: () => openExternal(ZALO_OA_URL),
-        },
-      ],
-    },
-  ];
+  const user = useAuthStore((s) => s.user);
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
+  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
+
+  const groups = useMemo((): ModuleGroup[] => {
+    type Draft = Omit<ModuleItem, 'action'> & { path: string };
+    const raw: { groupTitle: string; items: Draft[] }[] = [
+      {
+        groupTitle: txt('page.externalLinksDashboard.groupMain'),
+        items: [
+          {
+            path: '/trang-thong-tin-khac/tin-tuc-mttq',
+            title: txt('page.externalLinksDashboard.mttqNews'),
+            description: txt('page.externalLinksDashboard.mttqNewsDesc'),
+            icon: Newspaper,
+            color: 'bg-teal-500',
+          },
+          {
+            path: '/trang-thong-tin-khac/zalo-oa',
+            title: txt('page.externalLinksDashboard.zaloOa'),
+            description: txt('page.externalLinksDashboard.zaloOaDesc'),
+            icon: MessageCircle,
+            color: 'bg-indigo-500',
+          },
+        ],
+      },
+    ];
+
+    return raw
+      .map((g) => ({
+        groupTitle: g.groupTitle,
+        items: g.items
+          .filter((item) => {
+            const res = appResourceForDashboardNavigatePath(item.path);
+            if (!user || res == null) return true;
+            return can(user, 'view', res);
+          })
+          .map(
+            (item): ModuleItem => ({
+              title: item.title,
+              description: item.description,
+              icon: item.icon,
+              color: item.color,
+              moduleId: item.path,
+              action: () => {
+                if (item.path.endsWith('/tin-tuc-mttq')) openExternal(MTTQ_PORTAL_URL);
+                else openExternal(ZALO_OA_URL);
+              },
+            }),
+          ),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [user, matrixActive, grantsByModule, chucVuCapBac]);
 
   return <ModuleDashboardLayout groups={groups} />;
 };

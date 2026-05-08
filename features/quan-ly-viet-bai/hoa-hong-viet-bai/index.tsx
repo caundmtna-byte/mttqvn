@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { FolderOpen, Coins, FileText, Users, TrendingUp } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/store/useStore';
-import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { useCan } from '@/hooks/use-can';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import TabGroup from '@/components/ui/TabGroup';
 import Button from '@/components/ui/Button';
@@ -23,6 +24,7 @@ import {
   CommissionByTheLoaiChart,
   CommissionByAuthorChart,
 } from './components/commission-charts';
+import { useCommissionAllTabViewer, rowVisibleOnCommissionAllTab } from './hooks/use-commission-all-tab-viewer';
 
 const TAB_MINE: CommissionScope = 'mine';
 const TAB_ALL: CommissionScope = 'all';
@@ -39,17 +41,29 @@ const HoaHongVietBaiPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
-  const { canView: canViewArticles } = useResourcePermissions('articles');
+  /** Tab "Tất cả": quyền xem danh sách bài hoặc module Hoa hồng trong ma trận phân quyền. */
+  const canViewArticles = useCan('view', 'articles');
+  const canViewCommissionModule = useCan('view', 'articleCommission');
+  const canOpenPage = canViewArticles || canViewCommissionModule;
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canOpenPage || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('articleCommission.noViewPermission'));
+    navigate('/quan-ly-viet-bai', { replace: true });
+  }, [user, canOpenPage, navigate]);
 
   const [scopeRaw, setScope] = useState<CommissionScope>(TAB_MINE);
-  /** Khi không có quyền xem tất cả bài, luôn coi như tab "Của tôi" (không gọi setState trong effect). */
-  const scope = !canViewArticles && scopeRaw === TAB_ALL ? TAB_MINE : scopeRaw;
+  /** Khi không có quyền xem phạm vi rộng, luôn coi như tab "Của tôi" (không gọi setState trong effect). */
+  const scope = !canOpenPage && scopeRaw === TAB_ALL ? TAB_MINE : scopeRaw;
 
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
   const [theLoaiIds, setTheLoaiIds] = useState<string[]>([]);
   const [authorIds, setAuthorIds] = useState<string[]>([]);
 
-  const { data: rows = [], isLoading } = useBaiVietDanhSachList();
+  const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: canOpenPage });
+  const allTabViewer = useCommissionAllTabViewer();
 
   const presets = useMemo(
     () => [
@@ -74,8 +88,8 @@ const HoaHongVietBaiPage: React.FC = () => {
       if (!nhanVienId) return [];
       return rows.filter((r) => String(r.id_nguoi_tao) === nhanVienId);
     }
-    return rows;
-  }, [rows, scope, nhanVienId]);
+    return rows.filter((r) => rowVisibleOnCommissionAllTab(allTabViewer, r));
+  }, [rows, scope, nhanVienId, allTabViewer]);
 
   const rowsForTheLoaiOptions = useMemo(() => {
     let r = scopedRows.filter((row) => {
@@ -138,21 +152,21 @@ const HoaHongVietBaiPage: React.FC = () => {
 
   const tabs = useMemo((): { id: CommissionScope; label: string }[] => {
     const base: { id: CommissionScope; label: string }[] = [{ id: TAB_MINE, label: txt('articleCommission.tabMine') }];
-    if (canViewArticles) {
+    if (canOpenPage) {
       base.push({ id: TAB_ALL, label: txt('articleCommission.tabAll') });
     }
     return base;
-  }, [canViewArticles]);
+  }, [canOpenPage]);
 
   const agg = useMemo(
     () =>
-      aggregateCommission(rows, scope, nhanVienId, {
+      aggregateCommission(scopedRows, scope, nhanVienId, {
         dateFrom,
         dateTo,
         theLoaiIds,
         authorIds: scope === TAB_ALL ? authorIds : [],
       }),
-    [rows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds],
+    [scopedRows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds],
   );
 
   const handleClearFilters = useCallback(() => {
@@ -196,17 +210,14 @@ const HoaHongVietBaiPage: React.FC = () => {
   );
 
   const dateRangeRow = (
-    <div className="flex flex-nowrap items-center gap-2 min-w-0">
-      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{txt('articleCommission.dateByPublished')}</span>
-      <DateRangePicker
-        presets={presets}
-        value={dateRange}
-        onChange={setDateRange}
-        placeholder={txt('articleCommission.dateRangePlaceholder')}
-        customPresetId={CUSTOM_PRESET}
-        className="shrink-0"
-      />
-    </div>
+    <DateRangePicker
+      presets={presets}
+      value={dateRange}
+      onChange={setDateRange}
+      placeholder={txt('articleCommission.dateRangePlaceholder')}
+      customPresetId={CUSTOM_PRESET}
+      className="shrink-0"
+    />
   );
 
   const filterRowDesktop = (
@@ -284,7 +295,7 @@ const HoaHongVietBaiPage: React.FC = () => {
       activeTab={scope}
       onChange={(id) => {
         const next = id as CommissionScope;
-        if (next === TAB_ALL && !canViewArticles) return;
+        if (next === TAB_ALL && !canOpenPage) return;
         setScope(next);
         setAuthorIds([]);
       }}
@@ -292,12 +303,24 @@ const HoaHongVietBaiPage: React.FC = () => {
     />
   );
 
+  if (!canOpenPage) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-page relative min-h-0" aria-label={txt('page.articleDashboard.commission')}>
       <DashboardToolbar
         className="shrink-0 mb-3"
         onBack={() => navigate('/quan-ly-viet-bai')}
-        leadingContent={tabLeading}
+        desktopStartSlot={tabLeading}
         mobileRow2Content={
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
             {dateRangeRow}
@@ -398,7 +421,7 @@ const HoaHongVietBaiPage: React.FC = () => {
           </>
         )}
 
-        {!canViewArticles && (
+        {!canOpenPage && (
           <p className="text-xs text-muted-foreground text-center pt-1 border-t border-border/60">
             {txt('articleCommission.allTabNoPermission')}
           </p>

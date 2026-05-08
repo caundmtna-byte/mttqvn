@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
@@ -37,6 +37,7 @@ import type { Option } from '@/components/ui/MultiSelect';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
+import { useAuthStore } from '@/store/useStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { AnimatePresence } from 'framer-motion';
@@ -106,10 +107,20 @@ function buildDimOptions(
 const BcThongKeBaiVietPage: React.FC = () => {
   const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
+  const user = useAuthStore((s) => s.user);
   const { canExport } = useResourcePermissions('articles');
   const canViewStats = useCan('view', 'articleStats');
   const canViewArticles = useCan('view', 'articles');
   const canOpenPage = canViewStats || canViewArticles;
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canOpenPage || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('articleStats.noViewPermission'));
+    navigate('/quan-ly-viet-bai', { replace: true });
+  }, [user, canOpenPage, navigate]);
+
   const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: canOpenPage });
   const deleteMutation = useDeleteBaiVietDanhSachMany();
 
@@ -445,15 +456,12 @@ const BcThongKeBaiVietPage: React.FC = () => {
 
   if (!canOpenPage) {
     return (
-      <div className="flex flex-col h-page items-center justify-center p-6 text-center">
-        <p className="text-sm text-muted-foreground">{txt('articleStats.accessDenied')}</p>
-        <button
-          type="button"
-          className="mt-4 text-sm font-medium text-primary hover:underline"
-          onClick={() => navigate('/quan-ly-viet-bai')}
-        >
-          {txt('page.articleDashboard.backToParent')}
-        </button>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

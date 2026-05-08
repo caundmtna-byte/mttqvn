@@ -13,6 +13,7 @@ export const department = {
   },
   "footerRecords": "bản ghi",
   "title": "Phòng ban",
+  "noViewPermission": "Bạn không có quyền xem module Phòng ban.",
   "pageTitle": "Cơ cấu tổ chức",
   "pageDescription": "Quản lý sơ đồ phòng ban và phân cấp đơn vị.",
   "addButton": "Thêm phòng ban",

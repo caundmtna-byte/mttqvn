@@ -22,9 +22,21 @@ interface Props {
   onEdit: (item: CongViecDanhSachRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: CongViecDanhSachRow) => void;
+  serverSidePagination?: boolean;
+  serverTotalRecords?: number | null;
+  serverHasNextPage?: boolean;
 }
 
-const CongViecTable = memo(function CongViecTable({ data, isLoading, onEdit, onDelete, onView }: Props) {
+const CongViecTable = memo(function CongViecTable({
+  data,
+  isLoading,
+  onEdit,
+  onDelete,
+  onView,
+  serverSidePagination,
+  serverTotalRecords,
+  serverHasNextPage,
+}: Props) {
   const {
     columns,
     pagination,
@@ -234,6 +246,9 @@ const CongViecTable = memo(function CongViecTable({ data, isLoading, onEdit, onD
       keyExtractor={(item) => item.id}
       onResizeColumn={resizeColumn}
       stickyLeftCount={2}
+      serverSidePagination={serverSidePagination}
+      serverTotalRecords={serverTotalRecords ?? undefined}
+      serverHasNextPage={serverHasNextPage}
     />
   );
 });

@@ -224,6 +224,18 @@ const MttqUyVienUyBanTable = memo(function MttqUyVienUyBanTable({
               {item.tg_cap_nhat ? formatDateTimeShort(item.tg_cap_nhat) : emptyCell}
             </span>
           );
+        case 'so_ky_hop':
+          return <span className="text-body-sm tabular-nums text-muted-foreground">{item.so_ky_hop}</span>;
+        case 'diem_danh_co_mat':
+          return (
+            <span className="text-body-sm tabular-nums text-emerald-700 dark:text-emerald-400">{item.diem_danh_co_mat}</span>
+          );
+        case 'diem_danh_vang_mat':
+          return (
+            <span className="text-body-sm tabular-nums text-amber-800 dark:text-amber-400">{item.diem_danh_vang_mat}</span>
+          );
+        case 'diem_danh_chua':
+          return <span className="text-body-sm tabular-nums text-muted-foreground">{item.diem_danh_chua}</span>;
         case 'actions':
           return (
             <MttqUyVienUyBanTableRowActions
@@ -296,6 +308,20 @@ const MttqUyVienUyBanTable = memo(function MttqUyVienUyBanTable({
                   <span className="font-mono tabular-nums tracking-tight">{bits.join(' · ')}</span>
                 ) : null;
               })()}
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums mb-2">
+              <span className="text-muted-foreground">
+                {txt('matTranUyVienUyBan.store.soKyHopCol')}: {item.so_ky_hop}
+              </span>
+              <span className="text-emerald-700 dark:text-emerald-400">
+                {txt('matTranUyVienUyBan.store.diemDanhCoMatCol')}: {item.diem_danh_co_mat}
+              </span>
+              <span className="text-amber-800 dark:text-amber-400">
+                {txt('matTranUyVienUyBan.store.diemDanhVangMatCol')}: {item.diem_danh_vang_mat}
+              </span>
+              <span className="text-muted-foreground">
+                {txt('matTranUyVienUyBan.store.diemDanhChuaCol')}: {item.diem_danh_chua}
+              </span>
             </div>
             <div className="flex justify-end pt-2 border-t border-border">
               <MttqUyVienUyBanTableRowActions

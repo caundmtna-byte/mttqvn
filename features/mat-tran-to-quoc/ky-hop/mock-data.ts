@@ -19,5 +19,8 @@ export const MTTQ_KY_HOP_MOCK: MttqKyHop[] = [
     tg_cap_nhat: now,
     ho_va_ten_nguoi_tao: 'Mock',
     ten_tai_khoan_nguoi_tao: 'mock',
+    diem_danh_co_mat: 0,
+    diem_danh_vang_mat: 0,
+    diem_danh_chua: 0,
   },
 ];

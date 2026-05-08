@@ -32,9 +32,11 @@ const TINH_CAP_VALUE = '__tinh_cap__';
 interface Props {
   initialData?: MttqKyHop | null;
   onClose: () => void;
+  /** Khi tạo mới — gán sẵn nhiệm kỳ (vd. từ drawer chi tiết nhiệm kỳ). */
+  defaultNhiemKyId?: string;
 }
 
-const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose }) => {
+const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId }) => {
   const isEdit = Boolean(initialData);
   const user = useAuthStore((s) => s.user);
   const idNguoiTao = String(user?.nhan_vien_id ?? '').trim();
@@ -77,7 +79,13 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose }) => {
     return [tinhCap, ...rest];
   }, [xaList, tinhMap]);
 
-  const defaultValues = useMemo(() => mttqKyHopToFormInput(initialData ?? null), [initialData]);
+  const defaultValues = useMemo(() => {
+    const base = mttqKyHopToFormInput(initialData ?? null);
+    if (!initialData && defaultNhiemKyId?.trim()) {
+      return { ...base, nhiem_ky_id: defaultNhiemKyId.trim() };
+    }
+    return base;
+  }, [initialData, defaultNhiemKyId]);
 
   const {
     control,
@@ -90,8 +98,13 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   useEffect(() => {
-    reset(mttqKyHopToFormInput(initialData ?? null));
-  }, [initialData, reset]);
+    const base = mttqKyHopToFormInput(initialData ?? null);
+    if (!initialData && defaultNhiemKyId?.trim()) {
+      reset({ ...base, nhiem_ky_id: defaultNhiemKyId.trim() });
+    } else {
+      reset(base);
+    }
+  }, [initialData, defaultNhiemKyId, reset]);
 
   const onSubmit: SubmitHandler<MttqKyHopFormValues> = (data) => {
     if (!isEdit) {

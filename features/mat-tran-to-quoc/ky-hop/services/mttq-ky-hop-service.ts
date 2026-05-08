@@ -4,7 +4,8 @@ import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
-import type { MttqKyHop, MttqKyHopListRow } from '../core/types';
+import type { MttqKyHop, MttqKyHopDiemDanhSummary, MttqKyHopListRow } from '../core/types';
+import { getDiemDanhSummariesForKyHopIds } from './mttq-diem-danh-service';
 import { mttqKyHopSchema, type MttqKyHopFormInput, type MttqKyHopFormValues } from '../core/schema';
 import { MTTQ_KY_HOP_SELECT_FULL, MTTQ_KY_HOP_SELECT_LIST } from '../core/supabase-select';
 import { MTTQ_KY_HOP_MOCK } from '../mock-data';
@@ -27,6 +28,21 @@ function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefi
 function nullableStr(v: unknown): string | null {
   if (v == null || v === '') return null;
   return String(v);
+}
+
+function mergeDiemDanhSummary(row: MttqKyHop, s?: MttqKyHopDiemDanhSummary): MttqKyHop {
+  return {
+    ...row,
+    diem_danh_co_mat: s?.co_mat ?? 0,
+    diem_danh_vang_mat: s?.vang_mat ?? 0,
+    diem_danh_chua: s?.chua_diem_danh ?? 0,
+  };
+}
+
+async function withDiemDanhSummaries(rows: MttqKyHop[]): Promise<MttqKyHop[]> {
+  if (rows.length === 0) return rows;
+  const map = await getDiemDanhSummariesForKyHopIds(rows.map((r) => r.id));
+  return rows.map((r) => mergeDiemDanhSummary(r, map.get(r.id)));
 }
 
 export function flattenRow(row: Record<string, unknown>): MttqKyHop {
@@ -55,6 +71,9 @@ export function flattenRow(row: Record<string, unknown>): MttqKyHop {
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    diem_danh_co_mat: 0,
+    diem_danh_vang_mat: 0,
+    diem_danh_chua: 0,
   };
 }
 
@@ -79,10 +98,12 @@ function payloadFromForm(data: MttqKyHopFormValues) {
 
 export async function getMttqKyHopList(): Promise<MttqKyHopListRow[]> {
   if (!isSupabase()) {
-    return mockRows.map((r) => ({ ...r }));
+    const base = mockRows.map((r) => ({ ...r }));
+    return withDiemDanhSummaries(base);
   }
   const list = await repo.getAll({ orderBy: 'ngay_hop', ascending: false });
-  return list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  const flat = list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  return withDiemDanhSummaries(flat);
 }
 
 /** Danh sách kỳ họp thuộc một nhiệm kỳ (drawer chi tiết nhiệm kỳ). */
@@ -90,24 +111,28 @@ export async function getMttqKyHopListForNhiemKyId(nhiemKyId: string): Promise<M
   const id = nhiemKyId.trim();
   if (!id) return [];
   if (!isSupabase()) {
-    return mockRows.filter((r) => r.nhiem_ky_id === id).map((r) => ({ ...r }));
+    const base = mockRows.filter((r) => r.nhiem_ky_id === id).map((r) => ({ ...r }));
+    return withDiemDanhSummaries(base);
   }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('mttq_ky_hop')
-    .select(MTTQ_KY_HOP_SELECT_FULL)
+    .select(MTTQ_KY_HOP_SELECT_LIST)
     .eq('nhiem_ky_id', id)
     .order('ngay_hop', { ascending: false })
     .limit(500);
   if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  const flat = (data ?? []).map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  return withDiemDanhSummaries(flat);
 }
 
 export async function getMttqKyHopById(id: string): Promise<MttqKyHop | null> {
   if (!isSupabase()) {
     const r = mockRows.find((x) => x.id === id);
-    return r ? { ...r } : null;
+    if (!r) return null;
+    const [merged] = await withDiemDanhSummaries([{ ...r }]);
+    return merged ?? null;
   }
   const supabase = getSupabase();
   if (!supabase) return null;
@@ -118,7 +143,9 @@ export async function getMttqKyHopById(id: string): Promise<MttqKyHop | null> {
     .maybeSingle();
   if (error) handleSupabaseError(error);
   if (!data) return null;
-  return flattenRow(data as unknown as Record<string, unknown>);
+  const flat = flattenRow(data as unknown as Record<string, unknown>);
+  const [merged] = await withDiemDanhSummaries([flat]);
+  return merged ?? null;
 }
 
 export async function createMttqKyHop(data: MttqKyHopFormValues, idNguoiTao: string): Promise<MttqKyHop> {
@@ -138,9 +165,13 @@ export async function createMttqKyHop(data: MttqKyHopFormValues, idNguoiTao: str
       tg_cap_nhat: now,
       ho_va_ten_nguoi_tao: 'Mock',
       ten_tai_khoan_nguoi_tao: 'mock',
+      diem_danh_co_mat: 0,
+      diem_danh_vang_mat: 0,
+      diem_danh_chua: 0,
     };
     mockRows.push(row);
-    return { ...row };
+    const [out] = await withDiemDanhSummaries([row]);
+    return out ?? row;
   }
 
   const inserted = await repo.insert(
@@ -150,13 +181,12 @@ export async function createMttqKyHop(data: MttqKyHopFormValues, idNguoiTao: str
     } as unknown as Omit<RepoRow, 'id'>,
     { returningSelect: MTTQ_KY_HOP_SELECT_FULL },
   );
-  return flattenRow(inserted as unknown as Record<string, unknown>);
+  const flat = flattenRow(inserted as unknown as Record<string, unknown>);
+  const [out] = await withDiemDanhSummaries([flat]);
+  return out ?? flat;
 }
 
 export async function updateMttqKyHop(id: string, data: MttqKyHopFormValues): Promise<MttqKyHop> {
-  const existing = await getMttqKyHopById(id);
-  if (!existing) throw new Error(txt('matTranKyHop.service.notFound'));
-
   if (!isSupabase()) {
     const idx = mockRows.findIndex((r) => r.id === id);
     if (idx === -1) throw new Error(txt('matTranKyHop.service.notFound'));
@@ -166,7 +196,9 @@ export async function updateMttqKyHop(id: string, data: MttqKyHopFormValues): Pr
       ...payloadFromForm(data),
       tg_cap_nhat: now,
     };
-    return { ...mockRows[idx] };
+    const [out] = await withDiemDanhSummaries([mockRows[idx]]);
+    if (out) mockRows[idx] = out;
+    return out ?? { ...mockRows[idx] };
   }
 
   const updated = await repo.update(
@@ -177,7 +209,9 @@ export async function updateMttqKyHop(id: string, data: MttqKyHopFormValues): Pr
     } as unknown as Partial<RepoRow>,
     { returningSelect: MTTQ_KY_HOP_SELECT_FULL },
   );
-  return flattenRow(updated as unknown as Record<string, unknown>);
+  const flat = flattenRow(updated as unknown as Record<string, unknown>);
+  const [out] = await withDiemDanhSummaries([flat]);
+  return out ?? flat;
 }
 
 export async function deleteMttqKyHopMany(ids: string[]): Promise<void> {

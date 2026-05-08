@@ -14,10 +14,11 @@ import type { MttqThietLapFormValues } from '../core/schema';
 
 const qk = queryKeys.mttqThietLap.all;
 
-export const useMttqThietLapAll = () =>
+export const useMttqThietLapAll = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: qk,
     queryFn: getMttqThietLapAll,
+    enabled: options?.enabled !== false,
     ...masterDataQueryOptions,
   });
 

@@ -1,10 +1,14 @@
 /**
- * Cấu hình module phân quyền — chỉ các trang Hệ thống còn trong app.
+ * Ma trận phân quyền: submenu (cấp sidebar), nhóm và trang con — khớp
+ * `lib/sidebar-menu.tsx` + các dashboard `pages/dashboards/*Dashboard.tsx`.
+ * Nhãn module/nhóm dùng chung key với dashboard (`page.*Dashboard.*`) để luôn đồng bộ với app.
  */
 
 export interface PermissionModuleItem {
   id: string;
   nameKey: string;
+  /** Key lưu `var_phan_quyen.module_key` (ngắn). Mặc định = segment sau `/` cuối của `id`. */
+  storageKey?: string;
 }
 
 export interface PermissionModuleGroup {
@@ -22,22 +26,33 @@ export interface PermissionFunction {
 export const PERMISSION_ACTIONS = ['view', 'create', 'update', 'delete', 'admin', 'all'] as const;
 export type PermissionActionType = (typeof PERMISSION_ACTIONS)[number];
 
-/** Nhóm chức năng + module route — khớp dashboard / ma trận phân quyền */
+/** Thứ tự submenu = thứ tự mục trong sidebar (sau Trang chủ), bỏ qua placeholder / bản quyền. */
 export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
   {
-    id: 'he-thong',
-    nameKey: 'nav.system',
-    color: 'slate',
+    id: 'mat-tran-to-quoc',
+    nameKey: 'nav.matTranToQuoc',
+    color: 'rose',
     groups: [
       {
-        groupTitleKey: 'permission.matrix.systemGroup',
+        groupTitleKey: 'page.matTranDashboard.groupTrainingReward',
         modules: [
-          { id: 'he-thong/nhan-vien', nameKey: 'permission.module.employeeList' },
-          { id: 'he-thong/phong-ban', nameKey: 'permission.module.departmentChart' },
-          { id: 'he-thong/chuc-vu', nameKey: 'permission.module.positionRole' },
-          { id: 'he-thong/thong-tin-to-chuc', nameKey: 'permission.module.companyInfo' },
-          { id: 'he-thong/phan-quyen', nameKey: 'permission.module.permission' },
-          { id: 'he-thong/danh-sach-tinh-thanh', nameKey: 'permission.module.provinceList' },
+          { id: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan', nameKey: 'page.matTranDashboard.trainingList' },
+          { id: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong', nameKey: 'page.matTranDashboard.rewardList' },
+        ],
+      },
+      {
+        groupTitleKey: 'page.matTranDashboard.groupCommittee',
+        modules: [
+          { id: 'mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky', nameKey: 'page.matTranDashboard.term' },
+          { id: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop', nameKey: 'page.matTranDashboard.session' },
+          { id: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien', nameKey: 'page.matTranDashboard.committeeMembers' },
+        ],
+      },
+      {
+        groupTitleKey: 'page.matTranDashboard.groupOtherSettings',
+        modules: [
+          { id: 'mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo', nameKey: 'page.matTranDashboard.officerList' },
+          { id: 'mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat', nameKey: 'page.matTranDashboard.setupSettings' },
         ],
       },
     ],
@@ -48,11 +63,12 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
     color: 'violet',
     groups: [
       {
-        groupTitleKey: 'permission.matrix.articleMgmtGroup',
+        groupTitleKey: 'page.articleDashboard.groupMain',
         modules: [
-          { id: 'quan-ly-viet-bai/bai-viet', nameKey: 'permission.module.articleList' },
-          { id: 'quan-ly-viet-bai/bc-thong-ke-bai-viet', nameKey: 'permission.module.articleStatsReport' },
-          { id: 'quan-ly-viet-bai/thiet-lap-bai-viet', nameKey: 'permission.module.articleSettings' },
+          { id: 'quan-ly-viet-bai/bai-viet', nameKey: 'page.articleDashboard.articles' },
+          { id: 'quan-ly-viet-bai/hoa-hong-viet-bai', nameKey: 'page.articleDashboard.commission' },
+          { id: 'quan-ly-viet-bai/bc-thong-ke-bai-viet', nameKey: 'page.articleDashboard.statsReport' },
+          { id: 'quan-ly-viet-bai/thiet-lap-bai-viet', nameKey: 'page.articleDashboard.settings' },
         ],
       },
     ],
@@ -63,39 +79,48 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
     color: 'amber',
     groups: [
       {
-        groupTitleKey: 'permission.matrix.taskMgmtGroup',
+        groupTitleKey: 'page.taskDashboard.groupMain',
         modules: [
-          { id: 'quan-ly-giao-viec/cong-viec', nameKey: 'permission.module.taskList' },
-          { id: 'quan-ly-giao-viec/bao-cao-cong-viec', nameKey: 'permission.module.taskReport' },
+          { id: 'quan-ly-giao-viec/chuong-trinh-nam', nameKey: 'page.taskDashboard.yearProgram' },
+          { id: 'quan-ly-giao-viec/cong-viec', nameKey: 'page.taskDashboard.tasks' },
+          { id: 'quan-ly-giao-viec/bao-cao-cong-viec', nameKey: 'page.taskDashboard.taskReport' },
         ],
       },
     ],
   },
   {
-    id: 'mat-tran-to-quoc',
-    nameKey: 'nav.matTranToQuoc',
-    color: 'rose',
+    id: 'trang-thong-tin-khac',
+    nameKey: 'nav.trangThongTinKhac',
+    color: 'teal',
     groups: [
       {
-        groupTitleKey: 'permission.matrix.matTranTrainingRewardGroup',
+        groupTitleKey: 'page.externalLinksDashboard.groupMain',
         modules: [
-          { id: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan', nameKey: 'permission.module.matTranTrainingList' },
-          { id: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong', nameKey: 'permission.module.matTranRewardList' },
+          { id: 'trang-thong-tin-khac/tin-tuc-mttq', nameKey: 'page.externalLinksDashboard.mttqNews' },
+          { id: 'trang-thong-tin-khac/zalo-oa', nameKey: 'page.externalLinksDashboard.zaloOa' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'he-thong',
+    nameKey: 'nav.system',
+    color: 'slate',
+    groups: [
+      {
+        groupTitleKey: 'page.systemDashboard.orgChartGroup',
+        modules: [
+          { id: 'he-thong/phong-ban', nameKey: 'page.systemDashboard.department' },
+          { id: 'he-thong/chuc-vu', nameKey: 'page.systemDashboard.position' },
+          { id: 'he-thong/nhan-vien', nameKey: 'page.systemDashboard.employee' },
         ],
       },
       {
-        groupTitleKey: 'permission.matrix.matTranCommitteeGroup',
+        groupTitleKey: 'page.systemDashboard.securityGroup',
         modules: [
-          { id: 'mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky', nameKey: 'permission.module.matTranTerm' },
-          { id: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop', nameKey: 'permission.module.matTranSession' },
-          { id: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien', nameKey: 'permission.module.matTranCommitteeMembers' },
-        ],
-      },
-      {
-        groupTitleKey: 'permission.matrix.matTranOtherSettingsGroup',
-        modules: [
-          { id: 'mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo', nameKey: 'permission.module.matTranOfficerList' },
-          { id: 'mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat', nameKey: 'permission.module.matTranSetupSettings' },
+          { id: 'he-thong/thong-tin-to-chuc', nameKey: 'page.systemDashboard.companyInfo' },
+          { id: 'he-thong/phan-quyen', nameKey: 'page.systemDashboard.permission' },
+          { id: 'he-thong/danh-sach-tinh-thanh', nameKey: 'page.systemDashboard.provinceList' },
         ],
       },
     ],

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useSignedEmployeeAvatarSrc } from '../features/he-thong/nhan-vien/hooks/use-signed-employee-avatar-src';
 import { txt } from '../lib/text';
 import { useAuthStore } from '../store/useStore';
 import Button from '../components/ui/Button';
@@ -51,23 +52,34 @@ const Profile: React.FC = () => {
   const displayAvatar = currentEmployee?.hinh_anh ?? user?.avatar_url ?? null;
   const trangThai = currentEmployee?.trang_thai ?? user?.trang_thai;
 
+  const profileAvatarStored = avatarPreview ?? displayAvatar ?? null;
+  const profileAvatarSigned = useSignedEmployeeAvatarSrc(profileAvatarStored);
+  const profileAvatarImgSrc = useMemo(() => {
+    const s = profileAvatarStored?.trim() ?? '';
+    if (!s) return getAvatarUrl(displayName, 128);
+    if (s.startsWith('data:image/')) return s;
+    if (s.startsWith('http') && !s.includes('.supabase.co')) return s;
+    return profileAvatarSigned || getAvatarUrl(displayName, 128);
+  }, [profileAvatarStored, profileAvatarSigned, displayName]);
+
   const handleAvatarSave = async () => {
     if (!user) return;
     if (avatarPreview === null) return;
     if (currentEmployee) {
       try {
         const payload = employeeToFormValues(currentEmployee);
-        await updateEmployeeMutation.mutateAsync({
+        const updated = await updateEmployeeMutation.mutateAsync({
           id: currentEmployee.id,
           data: { ...payload, hinh_anh: avatarPreview },
         });
-        login({ ...user, avatar_url: avatarPreview });
+        // Sau upload, server trả path Storage (bucket private) — không giữ data URL trong session.
+        login({ ...user, avatar_url: updated.hinh_anh ?? undefined });
         toast.success(txt('page.profile.avatarUpdateSuccess'));
       } catch {
         toast.error(txt('page.profile.userNotFound'));
       }
     } else {
-      login({ ...user, avatar_url: avatarPreview });
+      login({ ...user, avatar_url: avatarPreview ?? undefined });
       toast.success(txt('page.profile.avatarUpdateSuccess'));
     }
     setAvatarModalOpen(false);
@@ -153,7 +165,7 @@ const Profile: React.FC = () => {
                 <div className="flex items-end gap-3 sm:block sm:text-center">
                   <div className="relative shrink-0 sm:inline-block">
                     <img
-                      src={avatarPreview ?? displayAvatar ?? getAvatarUrl(displayName, 128)}
+                      src={profileAvatarImgSrc}
                       alt={avatarAlt}
                       className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-[3px] sm:border-4 border-card shadow-lg object-cover"
                       loading="lazy"
@@ -278,6 +290,7 @@ const Profile: React.FC = () => {
               </div>
               <SingleImageInput
                 value={avatarPreview ?? displayAvatar ?? null}
+                displaySrc={profileAvatarSigned || undefined}
                 onChange={setAvatarPreview}
                 shape="circle"
                 aspectRatio="1/1"

@@ -11,10 +11,11 @@ import { getErrorMessage } from '@/lib/utils';
 
 const departmentsQueryKey = queryKeys.departments.all;
 
-export const useDepartments = () => {
+export const useDepartments = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: departmentsQueryKey,
     queryFn: getDepartments,
+    enabled: options?.enabled !== false,
     ...masterDataQueryOptions,
   });
 };

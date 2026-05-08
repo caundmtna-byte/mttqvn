@@ -56,6 +56,13 @@ const Combobox: React.FC<ComboboxProps> = ({
   dropdownInPortal = false,
   clearable = true,
 }) => {
+  const optionValueEquals = useCallback((a: string | number | null | undefined, b: string | number | null | undefined) => {
+    if (a === b) return true;
+    if (a === '' || a == null) return b === '' || b == null;
+    if (b === '' || b == null) return false;
+    return String(a) === String(b);
+  }, []);
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -125,7 +132,7 @@ const Combobox: React.FC<ComboboxProps> = ({
   }, [options, searchTerm, searchable]);
 
   // Get selected option label
-  const selectedOption = options.find((opt) => opt.value === value);
+  const selectedOption = options.find((opt) => optionValueEquals(opt.value, value));
 
   const handleSelect = (optionValue: string | number) => {
     onChange(optionValue);
@@ -239,11 +246,11 @@ const Combobox: React.FC<ComboboxProps> = ({
                     <div
                       key={option.value}
                       role="option"
-                      aria-selected={value === option.value}
+                      aria-selected={optionValueEquals(value, option.value)}
                       tabIndex={0}
                       className={cn(
                         "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors",
-                        value === option.value
+                        optionValueEquals(value, option.value)
                           ? "bg-primary/5 text-primary font-medium"
                           : "text-foreground hover:bg-muted/50"
                       )}
@@ -267,7 +274,7 @@ const Combobox: React.FC<ComboboxProps> = ({
                           </>
                         )}
                       </div>
-                      {value === option.value && <Check size={16} className="text-primary shrink-0" />}
+                      {optionValueEquals(value, option.value) && <Check size={16} className="text-primary shrink-0" />}
                     </div>
                   ))
                 )}
@@ -315,11 +322,11 @@ const Combobox: React.FC<ComboboxProps> = ({
                     <div
                       key={option.value}
                       role="option"
-                      aria-selected={value === option.value}
+                      aria-selected={optionValueEquals(value, option.value)}
                       tabIndex={0}
                       className={cn(
                         "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors",
-                        value === option.value
+                        optionValueEquals(value, option.value)
                           ? "bg-primary/5 text-primary font-medium"
                           : "text-foreground hover:bg-muted/50"
                       )}
@@ -343,7 +350,7 @@ const Combobox: React.FC<ComboboxProps> = ({
                           </>
                         )}
                       </div>
-                      {value === option.value && <Check size={16} className="text-primary shrink-0" />}
+                      {optionValueEquals(value, option.value) && <Check size={16} className="text-primary shrink-0" />}
                     </div>
                   ))
                 )}

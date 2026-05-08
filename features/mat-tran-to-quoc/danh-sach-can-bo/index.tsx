@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   lazy,
   Suspense,
   startTransition,
@@ -56,6 +57,14 @@ const DanhSachCanBoPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranOfficerList');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('matTranCanBo.noViewPermission'));
+    navigate('/mat-tran-to-quoc', { replace: true });
+  }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqCanBoRow | null>(null);
@@ -259,8 +268,12 @@ const DanhSachCanBoPage: React.FC = () => {
 
   if (!canView) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center text-muted-foreground">
-        <p className="text-sm">{txt('matTranCanBo.noViewPermission')}</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

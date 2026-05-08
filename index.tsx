@@ -4,7 +4,9 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import './index.css';
 import App from './App';
-import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryCache, QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { toast } from 'sonner';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import { QueryDevtoolsPanel } from './components/dev/QueryDevtoolsPanel';
@@ -38,10 +40,14 @@ const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
+      // `staleTime` đã đủ bảo vệ chống refetch dày đặc; bỏ refetch tự động khi
+      // window focus/reconnect/remount để tiết kiệm egress (free-tier 5GB/tháng).
+      // Mỗi feature có thể opt-in lại nếu thực sự cần.
       staleTime: SERVER_STALE_TIME_MS,
       gcTime: SERVER_GC_TIME_MS,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
       retry: (failureCount, error) => {
         if (failureCount >= 2) return false;
         return isRetryableError(error);
@@ -51,6 +57,16 @@ const queryClient = new QueryClient({
       onError: queryErrorToast,
     },
   },
+});
+
+/**
+ * Persist React Query cache to localStorage so page reloads within the gcTime
+ * window (30 min) restore data instantly without re-fetching from Supabase.
+ * buster is incremented whenever the cache schema changes to avoid stale shapes.
+ */
+const localStoragePersister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'mttq-rq-cache',
 });
 
 const rootElement = document.getElementById('root');
@@ -63,10 +79,17 @@ root.render(
   <React.StrictMode>
     <Router>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister: localStoragePersister,
+            maxAge: SERVER_GC_TIME_MS,
+            buster: '1',
+          }}
+        >
           <App />
           <QueryDevtoolsPanel />
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </ErrorBoundary>
     </Router>
   </React.StrictMode>

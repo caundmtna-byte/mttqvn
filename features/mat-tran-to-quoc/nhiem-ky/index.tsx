@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, lazy, Suspense, startTransition } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
+import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog from '@/components/shared/ImportDialog';
 import Button from '@/components/ui/Button';
@@ -58,6 +59,14 @@ const NhiemKyPage: React.FC = () => {
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranTerm');
   const { canCreate } = useResourcePermissions('matTranTerm');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('matTranNhiemKy.noViewPermission'));
+    navigate('/mat-tran-to-quoc', { replace: true });
+  }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqNhiemKy | null>(null);
@@ -242,7 +251,11 @@ const NhiemKyPage: React.FC = () => {
 
   const handleEditFromList = async (item: MttqNhiemKyListRow) => {
     try {
-      const full = await getMttqNhiemKyById(item.id);
+      const full = await queryClient.fetchQuery({
+        queryKey: queryKeys.mttqNhiemKy.detail(item.id),
+        queryFn: () => getMttqNhiemKyById(item.id),
+        ...defaultServerQueryOptions,
+      });
       if (!full) {
         toast.error(txt('matTranNhiemKy.service.notFound'));
         return;
@@ -345,8 +358,12 @@ const NhiemKyPage: React.FC = () => {
 
   if (!canView) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center text-muted-foreground">
-        <p className="text-sm">{txt('matTranNhiemKy.noViewPermission')}</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

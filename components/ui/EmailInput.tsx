@@ -1,6 +1,6 @@
 import React, { useId } from 'react';
 import { Mail } from 'lucide-react';
-import Input from './Input';
+import Input, { renderInputIcon } from './Input';
 import { cn } from '../../lib/utils';
 
 export interface EmailInputProps extends Omit<React.ComponentProps<typeof Input>, 'type'> {
@@ -25,7 +25,7 @@ const EmailInput = React.forwardRef<HTMLInputElement, EmailInputProps>(
             htmlFor={inputId}
             className="text-sm font-medium leading-none mb-1.5 flex items-center gap-1.5 text-foreground"
           >
-            {icon ?? <Mail className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />}
+            {icon != null ? renderInputIcon(icon) : <Mail className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />}
             {label}
             {rest.required && <span className="text-destructive" aria-hidden>*</span>}
           </label>

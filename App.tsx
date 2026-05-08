@@ -19,12 +19,14 @@ const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet
 const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
 const HoaHongVietBaiPage = lazy(() => import('./features/quan-ly-viet-bai/hoa-hong-viet-bai/index'));
 const BcThongKeBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/bc-thong-ke-bai-viet/index'));
+const ChuongTrinhNamPage = lazy(() => import('./features/quan-ly-giao-viec/chuong-trinh-nam/index'));
 const CongViecPage = lazy(() => import('./features/quan-ly-giao-viec/cong-viec/index'));
 const BaoCaoCongViecPage = lazy(() => import('./features/quan-ly-giao-viec/bao-cao-cong-viec/index'));
 const ThietLapCaiDatPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-cai-dat/index'));
 const DanhSachCanBoPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-can-bo/index'));
 const DanhSachKhenThuongPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-khen-thuong/index'));
 const NhiemKyPage = lazy(() => import('./features/mat-tran-to-quoc/nhiem-ky/index'));
+const NhiemKyDiemDanhMatrixPage = lazy(() => import('./features/mat-tran-to-quoc/nhiem-ky/pages/mttq-nhiem-ky-diem-danh-matrix-page'));
 const UyVienUyBanPage = lazy(() => import('./features/mat-tran-to-quoc/uy-vien-uy-ban/index'));
 const KyHopPage = lazy(() => import('./features/mat-tran-to-quoc/ky-hop/index'));
 const DanhSachTapHuanPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tap-huan/index'));
@@ -88,6 +90,7 @@ const App = () => {
           <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan" element={<DanhSachTapHuanPage />} />
           <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong" element={<DanhSachKhenThuongPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky" element={<NhiemKyPage />} />
+          <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky/diem-danh/:nhiemKyId" element={<NhiemKyDiemDanhMatrixPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<KyHopPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<UyVienUyBanPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
@@ -98,6 +101,7 @@ const App = () => {
           <Route path="/quan-ly-viet-bai/bc-thong-ke-bai-viet" element={<BcThongKeBaiVietPage />} />
           <Route path="/quan-ly-viet-bai/thiet-lap-bai-viet" element={<ThietLapBaiVietPage />} />
           <Route path="/quan-ly-giao-viec" element={<QuanLyGiaoViecDashboard />} />
+          <Route path="/quan-ly-giao-viec/chuong-trinh-nam" element={<ChuongTrinhNamPage />} />
           <Route path="/quan-ly-giao-viec/cong-viec" element={<CongViecPage />} />
           <Route path="/quan-ly-giao-viec/bao-cao-cong-viec" element={<BaoCaoCongViecPage />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />

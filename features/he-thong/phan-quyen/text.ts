@@ -1,5 +1,6 @@
 /** Phân quyền */
 export const permission = {
+  "noViewPermission": "Bạn không có quyền xem module Phân quyền.",
   "title": "Phân quyền",
   "tabModule": "Phân quyền Module",
   "tabLog": "Nhật ký hệ thống",

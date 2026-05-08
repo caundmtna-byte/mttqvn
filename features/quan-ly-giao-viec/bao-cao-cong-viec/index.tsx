@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -38,6 +38,7 @@ import type { StatsKpiCardItem } from '@/components/shared/stats';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
+import { useAuthStore } from '@/store/useStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useCan } from '@/hooks/use-can';
@@ -73,6 +74,7 @@ import {
   useTaskReportTopTrachNhiem,
   useTaskReportTrend,
 } from './hooks/use-cong-viec-bao-cao';
+import { useTaskReportViewer } from './hooks/use-task-report-viewer';
 import {
   MucDoBarChart,
   TopTrachNhiemChart,
@@ -151,9 +153,19 @@ const SORT_OPTIONS: { id: TaskReportLookupSort; labelKey: string }[] = [
 const BaoCaoCongViecPage: React.FC = () => {
   const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
+  const user = useAuthStore((s) => s.user);
   const canViewReport = useCan('view', 'taskReports');
   const canViewTasks = useCan('view', 'tasks');
   const canOpenPage = canViewReport || canViewTasks;
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canOpenPage || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('taskReport.noViewPermission'));
+    navigate('/quan-ly-giao-viec', { replace: true });
+  }, [user, canOpenPage, navigate]);
+
   const taskReportPerm = useResourcePermissions('taskReports');
   const tasksPerm = useResourcePermissions('tasks');
   const canExport = taskReportPerm.canExport || tasksPerm.canExport;
@@ -191,6 +203,8 @@ const BaoCaoCongViecPage: React.FC = () => {
     [dateRange.preset, dateRange.customStart, dateRange.customEnd],
   );
 
+  const viewer = useTaskReportViewer();
+
   const rpcArgs = useMemo(
     () =>
       buildTaskReportRpcArgs({
@@ -200,8 +214,21 @@ const BaoCaoCongViecPage: React.FC = () => {
         trangThai,
         mucDo,
         overdueOnly,
+        viewerId: viewer.viewerId,
+        viewerPhongBanId: viewer.viewerPhongBanId,
+        viewAll: viewer.viewAll,
       }),
-    [resolvedRange, idTrachNhiem, idNguoiTao, trangThai, mucDo, overdueOnly],
+    [
+      resolvedRange,
+      idTrachNhiem,
+      idNguoiTao,
+      trangThai,
+      mucDo,
+      overdueOnly,
+      viewer.viewerId,
+      viewer.viewerPhongBanId,
+      viewer.viewAll,
+    ],
   );
 
   // Reset trang khi đổi filter / sort / pageSize
@@ -222,7 +249,13 @@ const BaoCaoCongViecPage: React.FC = () => {
     { enabled: canOpenPage },
   );
   const filterOptionsQuery = useTaskReportFilterOptions(
-    { p_start: rpcArgs.p_start, p_end: rpcArgs.p_end },
+    {
+      p_start: rpcArgs.p_start,
+      p_end: rpcArgs.p_end,
+      p_viewer_id: rpcArgs.p_viewer_id,
+      p_viewer_phong_ban_id: rpcArgs.p_viewer_phong_ban_id,
+      p_view_all: rpcArgs.p_view_all,
+    },
     { enabled: canOpenPage },
   );
 
@@ -575,15 +608,12 @@ const BaoCaoCongViecPage: React.FC = () => {
 
   if (!canOpenPage) {
     return (
-      <div className="flex flex-col h-page items-center justify-center p-6 text-center">
-        <p className="text-sm text-muted-foreground">{txt('taskReport.accessDenied')}</p>
-        <button
-          type="button"
-          className="mt-4 text-sm font-medium text-primary hover:underline"
-          onClick={() => navigate('/quan-ly-giao-viec')}
-        >
-          {txt('page.taskDashboard.backToParent')}
-        </button>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

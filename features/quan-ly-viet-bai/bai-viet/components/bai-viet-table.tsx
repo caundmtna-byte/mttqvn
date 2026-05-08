@@ -13,9 +13,21 @@ interface Props {
   onEdit: (item: BaiVietDanhSach) => void;
   onDelete: (id: string) => void;
   onView?: (item: BaiVietDanhSach) => void;
+  serverSidePagination?: boolean;
+  serverTotalRecords?: number | null;
+  serverHasNextPage?: boolean;
 }
 
-const BaiVietTable = memo(function BaiVietTable({ data, isLoading, onEdit, onDelete, onView }: Props) {
+const BaiVietTable = memo(function BaiVietTable({
+  data,
+  isLoading,
+  onEdit,
+  onDelete,
+  onView,
+  serverSidePagination,
+  serverTotalRecords,
+  serverHasNextPage,
+}: Props) {
   const {
     columns,
     pagination,
@@ -178,6 +190,9 @@ const BaiVietTable = memo(function BaiVietTable({ data, isLoading, onEdit, onDel
       keyExtractor={(item) => item.id}
       onResizeColumn={resizeColumn}
       stickyLeftCount={2}
+      serverSidePagination={serverSidePagination}
+      serverTotalRecords={serverTotalRecords ?? undefined}
+      serverHasNextPage={serverHasNextPage}
     />
   );
 });

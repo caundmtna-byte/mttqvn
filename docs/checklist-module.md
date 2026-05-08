@@ -256,6 +256,7 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 - [ ] Ánh xạ **`APP_RESOURCE_TO_MODULE`**: resource → `module_id` dạng `he-thong/ten-module` khớp ma trận phân quyền / menu.
 - [ ] Toolbar, nút trong detail, form (nếu cần): `useResourcePermissions(resource)` — `canCreate`, `canEdit`, `canDelete`, `canExport`, `canImport`, `canView`.
 - [ ] **Ghi nhớ**: `can()` chỉ UX; **RLS / policy Supabase** vẫn phải đúng trên server.
+- [ ] (Tùy module) Pattern ẩn submenu / dashboard / deep link: **`docs/PERMISSION-SUBMENU-PATTERN.md`**.
 
 ---
 

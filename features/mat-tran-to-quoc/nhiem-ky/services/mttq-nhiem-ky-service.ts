@@ -144,9 +144,6 @@ export async function createMttqNhiemKy(data: MttqNhiemKyFormValues, idNguoiTao:
 }
 
 export async function updateMttqNhiemKy(id: string, data: MttqNhiemKyFormValues): Promise<MttqNhiemKy> {
-  const existing = await getMttqNhiemKyById(id);
-  if (!existing) throw new Error(txt('matTranNhiemKy.service.notFound'));
-
   if (!isSupabase()) {
     const idx = mockRows.findIndex((r) => r.id === id);
     if (idx === -1) throw new Error(txt('matTranNhiemKy.service.notFound'));

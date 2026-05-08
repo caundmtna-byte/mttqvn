@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   lazy,
   Suspense,
   startTransition,
@@ -12,19 +13,21 @@ import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { getLanguage } from '@/lib/utils';
-import { matchesSearchTerm } from '@/lib/searchUtils';
 import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { useCan } from '@/hooks/use-can';
 import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
-import { useBaiVietDanhSachList, useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
+import { useTheLoais } from '../thiet-lap-bai-viet/hooks/use-the-loai';
+import { useArticleAllTabViewer, rowVisibleOnArticleAllTab } from '../hooks/use-article-all-tab-viewer';
+import { useBaiVietDanhSachPage, useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
 import { useBaiVietDanhSachStore } from './store/useBaiVietDanhSachStore';
 import type { BaiVietDanhSach, BaiVietListScope } from './core/types';
-import { BAI_VIET_DANH_SACH_SEARCHABLE_KEYS } from './utils/search-keys';
+import type { BaiVietRpcScope } from './services/bai-viet-danh-sach-service';
 import { baiVietMatchesColumnSearch } from './utils/column-search';
 import BaiVietToolbar from './components/bai-viet-toolbar';
 import BaiVietTable from './components/bai-viet-table';
@@ -53,6 +56,16 @@ const BaiVietDanhSachPage: React.FC = () => {
   const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
+  const canView = useCan('view', 'articles');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('articleList.noViewPermission'));
+    navigate('/quan-ly-viet-bai', { replace: true });
+  }, [user, canView, navigate]);
+
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
 
   const [listScope, setListScope] = useState<BaiVietListScope>(TAB_ALL);
@@ -62,10 +75,60 @@ const BaiVietDanhSachPage: React.FC = () => {
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
 
-  const { searchTerm, filters, sort, resetState, clearSelection, selectedIds, pagination, columns } =
-    useBaiVietDanhSachStore();
+  const {
+    searchTerm,
+    filters,
+    sort,
+    resetState,
+    clearSelection,
+    selectedIds,
+    pagination,
+    columns,
+    setPage,
+  } = useBaiVietDanhSachStore();
 
-  const { data: rows = [], isLoading } = useBaiVietDanhSachList();
+  const allTabViewer = useArticleAllTabViewer();
+  const { data: theLoais = [] } = useTheLoais({ enabled: canView });
+
+  const rpcScope: BaiVietRpcScope =
+    listScope === TAB_MINE ? 'mine' : allTabViewer.canViewAllOrg ? 'all' : 'all_dept';
+
+  const pageQueryEnabled =
+    canView &&
+    (listScope !== TAB_MINE || Boolean(nhanVienId)) &&
+    (listScope !== TAB_ALL || allTabViewer.canViewAllOrg || Boolean(allTabViewer.viewerPhongBanId));
+
+  const pageQuery = useMemo(
+    () => ({
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      search: searchTerm,
+      scope: rpcScope,
+      viewerNhanVienId: listScope === TAB_MINE ? nhanVienId : null,
+      viewerPhongBanId: rpcScope === 'all_dept' ? allTabViewer.viewerPhongBanId : null,
+      theLoaiIds: filters.id_the_loai,
+    }),
+    [
+      pagination.page,
+      pagination.pageSize,
+      searchTerm,
+      rpcScope,
+      listScope,
+      nhanVienId,
+      allTabViewer.viewerPhongBanId,
+      filters.id_the_loai,
+    ],
+  );
+
+  const { data: pageData, isLoading } = useBaiVietDanhSachPage({
+    ...pageQuery,
+    enabled: pageQueryEnabled,
+  });
+
+  const rows = pageData?.rows ?? [];
+  const serverHasNextPage = pageData?.hasNextPage ?? false;
+  const serverTotalRecords = pageData?.totalRecords ?? null;
+
   const deleteMutation = useDeleteBaiVietDanhSachMany();
 
   useEffect(() => {
@@ -77,24 +140,24 @@ const BaiVietDanhSachPage: React.FC = () => {
   }, [listScope, clearSelection]);
 
   useEffect(() => {
+    setPage(1);
+  }, [listScope, setPage]);
+
+  useEffect(() => {
     if (!viewing) return;
     const fresh = rows.find((r) => r.id === viewing.id);
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [rows, viewing]);
 
   const filterFn = useCallback(
-    (item: BaiVietDanhSach, term: string, f: typeof filters) => {
+    (item: BaiVietDanhSach, _term: string, f: typeof filters) => {
       if (listScope === TAB_MINE && String(item.id_nguoi_tao) !== nhanVienId) return false;
-      const matchesSearch = matchesSearchTerm(
-        item as unknown as Record<string, unknown>,
-        term,
-        BAI_VIET_DANH_SACH_SEARCHABLE_KEYS,
-      );
+      if (listScope === TAB_ALL && !rowVisibleOnArticleAllTab(allTabViewer, item)) return false;
       if (f.id_the_loai?.length && !f.id_the_loai.includes(String(item.id_the_loai))) return false;
       const matchesCol = baiVietMatchesColumnSearch(item, f);
-      return matchesSearch && matchesCol;
+      return matchesCol;
     },
-    [listScope, nhanVienId],
+    [listScope, nhanVienId, allTabViewer],
   );
 
   const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
@@ -238,26 +301,25 @@ const BaiVietDanhSachPage: React.FC = () => {
     [tabs, listScope],
   );
 
-  const scopeRows = useMemo(() => {
-    if (listScope === TAB_MINE && nhanVienId) {
-      return rows.filter((r) => String(r.id_nguoi_tao) === nhanVienId);
-    }
-    return rows;
-  }, [rows, listScope, nhanVienId]);
+  const theLoaiChipOptions = useMemo(
+    () =>
+      [...theLoais]
+        .map((t) => ({ value: String(t.id), label: t.ten_the_loai }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [theLoais],
+  );
 
-  const theLoaiChipOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    for (const r of scopeRows) {
-      const id = String(r.id_the_loai);
-      const label = (r.ten_the_loai ?? '').trim() || id;
-      const cur = map.get(id);
-      if (cur) cur.count += 1;
-      else map.set(id, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [scopeRows]);
+  if (!canView) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-page relative">
@@ -284,6 +346,9 @@ const BaiVietDanhSachPage: React.FC = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={setViewing}
+            serverSidePagination
+            serverTotalRecords={serverTotalRecords}
+            serverHasNextPage={serverHasNextPage}
           />
         </div>
       </div>

@@ -291,6 +291,8 @@ export const ui = {
     },
     "taskDashboard": {
       "groupMain": "Giao việc & báo cáo",
+      "yearProgram": "Chương trình năm",
+      "yearProgramDesc": "Kế hoạch và chương trình công việc theo năm (đang phát triển).",
       "tasks": "Công việc",
       "tasksDesc": "Danh sách, trạng thái và chi tiết công việc được giao.",
       "taskReport": "Báo cáo công việc",
@@ -348,7 +350,8 @@ export const ui = {
       },
       "filterMoTaChipPlaceholder": "Mô tả",
       "filterMoTaHas": "Có mô tả",
-      "filterMoTaEmpty": "Không mô tả"
+      "filterMoTaEmpty": "Không mô tả",
+      "noViewPermission": "Bạn không có quyền xem module Thiết lập cài đặt."
     },
     "articleDashboard": {
       "groupMain": "Nội dung & cấu hình",
@@ -433,7 +436,8 @@ export const ui = {
       "filterDonGiaPaid": "Có phí",
       "filterMoTaChipPlaceholder": "Mô tả",
       "filterMoTaHas": "Có mô tả",
-      "filterMoTaEmpty": "Không mô tả"
+      "filterMoTaEmpty": "Không mô tả",
+      "noViewPermission": "Bạn không có quyền xem module Thiết lập bài viết."
     }
   },
   "notification": {
@@ -467,11 +471,13 @@ export const ui = {
     "articleCommission": "Hoa hồng viết bài",
     "articleStats": "BC thống kê bài viết",
     "articleSettings": "Thiết lập bài viết",
+    "taskChuongTrinhNam": "Chương trình năm",
     "taskCongViec": "Công việc",
     "taskBaoCaoCongViec": "Báo cáo công việc",
     "matTranTrainingList": "Danh sách tập huấn",
     "matTranRewardList": "Danh sách khen thưởng",
     "matTranTerm": "Nhiệm kỳ",
+    "matTranNhiemKyDiemDanhMatrix": "Điểm danh ma trận",
     "matTranSession": "Kỳ họp",
     "matTranCommitteeMembers": "Ủy viên ủy ban",
     "matTranOfficerList": "Danh sách cán bộ",

@@ -2,12 +2,13 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   lazy,
   Suspense,
   startTransition,
 } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Map as MapIcon, MapPin } from 'lucide-react';
@@ -20,8 +21,10 @@ import { DRAWER_Z_CONTENT_BASE, DRAWER_WIDTH_DETAIL_SMALL } from '@/lib/dialog-s
 import TabGroup, { type Tab } from '@/components/ui/TabGroup';
 import type { Option } from '@/components/ui/Combobox';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, { type ImportTemplateSheet } from '@/components/shared/ImportDialog';
 import { useConfirmStore } from '@/store/useConfirmStore';
+import { useAuthStore } from '@/store/useStore';
+import { useCan } from '@/hooks/use-can';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import {
   useTinhThanhList,
@@ -64,6 +67,18 @@ const DrawerLazyFallback: React.FC = () => (
 );
 
 const DanhSachTinhThanhPage: React.FC = () => {
+  const user = useAuthStore((s) => s.user);
+  const canView = useCan('view', 'provinces');
+  const navigate = useNavigate();
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('diaBan.noViewPermission'));
+    navigate('/he-thong', { replace: true });
+  }, [user, canView, navigate]);
+
   const confirm = useConfirmStore((s) => s.confirm);
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') === TAB_XA ? TAB_XA : TAB_TINH;
@@ -76,7 +91,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
   const { resetState: resetTinhStore, clearSelection: clearTinhSelection } = tinhStore;
   const { resetState: resetXaStore, clearSelection: clearXaSelection } = xaStore;
 
-  const { data: tinhList = [], isLoading: loadingTinh } = useTinhThanhList();
+  const { data: tinhList = [], isLoading: loadingTinh } = useTinhThanhList({ enabled: canView });
 
   const [selectedTinhId, setSelectedTinhId] = useState(tinhIdFromUrl);
 
@@ -95,10 +110,16 @@ const DanhSachTinhThanhPage: React.FC = () => {
     setSelectedTinhId(tinhIdFromUrl);
   }, [tinhIdFromUrl]);
 
-  const { data: xaList = [], isLoading: loadingXa } = useXaPhuongForTab(tab === TAB_XA, selectedTinhId);
+  const { data: xaList = [], isLoading: loadingXa } = useXaPhuongForTab(tab === TAB_XA, selectedTinhId, {
+    enabled: canView,
+  });
 
   const nestedSyncTinhId = viewingTinh?.id ?? '';
-  const { data: xaListForNestedSync = [] } = useXaPhuongForTab(Boolean(nestedViewingXa && nestedSyncTinhId), nestedSyncTinhId);
+  const { data: xaListForNestedSync = [] } = useXaPhuongForTab(
+    Boolean(nestedViewingXa && nestedSyncTinhId),
+    nestedSyncTinhId,
+    { enabled: canView },
+  );
 
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -249,6 +270,17 @@ const DanhSachTinhThanhPage: React.FC = () => {
   }, [filteredTinh, tinhStore.sort]);
 
   const tinhMap = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
+
+  const tinhRefSheet = useMemo<ImportTemplateSheet>(
+    () => ({
+      name: txt('diaBan.import.refSheetName'),
+      headers: [txt('diaBan.import.refSheetColTen'), txt('diaBan.import.refSheetColId')],
+      rows: [...tinhList]
+        .sort((a, b) => a.thu_tu - b.thu_tu || a.ten.localeCompare(b.ten, getLanguage()))
+        .map((t) => [t.ten, t.id]),
+    }),
+    [tinhList],
+  );
 
   const xaFilterFn = useCallback(
     (item: XaPhuong, term: string, f: XaPhuongListFilters) => {
@@ -539,6 +571,18 @@ const DanhSachTinhThanhPage: React.FC = () => {
     setNestedViewingXa(null);
   }, []);
 
+  if (!canView) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-page relative">
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
@@ -686,6 +730,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
             templateFileName={
               tab === TAB_TINH ? txt('diaBan.import.templateTinh') : txt('diaBan.import.templateXa')
             }
+            templateSheets={tab === TAB_XA ? [tinhRefSheet] : undefined}
           />
         )}
       </AnimatePresence>

@@ -7,6 +7,7 @@ import {
   type RowOverflowMenuItem,
 } from '@/components/shared/row-actions';
 import type { BaiVietDanhSach } from '../core/types';
+import { useCan } from '@/hooks/use-can';
 
 export interface BaiVietTableRowActionsProps {
   item: BaiVietDanhSach;
@@ -26,19 +27,45 @@ export function BaiVietTableRowActions({
   compact = false,
 }: BaiVietTableRowActionsProps) {
   const close = () => onMenuOpenChange(null);
+  const canEdit = useCan('edit', 'articles');
+  const canDelete = useCan('delete', 'articles');
 
   const overflowItems: RowOverflowMenuItem[] = [
-    {
-      key: 'delete',
-      label: txt('common.delete'),
-      icon: <Trash2 size={14} />,
-      variant: 'destructive',
-      onClick: () => {
-        onDelete(item.id);
-        close();
-      },
-    },
+    ...(canDelete
+      ? [
+          {
+            key: 'delete',
+            label: txt('common.delete'),
+            icon: <Trash2 size={14} />,
+            variant: 'destructive' as const,
+            onClick: () => {
+              onDelete(item.id);
+              close();
+            },
+          },
+        ]
+      : []),
   ];
+
+  const primary = canEdit ? (
+    <TableRowIconButton
+      icon={Edit}
+      label={txt('common.edit')}
+      size={compact ? 'compact' : 'default'}
+      variant="primary"
+      onClick={() => onEdit(item)}
+    />
+  ) : undefined;
+
+  if (!primary && overflowItems.length === 0) {
+    return (
+      <div
+        role="group"
+        className="flex items-center justify-center"
+        onPointerDown={(e) => e.stopPropagation()}
+      />
+    );
+  }
 
   return (
     <DataTableRowActions
@@ -46,15 +73,7 @@ export function BaiVietTableRowActions({
       compact={compact}
       menuOpenId={menuOpenId}
       onMenuOpenChange={onMenuOpenChange}
-      primary={
-        <TableRowIconButton
-          icon={Edit}
-          label={txt('common.edit')}
-          size={compact ? 'compact' : 'default'}
-          variant="primary"
-          onClick={() => onEdit(item)}
-        />
-      }
+      primary={primary}
       overflowItems={overflowItems}
       overflowTriggerLabel={txt('common.moreRowActions')}
     />

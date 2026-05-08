@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { txt } from '../../lib/text';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useDebounce } from '../../hooks/use-debounce';
 import { getParentPath } from './Breadcrumbs';
 import {
     Search, X, Check, Trash2, Power, Filter, LayoutTemplate,
@@ -95,6 +96,25 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
     const [showMobileActions, setShowMobileActions] = useState(false);
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const hasSelection = selectedCount > 0;
+
+    // Local input value — reflects what user typed immediately (no lag in UI).
+    // Debounced value is pushed to the store/query after 300ms pause, reducing
+    // unnecessary re-renders and ready for server-side search in the future.
+    const [localSearch, setLocalSearch] = useState(searchTerm);
+    const debouncedSearch = useDebounce(localSearch, 300);
+
+    // Push debounced value to parent store.
+    useEffect(() => {
+        onSearchChange(debouncedSearch);
+    // onSearchChange is a stable Zustand setter — safe to omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedSearch]);
+
+    // Keep localSearch in sync if parent clears the searchTerm externally
+    // (e.g. "Xóa tất cả bộ lọc" button).
+    useEffect(() => {
+        if (searchTerm === '') setLocalSearch('');
+    }, [searchTerm]);
     const navigate = useNavigate();
     const location = useLocation();
     const handleBack = useCallback(() => {
@@ -245,8 +265,8 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                     <input
                                         ref={mobileSearchInputRef}
                                         type="search"
-                                        value={searchTerm}
-                                        onChange={(e) => onSearchChange(e.target.value)}
+                                        value={localSearch}
+                                        onChange={(e) => setLocalSearch(e.target.value)}
                                         placeholder={resolvedSearchPlaceholder}
                                         inputMode="search"
                                         enterKeyHint="search"
@@ -256,9 +276,9 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                         onFocus={(e) => scrollSearchIntoView(e.currentTarget)}
                                         className="w-full h-11 min-h-[44px] pl-8 pr-7 bg-muted/40 border border-border/60 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
                                     />
-                                    {searchTerm && (
+                                    {localSearch && (
                                         <button
-                                            onClick={() => onSearchChange('')}
+                                            onClick={() => setLocalSearch('')}
                                             className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground p-0.5 rounded-full"
                                         >
                                             <X size={12} />
@@ -450,8 +470,8 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                         <input
                                             ref={searchInputRef}
                                             type="search"
-                                            value={searchTerm}
-                                            onChange={(e) => onSearchChange(e.target.value)}
+                                            value={localSearch}
+                                            onChange={(e) => setLocalSearch(e.target.value)}
                                             placeholder={resolvedSearchPlaceholder}
                                             inputMode="search"
                                             enterKeyHint="search"
@@ -460,10 +480,10 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                             spellCheck={false}
                                             className="w-full h-8 pl-10 pr-8 bg-muted/40 hover:bg-muted/60 border border-border/60 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 focus:bg-background transition-all"
                                         />
-                                        {searchTerm && (
+                                        {localSearch && (
                                             <button
                                                 type="button"
-                                                onClick={() => onSearchChange('')}
+                                                onClick={() => setLocalSearch('')}
                                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full hover:bg-muted transition-all"
                                             >
                                                 <X size={14} />

@@ -34,6 +34,8 @@ export interface MttqLopTapHuan {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /** `var_nhan_vien.id_phong_ban` của người tạo — phục vụ gating phân quyền xem. */
+  id_phong_ban_nguoi_tao?: string | null;
   chi_tiet: MttqLopTapHuanCt[];
 }
 

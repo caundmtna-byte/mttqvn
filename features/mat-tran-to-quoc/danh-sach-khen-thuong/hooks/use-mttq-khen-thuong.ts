@@ -49,7 +49,12 @@ export const useCreateMttqKhenThuong = (onSuccess?: () => void) => {
       createMttqKhenThuong(data, idNguoiTao),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix });
+      // `byCanBoPrefix` chỉ active trên trang detail cán bộ — mark stale, refetch
+      // khi user mở lại detail. Tránh refetch tất cả `byCanBo(*)` cache lúc tạo mới.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix,
+        refetchType: 'none',
+      });
       toast.success(txt('matTranKhenThuong.toast.create'));
       onSuccess?.();
     },
@@ -63,7 +68,10 @@ export const useUpdateMttqKhenThuong = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: MttqKhenThuongFormValues }) => updateMttqKhenThuong(id, data),
     onSuccess: (updated, { id }) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix,
+        refetchType: 'none',
+      });
       queryClient.setQueryData<MttqKhenThuong | null>(queryKeys.mttqKhenThuong.detail(id), updated);
       toast.success(txt('matTranKhenThuong.toast.update'));
       onSuccess?.();
@@ -78,7 +86,10 @@ export const useDeleteMttqKhenThuongMany = () => {
     mutationFn: deleteMttqKhenThuongMany,
     onSuccess: (_, ids) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix,
+        refetchType: 'none',
+      });
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.mttqKhenThuong.detail(id) });
       }

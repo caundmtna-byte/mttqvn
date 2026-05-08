@@ -1,5 +1,6 @@
 /** Thông tin tổ chức + thương hiệu (MTTQVN) */
 export const company = {
+  noViewPermission: 'Bạn không có quyền xem module Thông tin tổ chức.',
   title: 'Thông tin tổ chức',
   description: 'Cấu hình tên ứng dụng MTTQVN, logo (Quốc huy), mô tả ngắn và thông tin liên hệ hiển thị trên hệ thống.',
   brandSection: 'Thương hiệu & Logo',

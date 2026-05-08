@@ -57,4 +57,5 @@ export const articleList = {
   },
   emptyTitle: 'Chưa có bài viết',
   emptyHint: 'Thêm bài viết mới hoặc điều chỉnh bộ lọc.',
+  noViewPermission: 'Bạn không có quyền xem module Danh sách bài viết.',
 } as const;

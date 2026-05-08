@@ -26,8 +26,7 @@ export const articleCommission = {
   axisAmount: 'Số tiền (VNĐ)',
   axisCount: 'Số bài',
   goToArticles: 'Mở danh sách bài viết',
-  /** Nhãn cạnh DateRangePicker (lọc theo ngày đăng bài). */
-  dateByPublished: 'Ngày đăng bài',
   /** Placeholder DateRangePicker (theo ngày đăng bài, khác BC thống kê). */
   dateRangePlaceholder: 'Khoảng thời gian',
+  noViewPermission: 'Bạn không có quyền xem module Hoa hồng viết bài.',
 } as const;

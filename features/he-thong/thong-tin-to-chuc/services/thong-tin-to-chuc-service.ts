@@ -9,7 +9,7 @@ import { THONG_TIN_TO_CHUC_ROW_COLUMNS } from '../core/supabase-select';
 type ThongTinRow = Database['public']['Tables']['var_thong_tin_to_chuc']['Row'];
 type ThongTinUpdate = Database['public']['Tables']['var_thong_tin_to_chuc']['Update'];
 
-const SINGLETON_ID: ThongTinRow['id'] = '1';
+const SINGLETON_ID: ThongTinRow['id'] = 1;
 
 function mapRowToCompanyInfo(row: ThongTinRow): CompanyInfo {
   return {

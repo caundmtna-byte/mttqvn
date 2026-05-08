@@ -1,5 +1,6 @@
 /** Nhân viên */
 export const employee = {
+  "noViewPermission": "Bạn không có quyền xem module Nhân viên.",
   "title": "Nhân viên",
   "tabList": "Danh sách",
   "tabStats": "Thống kê",

@@ -1,5 +1,8 @@
 import { createRepository } from '@/lib/data/create-repository';
+import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
+import { getSupabase } from '@/lib/supabase/client';
+import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { BaiVietDanhSach } from '../core/types';
 import type { BaiVietDanhSachFormValues } from '../core/schema';
 import {
@@ -23,7 +26,9 @@ export function flattenBaiVietDanhSachRow(row: Record<string, unknown>): BaiViet
   const theLoai = pickEmbedded<{ ten_the_loai?: string }>(row.the_loai);
   const nguon = pickEmbedded<{ ten?: string }>(row.nguon_dang);
   const trang = pickEmbedded<{ ten?: string }>(row.trang_dang);
-  const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string; id_phong_ban?: string | number | null }>(
+    row.nguoi_tao,
+  );
   const rest = { ...row };
   delete rest.the_loai;
   delete rest.nguon_dang;
@@ -53,6 +58,10 @@ export function flattenBaiVietDanhSachRow(row: Record<string, unknown>): BaiViet
     ten_trang_dang: trang?.ten ?? null,
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    id_phong_ban_nguoi_tao:
+      nv?.id_phong_ban != null && String(nv.id_phong_ban).trim() !== ''
+        ? String(nv.id_phong_ban).trim()
+        : null,
   } as BaiVietDanhSach;
 }
 
@@ -108,9 +117,8 @@ export async function updateBaiVietDanhSach(
   id: string,
   data: BaiVietDanhSachFormValues,
 ): Promise<BaiVietDanhSach> {
-  const existing = await getBaiVietDanhSachById(id);
-  if (!existing) throw new Error(txt('articleList.service.notFound'));
-
+  // Bỏ tiền-fetch `getById`: nếu id không tồn tại, `repo.update` throw lỗi PostgREST
+  // (PGRST116) và toast hiển thị; tiết kiệm 1 round-trip + payload đầy đủ.
   const updated = await repo.update(
     id,
     {
@@ -129,4 +137,134 @@ export async function updateBaiVietDanhSach(
 
 export async function deleteBaiVietDanhSachMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
+}
+
+export type BaiVietRpcScope = 'all' | 'mine' | 'all_dept';
+
+export type BaiVietPageQuery = {
+  page: number;
+  pageSize: number;
+  search: string;
+  scope: BaiVietRpcScope;
+  viewerNhanVienId: string | null;
+  viewerPhongBanId: string | null;
+  theLoaiIds: readonly string[];
+};
+
+export type BaiVietPageResult = {
+  rows: BaiVietDanhSach[];
+  hasNextPage: boolean;
+  /** null khi còn trang sau (chưa biết tổng chính xác). */
+  totalRecords: number | null;
+};
+
+function toRpcBigint(id: string | null | undefined): number | null {
+  if (id == null || String(id).trim() === '') return null;
+  const n = Number(String(id).trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+function filterBaiVietMockForPage(
+  all: BaiVietDanhSach[],
+  opts: {
+    search: string | null;
+    scope: BaiVietRpcScope;
+    viewerNhanVienId: string | null;
+    viewerPhongBanId: string | null;
+    theLoaiIds: readonly string[];
+  },
+): BaiVietDanhSach[] {
+  let list = [...all];
+  if (opts.search) {
+    const t = opts.search.toLowerCase();
+    list = list.filter(
+      (b) =>
+        b.ten_bai.toLowerCase().includes(t) ||
+        String(b.link ?? '')
+          .toLowerCase()
+          .includes(t),
+    );
+  }
+  if (opts.scope === 'mine') {
+    const id = String(opts.viewerNhanVienId ?? '').trim();
+    list = id ? list.filter((b) => String(b.id_nguoi_tao) === id) : [];
+  } else if (opts.scope === 'all_dept') {
+    const pb = String(opts.viewerPhongBanId ?? '').trim();
+    list = pb ? list.filter((b) => String(b.id_phong_ban_nguoi_tao ?? '').trim() === pb) : [];
+  }
+  if (opts.theLoaiIds.length) {
+    const set = new Set(opts.theLoaiIds.map(String));
+    list = list.filter((b) => set.has(String(b.id_the_loai)));
+  }
+  list.sort((a, b) => b.ngay_dang.localeCompare(a.ngay_dang) || a.ten_bai.localeCompare(b.ten_bai));
+  return list;
+}
+
+async function enrichBaiVietRowsByIds(ids: string[]): Promise<Map<string, BaiVietDanhSach>> {
+  const map = new Map<string, BaiVietDanhSach>();
+  if (ids.length === 0) return map;
+  const supabase = getSupabase();
+  if (!supabase) return map;
+  const { data, error } = await supabase
+    .from('bai_viet_danh_sach')
+    .select(BAI_VIET_DANH_SACH_SELECT_FULL)
+    .in('id', ids);
+  if (error) handleSupabaseError(error);
+  for (const raw of data ?? []) {
+    const row = raw as unknown as Record<string, unknown>;
+    const id = String(row.id);
+    map.set(id, normalize(flattenBaiVietDanhSachRow(row)));
+  }
+  return map;
+}
+
+export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVietPageResult> {
+  const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
+  const page = Math.max(1, Math.floor(q.page));
+  const offset = (page - 1) * pageSize;
+  const fetchLimit = pageSize + 1;
+  const searchTrim = q.search?.trim() ?? '';
+  const pSearch = searchTrim.length > 0 ? searchTrim : null;
+  const theLoaiNums = q.theLoaiIds
+    .map((x) => Number(String(x).trim()))
+    .filter((n) => Number.isFinite(n));
+
+  if (!isSupabase()) {
+    const all = await getBaiVietDanhSachList();
+    const filtered = filterBaiVietMockForPage(all, {
+      search: pSearch,
+      scope: q.scope,
+      viewerNhanVienId: q.viewerNhanVienId,
+      viewerPhongBanId: q.viewerPhongBanId,
+      theLoaiIds: q.theLoaiIds,
+    });
+    const slice = filtered.slice(offset, offset + fetchLimit);
+    const hasNextPage = slice.length > pageSize;
+    const rows = slice.slice(0, pageSize);
+    const totalRecords = hasNextPage ? null : offset + rows.length;
+    return { rows, hasNextPage, totalRecords };
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
+
+  const { data, error } = await supabase.rpc('get_bai_viet_page', {
+    p_search: pSearch,
+    p_limit: fetchLimit,
+    p_offset: offset,
+    p_scope: q.scope,
+    p_viewer_nhan_vien_id: toRpcBigint(q.viewerNhanVienId),
+    p_viewer_phong_ban_id: toRpcBigint(q.viewerPhongBanId),
+    p_the_loai_ids: theLoaiNums.length ? theLoaiNums : null,
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  const rawRows = (data ?? []) as unknown as Record<string, unknown>[];
+  const hasNextPage = rawRows.length > pageSize;
+  const pageRaw = hasNextPage ? rawRows.slice(0, pageSize) : rawRows;
+  const ids = pageRaw.map((r) => String(r.id));
+  const byId = await enrichBaiVietRowsByIds(ids);
+  const rows = ids.map((id) => byId.get(id)).filter((x): x is BaiVietDanhSach => Boolean(x));
+  const totalRecords = hasNextPage ? null : offset + rows.length;
+  return { rows, hasNextPage, totalRecords };
 }

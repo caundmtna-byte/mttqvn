@@ -15,14 +15,19 @@ export function getDefaultEmployeeFormValues(): EmployeeFormValues {
 }
 
 /** Map `Employee` → giá trị form (khi mở chế độ chỉnh sửa). */
+function fkToFormString(v: string | null | undefined): string {
+  if (v == null || v === '') return '';
+  return String(v);
+}
+
 export function employeeToFormValues(emp: Employee): EmployeeFormValues {
   return {
     ten_tai_khoan: emp.ten_tai_khoan,
     ho_va_ten: emp.ho_va_ten,
     hinh_anh: emp.hinh_anh,
-    id_phong_ban: emp.id_phong_ban ?? '',
-    id_bo_phan: emp.id_bo_phan ?? '',
-    id_chuc_vu: emp.id_chuc_vu ?? '',
+    id_phong_ban: fkToFormString(emp.id_phong_ban),
+    id_bo_phan: fkToFormString(emp.id_bo_phan),
+    id_chuc_vu: fkToFormString(emp.id_chuc_vu),
     trang_thai: emp.trang_thai,
   };
 }

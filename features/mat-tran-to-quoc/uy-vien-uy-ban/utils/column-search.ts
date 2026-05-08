@@ -1,11 +1,11 @@
 import { formatDate, formatDateShort, formatDateTimeShort } from '@/lib/utils';
-import type { MttqUyVienUyBanListRow } from '../core/types';
+import type { MttqUyVienUyBan, MttqUyVienUyBanListRow } from '../core/types';
 import { formatUyVienMaUvDisplay } from './display-format';
 
 /** Cột có lọc MultiSelect trong header — không áp thêm `columnSearch` text cho cùng key. */
 export const MTTQ_UY_VIEN_UY_BAN_COLUMN_IDS_WITH_MULTISELECT = ['ten_nhiem_ky', 'ten_don_vi'] as const;
 
-export function donViDisplayLabel(row: MttqUyVienUyBanListRow, tinhCapLabel: string): string {
+export function donViDisplayLabel(row: Pick<MttqUyVienUyBan, 'don_vi_id' | 'ten_don_vi'>, tinhCapLabel: string): string {
   if (row.don_vi_id == null || row.don_vi_id === '') return tinhCapLabel;
   return row.ten_don_vi?.trim() || tinhCapLabel;
 }

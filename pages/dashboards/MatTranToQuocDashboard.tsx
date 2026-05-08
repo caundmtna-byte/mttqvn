@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { txt } from '../../lib/text';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,83 +11,110 @@ import {
   Settings,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
+import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
+import type { ModuleItem } from '../../components/dashboard/SubModuleCard';
+import { useAuthStore } from '../../store/useStore';
+import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
+import { can } from '../../lib/permissions';
+import { appResourceForDashboardNavigatePath } from '../../lib/nav-module-visibility';
 
 const MatTranToQuocDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
+  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
 
-  const groups = [
-    {
-      groupTitle: txt('page.matTranDashboard.groupTrainingReward'),
-      items: [
-        {
-          title: txt('page.matTranDashboard.trainingList'),
-          description: txt('page.matTranDashboard.trainingListDesc'),
-          icon: GraduationCap,
-          color: 'bg-rose-500',
-          action: () => navigate('/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan'),
-          moduleId: '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan',
-        },
-        {
-          title: txt('page.matTranDashboard.rewardList'),
-          description: txt('page.matTranDashboard.rewardListDesc'),
-          icon: Award,
-          color: 'bg-teal-500',
-          action: () => navigate('/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong'),
-          moduleId: '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong',
-        },
-      ],
-    },
-    {
-      groupTitle: txt('page.matTranDashboard.groupCommittee'),
-      items: [
-        {
-          title: txt('page.matTranDashboard.term'),
-          description: txt('page.matTranDashboard.termDesc'),
-          icon: CalendarClock,
-          color: 'bg-violet-500',
-          action: () => navigate('/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky'),
-          moduleId: '/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky',
-        },
-        {
-          title: txt('page.matTranDashboard.session'),
-          description: txt('page.matTranDashboard.sessionDesc'),
-          icon: CalendarDays,
-          color: 'bg-cyan-500',
-          action: () => navigate('/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop'),
-          moduleId: '/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop',
-        },
-        {
-          title: txt('page.matTranDashboard.committeeMembers'),
-          description: txt('page.matTranDashboard.committeeMembersDesc'),
-          icon: Users,
-          color: 'bg-purple-500',
-          action: () => navigate('/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien'),
-          moduleId: '/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
-        },
-      ],
-    },
-    {
-      groupTitle: txt('page.matTranDashboard.groupOtherSettings'),
-      items: [
-        {
-          title: txt('page.matTranDashboard.officerList'),
-          description: txt('page.matTranDashboard.officerListDesc'),
-          icon: IdCard,
-          color: 'bg-slate-500',
-          action: () => navigate('/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo'),
-          moduleId: '/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo',
-        },
-        {
-          title: txt('page.matTranDashboard.setupSettings'),
-          description: txt('page.matTranDashboard.setupSettingsDesc'),
-          icon: Settings,
-          color: 'bg-emerald-600',
-          action: () => navigate('/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat'),
-          moduleId: '/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat',
-        },
-      ],
-    },
-  ];
+  const groups = useMemo((): ModuleGroup[] => {
+    type Draft = Omit<ModuleItem, 'action'> & { path: string };
+    const raw: { groupTitle: string; items: Draft[] }[] = [
+      {
+        groupTitle: txt('page.matTranDashboard.groupTrainingReward'),
+        items: [
+          {
+            path: '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan',
+            title: txt('page.matTranDashboard.trainingList'),
+            description: txt('page.matTranDashboard.trainingListDesc'),
+            icon: GraduationCap,
+            color: 'bg-rose-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong',
+            title: txt('page.matTranDashboard.rewardList'),
+            description: txt('page.matTranDashboard.rewardListDesc'),
+            icon: Award,
+            color: 'bg-teal-500',
+          },
+        ],
+      },
+      {
+        groupTitle: txt('page.matTranDashboard.groupCommittee'),
+        items: [
+          {
+            path: '/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky',
+            title: txt('page.matTranDashboard.term'),
+            description: txt('page.matTranDashboard.termDesc'),
+            icon: CalendarClock,
+            color: 'bg-violet-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop',
+            title: txt('page.matTranDashboard.session'),
+            description: txt('page.matTranDashboard.sessionDesc'),
+            icon: CalendarDays,
+            color: 'bg-cyan-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
+            title: txt('page.matTranDashboard.committeeMembers'),
+            description: txt('page.matTranDashboard.committeeMembersDesc'),
+            icon: Users,
+            color: 'bg-purple-500',
+          },
+        ],
+      },
+      {
+        groupTitle: txt('page.matTranDashboard.groupOtherSettings'),
+        items: [
+          {
+            path: '/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo',
+            title: txt('page.matTranDashboard.officerList'),
+            description: txt('page.matTranDashboard.officerListDesc'),
+            icon: IdCard,
+            color: 'bg-slate-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat',
+            title: txt('page.matTranDashboard.setupSettings'),
+            description: txt('page.matTranDashboard.setupSettingsDesc'),
+            icon: Settings,
+            color: 'bg-emerald-600',
+          },
+        ],
+      },
+    ];
+
+    return raw
+      .map((g) => ({
+        groupTitle: g.groupTitle,
+        items: g.items
+          .filter((item) => {
+            const res = appResourceForDashboardNavigatePath(item.path);
+            if (!user || res == null) return true;
+            return can(user, 'view', res);
+          })
+          .map(
+            (item): ModuleItem => ({
+              title: item.title,
+              description: item.description,
+              icon: item.icon,
+              color: item.color,
+              action: () => navigate(item.path),
+            })
+          ),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [user, matrixActive, grantsByModule, chucVuCapBac, navigate]);
 
   return <ModuleDashboardLayout groups={groups} />;
 };

@@ -20,6 +20,12 @@ export interface TaskReportFilters {
   mucDo: CongViecMucDo[];
   /** Chỉ hiển thị việc quá hạn (days_to_deadline < 0). */
   overdueOnly: boolean;
+  /** Phân quyền — `var_nhan_vien.id` của user hiện tại (null nếu chưa map). */
+  viewerId: number | null;
+  /** Phân quyền — `var_nhan_vien.id_phong_ban` của user hiện tại. */
+  viewerPhongBanId: number | null;
+  /** Phân quyền — true ⇒ bypass gating (cap_bac=1 hoặc quan_tri/admin). */
+  viewAll: boolean;
 }
 
 /** Tham số chuẩn truyền cho mọi RPC `cong_viec_bao_cao_*`. */
@@ -31,6 +37,12 @@ export interface TaskReportRpcArgs {
   p_trang_thai: CongViecTrangThai[] | null;
   p_muc_do: CongViecMucDo[] | null;
   p_overdue_only: boolean;
+  /** Phân quyền — viewer (`nhan_vien_id`) để khớp `id_nguoi_tao` / `ids_ho_tro`. */
+  p_viewer_id: number | null;
+  /** Phân quyền — `id_phong_ban` viewer để khớp phòng ban của trách nhiệm. */
+  p_viewer_phong_ban_id: number | null;
+  /** Phân quyền — true ⇒ bypass mọi gating. */
+  p_view_all: boolean;
 }
 
 /** Kết quả KPI tổng quan (1 row). */

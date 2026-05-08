@@ -71,9 +71,25 @@ export function flattenCtRow(row: Record<string, unknown>): MttqKhenThuongCt {
 }
 
 function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
-  const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nv = pickEmbedded<{
+    ho_va_ten?: string;
+    ten_tai_khoan?: string;
+    id_phong_ban?: string | number | null;
+  }>(row.nguoi_tao);
+  // PostgREST aggregate `mttq_khen_thuong_ct(count)` trả `[{ count: N }]` — không kéo
+  // mảng id chi tiết nữa (giảm egress đáng kể khi mỗi quyết định có nhiều cán bộ).
   const lines = row.mttq_khen_thuong_ct;
-  const soDong = Array.isArray(lines) ? lines.length : 0;
+  let soDong = 0;
+  if (Array.isArray(lines)) {
+    const first = lines[0] as { count?: unknown } | undefined;
+    const c = first?.count;
+    soDong =
+      typeof c === 'number'
+        ? c
+        : typeof c === 'string' && /^\d+$/.test(c)
+        ? Number(c)
+        : lines.length;
+  }
 
   const rest = { ...row };
   delete rest.nguoi_tao;
@@ -92,12 +108,17 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
     so_dong: soDong,
   };
 }
 
 export function flattenFullRow(row: Record<string, unknown>): MttqKhenThuong {
-  const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nv = pickEmbedded<{
+    ho_va_ten?: string;
+    ten_tai_khoan?: string;
+    id_phong_ban?: string | number | null;
+  }>(row.nguoi_tao);
   const rawCt = row.mttq_khen_thuong_ct;
   const chi_tiet: MttqKhenThuongCt[] = Array.isArray(rawCt)
     ? rawCt.map((x) => flattenCtRow(x as Record<string, unknown>))
@@ -120,6 +141,7 @@ export function flattenFullRow(row: Record<string, unknown>): MttqKhenThuong {
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
     chi_tiet,
   };
 }
@@ -158,29 +180,34 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
   const keep = new Set(lines.map((l) => l.id).filter(isPersistedChildId));
   const existingIds = (existing ?? []).map((r) => String(r.id));
   const toDelete = existingIds.filter((id: string) => !keep.has(id));
+
+  // Batch để giảm round-trip: 1 delete (in-list) + 1 upsert update + 1 insert
+  // (3 lượt tối đa thay vì N+1 lượt).
+  const baseOf = (line: MttqKhenThuongFormValues['chi_tiet'][number]) => ({
+    can_bo_id: Number(line.can_bo_id),
+    hinh_thuc_khen: line.hinh_thuc_khen,
+    danh_hieu: line.danh_hieu,
+    noi_dung_khen: line.noi_dung_khen?.trim() ?? null,
+    ho_so_khen: line.ho_so_khen?.trim() ?? null,
+  });
+  const toUpsertExisting = lines
+    .filter((l) => isPersistedChildId(l.id))
+    .map((l) => ({ id: Number(l.id), id_khen_thuong: Number(parentId), ...baseOf(l) }));
+  const toInsertNew = lines
+    .filter((l) => !isPersistedChildId(l.id))
+    .map((l) => ({ id_khen_thuong: Number(parentId), ...baseOf(l) }));
+
   if (toDelete.length > 0) {
     const { error: e2 } = await q().delete().in('id', toDelete);
     if (e2) handleSupabaseError(e2);
   }
-
-  for (const line of lines) {
-    const base = {
-      can_bo_id: Number(line.can_bo_id),
-      hinh_thuc_khen: line.hinh_thuc_khen,
-      danh_hieu: line.danh_hieu,
-      noi_dung_khen: line.noi_dung_khen?.trim() ?? null,
-      ho_so_khen: line.ho_so_khen?.trim() ?? null,
-    };
-    if (isPersistedChildId(line.id)) {
-      const { error: e3 } = await q().update(base).eq('id', line.id);
-      if (e3) handleSupabaseError(e3);
-    } else {
-      const { error: e4 } = await q().insert({
-        id_khen_thuong: Number(parentId),
-        ...base,
-      });
-      if (e4) handleSupabaseError(e4);
-    }
+  if (toUpsertExisting.length > 0) {
+    const { error: e3 } = await q().upsert(toUpsertExisting, { onConflict: 'id' });
+    if (e3) handleSupabaseError(e3);
+  }
+  if (toInsertNew.length > 0) {
+    const { error: e4 } = await q().insert(toInsertNew);
+    if (e4) handleSupabaseError(e4);
   }
 }
 
@@ -216,6 +243,7 @@ export async function getMttqKhenThuongList(): Promise<MttqKhenThuongListRow[]> 
         tg_cap_nhat: p.tg_cap_nhat,
         ho_va_ten_nguoi_tao: p.ho_va_ten_nguoi_tao,
         ten_tai_khoan_nguoi_tao: p.ten_tai_khoan_nguoi_tao,
+        id_phong_ban_nguoi_tao: p.id_phong_ban_nguoi_tao ?? null,
         so_dong: n,
       };
     });
@@ -265,6 +293,7 @@ export async function createMttqKhenThuong(data: MttqKhenThuongFormValues, idNgu
       tg_cap_nhat: now,
       ho_va_ten_nguoi_tao: 'Mock',
       ten_tai_khoan_nguoi_tao: 'mock',
+      id_phong_ban_nguoi_tao: null,
     });
     syncChildrenMock(id, data.chi_tiet);
     const full = await getMttqKhenThuongById(id);
@@ -272,12 +301,13 @@ export async function createMttqKhenThuong(data: MttqKhenThuongFormValues, idNgu
     return full;
   }
 
+  // Chỉ trả `id, tg_cap_nhat` — `getById` ngay sau đó nạp full row, không cần payload rộng.
   const inserted = await repo.insert(
     {
       ...headerPayload(data),
       id_nguoi_tao: trimmed,
     } as unknown as Omit<ParentRepoRow, 'id'>,
-    { returningSelect: '*' },
+    { returningSelect: 'id,tg_cap_nhat' },
   );
   const parentId = String((inserted as { id?: unknown }).id ?? '');
   await syncChildrenSupabase(parentId, data.chi_tiet);
@@ -287,9 +317,6 @@ export async function createMttqKhenThuong(data: MttqKhenThuongFormValues, idNgu
 }
 
 export async function updateMttqKhenThuong(id: string, data: MttqKhenThuongFormValues): Promise<MttqKhenThuong> {
-  const existing = await getMttqKhenThuongById(id);
-  if (!existing) throw new Error(txt('matTranKhenThuong.service.notFound'));
-
   if (!isSupabase()) {
     const idx = mockParents.findIndex((p) => p.id === id);
     if (idx === -1) throw new Error(txt('matTranKhenThuong.service.notFound'));
@@ -304,7 +331,10 @@ export async function updateMttqKhenThuong(id: string, data: MttqKhenThuongFormV
     return full;
   }
 
-  await repo.update(id, headerPayload(data) as unknown as Partial<ParentRepoRow>, { returningSelect: '*' });
+  // Narrow returning — `getById` ngay sau đó vẫn cấp full row cho UI.
+  await repo.update(id, headerPayload(data) as unknown as Partial<ParentRepoRow>, {
+    returningSelect: 'id,tg_cap_nhat',
+  });
   await syncChildrenSupabase(id, data.chi_tiet);
   const full = await getMttqKhenThuongById(id);
   if (!full) throw new Error(txt('matTranKhenThuong.service.notFound'));

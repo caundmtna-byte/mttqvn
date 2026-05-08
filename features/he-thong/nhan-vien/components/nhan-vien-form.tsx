@@ -24,6 +24,7 @@ import { useDepartments } from '../../phong-ban/hooks/use-phong-ban';
 import { usePositions } from '../../chuc-vu/hooks/use-chuc-vu';
 import { getDefaultEmployeeFormValues, employeeToFormValues } from '../utils/employee-to-form';
 import AuthConflictDialog from './auth-conflict-dialog';
+import { useSignedEmployeeAvatarSrc } from '../hooks/use-signed-employee-avatar-src';
 
 interface Props {
   initialData?: Employee | null;
@@ -65,6 +66,7 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
     formState: { errors },
     reset,
     control,
+    setValue,
   } = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema) as Resolver<EmployeeFormValues>,
     defaultValues: getDefaultEmployeeFormValues(),
@@ -79,7 +81,10 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
   }, [initialData, reset]);
 
   const selectedDept = useWatch({ control, name: 'id_phong_ban' });
+  const selectedUnit = useWatch({ control, name: 'id_bo_phan' });
   const watchedUsername = (useWatch({ control, name: 'ten_tai_khoan' }) ?? '').trim().toLowerCase();
+  const watchedHinhAnh = useWatch({ control, name: 'hinh_anh' });
+  const avatarDisplaySrc = useSignedEmployeeAvatarSrc(watchedHinhAnh ?? null);
   const authEmailHint = watchedUsername
     ? txt('employee.form.authEmailHint', { email: `${watchedUsername}@gmail.com` })
     : txt('employee.form.authEmailHintEmpty');
@@ -100,13 +105,24 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
     [departments, selectedDept],
   );
 
-  const positionOptions = useMemo(
-    () =>
-      positions
-        .filter((p) => p.trang_thai === 'Đang hoạt động')
-        .map((p) => ({ label: p.ten_chuc_vu, value: p.id })),
-    [positions],
-  );
+  const positionOptions = useMemo(() => {
+    const active = positions.filter((p) => p.trang_thai === 'Đang hoạt động');
+    const dept = selectedDept ? String(selectedDept) : '';
+    const unit = selectedUnit ? String(selectedUnit) : '';
+    if (!dept && !unit) return active.map((p) => ({ label: p.ten_chuc_vu, value: String(p.id) }));
+    // Chức vụ có thể gắn `phong_ban_id` = phòng ban cha hoặc bộ phận con — khi đã chọn bộ phận,
+    // vẫn hiện chức vụ thuộc phòng ban đang chọn (tránh list rỗng / không có dropdown).
+    const allowedDeptIds = new Set<string>();
+    if (dept) allowedDeptIds.add(dept);
+    if (unit) allowedDeptIds.add(unit);
+    return active
+      .filter((p) => {
+        const pb = p.phong_ban_id == null || p.phong_ban_id === '' ? '' : String(p.phong_ban_id);
+        if (!pb) return false;
+        return allowedDeptIds.has(pb);
+      })
+      .map((p) => ({ label: p.ten_chuc_vu, value: String(p.id) }));
+  }, [positions, selectedDept, selectedUnit]);
 
   const onSubmit: SubmitHandler<EmployeeFormValues> = (data) => {
     setPendingValues(data);
@@ -167,6 +183,7 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
                 <div className="sm:col-span-1 sm:row-span-2 flex items-start justify-center">
                   <SingleImageInput
                     value={field.value ?? null}
+                    displaySrc={avatarDisplaySrc || undefined}
                     onChange={(v) => field.onChange(v ?? null)}
                     shape="circle"
                     aspectRatio="1/1"
@@ -213,7 +230,14 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
                   label={txt('employee.form.department')}
                   options={departmentOptions}
                   value={field.value || ''}
-                  onChange={(v) => field.onChange(v || '')}
+                  onChange={(v) => {
+                    const next = v || '';
+                    if (next !== (field.value || '')) {
+                      setValue('id_bo_phan', '');
+                      setValue('id_chuc_vu', '');
+                    }
+                    field.onChange(next);
+                  }}
                   placeholder={txt('employee.form.departmentPlaceholder')}
                   error={errors.id_phong_ban?.message}
                   icon={<Building2 size={12} />}
@@ -229,7 +253,13 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
                   label={txt('employee.form.unit')}
                   options={unitOptions}
                   value={field.value || ''}
-                  onChange={(v) => field.onChange(v || '')}
+                  onChange={(v) => {
+                    const next = v || '';
+                    if (next !== (field.value || '')) {
+                      setValue('id_chuc_vu', '');
+                    }
+                    field.onChange(next);
+                  }}
                   placeholder={txt('employee.form.unitPlaceholder')}
                   error={errors.id_bo_phan?.message}
                   icon={<Layers size={12} />}
@@ -250,6 +280,7 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
                   placeholder={txt('employee.form.positionPlaceholder')}
                   error={errors.id_chuc_vu?.message}
                   icon={<Briefcase size={12} />}
+                  disabled={!selectedDept}
                   required
                 />
               )}

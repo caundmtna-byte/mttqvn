@@ -18,7 +18,7 @@ import type { TrangThaiNhanVien } from '../core/constants';
 import { toast } from 'sonner';
 import { txt } from '../../../../lib/text';
 import { EMPLOYEES_LIST_QUERY_PARAMS, queryKeys } from '@/lib/query-keys';
-import { listQueryOptions } from '@/lib/supabase/query-config';
+import { listQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 
 const employeesListQueryKey = queryKeys.employees.list({
@@ -28,11 +28,14 @@ const employeesListQueryKey = queryKeys.employees.list({
   ascending: EMPLOYEES_LIST_QUERY_PARAMS.ascending,
 });
 
-export const useEmployees = () =>
+export const useEmployees = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: employeesListQueryKey,
     queryFn: () => getEmployees(),
-    ...listQueryOptions,
+    enabled: options?.enabled !== false,
+    // Nhân viên thay đổi ít thường xuyên; dùng masterDataQueryOptions (30 phút).
+    // Mutations vẫn cập nhật cache qua setQueryData nên không ảnh hưởng UX.
+    ...masterDataQueryOptions,
   });
 
 export const useEmployee = (id: string | null) =>

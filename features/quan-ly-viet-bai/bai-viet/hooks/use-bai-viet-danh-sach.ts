@@ -11,7 +11,9 @@ import {
   deleteBaiVietDanhSachMany,
   getBaiVietDanhSachById,
   getBaiVietDanhSachList,
+  getBaiVietDanhSachPage,
   updateBaiVietDanhSach,
+  type BaiVietPageQuery,
 } from '../services/bai-viet-danh-sach-service';
 
 const listKey = queryKeys.baiVietDanhSach.all;
@@ -23,6 +25,16 @@ export const useBaiVietDanhSachList = (options?: { enabled?: boolean }) =>
     enabled: options?.enabled !== false,
     ...listQueryOptions,
   });
+
+export const useBaiVietDanhSachPage = (args: BaiVietPageQuery & { enabled?: boolean }) => {
+  const { enabled = true, ...q } = args;
+  return useQuery({
+    queryKey: queryKeys.baiVietDanhSach.page(q),
+    queryFn: () => getBaiVietDanhSachPage(q),
+    enabled,
+    ...listQueryOptions,
+  });
+};
 
 export const useBaiVietDanhSachDetail = (id: string | null) =>
   useQuery({
@@ -38,7 +50,8 @@ export const useCreateBaiVietDanhSach = (onSuccess?: () => void) => {
     mutationFn: ({ data, idNguoiTao }: { data: BaiVietDanhSachFormValues; idNguoiTao: string }) =>
       createBaiVietDanhSach(data, idNguoiTao),
     onSuccess: (created) => {
-      queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (old) => [...(old ?? []), created]);
+      queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.setQueryData(queryKeys.baiVietDanhSach.detail(created.id), created);
       toast.success(txt('articleList.toast.create'));
       onSuccess?.();
     },
@@ -52,9 +65,7 @@ export const useUpdateBaiVietDanhSach = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: BaiVietDanhSachFormValues }) =>
       updateBaiVietDanhSach(id, data),
     onSuccess: (updated, { id }) => {
-      queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (old) =>
-        old?.map((x) => (x.id === id ? updated : x)),
-      );
+      queryClient.invalidateQueries({ queryKey: listKey });
       queryClient.setQueryData(queryKeys.baiVietDanhSach.detail(id), updated);
       toast.success(txt('articleList.toast.update'));
       onSuccess?.();
@@ -68,9 +79,7 @@ export const useDeleteBaiVietDanhSachMany = () => {
   return useMutation({
     mutationFn: deleteBaiVietDanhSachMany,
     onSuccess: (_, ids) => {
-      queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (old) =>
-        old?.filter((x) => !ids.includes(x.id)),
-      );
+      queryClient.invalidateQueries({ queryKey: listKey });
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.baiVietDanhSach.detail(id) });
       }

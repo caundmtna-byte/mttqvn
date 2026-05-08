@@ -16,6 +16,8 @@ export interface PositionPermission {
   ten_phong_ban: string;
   thu_tu_phong_ban?: number;
   thu_tu_chuc_vu?: number;
+  /** `var_chuc_vu.cap_bac` — dùng luật OR với ma trận (vd. Phòng ban). */
+  cap_bac?: number | null;
   mo_ta: string | null;
   so_nhan_vien: number;
   quyen_han: ModulePermission[];

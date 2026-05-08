@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { txt } from '../../../lib/text';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getParentPath } from '../../../components/shared/Breadcrumbs';
 import { ArrowLeft } from 'lucide-react';
-import { useUIStore } from '../../../store/useStore';
+import { useAuthStore, useUIStore } from '../../../store/useStore';
 import { toast } from 'sonner';
+import { useCan } from '@/hooks/use-can';
 import ThongTinToChucForm from './components/thong-tin-to-chuc-form';
 import type { CompanyFormValues } from './core/types';
 import { saveThongTinToChuc } from './services/thong-tin-to-chuc-service';
@@ -13,8 +14,19 @@ import { isSupabase } from '@/lib/data/config';
 import { queryKeys } from '@/lib/query-keys';
 
 const ThongTinToChucPage: React.FC = () => {
+  const user = useAuthStore((s) => s.user);
+  const canView = useCan('view', 'company');
   const navigate = useNavigate();
   const location = useLocation();
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('company.noViewPermission'));
+    navigate('/he-thong', { replace: true });
+  }, [user, canView, navigate]);
+
   const { companyInfo, setCompanyInfo } = useUIStore();
   const queryClient = useQueryClient();
 
@@ -30,6 +42,18 @@ const ThongTinToChucPage: React.FC = () => {
       toast.error(e instanceof Error ? e.message : 'Lỗi lưu');
     }
   };
+
+  if (!canView) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

@@ -4,17 +4,9 @@ import { ChevronDown, Check, Search, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import type { Option } from './Combobox';
+import { useDebounce } from '../../hooks/use-debounce';
 
 export type { Option } from './Combobox';
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(t);
-  }, [value, delayMs]);
-  return debounced;
-}
 
 export interface AsyncComboboxProps {
   /** Tải options theo chuỗi tìm (gọi khi mở dropdown và khi debounce search) */
@@ -56,7 +48,7 @@ const AsyncCombobox: React.FC<AsyncComboboxProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebouncedValue(searchTerm, debounceMs);
+  const debouncedSearch = useDebounce(searchTerm, debounceMs);
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);

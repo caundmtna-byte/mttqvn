@@ -10,10 +10,11 @@ import { getErrorMessage } from '@/lib/utils';
 
 const rolesQueryKey = queryKeys.roles.all;
 
-export const useRoles = () => {
+export const useRoles = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: rolesQueryKey,
     queryFn: getRoles,
+    enabled: options?.enabled !== false,
     ...masterDataQueryOptions,
   });
 };
@@ -64,6 +65,7 @@ export const useUpdateModulePermissions = () => {
     }) => updateModulePermissions(moduleId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rolesQueryKey });
+      queryClient.invalidateQueries({ queryKey: ['permission-grants'] });
       toast.success(txt('permission.toast.updateSuccess'));
     },
     onError: (err: unknown) => toast.error(getErrorMessage(err)),

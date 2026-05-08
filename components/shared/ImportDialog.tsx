@@ -13,18 +13,26 @@ export interface ImportColumn {
   required?: boolean;
 }
 
+export interface ImportTemplateSheet {
+  name: string;
+  headers: string[];
+  rows: (string | number | null)[][];
+}
+
 interface ImportDialogProps {
   open: boolean;
   onClose: () => void;
   columns: ImportColumn[];
   onImport: (data: Record<string, unknown>[]) => Promise<void>;
   templateFileName?: string;
+  /** Extra reference sheets appended after the main Template sheet in the downloaded file. */
+  templateSheets?: ImportTemplateSheet[];
 }
 
 type Step = 'upload' | 'mapping' | 'result';
 
 const ImportDialog: React.FC<ImportDialogProps> = ({
-  open, onClose, columns, onImport, templateFileName = 'template'
+  open, onClose, columns, onImport, templateFileName = 'template', templateSheets,
 }) => {
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
@@ -166,6 +174,12 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
     const ws = XLSX.utils.aoa_to_sheet([columns.map(c => c.label)]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
+    if (templateSheets) {
+      for (const sheet of templateSheets) {
+        const wsRef = XLSX.utils.aoa_to_sheet([sheet.headers, ...sheet.rows]);
+        XLSX.utils.book_append_sheet(wb, wsRef, sheet.name);
+      }
+    }
     XLSX.writeFile(wb, `${templateFileName}.xlsx`);
   };
 

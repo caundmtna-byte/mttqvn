@@ -1,16 +1,31 @@
 import { createRepository } from '@/lib/data/create-repository';
+import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import type { MttqCanBo } from '../core/types';
 import type { MttqCanBoFormValues } from '../core/schema';
-import { MTTQ_CAN_BO_RETURNING_FULL, MTTQ_CAN_BO_SELECT_FULL } from '../core/supabase-select';
+import {
+  MTTQ_CAN_BO_RETURNING_FULL,
+  MTTQ_CAN_BO_SELECT_FULL,
+  MTTQ_CAN_BO_SELECT_LIST,
+} from '../core/supabase-select';
 import { MTTQ_CAN_BO_MOCK_DATA } from '../mock-data';
 
-const repo = createRepository<MttqCanBo>({
+const repoFull = createRepository<MttqCanBo>({
   tableName: 'mttq_can_bo',
   select: MTTQ_CAN_BO_SELECT_FULL,
   delay: 400,
   mockData: MTTQ_CAN_BO_MOCK_DATA,
 });
+
+/** Chỉ dùng khi Supabase; mock giữ một repo (FULL) để getAll/mutation dùng chung bộ nhớ. */
+const repoList = isSupabase()
+  ? createRepository<MttqCanBo>({
+      tableName: 'mttq_can_bo',
+      select: MTTQ_CAN_BO_SELECT_LIST,
+      delay: 400,
+      mockData: MTTQ_CAN_BO_MOCK_DATA,
+    })
+  : repoFull;
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
   if (v == null) return undefined;
@@ -136,12 +151,12 @@ function formToPayload(data: MttqCanBoFormValues, idNguoiTao?: string) {
 }
 
 export async function getMttqCanBoList(): Promise<MttqCanBo[]> {
-  const list = await repo.getAll({ orderBy: 'ho_ten', ascending: true });
+  const list = await repoList.getAll({ orderBy: 'ho_ten', ascending: true });
   return list.map((row) => normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>)));
 }
 
 export async function getMttqCanBoById(id: string): Promise<MttqCanBo | null> {
-  const row = await repo.getById(id);
+  const row = await repoFull.getById(id);
   if (!row) return null;
   return normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>));
 }
@@ -152,24 +167,23 @@ export async function createMttqCanBo(data: MttqCanBoFormValues, idNguoiTao: str
 
   const payload = formToPayload(data, trimmed);
 
-  const inserted = await repo.insert(payload as unknown as Omit<MttqCanBo, 'id'>, {
+  const inserted = await repoFull.insert(payload as unknown as Omit<MttqCanBo, 'id'>, {
     returningSelect: MTTQ_CAN_BO_RETURNING_FULL,
   });
   return normalize(flattenMttqCanBoRow(inserted as unknown as Record<string, unknown>));
 }
 
 export async function updateMttqCanBo(id: string, data: MttqCanBoFormValues): Promise<MttqCanBo> {
-  const existing = await getMttqCanBoById(id);
-  if (!existing) throw new Error(txt('matTranCanBo.service.notFound'));
-
+  // Bỏ `getById` tiền-update để tiết kiệm round-trip; nếu id sai, `repo.update`
+  // sẽ throw lỗi PostgREST (PGRST116 — single-row not found) và message hiện toast.
   const payload = formToPayload(data);
 
-  const updated = await repo.update(id, payload as unknown as Partial<MttqCanBo>, {
+  const updated = await repoFull.update(id, payload as unknown as Partial<MttqCanBo>, {
     returningSelect: MTTQ_CAN_BO_RETURNING_FULL,
   });
   return normalize(flattenMttqCanBoRow(updated as unknown as Record<string, unknown>));
 }
 
 export async function deleteMttqCanBoMany(ids: string[]): Promise<void> {
-  await repo.remove(ids);
+  await repoFull.remove(ids);
 }

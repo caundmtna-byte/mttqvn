@@ -2,6 +2,7 @@
 export const articleStats = {
   title: 'BC thống kê bài viết',
   accessDenied: 'Bạn không có quyền xem báo cáo thống kê bài viết.',
+  noViewPermission: 'Bạn không có quyền xem module BC thống kê bài viết.',
   loading: 'Đang tải thống kê…',
   noData: 'Không có dữ liệu trong khoảng ngày tạo đã chọn.',
   noDataHint: 'Thử đổi khoảng ngày tạo hoặc bỏ bớt bộ lọc.',

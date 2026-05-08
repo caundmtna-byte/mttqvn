@@ -47,9 +47,7 @@ export const createTheLoai = async (data: TheLoaiFormValues): Promise<BaiVietThe
 };
 
 export const updateTheLoai = async (id: string, data: TheLoaiFormValues): Promise<BaiVietTheLoai> => {
-  const existing = await repo.getById(id);
-  if (!existing) throw new Error(txt('articleSettings.service.notFoundTheLoai'));
-
+  // Bỏ tiền-fetch `getById`: nếu id sai, `repo.update` throw lỗi PostgREST.
   const ten = data.ten_the_loai.trim();
   const moTa = data.mo_ta != null && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
   const donGia = data.don_gia ?? 0;

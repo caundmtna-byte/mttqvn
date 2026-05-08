@@ -98,38 +98,71 @@ export async function getXaPhuongByTinhThanh(idTinhThanh: string): Promise<XaPhu
     .map((r) => normXa(r as unknown as Record<string, unknown>));
 }
 
-/** Toàn bộ xã/phường (mọi tỉnh), dùng khi tab xã không lọc theo tỉnh. */
+/**
+ * In-memory cache cho `getXaPhuongAll`. Bảng xã/phường VN ~10k+ rows nên kéo full
+ * mỗi lần là rất tốn egress. Cache 24h vì xã/phường thay đổi rất hiếm — invalidate
+ * thủ công sau create/update/delete trong cùng service (`invalidateXaPhuongAllCache`).
+ *
+ * Trước đây import 200 ủy viên = 200 lần fetch full bảng. Sau cache: 1 lần / 24h.
+ */
+const XA_PHUONG_ALL_TTL_MS = 24 * 60 * 60 * 1000;
+let xaPhuongAllCache: { data: XaPhuong[]; expiresAt: number } | null = null;
+let xaPhuongAllInflight: Promise<XaPhuong[]> | null = null;
+
+function invalidateXaPhuongAllCache() {
+  xaPhuongAllCache = null;
+  xaPhuongAllInflight = null;
+}
+
+/** Toàn bộ xã/phường (mọi tỉnh), dùng khi tab xã không lọc theo tỉnh + import resolver. */
 export async function getXaPhuongAll(): Promise<XaPhuong[]> {
-  if (isSupabase()) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error('Supabase client is not configured.');
-    const out: XaPhuong[] = [];
-    let from = 0;
-    for (;;) {
-      const { data, error } = await supabase
-        .from('var_ssn_xa_phuong')
-        .select(XA_PHUONG_SELECT_FULL)
-        .order('id_tinh_thanh', { ascending: true })
-        .order('thu_tu', { ascending: true })
-        .range(from, from + XA_COUNT_PAGE - 1);
-      if (error) handleSupabaseError(error);
-      const rows = data ?? [];
-      if (rows.length === 0) break;
-      for (const r of rows) out.push(normXa(r as Record<string, unknown>));
-      if (rows.length < XA_COUNT_PAGE) break;
-      from += XA_COUNT_PAGE;
-    }
-    return out;
+  const now = Date.now();
+  if (xaPhuongAllCache && xaPhuongAllCache.expiresAt > now) {
+    return xaPhuongAllCache.data;
   }
-  const all = await xaRepo.getAll({ orderBy: 'thu_tu', ascending: true });
-  return all
-    .slice()
-    .sort(
-      (a, b) =>
-        String((a as XaPhuong).id_tinh_thanh).localeCompare(String((b as XaPhuong).id_tinh_thanh)) ||
-        (a as XaPhuong).thu_tu - (b as XaPhuong).thu_tu,
-    )
-    .map((r) => normXa(r as unknown as Record<string, unknown>));
+  if (xaPhuongAllInflight) return xaPhuongAllInflight;
+
+  xaPhuongAllInflight = (async () => {
+    if (isSupabase()) {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Supabase client is not configured.');
+      const out: XaPhuong[] = [];
+      let from = 0;
+      for (;;) {
+        const { data, error } = await supabase
+          .from('var_ssn_xa_phuong')
+          .select(XA_PHUONG_SELECT_FULL)
+          .order('id_tinh_thanh', { ascending: true })
+          .order('thu_tu', { ascending: true })
+          .range(from, from + XA_COUNT_PAGE - 1);
+        if (error) handleSupabaseError(error);
+        const rows = data ?? [];
+        if (rows.length === 0) break;
+        for (const r of rows) out.push(normXa(r as Record<string, unknown>));
+        if (rows.length < XA_COUNT_PAGE) break;
+        from += XA_COUNT_PAGE;
+      }
+      xaPhuongAllCache = { data: out, expiresAt: Date.now() + XA_PHUONG_ALL_TTL_MS };
+      return out;
+    }
+    const all = await xaRepo.getAll({ orderBy: 'thu_tu', ascending: true });
+    const out = all
+      .slice()
+      .sort(
+        (a, b) =>
+          String((a as XaPhuong).id_tinh_thanh).localeCompare(String((b as XaPhuong).id_tinh_thanh)) ||
+          (a as XaPhuong).thu_tu - (b as XaPhuong).thu_tu,
+      )
+      .map((r) => normXa(r as unknown as Record<string, unknown>));
+    xaPhuongAllCache = { data: out, expiresAt: Date.now() + XA_PHUONG_ALL_TTL_MS };
+    return out;
+  })();
+
+  try {
+    return await xaPhuongAllInflight;
+  } finally {
+    xaPhuongAllInflight = null;
+  }
 }
 
 export async function getTinhThanhById(id: string): Promise<TinhThanh | null> {
@@ -160,6 +193,7 @@ export async function createXaPhuong(values: XaPhuongFormValues): Promise<XaPhuo
     thu_tu: values.thu_tu,
   };
   const inserted = await xaRepo.insert(payload as never);
+  invalidateXaPhuongAllCache();
   return normXa(inserted as unknown as Record<string, unknown>);
 }
 
@@ -169,12 +203,14 @@ export async function updateXaPhuong(id: string, values: XaPhuongFormValues): Pr
     ten: values.ten.trim(),
     thu_tu: values.thu_tu,
   } as never);
+  invalidateXaPhuongAllCache();
   return normXa(updated as unknown as Record<string, unknown>);
 }
 
 export async function deleteXaPhuongMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await xaRepo.remove(ids);
+  invalidateXaPhuongAllCache();
 }
 
 function numCell(row: Record<string, unknown>, ...keys: string[]): number {

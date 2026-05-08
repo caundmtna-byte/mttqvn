@@ -48,7 +48,7 @@ const RoleTable: React.FC<Props> = ({ data, isLoading, onEdit, onDelete }) => {
                             const hasApprove = p.actions.includes('approve');
                             return (
                                 <span key={p.module_id} className={`text-xs px-1.5 py-0.5 rounded font-medium border ${hasApprove ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900' : 'bg-primary/10 text-primary border-primary/20'}`}>
-                                    {p.module_name} {hasApprove && '★'}
+                                    {txt(p.module_name)} {hasApprove && '★'}
                                 </span>
                             );
                         })}

@@ -6,8 +6,16 @@
 export const SERVER_STALE_TIME_MS = 1000 * 60 * 5; // 5 phút
 export const SERVER_GC_TIME_MS = 1000 * 60 * 30; // 30 phút
 
-/** Master data (phòng ban, chức vụ, …) đổi ít — stale dài hơn để giảm egress. */
+/** Master data (phòng ban, chức vụ, nhiệm kỳ…) đổi ít — stale dài hơn để giảm egress. */
 export const MASTER_DATA_STALE_TIME_MS = 1000 * 60 * 30; // 30 phút
+
+/**
+ * Dữ liệu địa lý cấp xã/phường — thực tế thay đổi rất hiếm, cache 24h.
+ * Vẫn invalidate thủ công sau khi user thực sự thêm/sửa/xóa xã.
+ */
+export const GEO_DATA_STALE_TIME_MS = 1000 * 60 * 60 * 24; // 24 giờ
+export const GEO_DATA_GC_TIME_MS = 1000 * 60 * 60 * 24; // 24 giờ
+
 
 export const defaultServerQueryOptions = {
   staleTime: SERVER_STALE_TIME_MS,
@@ -24,3 +32,10 @@ export const masterDataQueryOptions = {
   staleTime: MASTER_DATA_STALE_TIME_MS,
   gcTime: SERVER_GC_TIME_MS,
 } as const;
+
+/** Xã/phường — thay đổi rất hiếm, cache 24h để giảm egress đáng kể. */
+export const geoDataQueryOptions = {
+  staleTime: GEO_DATA_STALE_TIME_MS,
+  gcTime: GEO_DATA_GC_TIME_MS,
+} as const;
+

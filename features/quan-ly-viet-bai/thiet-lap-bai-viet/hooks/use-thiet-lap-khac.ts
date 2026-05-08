@@ -14,10 +14,11 @@ import type { ThietLapKhacFormValues } from '../core/schema';
 
 const qk = queryKeys.baiVietThietLapKhac.all;
 
-export const useThietLapKhacAll = () =>
+export const useThietLapKhacAll = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: qk,
     queryFn: getThietLapKhacAll,
+    enabled: options?.enabled !== false,
     ...masterDataQueryOptions,
   });
 

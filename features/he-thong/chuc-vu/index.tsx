@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   lazy,
   Suspense,
   startTransition,
@@ -10,7 +11,10 @@ import React, {
 import { txt } from '../../../lib/text';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../../../store/useStore';
+import { useCan } from '../../../hooks/use-can';
 import { matchesSearchTerm } from '../../../lib/searchUtils';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
@@ -58,6 +62,18 @@ const DrawerLazyFallback: React.FC = () => (
 type FormOrigin = 'list' | 'detail';
 
 const PositionPage: React.FC = () => {
+  const user = useAuthStore((s) => s.user);
+  const canView = useCan('view', 'positions');
+  const navigate = useNavigate();
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('position.noViewPermission'));
+    navigate('/he-thong', { replace: true });
+  }, [user, canView, navigate]);
+
   const confirm = useConfirmStore((s) => s.confirm);
 
   const [showForm, setShowForm] = useState(false);
@@ -78,7 +94,7 @@ const PositionPage: React.FC = () => {
     columns,
   } = usePositionStore();
 
-  const { data: positions = [], isLoading } = usePositions();
+  const { data: positions = [], isLoading } = usePositions({ enabled: canView });
   const deleteMutation = useDeletePosition();
   const statusMutation = useUpdateStatusPosition();
   const importMutation = useImportPositions(() => setShowImport(false));
@@ -87,6 +103,7 @@ const PositionPage: React.FC = () => {
 
   /** Prefetch master data cho form — mở drawer không chờ request lạnh */
   useEffect(() => {
+    if (!canView) return;
     const opts = masterDataQueryOptions;
     void queryClient.prefetchQuery({
       queryKey: queryKeys.departments.all,
@@ -98,7 +115,7 @@ const PositionPage: React.FC = () => {
       queryFn: getJobLevels,
       ...opts,
     });
-  }, [queryClient]);
+  }, [queryClient, canView]);
 
   const IMPORT_COLUMNS = useMemo(
     () => [
@@ -275,6 +292,18 @@ const PositionPage: React.FC = () => {
     }
     setFormOrigin('list');
   };
+
+  if (!canView) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('position.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-page relative">

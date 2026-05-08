@@ -32,5 +32,6 @@ export const MTTQ_UY_VIEN_UY_BAN_MOCK: MttqUyVienUyBan[] = [
     tg_cap_nhat: now,
     ho_va_ten_nguoi_tao: 'Mock',
     ten_tai_khoan_nguoi_tao: 'mock',
+    id_phong_ban_nguoi_tao: null,
   },
 ];

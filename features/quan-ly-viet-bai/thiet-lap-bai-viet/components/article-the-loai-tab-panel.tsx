@@ -43,9 +43,15 @@ type FormOrigin = 'list' | 'detail';
 interface ArticleTheLoaiTabPanelProps {
   onPageBack: () => void;
   tabsSlot: React.ReactNode;
+  /** Tắt query khi không có quyền xem module (Layer 2). */
+  queriesEnabled?: boolean;
 }
 
-const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({ onPageBack, tabsSlot }) => {
+const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({
+  onPageBack,
+  tabsSlot,
+  queriesEnabled = true,
+}) => {
   const confirm = useConfirmStore((s) => s.confirm);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BaiVietTheLoai | null>(null);
@@ -56,7 +62,7 @@ const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({ onPageB
   const { searchTerm, filters, sort, resetState, clearSelection, selectedIds, pagination, columns } =
     useArticleTheLoaiStore();
 
-  const { data: rows = [], isLoading } = useTheLoais();
+  const { data: rows = [], isLoading } = useTheLoais({ enabled: queriesEnabled });
   const deleteMut = useDeleteTheLoais();
 
   useEffect(() => () => resetState(), [resetState]);

@@ -74,6 +74,13 @@ interface GenericTableProps<T> {
   /** Khi true và có `onSort`: nhãn cột chỉ là text (không nút sort / mũi tên); sort qua accessory (vd. menu sliders). */
   hideSortOnColumnLabel?: boolean;
 
+  /** `data` là đúng một trang server; không slice nội bộ. */
+  serverSidePagination?: boolean;
+  /** Tổng bản ghi chính xác (khi biết). */
+  serverTotalRecords?: number | null;
+  /** Còn trang sau (vd. fetch với limit = pageSize + 1). */
+  serverHasNextPage?: boolean;
+
   /**
    * Ngưỡng hiển thị bảng desktop vs card mobile.
    * - `md` (mặc định): &lt;768px là card — giống Tailwind `md:`.
@@ -108,6 +115,9 @@ function GenericTable<T>({
   renderColumnHeaderAccessory,
   hideSortOnColumnLabel = false,
   listBreakpoint = 'md',
+  serverSidePagination = false,
+  serverTotalRecords = null,
+  serverHasNextPage = false,
 }: GenericTableProps<T>) {
 
   const bp = listBreakpoint;
@@ -146,13 +156,42 @@ function GenericTable<T>({
     }
     return offsets;
   }, [dataColumns, stickyLeftCount]);
-  const totalRecords = data.length;
-  const totalPages = Math.ceil(totalRecords / pageSize);
 
-  const paginatedData = useMemo(() => {
+  const pageStats = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [data, page, pageSize]);
+    if (!serverSidePagination) {
+      const totalRecords = data.length;
+      return {
+        paginatedData: data.slice(start, start + pageSize),
+        totalRecords,
+        totalPages: Math.max(1, Math.ceil(totalRecords / pageSize) || 1),
+        totalRecordsLabel: null as string | null,
+      };
+    }
+    if (serverTotalRecords != null && Number.isFinite(serverTotalRecords)) {
+      const totalRecords = Math.max(0, Math.floor(serverTotalRecords));
+      return {
+        paginatedData: data,
+        totalRecords,
+        totalPages: Math.max(1, Math.ceil(totalRecords / pageSize) || 1),
+        totalRecordsLabel: null as string | null,
+      };
+    }
+    const known = start + data.length;
+    return {
+      paginatedData: data,
+      totalRecords: known,
+      totalPages: serverHasNextPage ? Math.max(1, page + 1) : Math.max(1, page),
+      totalRecordsLabel: serverHasNextPage ? '—' : null,
+    };
+  }, [data, page, pageSize, serverSidePagination, serverTotalRecords, serverHasNextPage]);
+
+  const { paginatedData, totalRecords, totalPages, totalRecordsLabel } = pageStats;
+  const disableServerLastPage =
+    serverSidePagination && (serverTotalRecords == null || !Number.isFinite(serverTotalRecords));
+
+  const rangeStart = paginatedData.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = (page - 1) * pageSize + paginatedData.length;
 
   const currentPageIds = useMemo(() => {
     const extract = keyExtractor ?? ((item: T) => (item as { id?: string })?.id ?? '');
@@ -347,7 +386,7 @@ function GenericTable<T>({
                   >
                     <div className="flex items-center justify-center gap-1">
                       <Sigma size={12} className="opacity-70 shrink-0" aria-hidden />
-                      <span className="tabular-nums">{data.length > 0 ? data.length : '—'}</span>
+                      <span className="tabular-nums">{totalRecords > 0 ? totalRecords : '—'}</span>
                     </div>
                   </th>
                   {dataColumns.map((col, index) => {
@@ -481,7 +520,7 @@ function GenericTable<T>({
             </thead>
 
             <tbody>
-              {data.length === 0 ? (
+              {paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan={dataColumns.length + 2} className="py-16 text-center bg-card">
                     <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
@@ -587,7 +626,7 @@ function GenericTable<T>({
 
       {/* 2. MOBILE VIEW */}
       <div className={cn('flex-1 min-h-0 space-y-3 overflow-y-auto pb-3 px-3 pt-1', mobileCardsWrapClass)}>
-        {data.length === 0 ? (
+        {paginatedData.length === 0 ? (
           <div className="py-12"><EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} /></div>
         ) : (
           paginatedData.map((item) => {
@@ -609,9 +648,11 @@ function GenericTable<T>({
           {/* Left: Record summary + selected count */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
             <span className="tabular-nums">
-              <span className="font-medium text-foreground">{Math.min((page - 1) * pageSize + 1, totalRecords)}–{Math.min(page * pageSize, totalRecords)}</span>
+              <span className="font-medium text-foreground">
+                {rangeStart}–{rangeEnd}
+              </span>
               <span className="text-muted-foreground/60">/Tổng:</span>
-              <span className="font-semibold text-foreground">{totalRecords}</span>
+              <span className="font-semibold text-foreground">{totalRecordsLabel ?? totalRecords}</span>
             </span>
 
             {/* Selected count: badge on mobile, text on desktop */}
@@ -721,7 +762,7 @@ function GenericTable<T>({
             <Tooltip content="Trang cuối" placement="top">
               <Button
                 variant="outline" size="sm"
-                disabled={page >= totalPages}
+                disabled={page >= totalPages || disableServerLastPage}
                 onClick={() => onPageChange(totalPages)}
                 className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-colors"
               >

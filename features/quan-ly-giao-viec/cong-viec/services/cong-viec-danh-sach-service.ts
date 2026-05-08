@@ -1,5 +1,8 @@
 import { createRepository } from '@/lib/data/create-repository';
+import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
+import { getSupabase } from '@/lib/supabase/client';
+import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { CongViecDanhSach } from '../core/types';
 import type { CongViecDanhSachFormValues } from '../core/schema';
 import {
@@ -130,9 +133,7 @@ export async function updateCongViecDanhSach(
   id: string,
   data: CongViecDanhSachFormValues,
 ): Promise<CongViecDanhSach> {
-  const existing = await getCongViecDanhSachById(id);
-  if (!existing) throw new Error(txt('taskList.service.notFound'));
-
+  // Bỏ tiền-fetch `getById`: nếu id không tồn tại, PostgREST trả lỗi và toast hiển thị.
   const payload = formToPayload(data);
 
   const updated = await repo.update(id, payload as unknown as Partial<CongViecDanhSach>, {
@@ -143,4 +144,125 @@ export async function updateCongViecDanhSach(
 
 export async function deleteCongViecDanhSachMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
+}
+
+export type CongViecListScopeRpc = 'mine_do' | 'mine_related' | 'mine_assign';
+
+export type CongViecPageQuery = {
+  page: number;
+  pageSize: number;
+  search: string;
+  listScope: CongViecListScopeRpc;
+  viewerNhanVienId: string | null;
+  trangThai: readonly string[];
+  mucDo: readonly string[];
+};
+
+export type CongViecPageResult = {
+  rows: CongViecDanhSach[];
+  hasNextPage: boolean;
+  totalRecords: number | null;
+};
+
+function toRpcBigint(id: string | null | undefined): number | null {
+  if (id == null || String(id).trim() === '') return null;
+  const n = Number(String(id).trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+function filterCongViecMockForPage(
+  all: CongViecDanhSach[],
+  opts: {
+    search: string | null;
+    listScope: CongViecListScopeRpc;
+    viewerNhanVienId: string | null;
+    trangThai: readonly string[];
+    mucDo: readonly string[];
+  },
+): CongViecDanhSach[] {
+  let list = [...all];
+  if (opts.search) {
+    const t = opts.search.toLowerCase();
+    list = list.filter((c) => c.ten_cong_viec.toLowerCase().includes(t));
+  }
+  const nv = String(opts.viewerNhanVienId ?? '').trim();
+  if (nv) {
+    if (opts.listScope === 'mine_do') list = list.filter((c) => String(c.id_trach_nhiem) === nv);
+    else if (opts.listScope === 'mine_related')
+      list = list.filter((c) => c.ids_ho_tro.some((id) => String(id) === nv));
+    else if (opts.listScope === 'mine_assign') list = list.filter((c) => String(c.id_nguoi_tao) === nv);
+  }
+  if (opts.trangThai.length) list = list.filter((c) => opts.trangThai.includes(c.trang_thai));
+  if (opts.mucDo.length) list = list.filter((c) => opts.mucDo.includes(c.muc_do));
+  list.sort((a, b) => String(b.tg_cap_nhat).localeCompare(String(a.tg_cap_nhat)) || a.ten_cong_viec.localeCompare(b.ten_cong_viec));
+  return list;
+}
+
+async function enrichCongViecRowsByIds(ids: string[]): Promise<Map<string, CongViecDanhSach>> {
+  const map = new Map<string, CongViecDanhSach>();
+  if (ids.length === 0) return map;
+  const supabase = getSupabase();
+  if (!supabase) return map;
+  const { data, error } = await supabase
+    .from('cong_viec_danh_sach')
+    .select(CONG_VIEC_DANH_SACH_SELECT_FULL)
+    .in('id', ids);
+  if (error) handleSupabaseError(error);
+  for (const raw of data ?? []) {
+    const row = raw as unknown as Record<string, unknown>;
+    const id = String(row.id);
+    map.set(id, normalize(flattenCongViecDanhSachRow(row)));
+  }
+  return map;
+}
+
+export async function getCongViecDanhSachPage(q: CongViecPageQuery): Promise<CongViecPageResult> {
+  const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
+  const page = Math.max(1, Math.floor(q.page));
+  const offset = (page - 1) * pageSize;
+  const fetchLimit = pageSize + 1;
+  const searchTrim = q.search?.trim() ?? '';
+  const pSearch = searchTrim.length > 0 ? searchTrim : null;
+  const viewer = toRpcBigint(q.viewerNhanVienId);
+  const trangThai = q.trangThai.length ? [...q.trangThai] : null;
+  const mucDo = q.mucDo.length ? [...q.mucDo] : null;
+
+  if (!isSupabase()) {
+    const all = await getCongViecDanhSachList();
+    const filtered = filterCongViecMockForPage(all, {
+      search: pSearch,
+      listScope: q.listScope,
+      viewerNhanVienId: q.viewerNhanVienId,
+      trangThai: q.trangThai,
+      mucDo: q.mucDo,
+    });
+    const slice = filtered.slice(offset, offset + fetchLimit);
+    const hasNextPage = slice.length > pageSize;
+    const rows = slice.slice(0, pageSize);
+    const totalRecords = hasNextPage ? null : offset + rows.length;
+    return { rows, hasNextPage, totalRecords };
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
+
+  const { data, error } = await supabase.rpc('get_cong_viec_page', {
+    p_search: pSearch,
+    p_limit: fetchLimit,
+    p_offset: offset,
+    p_list_scope: q.listScope,
+    p_viewer_nhan_vien_id: viewer,
+    p_trang_thai: trangThai,
+    p_muc_do: mucDo,
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  const rawRows = (data ?? []) as unknown as Record<string, unknown>[];
+  const hasNextPage = rawRows.length > pageSize;
+  const pageRaw = hasNextPage ? rawRows.slice(0, pageSize) : rawRows;
+  const ids = pageRaw.map((r) => String(r.id));
+  const byId = await enrichCongViecRowsByIds(ids);
+  const rows = ids.map((id) => byId.get(id)).filter((x): x is CongViecDanhSach => Boolean(x));
+  const totalRecords = hasNextPage ? null : offset + rows.length;
+  return { rows, hasNextPage, totalRecords };
 }

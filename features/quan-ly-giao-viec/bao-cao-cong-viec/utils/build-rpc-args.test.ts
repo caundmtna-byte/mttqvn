@@ -80,6 +80,9 @@ describe('buildTaskReportRpcArgs', () => {
     trangThai: [],
     mucDo: [],
     overdueOnly: false,
+    viewerId: null,
+    viewerPhongBanId: null,
+    viewAll: false,
   };
 
   it('empty arrays → null (Postgres bỏ qua filter)', () => {
@@ -121,6 +124,29 @@ describe('buildTaskReportRpcArgs', () => {
   it('honors overdueOnly flag', () => {
     const args = buildTaskReportRpcArgs({ ...baseFilters, overdueOnly: true });
     expect(args.p_overdue_only).toBe(true);
+  });
+
+  it('mặc định viewer → null/false (RPC trả 0 row khi không cấp viewer)', () => {
+    const args = buildTaskReportRpcArgs(baseFilters);
+    expect(args.p_viewer_id).toBeNull();
+    expect(args.p_viewer_phong_ban_id).toBeNull();
+    expect(args.p_view_all).toBe(false);
+  });
+
+  it('pass-through viewer fields (cap_bac=1 / quan_tri / member)', () => {
+    const adminArgs = buildTaskReportRpcArgs({ ...baseFilters, viewAll: true });
+    expect(adminArgs.p_view_all).toBe(true);
+    expect(adminArgs.p_viewer_id).toBeNull();
+
+    const memberArgs = buildTaskReportRpcArgs({
+      ...baseFilters,
+      viewerId: 42,
+      viewerPhongBanId: 7,
+      viewAll: false,
+    });
+    expect(memberArgs.p_viewer_id).toBe(42);
+    expect(memberArgs.p_viewer_phong_ban_id).toBe(7);
+    expect(memberArgs.p_view_all).toBe(false);
   });
 });
 

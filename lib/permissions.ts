@@ -1,6 +1,7 @@
 import type { User } from '@/types';
 import type { ActionType } from '@/features/he-thong/phan-quyen/core/types';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
+import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 
 /**
  * Hành động gắn với UI (nút, route) — mở rộng theo nghiệp vụ.
@@ -21,6 +22,7 @@ export type AppResource =
   | 'articleSettings'
   | 'articles'
   | 'articleStats'
+  | 'articleCommission'
   | 'matTranThietLapCaiDat'
   | 'matTranOfficerList'
   | 'matTranRewardList'
@@ -28,8 +30,11 @@ export type AppResource =
   | 'matTranTerm'
   | 'matTranSession'
   | 'matTranCommitteeMembers'
+  | 'annualPrograms'
   | 'tasks'
   | 'taskReports'
+  | 'otherInfoMttqNews'
+  | 'otherInfoZaloOa'
   | 'profile'
   | 'notifications'
   | '*';
@@ -48,6 +53,7 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   articleSettings: 'quan-ly-viet-bai/thiet-lap-bai-viet',
   articles: 'quan-ly-viet-bai/bai-viet',
   articleStats: 'quan-ly-viet-bai/bc-thong-ke-bai-viet',
+  articleCommission: 'quan-ly-viet-bai/hoa-hong-viet-bai',
   matTranThietLapCaiDat: 'mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat',
   matTranOfficerList: 'mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo',
   matTranRewardList: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong',
@@ -55,8 +61,11 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranTerm: 'mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky',
   matTranSession: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop',
   matTranCommitteeMembers: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
+  annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam',
   tasks: 'quan-ly-giao-viec/cong-viec',
   taskReports: 'quan-ly-giao-viec/bao-cao-cong-viec',
+  otherInfoMttqNews: 'trang-thong-tin-khac/tin-tuc-mttq',
+  otherInfoZaloOa: 'trang-thong-tin-khac/zalo-oa',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */
@@ -84,6 +93,25 @@ function grantsAllow(allowed: readonly string[], need: ReturnType<typeof mapAppA
   return allowed.includes(need);
 }
 
+/** Luật OR Phòng ban: `cap_bac === 1` (chức vụ hydrate) hoặc ma trận `admin`/`all` hoặc đúng token matrix. */
+function canDepartmentsWithCapBac(
+  user: User,
+  action: AppAction,
+  grantsByModule: Record<string, ActionType[]>,
+  chucVuCapBac: number | null
+): boolean {
+  void user;
+  const moduleId = APP_RESOURCE_TO_MODULE.departments;
+  if (!moduleId) return false;
+  const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete'];
+  if (chucVuCapBac === 1 && capBypassActions.includes(action)) {
+    return true;
+  }
+  const need = mapAppActionToActionType(action);
+  const allowed = grantsByModule[moduleId] ?? [];
+  return grantsAllow(allowed, need);
+}
+
 function matrixCan(user: User, action: AppAction, resource: AppResource): boolean {
   void user;
   const moduleId = APP_RESOURCE_TO_MODULE[resource];
@@ -109,9 +137,10 @@ function matrixCan(user: User, action: AppAction, resource: AppResource): boolea
 /**
  * Kiểm tra quyền phía client (UX: ẩn nút). Không thay thế RLS / API.
  *
- * - `admin`: toàn quyền UI (trừ xóa profile).
- * - Khi `usePermissionGrantStore.matrixActive === false`: member dùng `legacyCan`.
- * - Khi `matrixActive === true`: đối chiếu `grantsByModule` theo `module_id` + `ActionType` (sau Supabase / chức vụ).
+ * - Mock mode admin (`user.role === 'admin'`): toàn quyền UI (trừ xóa profile).
+ * - Supabase mode: mọi user đều `role='user'`, quyền hoàn toàn từ `var_chuc_vu.cap_bac` + `var_phan_quyen`.
+ * - Không có `id_chuc_vu` (matrix mode) → deny all.
+ * - Khi `matrixActive === true`: đối chiếu `grantsByModule` theo `module_id` + `ActionType`.
  */
 export function can(
   user: User | null | undefined,
@@ -125,8 +154,26 @@ export function can(
     return true;
   }
 
-  const { matrixActive } = usePermissionGrantStore.getState();
+  // Matrix mode: không có chức vụ → không có quyền gì
+  if (isPermissionMatrixEnabled() && !user.id_chuc_vu) {
+    return false;
+  }
+
+  const { matrixActive, grantsByModule, chucVuCapBac } = usePermissionGrantStore.getState();
   if (matrixActive) {
+    // cap_bac=1: bypass toàn bộ view/create/edit/delete cho mọi module có trong APP_RESOURCE_TO_MODULE
+    const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete'];
+    if (
+      chucVuCapBac === 1 &&
+      APP_RESOURCE_TO_MODULE[resource] !== undefined &&
+      capBypassActions.includes(action)
+    ) {
+      return true;
+    }
+
+    if (resource === 'departments') {
+      return canDepartmentsWithCapBac(user, action, grantsByModule, chucVuCapBac);
+    }
     return matrixCan(user, action, resource);
   }
 

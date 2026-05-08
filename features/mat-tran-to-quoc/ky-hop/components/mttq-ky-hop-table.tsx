@@ -213,6 +213,18 @@ const MttqKyHopTable = memo(function MttqKyHopTable({
               {item.noi_dung_ky_hop ? truncateText(item.noi_dung_ky_hop, 120) : txt('common.emptyCell')}
             </span>
           );
+        case 'diem_danh_co_mat':
+          return (
+            <span className="text-body-sm tabular-nums text-emerald-700 dark:text-emerald-400">{item.diem_danh_co_mat}</span>
+          );
+        case 'diem_danh_vang_mat':
+          return (
+            <span className="text-body-sm tabular-nums text-amber-800 dark:text-amber-400">{item.diem_danh_vang_mat}</span>
+          );
+        case 'diem_danh_chua':
+          return (
+            <span className="text-body-sm tabular-nums text-muted-foreground">{item.diem_danh_chua}</span>
+          );
         case 'tai_lieu_hop': {
           const url = item.tai_lieu_hop?.trim();
           if (!url) return <span className="text-body-sm text-muted-foreground">{txt('common.emptyCell')}</span>;
@@ -306,6 +318,17 @@ const MttqKyHopTable = memo(function MttqKyHopTable({
               <span className="shrink-0">{item.ky_thu}</span>
               <span className="tabular-nums">{item.ngay_hop ?? '—'}</span>
               <span className="truncate max-w-full">{donViDisplayLabel(item, tinhCap)}</span>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums mb-2">
+              <span className="text-emerald-700 dark:text-emerald-400">
+                {txt('matTranKyHop.store.diemDanhCoMatCol')}: {item.diem_danh_co_mat}
+              </span>
+              <span className="text-amber-800 dark:text-amber-400">
+                {txt('matTranKyHop.store.diemDanhVangMatCol')}: {item.diem_danh_vang_mat}
+              </span>
+              <span className="text-muted-foreground">
+                {txt('matTranKyHop.store.diemDanhChuaCol')}: {item.diem_danh_chua}
+              </span>
             </div>
             <div className="flex justify-end pt-2 border-t border-border">
               <MttqKyHopTableRowActions

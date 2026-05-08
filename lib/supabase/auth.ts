@@ -81,7 +81,8 @@ async function resolveNhanVienForAuthEmail(authEmail: string | undefined): Promi
 
 function buildAppUser(authUser: { id: string; email?: string; user_metadata?: Record<string, unknown>; created_at?: string }, nhanVien: VarNhanVienAuthRow | null): User {
   const meta = authUser.user_metadata ?? {};
-  const role = (meta.role as 'admin' | 'user') ?? 'admin';
+  void meta;
+  const role: 'admin' | 'user' = 'user';
   return {
     id: authUser.id,
     nhan_vien_id: nhanVien?.id,

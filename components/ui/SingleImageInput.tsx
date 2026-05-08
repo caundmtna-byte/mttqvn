@@ -9,8 +9,13 @@ export interface SingleImageInputProps {
   icon?: React.ReactNode;
   required?: boolean;
   error?: string;
-  /** base64 hoặc URL */
+  /** Giá trị form: data URL, path Storage (`nhan-vien/...`), hoặc URL ngoài. */
   value?: string | null;
+  /**
+   * URL hiển thị preview (vd. signed URL cho bucket private). Khi có và `value`
+   * không phải data URL → `<img src={displaySrc}>`.
+   */
+  displaySrc?: string | null;
   onChange: (value: string | null) => void;
   /** MIME types cho input file, default: "image/*" */
   accept?: string;
@@ -34,6 +39,7 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
   required,
   error,
   value,
+  displaySrc,
   onChange,
   accept = 'image/*',
   maxSizeMB = 2,
@@ -155,6 +161,15 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
 
   const displayError = error || sizeError;
 
+  const v = String(value ?? '').trim();
+  const previewImgSrc = (() => {
+    if (!v) return '';
+    if (v.startsWith('data:image/')) return v;
+    if (v.startsWith('http') && !v.includes('.supabase.co')) return v;
+    // Path Storage / URL Supabase: chỉ dùng `displaySrc` (signed URL) từ parent — tránh `<img src="nhan-vien/...">`.
+    return displaySrc?.trim() ?? '';
+  })();
+
   return (
     <div className={cn('w-full', className)} onPaste={handlePaste}>
       {/* ── Label ── */}
@@ -223,7 +238,7 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
               className="absolute inset-0"
             >
               <img
-                src={value}
+                src={previewImgSrc}
                 alt="Preview"
                 className={cn('w-full h-full object-cover', shapeClass)}
                 loading="lazy"

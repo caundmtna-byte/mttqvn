@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   lazy,
   Suspense,
   startTransition,
@@ -10,6 +11,9 @@ import React, {
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
+import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { txt } from '@/lib/text';
 import { getLanguage } from '@/lib/utils';
 import { matchesSearchTerm } from '@/lib/searchUtils';
@@ -31,6 +35,7 @@ import type { MttqLopTapHuan, MttqLopTapHuanListRow } from './core/types';
 import { MTTQ_TAP_HUAN_SEARCHABLE_KEYS } from './utils/search-keys';
 import { mttqTapHuanMatchesColumnSearch } from './utils/column-search';
 import { getMttqLopTapHuanById } from './services/mttq-tap-huan-service';
+import { canViewLopTapHuanRow, useMttqLopTapHuanViewer } from './hooks/use-mttq-tap-huan-viewer';
 import MttqLopTapHuanToolbar from './components/mttq-tap-huan-toolbar';
 import MttqLopTapHuanTable from './components/mttq-tap-huan-table';
 
@@ -51,10 +56,19 @@ const DrawerLazyFallback: React.FC = () => (
 
 const DanhSachTapHuanPage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranTrainingList');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('matTranTapHuan.noViewPermission'));
+    navigate('/mat-tran-to-quoc', { replace: true });
+  }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqLopTapHuan | null>(null);
@@ -76,9 +90,26 @@ const DanhSachTapHuanPage: React.FC = () => {
   const { data: viewingData } = useMttqLopTapHuanDetail(viewingId);
   const deleteMutation = useDeleteMttqLopTapHuanMany();
 
+  const viewer = useMttqLopTapHuanViewer();
+
+  /** Lọc theo viewer trước khi mọi tính toán hiển thị (chip / search / export / sort). */
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewLopTapHuanRow(viewer, r)),
+    [rows, viewer],
+  );
+
   useEffect(() => {
     return () => resetState();
   }, [resetState]);
+
+  /** Drawer chi tiết: nếu data về mà viewer không đủ quyền (vd. đoán id), tự đóng + báo. */
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewLopTapHuanRow(viewer, viewingData)) {
+      toast.error(txt('matTranTapHuan.noViewPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, viewer]);
 
   const filterFn = useCallback(
     (item: MttqLopTapHuanListRow, term: string, f: typeof filters) => {
@@ -95,7 +126,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     [],
   );
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -121,7 +152,7 @@ const DanhSachTapHuanPage: React.FC = () => {
 
   const capChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const value = r.cap_tap_huan;
       const label = value || txt('common.emptyCell');
       const cur = map.get(value);
@@ -131,11 +162,11 @@ const DanhSachTapHuanPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rows]);
+  }, [viewableRows]);
 
   const namChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const value = String(r.nam_tap_huan);
       const cur = map.get(value);
       if (cur) cur.count += 1;
@@ -144,7 +175,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => Number(b.value) - Number(a.value));
-  }, [rows]);
+  }, [viewableRows]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -188,7 +219,11 @@ const DanhSachTapHuanPage: React.FC = () => {
 
   const handleEditFromList = async (item: MttqLopTapHuanListRow) => {
     try {
-      const full = await getMttqLopTapHuanById(item.id);
+      const full = await queryClient.fetchQuery({
+        queryKey: queryKeys.mttqLopTapHuan.detail(item.id),
+        queryFn: () => getMttqLopTapHuanById(item.id),
+        ...defaultServerQueryOptions,
+      });
       if (!full) {
         toast.error(txt('matTranTapHuan.service.notFound'));
         return;
@@ -257,8 +292,12 @@ const DanhSachTapHuanPage: React.FC = () => {
 
   if (!canView) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center text-muted-foreground">
-        <p className="text-sm">{txt('matTranTapHuan.noViewPermission')}</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

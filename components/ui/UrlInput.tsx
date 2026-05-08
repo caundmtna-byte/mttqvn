@@ -1,6 +1,6 @@
 import React, { useId } from 'react';
 import { ExternalLink, Link2 } from 'lucide-react';
-import Input from './Input';
+import Input, { renderInputIcon } from './Input';
 import { cn } from '../../lib/utils';
 
 function normalizeUrl(raw: string): string {
@@ -40,7 +40,7 @@ const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
             htmlFor={inputId}
             className="text-sm font-medium leading-none mb-1.5 flex items-center gap-1.5 text-foreground"
           >
-            {icon ?? <Link2 className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />}
+            {icon != null ? renderInputIcon(icon) : <Link2 className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />}
             {label}
             {rest.required && <span className="text-destructive" aria-hidden>*</span>}
           </label>

@@ -12,6 +12,7 @@ export interface MttqLopTapHuanMockParent {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao: string | null;
   ten_tai_khoan_nguoi_tao: string | null;
+  id_phong_ban_nguoi_tao: string | null;
 }
 
 export const MTTQ_LOP_TAP_HUAN_MOCK_PARENTS: MttqLopTapHuanMockParent[] = [
@@ -26,6 +27,7 @@ export const MTTQ_LOP_TAP_HUAN_MOCK_PARENTS: MttqLopTapHuanMockParent[] = [
     tg_cap_nhat: new Date().toISOString(),
     ho_va_ten_nguoi_tao: 'Quản trị',
     ten_tai_khoan_nguoi_tao: 'admin',
+    id_phong_ban_nguoi_tao: null,
   },
   {
     id: '95002',
@@ -38,6 +40,7 @@ export const MTTQ_LOP_TAP_HUAN_MOCK_PARENTS: MttqLopTapHuanMockParent[] = [
     tg_cap_nhat: new Date().toISOString(),
     ho_va_ten_nguoi_tao: 'Quản trị',
     ten_tai_khoan_nguoi_tao: 'admin',
+    id_phong_ban_nguoi_tao: null,
   },
 ];
 

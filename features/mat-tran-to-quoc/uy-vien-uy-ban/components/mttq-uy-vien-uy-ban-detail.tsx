@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
   Building2,
+  ClipboardList,
   Edit,
   Flag,
+  Info,
   MapPin,
   StickyNote,
   Trash2,
@@ -22,6 +24,7 @@ import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/Det
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE, CONFIRM_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useConfirmStore } from '@/store/useConfirmStore';
+import TabGroup, { type Tab } from '@/components/ui/TabGroup';
 import type { MttqUyVienUyBan } from '../core/types';
 import { donViDisplayLabel } from '../utils/column-search';
 import {
@@ -33,15 +36,22 @@ import {
   getUyVienTrangThamGiaBadgeConfig,
   uyVienPhoneTelHref,
 } from '../utils/display-format';
+import MttqUyVienUyBanDetailDiemDanhTab from './mttq-uy-vien-uy-ban-detail-diem-danh-tab';
+
+const TAB_INFO = 'info';
+const TAB_DIEM_DANH = 'diemDanh';
 
 interface Props {
   data: MttqUyVienUyBan;
   onClose: () => void;
   onEdit: (item: MttqUyVienUyBan) => void;
   onDelete: (id: string) => void;
+  /** Drawer chồng (vd. từ detail nhiệm kỳ) */
+  stackLevel?: number;
+  maxWidthClass?: string;
 }
 
-const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
+const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, stackLevel = 0, maxWidthClass }) => {
   const { canEdit, canDelete } = useResourcePermissions('matTranCommitteeMembers');
   const confirm = useConfirmStore((s) => s.confirm);
   const tinhCap = txt('matTranUyVienUyBan.tinhCap');
@@ -49,6 +59,19 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
   const maUvDisplay = formatUyVienMaUvDisplay(data.ma_uv);
   const phoneDisplay = formatUyVienPhoneDisplay(data.so_dien_thoai);
   const phoneHref = uyVienPhoneTelHref(data.so_dien_thoai);
+  const [detailTab, setDetailTab] = useState<string>(TAB_INFO);
+
+  useEffect(() => {
+    setDetailTab(TAB_INFO);
+  }, [data.id]);
+
+  const tabs = useMemo<Tab[]>(
+    () => [
+      { id: TAB_INFO, label: txt('matTranUyVienUyBan.detail.tabInfo'), icon: Info },
+      { id: TAB_DIEM_DANH, label: txt('matTranUyVienUyBan.detail.tabDiemDanh'), icon: ClipboardList },
+    ],
+    [],
+  );
 
   const handleDelete = () => {
     confirm({
@@ -107,7 +130,8 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
     <GenericDrawer
       onClose={onClose}
       title={txt('matTranUyVienUyBan.detail.title')}
-      maxWidthClass={DRAWER_WIDTH_DETAIL}
+      maxWidthClass={maxWidthClass ?? DRAWER_WIDTH_DETAIL}
+      stackLevel={stackLevel}
       icon={<Users size={18} />}
       subtitle={subtitle}
       footer={footer}
@@ -124,168 +148,180 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
           </div>
         </div>
 
-        <DetailSection title={txt('matTranUyVienUyBan.detail.sectionMain')} icon={<Type size={14} />} variant="primary">
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.maUv')}
-              value={
-                maUvDisplay ? (
-                  <span className="font-mono tabular-nums tracking-tight">{maUvDisplay}</span>
-                ) : undefined
-              }
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.nhiemKy')}
-              value={<span className="font-semibold tracking-tight">{data.ten_nhiem_ky}</span>}
-              icon={<Type size={12} />}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.donVi')}
-              value={donViDisplayLabel(data, tinhCap)}
-              icon={<MapPin size={12} />}
-            />
-            <DetailField
-              className={DETAIL_FIELD_SPAN_FULL}
-              label={txt('matTranUyVienUyBan.form.chucVuDonVi')}
-              value={data.chuc_vu_don_vi ?? undefined}
-              icon={<Building2 size={12} />}
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <div className="w-full overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+          <TabGroup tabs={tabs} activeTab={detailTab} onChange={setDetailTab} />
+        </div>
 
-        <DetailSection title={txt('matTranUyVienUyBan.detail.sectionCaNhan')} icon={<User size={14} />}>
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.ngaySinh')}
-              value={formatUyVienDetailDate(data.ngay_sinh) ?? undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.gioiTinh')}
-              value={
-                data.gioi_tinh?.trim() ? (
-                  <EnumBadge
-                    value={data.gioi_tinh.trim()}
-                    config={getUyVienGioiTinhBadgeConfig()}
-                    fallbackLabel={data.gioi_tinh.trim()}
-                  />
-                ) : undefined
-              }
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.trangThamGia')}
-              value={
-                data.trang_thai_tham_gia?.trim() ? (
-                  <EnumBadge
-                    value={data.trang_thai_tham_gia.trim()}
-                    config={getUyVienTrangThamGiaBadgeConfig()}
-                    fallbackLabel={data.trang_thai_tham_gia.trim()}
-                  />
-                ) : undefined
-              }
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.ngayNhapTrangThai')}
-              value={formatUyVienDetailDate(data.ngay_nhap_trang_thai) ?? undefined}
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        {detailTab === TAB_INFO ? (
+          <>
+            <DetailSection title={txt('matTranUyVienUyBan.detail.sectionMain')} icon={<Type size={14} />} variant="primary">
+              <DetailFieldGrid>
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.maUv')}
+                  value={
+                    maUvDisplay ? (
+                      <span className="font-mono tabular-nums tracking-tight">{maUvDisplay}</span>
+                    ) : undefined
+                  }
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.nhiemKy')}
+                  value={<span className="font-semibold tracking-tight">{data.ten_nhiem_ky}</span>}
+                  icon={<Type size={12} />}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.donVi')}
+                  value={donViDisplayLabel(data, tinhCap)}
+                  icon={<MapPin size={12} />}
+                />
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranUyVienUyBan.form.chucVuDonVi')}
+                  value={data.chuc_vu_don_vi ?? undefined}
+                  icon={<Building2 size={12} />}
+                  emptyText={emptyCell}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
 
-        <DetailSection title={txt('matTranUyVienUyBan.detail.sectionHocVan')} icon={<BookOpen size={14} />}>
-          <DetailFieldGrid>
-            <DetailField label={txt('matTranUyVienUyBan.form.vanHoa')} value={data.van_hoa ?? undefined} emptyText={emptyCell} />
-            <DetailField label={txt('matTranUyVienUyBan.form.trinhDoCm')} value={data.trinh_do_cm ?? undefined} emptyText={emptyCell} />
-            <DetailField label={txt('matTranUyVienUyBan.form.trinhDoLlct')} value={data.trinh_do_llct ?? undefined} emptyText={emptyCell} />
-            <DetailField label={txt('matTranUyVienUyBan.form.danToc')} value={data.dan_toc ?? undefined} emptyText={emptyCell} />
-            <DetailField label={txt('matTranUyVienUyBan.form.tonGiao')} value={data.ton_giao ?? undefined} emptyText={emptyCell} />
-          </DetailFieldGrid>
-        </DetailSection>
+            <DetailSection title={txt('matTranUyVienUyBan.detail.sectionCaNhan')} icon={<User size={14} />}>
+              <DetailFieldGrid>
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.ngaySinh')}
+                  value={formatUyVienDetailDate(data.ngay_sinh) ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.gioiTinh')}
+                  value={
+                    data.gioi_tinh?.trim() ? (
+                      <EnumBadge
+                        value={data.gioi_tinh.trim()}
+                        config={getUyVienGioiTinhBadgeConfig()}
+                        fallbackLabel={data.gioi_tinh.trim()}
+                      />
+                    ) : undefined
+                  }
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.trangThamGia')}
+                  value={
+                    data.trang_thai_tham_gia?.trim() ? (
+                      <EnumBadge
+                        value={data.trang_thai_tham_gia.trim()}
+                        config={getUyVienTrangThamGiaBadgeConfig()}
+                        fallbackLabel={data.trang_thai_tham_gia.trim()}
+                      />
+                    ) : undefined
+                  }
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.ngayNhapTrangThai')}
+                  value={formatUyVienDetailDate(data.ngay_nhap_trang_thai) ?? undefined}
+                  emptyText={emptyCell}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
 
-        <DetailSection title={txt('matTranUyVienUyBan.detail.sectionDang')} icon={<Flag size={14} />}>
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.dangVien')}
-              value={<EnumBadge value={data.dang_vien ? 'Có' : 'Không'} config={getUyVienDangVienBadgeConfig()} />}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.ngayVaoDang')}
-              value={formatUyVienDetailDate(data.ngay_vao_dang) ?? undefined}
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+            <DetailSection title={txt('matTranUyVienUyBan.detail.sectionHocVan')} icon={<BookOpen size={14} />}>
+              <DetailFieldGrid>
+                <DetailField label={txt('matTranUyVienUyBan.form.vanHoa')} value={data.van_hoa ?? undefined} emptyText={emptyCell} />
+                <DetailField label={txt('matTranUyVienUyBan.form.trinhDoCm')} value={data.trinh_do_cm ?? undefined} emptyText={emptyCell} />
+                <DetailField label={txt('matTranUyVienUyBan.form.trinhDoLlct')} value={data.trinh_do_llct ?? undefined} emptyText={emptyCell} />
+                <DetailField label={txt('matTranUyVienUyBan.form.danToc')} value={data.dan_toc ?? undefined} emptyText={emptyCell} />
+                <DetailField label={txt('matTranUyVienUyBan.form.tonGiao')} value={data.ton_giao ?? undefined} emptyText={emptyCell} />
+              </DetailFieldGrid>
+            </DetailSection>
 
-        <DetailSection title={txt('matTranUyVienUyBan.detail.sectionLienHe')} icon={<MapPin size={14} />}>
-          <DetailFieldGrid>
-            <DetailField
-              className={DETAIL_FIELD_SPAN_FULL}
-              label={txt('matTranUyVienUyBan.form.queQuan')}
-              value={data.que_quan ?? undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              className={DETAIL_FIELD_SPAN_FULL}
-              label={txt('matTranUyVienUyBan.form.noiOHienNay')}
-              value={data.noi_o_hien_nay ?? undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.form.soDienThoai')}
-              value={
-                phoneDisplay
-                  ? phoneHref
-                    ? (
-                        <a href={phoneHref} className="font-mono tabular-nums text-primary hover:underline">
-                          {phoneDisplay}
-                        </a>
-                      )
-                    : (
-                        <span className="font-mono tabular-nums">{phoneDisplay}</span>
-                      )
-                  : undefined
-              }
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+            <DetailSection title={txt('matTranUyVienUyBan.detail.sectionDang')} icon={<Flag size={14} />}>
+              <DetailFieldGrid>
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.dangVien')}
+                  value={<EnumBadge value={data.dang_vien ? 'Có' : 'Không'} config={getUyVienDangVienBadgeConfig()} />}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.ngayVaoDang')}
+                  value={formatUyVienDetailDate(data.ngay_vao_dang) ?? undefined}
+                  emptyText={emptyCell}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
 
-        <DetailSection title={txt('matTranUyVienUyBan.form.sectionGhiChu')} icon={<StickyNote size={14} />}>
-          <DetailField
-            className={DETAIL_FIELD_SPAN_FULL}
-            label={txt('matTranUyVienUyBan.form.ghiChu')}
-            value={
-              data.ghi_chu?.trim() ? (
-                <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.ghi_chu}</p>
-              ) : undefined
-            }
-            emptyText={emptyCell}
-          />
-        </DetailSection>
+            <DetailSection title={txt('matTranUyVienUyBan.detail.sectionLienHe')} icon={<MapPin size={14} />}>
+              <DetailFieldGrid>
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranUyVienUyBan.form.queQuan')}
+                  value={data.que_quan ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranUyVienUyBan.form.noiOHienNay')}
+                  value={data.noi_o_hien_nay ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.soDienThoai')}
+                  value={
+                    phoneDisplay
+                      ? phoneHref
+                        ? (
+                            <a href={phoneHref} className="font-mono tabular-nums text-primary hover:underline">
+                              {phoneDisplay}
+                            </a>
+                          )
+                        : (
+                            <span className="font-mono tabular-nums">{phoneDisplay}</span>
+                          )
+                      : undefined
+                  }
+                  emptyText={emptyCell}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
 
-        <DetailSection title={txt('matTranUyVienUyBan.detail.systemInfo')} icon={<User size={14} />}>
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('matTranUyVienUyBan.store.nguoiTaoCol')}
-              value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao ?? undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.detail.tgTao')}
-              value={data.tg_tao ? formatDateTimeShort(data.tg_tao) : undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('matTranUyVienUyBan.detail.tgCapNhat')}
-              value={data.tg_cap_nhat ? formatDateTimeShort(data.tg_cap_nhat) : undefined}
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+            <DetailSection title={txt('matTranUyVienUyBan.form.sectionGhiChu')} icon={<StickyNote size={14} />}>
+              <DetailField
+                className={DETAIL_FIELD_SPAN_FULL}
+                label={txt('matTranUyVienUyBan.form.ghiChu')}
+                value={
+                  data.ghi_chu?.trim() ? (
+                    <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.ghi_chu}</p>
+                  ) : undefined
+                }
+                emptyText={emptyCell}
+              />
+            </DetailSection>
+
+            <DetailSection title={txt('matTranUyVienUyBan.detail.systemInfo')} icon={<User size={14} />}>
+              <DetailFieldGrid>
+                <DetailField
+                  label={txt('matTranUyVienUyBan.store.nguoiTaoCol')}
+                  value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.detail.tgTao')}
+                  value={data.tg_tao ? formatDateTimeShort(data.tg_tao) : undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.detail.tgCapNhat')}
+                  value={data.tg_cap_nhat ? formatDateTimeShort(data.tg_cap_nhat) : undefined}
+                  emptyText={emptyCell}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
+          </>
+        ) : null}
+
+        {detailTab === TAB_DIEM_DANH ? (
+          <MttqUyVienUyBanDetailDiemDanhTab uyVienId={data.id} nhiemKyId={data.nhiem_ky_id} />
+        ) : null}
       </div>
     </GenericDrawer>
   );

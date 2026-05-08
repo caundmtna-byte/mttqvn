@@ -185,18 +185,8 @@ const MttqKyHopToolbar: React.FC<Props> = ({
     </>
   );
 
-  const desktopStartSlot = (
-    <div className="hidden sm:flex shrink-0 items-center gap-2 border-r border-border pr-3 mr-1 min-w-0">
-      <CalendarDays className="h-4 w-4 shrink-0 text-primary/80" aria-hidden />
-      <span className="text-sm font-semibold text-foreground truncate max-w-[10rem] md:max-w-[14rem]">
-        {txt('matTranKyHop.toolbar.title')}
-      </span>
-    </div>
-  );
-
   return (
     <GenericToolbar
-      desktopStartSlot={desktopStartSlot}
       selectedCount={selectedCount}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}

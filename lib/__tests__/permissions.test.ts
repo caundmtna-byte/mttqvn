@@ -85,4 +85,32 @@ describe('can', () => {
     expect(can(member, 'view', 'articleStats')).toBe(true);
     expect(can(member, 'edit', 'articleStats')).toBe(false);
   });
+
+  it('matrix: departments — no grant and cap_bac≠1 cannot view', () => {
+    usePermissionGrantStore.getState().setMatrixGrants(
+      { 'he-thong/nhan-vien': ['view'] },
+      2
+    );
+    expect(can(member, 'view', 'departments')).toBe(false);
+    expect(can(member, 'edit', 'departments')).toBe(false);
+  });
+
+  it('matrix: departments — cap_bac=1 bypasses matrix for view/create/edit/delete', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({ 'he-thong/nhan-vien': ['view'] }, 1);
+    expect(can(member, 'view', 'departments')).toBe(true);
+    expect(can(member, 'create', 'departments')).toBe(true);
+    expect(can(member, 'edit', 'departments')).toBe(true);
+    expect(can(member, 'delete', 'departments')).toBe(true);
+  });
+
+  it('matrix: departments — view on phong-ban module grants view only', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({ 'he-thong/phong-ban': ['view'] }, 2);
+    expect(can(member, 'view', 'departments')).toBe(true);
+    expect(can(member, 'delete', 'departments')).toBe(false);
+  });
+
+  it('matrix: departments — admin token in matrix grants full CRUD', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({ 'he-thong/phong-ban': ['admin'] }, 9);
+    expect(can(member, 'delete', 'departments')).toBe(true);
+  });
 });

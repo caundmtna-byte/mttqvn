@@ -13,6 +13,8 @@ export interface MttqKhenThuongMockParent {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao: string | null;
   ten_tai_khoan_nguoi_tao: string | null;
+  /** id_phong_ban của người tạo — phục vụ gating phân quyền xem (mock mặc định null). */
+  id_phong_ban_nguoi_tao: string | null;
 }
 
 export const MTTQ_KHEN_THUONG_MOCK_PARENTS: MttqKhenThuongMockParent[] = [
@@ -28,6 +30,7 @@ export const MTTQ_KHEN_THUONG_MOCK_PARENTS: MttqKhenThuongMockParent[] = [
     tg_cap_nhat: new Date().toISOString(),
     ho_va_ten_nguoi_tao: 'Quản trị',
     ten_tai_khoan_nguoi_tao: 'admin',
+    id_phong_ban_nguoi_tao: null,
   },
 ];
 

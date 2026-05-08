@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
-import { listQueryOptions } from '@/lib/supabase/query-config';
+import { listQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import type { MttqUyVienUyBan } from '../core/types';
@@ -40,7 +40,8 @@ export const useMttqUyVienUyBanListForNhiemKy = (nhiemKyId: string | null, optio
     queryKey: queryKeys.mttqUyVienUyBan.byNhiemKy(nhiemKyId ?? ''),
     queryFn: () => getMttqUyVienUyBanListForNhiemKyId(nhiemKyId ?? ''),
     enabled: Boolean(nhiemKyId?.trim()) && options?.enabled !== false,
-    ...listQueryOptions,
+    // Danh sách ủy viên theo nhiệm kỳ thay đổi ít — 30 phút stale.
+    ...masterDataQueryOptions,
   });
 
 export const useCreateMttqUyVienUyBan = (onSuccess?: () => void) => {

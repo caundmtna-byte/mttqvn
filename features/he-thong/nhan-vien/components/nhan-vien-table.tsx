@@ -4,7 +4,8 @@ import { Briefcase, Building2, Layers } from 'lucide-react';
 import { Employee } from '../core/types';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import type { ColumnConfig } from '../../../../store/createGenericStore';
-import { cn, getAvatarUrl } from '../../../../lib/utils';
+import { cn } from '../../../../lib/utils';
+import { EmployeeAvatarImg } from './employee-avatar-img';
 import GenericTable from '../../../../components/shared/GenericTable';
 import { MobileListCard } from '../../../../components/shared/MobileListCard';
 import EnumBadge from '../../../../components/ui/EnumBadge';
@@ -171,11 +172,11 @@ const EmployeeTable = memo(function EmployeeTable({
       case 'ho_va_ten':
         return (
           <div className="flex items-center gap-2.5 min-w-0">
-            <img
-              src={item.hinh_anh || getAvatarUrl(item.ho_va_ten)}
+            <EmployeeAvatarImg
+              hinh_anh={item.hinh_anh}
+              ho_va_ten={item.ho_va_ten}
               className="w-8 h-8 rounded-full border border-border shadow-sm object-cover shrink-0"
               alt={item.ho_va_ten}
-              loading="lazy"
             />
             <span className="font-semibold text-foreground text-sm truncate">{item.ho_va_ten}</span>
           </div>
@@ -235,11 +236,11 @@ const EmployeeTable = memo(function EmployeeTable({
       }}
       leading={(
         <div className="relative shrink-0">
-          <img
-            src={item.hinh_anh || getAvatarUrl(item.ho_va_ten ?? '')}
+          <EmployeeAvatarImg
+            hinh_anh={item.hinh_anh}
+            ho_va_ten={item.ho_va_ten ?? ''}
             className="h-12 w-12 rounded-xl border border-border object-cover shadow-sm"
             alt={item.ho_va_ten}
-            loading="lazy"
           />
           <div
             className={cn(

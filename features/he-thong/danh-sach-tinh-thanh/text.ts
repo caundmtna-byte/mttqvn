@@ -1,5 +1,6 @@
 /** Danh mục tỉnh thành – xã phường (2 tab, 2 bảng) */
 export const diaBan = {
+  noViewPermission: 'Bạn không có quyền xem module Danh mục tỉnh thành – xã phường.',
   title: 'Danh mục tỉnh thành – xã phường',
   description: 'Quản lý tỉnh/thành và xã/phường trực thuộc.',
   tabTinh: 'Tỉnh thành',
@@ -83,6 +84,9 @@ export const diaBan = {
     colTenXa: 'ten (tên xã/phường)',
     colThuTuXa: 'thu_tu (số, tùy chọn)',
     colTinhXa: 'id_tinh_thanh hoặc ten_tinh',
+    refSheetName: 'Danh sách tỉnh thành',
+    refSheetColTen: 'Tên tỉnh thành',
+    refSheetColId: 'ID tỉnh thành',
     rowEmptyTenTinh: 'Dòng {{row}}: Thiếu cột ten (tên tỉnh/thành).',
     rowInvalidTinh: 'Dòng {{row}}: Không hợp lệ — {{detail}}',
     rowDupTenTinh: 'Dòng {{row}}: Trùng tên "{{ten}}" (đã có hoặc trùng trong file).',

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
-import { listQueryOptions } from '@/lib/supabase/query-config';
+import { masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import type { MttqNhiemKy } from '../core/types';
@@ -22,7 +22,7 @@ export const useMttqNhiemKyList = (options?: { enabled?: boolean }) =>
     queryKey: listKey,
     queryFn: getMttqNhiemKyList,
     enabled: options?.enabled !== false,
-    ...listQueryOptions,
+    ...masterDataQueryOptions,
   });
 
 export const useMttqNhiemKyDetail = (id: string | null) =>
@@ -30,7 +30,7 @@ export const useMttqNhiemKyDetail = (id: string | null) =>
     queryKey: queryKeys.mttqNhiemKy.detail(id ?? ''),
     queryFn: () => (id ? getMttqNhiemKyById(id) : Promise.resolve(null)),
     enabled: Boolean(id),
-    ...listQueryOptions,
+    ...masterDataQueryOptions,
   });
 
 export const useCreateMttqNhiemKy = (onSuccess?: () => void) => {

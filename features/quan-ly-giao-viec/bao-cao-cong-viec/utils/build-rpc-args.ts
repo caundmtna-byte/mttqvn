@@ -77,6 +77,9 @@ export function buildTaskReportRpcArgs(filters: TaskReportFilters): TaskReportRp
     p_trang_thai: nullIfEmpty(filters.trangThai),
     p_muc_do: nullIfEmpty(filters.mucDo),
     p_overdue_only: filters.overdueOnly,
+    p_viewer_id: filters.viewerId,
+    p_viewer_phong_ban_id: filters.viewerPhongBanId,
+    p_view_all: filters.viewAll,
   };
 }
 

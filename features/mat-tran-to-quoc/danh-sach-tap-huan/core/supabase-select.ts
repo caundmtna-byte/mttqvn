@@ -1,5 +1,5 @@
 const NGUOI_TAO =
-  'nguoi_tao:var_nhan_vien!mttq_lop_tap_huan_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan)';
+  'nguoi_tao:var_nhan_vien!mttq_lop_tap_huan_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan,id_phong_ban)';
 
 const BASE_COLS = [
   'id',
@@ -12,8 +12,12 @@ const BASE_COLS = [
   'tg_cap_nhat',
 ].join(',');
 
-/** Danh sách: kèm id dòng con để đếm. */
-export const MTTQ_LOP_TAP_HUAN_SELECT_LIST = `${BASE_COLS},${NGUOI_TAO},mttq_lop_tap_huan_ct(id)`;
+/**
+ * Danh sách: dùng aggregate `count` thay vì kéo mảng id dòng con.
+ * Trước: `mttq_lop_tap_huan_ct(id)` → ship mảng id (mỗi quyết định N×8 byte) chỉ để `arr.length`.
+ * Sau: `mttq_lop_tap_huan_ct(count)` → trả 1 số nguyên — egress giảm O(N).
+ */
+export const MTTQ_LOP_TAP_HUAN_SELECT_LIST = `${BASE_COLS},${NGUOI_TAO},mttq_lop_tap_huan_ct(count)`;
 
 const CAN_BO_EMBED = [
   'ho_ten',

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
-import { masterDataQueryOptions } from '@/lib/supabase/query-config';
+import { geoDataQueryOptions } from '@/lib/supabase/query-config';
 import { txt } from '@/lib/text';
 import { getErrorMessage } from '@/lib/utils';
 import type { TinhThanh } from '../core/types';
@@ -22,11 +22,14 @@ import {
 
 const tinhKey = queryKeys.tinhThanh.all;
 
-export function useTinhThanhList() {
+export function useTinhThanhList(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: tinhKey,
     queryFn: getTinhThanhList,
-    ...masterDataQueryOptions,
+    enabled: options?.enabled !== false,
+    // geoDataQueryOptions (24h): an toàn hơn Infinity khi dữ liệu tỉnh/thành
+    // vẫn đang được bổ sung. Mutations vẫn invalidate cache ngay lập tức.
+    ...geoDataQueryOptions,
   });
 }
 
@@ -36,20 +39,25 @@ export function useXaPhuongByTinhThanh(idTinhThanh: string | null) {
     queryKey: queryKeys.xaPhuong.byTinh(id),
     queryFn: () => getXaPhuongByTinhThanh(id),
     enabled: id.length > 0,
-    ...masterDataQueryOptions,
+    ...geoDataQueryOptions,
   });
 }
 
 /** Tab xã: `tinhFilterId` rỗng = tải toàn bộ; có id = theo tỉnh. */
-export function useXaPhuongForTab(tabIsXa: boolean, tinhFilterId: string) {
+export function useXaPhuongForTab(
+  tabIsXa: boolean,
+  tinhFilterId: string,
+  options?: { enabled?: boolean },
+) {
   const tid = tinhFilterId.trim();
   const allMode = tabIsXa && tid.length === 0;
   const oneMode = tabIsXa && tid.length > 0;
+  const viewOk = options?.enabled !== false;
   return useQuery({
     queryKey: allMode ? queryKeys.xaPhuong.listAll : queryKeys.xaPhuong.byTinh(tid),
     queryFn: () => (allMode ? getXaPhuongAll() : getXaPhuongByTinhThanh(tid)),
-    enabled: allMode || oneMode,
-    ...masterDataQueryOptions,
+    enabled: viewOk && (allMode || oneMode),
+    ...geoDataQueryOptions,
   });
 }
 

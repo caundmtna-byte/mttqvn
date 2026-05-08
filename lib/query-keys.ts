@@ -53,10 +53,28 @@ export const queryKeys = {
   baiVietDanhSach: {
     all: ['bai-viet-danh-sach'] as const,
     detail: (id: string) => ['bai-viet-danh-sach', 'detail', id] as const,
+    page: (args: {
+      page: number;
+      pageSize: number;
+      search: string;
+      scope: string;
+      viewerNhanVienId: string | null;
+      viewerPhongBanId: string | null;
+      theLoaiIds: readonly string[];
+    }) => ['bai-viet-danh-sach', 'page', args] as const,
   },
   congViecDanhSach: {
     all: ['cong-viec-danh-sach'] as const,
     detail: (id: string) => ['cong-viec-danh-sach', 'detail', id] as const,
+    page: (args: {
+      page: number;
+      pageSize: number;
+      search: string;
+      listScope: string;
+      viewerNhanVienId: string | null;
+      trangThai: readonly string[];
+      mucDo: readonly string[];
+    }) => ['cong-viec-danh-sach', 'page', args] as const,
   },
   congViecBaoCao: {
     /** Prefix dùng để invalidate toàn bộ báo cáo công việc khi CRUD bảng nguồn. */
@@ -74,8 +92,13 @@ export const queryKeys = {
       ['cong-viec-bao-cao', 'top-nguoi-tao', topN, args] as const,
     lookup: (args: unknown, opts: unknown) =>
       ['cong-viec-bao-cao', 'lookup', opts, args] as const,
-    filterOptions: (range: { p_start: string; p_end: string }) =>
-      ['cong-viec-bao-cao', 'filter-options', range] as const,
+    filterOptions: (range: {
+      p_start: string;
+      p_end: string;
+      p_viewer_id: number | null;
+      p_viewer_phong_ban_id: number | null;
+      p_view_all: boolean;
+    }) => ['cong-viec-bao-cao', 'filter-options', range] as const,
   },
   mttqCanBo: {
     all: ['mttq-can-bo'] as const,
@@ -100,6 +123,10 @@ export const queryKeys = {
     all: ['mttq-ky-hop'] as const,
     detail: (id: string) => ['mttq-ky-hop', 'detail', id] as const,
     byNhiemKy: (nhiemKyId: string) => ['mttq-ky-hop', 'by-nhiem-ky', nhiemKyId] as const,
+  },
+  mttqDiemDanhUyVien: {
+    byKyHop: (kyHopId: string) => ['mttq-diem-danh-uy-vien', 'by-ky-hop', kyHopId] as const,
+    byNhiemKy: (nhiemKyId: string) => ['mttq-diem-danh-uy-vien', 'by-nhiem-ky', nhiemKyId] as const,
   },
   mttqUyVienUyBan: {
     all: ['mttq-uy-vien-uy-ban'] as const,

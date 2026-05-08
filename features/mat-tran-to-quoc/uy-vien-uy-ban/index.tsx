@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, lazy, Suspense, startTransition } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
+import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog from '@/components/shared/ImportDialog';
 import Button from '@/components/ui/Button';
@@ -31,6 +32,7 @@ import { MTTQ_UY_VIEN_UY_BAN_SEARCHABLE_KEYS } from './utils/search-keys';
 import { mttqUyVienUyBanMatchesColumnSearch, donViDisplayLabel } from './utils/column-search';
 import { formatUyVienMaUvDisplay } from './utils/display-format';
 import { getMttqUyVienUyBanById } from './services/mttq-uy-vien-uy-ban-service';
+import { canViewUyVienUyBanRow, useMttqUyVienUyBanViewer } from './hooks/use-mttq-uy-vien-uy-ban-viewer';
 import MttqUyVienUyBanToolbar from './components/mttq-uy-vien-uy-ban-toolbar';
 import MttqUyVienUyBanTable from './components/mttq-uy-vien-uy-ban-table';
 
@@ -62,6 +64,14 @@ const UyVienUyBanPage: React.FC = () => {
   const canView = useCan('view', 'matTranCommitteeMembers');
   const { canCreate } = useResourcePermissions('matTranCommitteeMembers');
   const tinhCapLabel = txt('matTranUyVienUyBan.tinhCap');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('matTranUyVienUyBan.noViewPermission'));
+    navigate('/mat-tran-to-quoc', { replace: true });
+  }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqUyVienUyBan | null>(null);
@@ -89,9 +99,26 @@ const UyVienUyBanPage: React.FC = () => {
   const deleteMutation = useDeleteMttqUyVienUyBanMany();
   const importMutation = useImportMttqUyVienUyBan(() => setShowImport(false));
 
+  const viewer = useMttqUyVienUyBanViewer();
+
+  /** Lọc theo viewer trước khi mọi tính toán hiển thị (chip / search / export / sort). */
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewUyVienUyBanRow(viewer, r)),
+    [rows, viewer],
+  );
+
   useEffect(() => {
     return () => resetState();
   }, [resetState]);
+
+  /** Drawer chi tiết: nếu data về mà viewer không đủ quyền (vd. đoán id), tự đóng + báo. */
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewUyVienUyBanRow(viewer, viewingData)) {
+      toast.error(txt('matTranUyVienUyBan.noViewPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, viewer]);
 
   const clearListFilters = useCallback(() => {
     setSearchTerm('');
@@ -119,7 +146,7 @@ const UyVienUyBanPage: React.FC = () => {
     [tinhCapLabel],
   );
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -153,7 +180,7 @@ const UyVienUyBanPage: React.FC = () => {
 
   const nhiemKyChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const value = r.nhiem_ky_id;
       const label = r.ten_nhiem_ky || value;
       const cur = map.get(value);
@@ -163,11 +190,11 @@ const UyVienUyBanPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [rows]);
+  }, [viewableRows]);
 
   const donViChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const value = r.don_vi_id ?? DON_VI_FILTER_TINH;
       const label = donViDisplayLabel(r, tinhCapLabel);
       const cur = map.get(value);
@@ -177,7 +204,7 @@ const UyVienUyBanPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [rows, tinhCapLabel]);
+  }, [viewableRows, tinhCapLabel]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -248,7 +275,14 @@ const UyVienUyBanPage: React.FC = () => {
 
   const handleEditFromList = async (item: MttqUyVienUyBanListRow) => {
     try {
-      const full = await getMttqUyVienUyBanById(item.id);
+      // Dùng cache TanStack Query (detail key) — nếu đã fetch lần trước (vd vừa
+      // xem detail), bỏ qua round-trip Supabase. Cache hết hạn theo `staleTime`
+      // mặc định (5 phút) → vẫn đảm bảo dữ liệu khi sửa lần đầu mở list.
+      const full = await queryClient.fetchQuery({
+        queryKey: queryKeys.mttqUyVienUyBan.detail(item.id),
+        queryFn: () => getMttqUyVienUyBanById(item.id),
+        ...defaultServerQueryOptions,
+      });
       if (!full) {
         toast.error(txt('matTranUyVienUyBan.service.notFound'));
         return;
@@ -332,7 +366,7 @@ const UyVienUyBanPage: React.FC = () => {
     });
   };
 
-  const hasRows = rows.length > 0;
+  const hasRows = viewableRows.length > 0;
   const hasFilteredRows = sorted.length > 0;
   const showFilteredEmpty = hasRows && !hasFilteredRows && !isLoading;
 
@@ -351,8 +385,12 @@ const UyVienUyBanPage: React.FC = () => {
 
   if (!canView) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center text-muted-foreground">
-        <p className="text-sm">{txt('matTranUyVienUyBan.noViewPermission')}</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

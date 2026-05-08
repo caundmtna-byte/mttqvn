@@ -1,5 +1,5 @@
-import React from 'react';
-import { CalendarDays, Edit, FileText, Hash, MapPin, StickyNote, Trash2, Type, User } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, ClipboardList, Edit, FileText, Hash, Info, MapPin, StickyNote, Trash2, Type, User } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import { formatDateTimeShort } from '@/lib/utils';
@@ -10,20 +10,41 @@ import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/Det
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE, CONFIRM_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useConfirmStore } from '@/store/useConfirmStore';
+import TabGroup, { type Tab } from '@/components/ui/TabGroup';
 import type { MttqKyHop } from '../core/types';
 import { donViDisplayLabel } from '../utils/column-search';
+import MttqKyHopDetailDiemDanhTab from './mttq-ky-hop-detail-diem-danh-tab';
+
+const TAB_INFO = 'info';
+const TAB_DIEM_DANH = 'diemDanh';
 
 interface Props {
   data: MttqKyHop;
   onClose: () => void;
   onEdit: (item: MttqKyHop) => void;
   onDelete: (id: string) => void;
+  /** Drawer chồng (vd. từ detail nhiệm kỳ) */
+  stackLevel?: number;
+  maxWidthClass?: string;
 }
 
-const MttqKyHopDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
+const MttqKyHopDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, stackLevel = 0, maxWidthClass }) => {
   const { canEdit, canDelete } = useResourcePermissions('matTranSession');
   const confirm = useConfirmStore((s) => s.confirm);
   const tinhCap = txt('matTranKyHop.tinhCap');
+  const [detailTab, setDetailTab] = useState<string>(TAB_INFO);
+
+  useEffect(() => {
+    setDetailTab(TAB_INFO);
+  }, [data.id]);
+
+  const tabs = useMemo<Tab[]>(
+    () => [
+      { id: TAB_INFO, label: txt('matTranKyHop.detail.tabInfo'), icon: Info },
+      { id: TAB_DIEM_DANH, label: txt('matTranKyHop.detail.tabDiemDanh'), icon: ClipboardList },
+    ],
+    [],
+  );
 
   const handleDelete = () => {
     confirm({
@@ -82,7 +103,8 @@ const MttqKyHopDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
     <GenericDrawer
       onClose={onClose}
       title={txt('matTranKyHop.detail.title')}
-      maxWidthClass={DRAWER_WIDTH_DETAIL}
+      maxWidthClass={maxWidthClass ?? DRAWER_WIDTH_DETAIL}
+      stackLevel={stackLevel}
       icon={<CalendarDays size={18} />}
       subtitle={subtitle}
       footer={footer}
@@ -99,85 +121,115 @@ const MttqKyHopDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
           </div>
         </div>
 
-        <DetailSection title={txt('matTranKyHop.detail.sectionMain')} icon={<Type size={14} />} variant="primary">
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('matTranKyHop.form.nhiemKy')}
-              value={<span className="font-semibold tracking-tight">{data.ten_nhiem_ky}</span>}
-              icon={<Type size={12} />}
-            />
-            <DetailField
-              label={txt('matTranKyHop.form.donVi')}
-              value={donViDisplayLabel(data, tinhCap)}
-              icon={<MapPin size={12} />}
-            />
-            <DetailField label={txt('matTranKyHop.form.kyThu')} value={data.ky_thu} icon={<Hash size={12} />} />
-            <DetailField
-              label={txt('matTranKyHop.form.ngayHop')}
-              value={data.ngay_hop ?? undefined}
-              emptyText={txt('common.emptyCell')}
-            />
-            <DetailField
-              className={DETAIL_FIELD_SPAN_FULL}
-              label={txt('matTranKyHop.form.noiDungKyHop')}
-              value={
-                data.noi_dung_ky_hop?.trim() ? (
-                  <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.noi_dung_ky_hop}</p>
-                ) : undefined
-              }
-              emptyText={txt('common.emptyCell')}
-            />
-            <DetailField
-              className={DETAIL_FIELD_SPAN_FULL}
-              label={txt('matTranKyHop.form.taiLieuHop')}
-              value={
-                data.tai_lieu_hop?.trim() ? (
-                  <a
-                    href={data.tai_lieu_hop}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline break-all text-sm"
-                  >
-                    {data.tai_lieu_hop}
-                  </a>
-                ) : undefined
-              }
-              icon={<FileText size={12} />}
-              emptyText={txt('common.emptyCell')}
-            />
-            <DetailField
-              className={DETAIL_FIELD_SPAN_FULL}
-              label={txt('matTranKyHop.form.ghiChu')}
-              value={
-                data.ghi_chu?.trim() ? (
-                  <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.ghi_chu}</p>
-                ) : undefined
-              }
-              icon={<StickyNote size={12} />}
-              emptyText={txt('common.emptyCell')}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <div className="w-full overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+          <TabGroup tabs={tabs} activeTab={detailTab} onChange={setDetailTab} />
+        </div>
 
-        <DetailSection title={txt('matTranKyHop.detail.systemInfo')} icon={<User size={14} />}>
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('matTranKyHop.store.nguoiTaoCol')}
-              value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao ?? undefined}
-              emptyText={txt('common.emptyCell')}
-            />
-            <DetailField
-              label={txt('matTranKyHop.detail.tgTao')}
-              value={data.tg_tao ? formatDateTimeShort(data.tg_tao) : undefined}
-              emptyText={txt('common.emptyCell')}
-            />
-            <DetailField
-              label={txt('matTranKyHop.detail.tgCapNhat')}
-              value={data.tg_cap_nhat ? formatDateTimeShort(data.tg_cap_nhat) : undefined}
-              emptyText={txt('common.emptyCell')}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        {detailTab === TAB_INFO ? (
+          <>
+            <DetailSection title={txt('matTranKyHop.detail.sectionDiemDanhSummary')} icon={<ClipboardList size={14} />}>
+              <DetailFieldGrid>
+                <DetailField
+                  label={txt('matTranKyHop.store.diemDanhCoMatCol')}
+                  value={<span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-400">{data.diem_danh_co_mat}</span>}
+                  icon={<Hash size={12} />}
+                />
+                <DetailField
+                  label={txt('matTranKyHop.store.diemDanhVangMatCol')}
+                  value={<span className="tabular-nums font-semibold text-amber-800 dark:text-amber-400">{data.diem_danh_vang_mat}</span>}
+                  icon={<Hash size={12} />}
+                />
+                <DetailField
+                  label={txt('matTranKyHop.store.diemDanhChuaCol')}
+                  value={<span className="tabular-nums font-semibold text-muted-foreground">{data.diem_danh_chua}</span>}
+                  icon={<Hash size={12} />}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
+
+            <DetailSection title={txt('matTranKyHop.detail.sectionMain')} icon={<Type size={14} />} variant="primary">
+              <DetailFieldGrid>
+                <DetailField
+                  label={txt('matTranKyHop.form.nhiemKy')}
+                  value={<span className="font-semibold tracking-tight">{data.ten_nhiem_ky}</span>}
+                  icon={<Type size={12} />}
+                />
+                <DetailField
+                  label={txt('matTranKyHop.form.donVi')}
+                  value={donViDisplayLabel(data, tinhCap)}
+                  icon={<MapPin size={12} />}
+                />
+                <DetailField label={txt('matTranKyHop.form.kyThu')} value={data.ky_thu} icon={<Hash size={12} />} />
+                <DetailField
+                  label={txt('matTranKyHop.form.ngayHop')}
+                  value={data.ngay_hop ?? undefined}
+                  emptyText={txt('common.emptyCell')}
+                />
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranKyHop.form.noiDungKyHop')}
+                  value={
+                    data.noi_dung_ky_hop?.trim() ? (
+                      <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.noi_dung_ky_hop}</p>
+                    ) : undefined
+                  }
+                  emptyText={txt('common.emptyCell')}
+                />
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranKyHop.form.taiLieuHop')}
+                  value={
+                    data.tai_lieu_hop?.trim() ? (
+                      <a
+                        href={data.tai_lieu_hop}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline break-all text-sm"
+                      >
+                        {data.tai_lieu_hop}
+                      </a>
+                    ) : undefined
+                  }
+                  icon={<FileText size={12} />}
+                  emptyText={txt('common.emptyCell')}
+                />
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranKyHop.form.ghiChu')}
+                  value={
+                    data.ghi_chu?.trim() ? (
+                      <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.ghi_chu}</p>
+                    ) : undefined
+                  }
+                  icon={<StickyNote size={12} />}
+                  emptyText={txt('common.emptyCell')}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
+
+            <DetailSection title={txt('matTranKyHop.detail.systemInfo')} icon={<User size={14} />}>
+              <DetailFieldGrid>
+                <DetailField
+                  label={txt('matTranKyHop.store.nguoiTaoCol')}
+                  value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao ?? undefined}
+                  emptyText={txt('common.emptyCell')}
+                />
+                <DetailField
+                  label={txt('matTranKyHop.detail.tgTao')}
+                  value={data.tg_tao ? formatDateTimeShort(data.tg_tao) : undefined}
+                  emptyText={txt('common.emptyCell')}
+                />
+                <DetailField
+                  label={txt('matTranKyHop.detail.tgCapNhat')}
+                  value={data.tg_cap_nhat ? formatDateTimeShort(data.tg_cap_nhat) : undefined}
+                  emptyText={txt('common.emptyCell')}
+                />
+              </DetailFieldGrid>
+            </DetailSection>
+          </>
+        ) : null}
+
+        {detailTab === TAB_DIEM_DANH ? <MttqKyHopDetailDiemDanhTab kyHopId={data.id} nhiemKyId={data.nhiem_ky_id} /> : null}
       </div>
     </GenericDrawer>
   );

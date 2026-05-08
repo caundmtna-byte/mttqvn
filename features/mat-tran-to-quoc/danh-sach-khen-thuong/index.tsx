@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   lazy,
   Suspense,
   startTransition,
@@ -10,6 +11,9 @@ import React, {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
+import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { txt } from '@/lib/text';
 import { getLanguage } from '@/lib/utils';
 import { matchesSearchTerm } from '@/lib/searchUtils';
@@ -26,6 +30,7 @@ import {
   useDeleteMttqKhenThuongMany,
   useMttqKhenThuongDetail,
 } from './hooks/use-mttq-khen-thuong';
+import { canViewKhenThuongRow, useMttqKhenThuongViewer } from './hooks/use-mttq-khen-thuong-viewer';
 import { useMttqKhenThuongStore } from './store/useMttqKhenThuongStore';
 import type { MttqKhenThuong, MttqKhenThuongListRow } from './core/types';
 import { MTTQ_KHEN_THUONG_SEARCHABLE_KEYS } from './utils/search-keys';
@@ -52,10 +57,19 @@ const DrawerLazyFallback: React.FC = () => (
 const DanhSachKhenThuongPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranRewardList');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('matTranKhenThuong.noViewPermission'));
+    navigate('/mat-tran-to-quoc', { replace: true });
+  }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqKhenThuong | null>(null);
@@ -69,6 +83,14 @@ const DanhSachKhenThuongPage: React.FC = () => {
   const { data: viewingData } = useMttqKhenThuongDetail(viewingId);
   const deleteMutation = useDeleteMttqKhenThuongMany();
 
+  const viewer = useMttqKhenThuongViewer();
+
+  /** Lọc theo viewer trước khi mọi tính toán hiển thị (chip / search / export / sort). */
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewKhenThuongRow(viewer, r)),
+    [rows, viewer],
+  );
+
   useEffect(() => {
     return () => resetState();
   }, [resetState]);
@@ -77,13 +99,22 @@ const DanhSachKhenThuongPage: React.FC = () => {
   useEffect(() => {
     const raw = searchParams.get('open')?.trim();
     if (!raw) return;
-    if (rows.length === 0) return;
-    const exists = rows.some((r) => r.id === raw);
+    if (viewableRows.length === 0) return;
+    const exists = viewableRows.some((r) => r.id === raw);
     if (exists) setViewingId(raw);
     const next = new URLSearchParams(searchParams);
     next.delete('open');
     setSearchParams(next, { replace: true });
-  }, [rows, searchParams, setSearchParams]);
+  }, [viewableRows, searchParams, setSearchParams]);
+
+  /** Drawer chi tiết: nếu data về mà viewer không đủ quyền (vd. đoán id), tự đóng + báo. */
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewKhenThuongRow(viewer, viewingData)) {
+      toast.error(txt('matTranKhenThuong.noViewPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, viewer]);
 
   const filterFn = useCallback(
     (item: MttqKhenThuongListRow, term: string, f: typeof filters) => {
@@ -99,7 +130,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
     [],
   );
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -122,7 +153,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
 
   const trangThaiChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const value = r.trang_thai;
       const label = value || txt('common.emptyCell');
       const cur = map.get(value);
@@ -132,7 +163,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rows]);
+  }, [viewableRows]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -171,7 +202,11 @@ const DanhSachKhenThuongPage: React.FC = () => {
 
   const handleEditFromList = async (item: MttqKhenThuongListRow) => {
     try {
-      const full = await getMttqKhenThuongById(item.id);
+      const full = await queryClient.fetchQuery({
+        queryKey: queryKeys.mttqKhenThuong.detail(item.id),
+        queryFn: () => getMttqKhenThuongById(item.id),
+        ...defaultServerQueryOptions,
+      });
       if (!full) {
         toast.error(txt('matTranKhenThuong.service.notFound'));
         return;
@@ -240,8 +275,12 @@ const DanhSachKhenThuongPage: React.FC = () => {
 
   if (!canView) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center text-muted-foreground">
-        <p className="text-sm">{txt('matTranKhenThuong.noViewPermission')}</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

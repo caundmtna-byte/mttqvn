@@ -1,0 +1,93 @@
+---
+description: Checklist 6 lớp phân quyền cho mọi module — pattern chuẩn dựa trên reference implementation Phòng ban
+globs: "features/**/*.tsx,pages/dashboards/*.tsx,lib/nav-module-visibility.ts"
+alwaysApply: false
+---
+
+# Checklist Phân Quyền Module
+
+Áp dụng đủ 6 lớp khi thêm module mới hoặc kiểm tra module hiện có.
+
+## Quy tắc quyền chuẩn
+
+```
+view:    quan_tri (admin)  OR  xem
+create:  quan_tri (admin)  OR  them
+edit:    quan_tri (admin)  OR  sua      (AppAction 'edit' → ActionType 'update')
+delete:  quan_tri (admin)  OR  xoa
+export:  quan_tri (admin)  OR  xuat
+import:  quan_tri (admin)  OR  nhap
+```
+
+Ngoại lệ `cap_bac=1`: Phòng ban dùng `canDepartmentsWithCapBac` — bypass toàn bộ view/create/edit/delete nếu `chucVuCapBac === 1`.
+
+## Lớp 1 — `lib/permissions.ts`
+
+Thêm resource vào `APP_RESOURCE_TO_MODULE`:
+```ts
+myModule: 'section/ten-module',  // khớp với module_key trong var_phan_quyen
+```
+Module không có trong map → `can()` dùng `legacyCan` (view=true mọi người, còn lại false).
+
+## Lớp 2 — Module `index.tsx` (view guard)
+
+```tsx
+const canView = useCan('view', 'myModule');
+const didRedirect = useRef(false);
+useEffect(() => {
+  if (!user || canView || didRedirect.current) return;
+  didRedirect.current = true;
+  toast.error(txt('myModule.noViewPermission'));
+  navigate('/section', { replace: true });
+}, [user, canView, navigate]);
+```
+Reference: `features/he-thong/phong-ban/index.tsx`
+
+## Lớp 3 — Toolbar (`*-toolbar.tsx`)
+
+```tsx
+const { canCreate, canEdit, canDelete, canExport, canImport } = useResourcePermissions('myModule');
+// Dùng: onAdd={canCreate ? onAdd : undefined}; {canDelete ? onDeleteMany : undefined}; v.v.
+```
+Reference: `features/he-thong/phong-ban/components/phong-ban-toolbar.tsx`
+
+## Lớp 4 — Row actions
+
+```tsx
+const canEdit = useCan('edit', 'myModule');
+const canDelete = useCan('delete', 'myModule');
+// Ẩn nút edit/delete trong menu dòng nếu false
+```
+
+## Lớp 5 — Dashboard page (`pages/dashboards/*.tsx`)
+
+```tsx
+const user = useAuthStore((s) => s.user);
+const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
+const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
+
+const groups = useMemo(() => {
+  return rawGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) => {
+        const res = appResourceForDashboardNavigatePath(item.path);
+        if (!user || res == null) return true;
+        return can(user, 'view', res);
+      }),
+    }))
+    .filter((g) => g.items.length > 0);
+}, [user, matrixActive, grantsByModule, chucVuCapBac]);
+```
+Mỗi item phải có `path` field là route path (`/section/ten-module`).
+Reference: `pages/dashboards/SystemDashboard.tsx`
+
+## Lớp 6 — Sidebar gating (`lib/nav-module-visibility.ts`)
+
+```ts
+// getSidebarPathGateResources — thêm section mới:
+if (path === '/ten-section') return ['res1', 'res2', ...];
+```
+Section chỉ hiện trên sidebar nếu `can('view', ...)` đúng với ít nhất 1 resource trong list.
+Reference: `lib/nav-module-visibility.ts`

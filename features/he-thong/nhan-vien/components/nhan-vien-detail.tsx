@@ -7,7 +7,8 @@ import Button from '../../../../components/ui/Button';
 import EnumBadge from '../../../../components/ui/EnumBadge';
 import { Employee } from '../core/types';
 import { STATUS_BADGE_CONFIG } from '../core/constants';
-import { formatDate, formatDateTimeShort, getAvatarUrl } from '../../../../lib/utils';
+import { formatDate, formatDateTimeShort } from '../../../../lib/utils';
+import { EmployeeAvatarImg } from './employee-avatar-img';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '../../../../components/shared/GenericDrawer';
 import DetailSection from '../../../../components/shared/DetailSection';
 import DetailField from '../../../../components/shared/DetailField';
@@ -96,11 +97,12 @@ const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
     >
       <div className="space-y-5">
         <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-          <img
-            src={data.hinh_anh || getAvatarUrl(data.ho_va_ten, 96)}
+          <EmployeeAvatarImg
+            hinh_anh={data.hinh_anh}
+            ho_va_ten={data.ho_va_ten}
+            fallbackSize={96}
             alt={data.ho_va_ten}
             className="h-16 w-16 rounded-xl object-cover border border-border shadow-md shrink-0"
-            loading="lazy"
           />
           <div className="flex-1 min-w-0 flex flex-col gap-0.5">
             <div className="flex items-start justify-between gap-2 min-w-0">

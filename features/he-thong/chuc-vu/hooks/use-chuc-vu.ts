@@ -18,10 +18,11 @@ import { getErrorMessage } from '@/lib/utils';
 
 const positionsQueryKey = queryKeys.positions.all;
 
-export const usePositions = () => {
+export const usePositions = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: positionsQueryKey,
     queryFn: getPositions,
+    enabled: options?.enabled !== false,
     ...masterDataQueryOptions,
   });
 };

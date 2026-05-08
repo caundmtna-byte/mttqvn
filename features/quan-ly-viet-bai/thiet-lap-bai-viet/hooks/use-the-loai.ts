@@ -15,10 +15,11 @@ import type { BaiVietTheLoai } from '../core/types';
 
 const qk = queryKeys.baiVietTheLoai.all;
 
-export const useTheLoais = () =>
+export const useTheLoais = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: qk,
     queryFn: getTheLoais,
+    enabled: options?.enabled !== false,
     ...masterDataQueryOptions,
   });
 

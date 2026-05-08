@@ -46,12 +46,36 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 4,
   },
   {
+    id: 'diem_danh_co_mat',
+    label: txt('matTranKyHop.store.diemDanhCoMatCol'),
+    visible: true,
+    minWidth: 96,
+    maxWidth: 116,
+    order: 5,
+  },
+  {
+    id: 'diem_danh_vang_mat',
+    label: txt('matTranKyHop.store.diemDanhVangMatCol'),
+    visible: true,
+    minWidth: 108,
+    maxWidth: 128,
+    order: 6,
+  },
+  {
+    id: 'diem_danh_chua',
+    label: txt('matTranKyHop.store.diemDanhChuaCol'),
+    visible: true,
+    minWidth: 144,
+    maxWidth: 168,
+    order: 7,
+  },
+  {
     id: 'tai_lieu_hop',
     label: txt('matTranKyHop.form.taiLieuHop'),
     visible: false,
     minWidth: 140,
     maxWidth: 220,
-    order: 5,
+    order: 8,
   },
   {
     id: 'ho_va_ten_nguoi_tao',
@@ -59,9 +83,9 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 180,
-    order: 6,
+    order: 9,
   },
-  { id: 'tg_cap_nhat', label: txt('matTranKyHop.store.tgCapNhatCol'), visible: false, ...P.datetime, order: 7 },
+  { id: 'tg_cap_nhat', label: txt('matTranKyHop.store.tgCapNhatCol'), visible: false, ...P.datetime, order: 10 },
 ];
 
 const initialFilters: MttqKyHopFilters = {

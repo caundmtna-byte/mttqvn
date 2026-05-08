@@ -11,15 +11,21 @@ import {
   deleteCongViecDanhSachMany,
   getCongViecDanhSachById,
   getCongViecDanhSachList,
+  getCongViecDanhSachPage,
   updateCongViecDanhSach,
+  type CongViecPageQuery,
 } from '../services/cong-viec-danh-sach-service';
 
 const listKey = queryKeys.congViecDanhSach.all;
 const reportKey = queryKeys.congViecBaoCao.all;
 
-/** Invalidate toàn bộ cache báo cáo công việc khi bảng nguồn thay đổi. */
+/**
+ * Đánh dấu cache báo cáo công việc là stale (không refetch ngay) khi bảng nguồn
+ * thay đổi. `refetchType: 'none'` quan trọng: tránh kích hoạt 8 RPC khi user
+ * đang ở trang công việc — chỉ refetch khi user thực sự mở trang Báo cáo.
+ */
 function invalidateReportCache(queryClient: ReturnType<typeof useQueryClient>) {
-  queryClient.invalidateQueries({ queryKey: reportKey });
+  queryClient.invalidateQueries({ queryKey: reportKey, refetchType: 'none' });
 }
 
 export const useCongViecDanhSachList = (options?: { enabled?: boolean }) =>
@@ -29,6 +35,16 @@ export const useCongViecDanhSachList = (options?: { enabled?: boolean }) =>
     enabled: options?.enabled !== false,
     ...listQueryOptions,
   });
+
+export const useCongViecDanhSachPage = (args: CongViecPageQuery & { enabled?: boolean }) => {
+  const { enabled = true, ...q } = args;
+  return useQuery({
+    queryKey: queryKeys.congViecDanhSach.page(q),
+    queryFn: () => getCongViecDanhSachPage(q),
+    enabled,
+    ...listQueryOptions,
+  });
+};
 
 export const useCongViecDanhSachDetail = (id: string | null) =>
   useQuery({
@@ -44,7 +60,8 @@ export const useCreateCongViecDanhSach = (onSuccess?: () => void) => {
     mutationFn: ({ data, idNguoiTao }: { data: CongViecDanhSachFormValues; idNguoiTao: string }) =>
       createCongViecDanhSach(data, idNguoiTao),
     onSuccess: (created) => {
-      queryClient.setQueryData<CongViecDanhSach[]>(listKey, (old) => [...(old ?? []), created]);
+      queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.setQueryData(queryKeys.congViecDanhSach.detail(created.id), created);
       invalidateReportCache(queryClient);
       toast.success(txt('taskList.toast.create'));
       onSuccess?.();
@@ -59,9 +76,7 @@ export const useUpdateCongViecDanhSach = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: CongViecDanhSachFormValues }) =>
       updateCongViecDanhSach(id, data),
     onSuccess: (updated, { id }) => {
-      queryClient.setQueryData<CongViecDanhSach[]>(listKey, (old) =>
-        old?.map((x) => (x.id === id ? updated : x)),
-      );
+      queryClient.invalidateQueries({ queryKey: listKey });
       queryClient.setQueryData(queryKeys.congViecDanhSach.detail(id), updated);
       invalidateReportCache(queryClient);
       toast.success(txt('taskList.toast.update'));
@@ -76,9 +91,7 @@ export const useDeleteCongViecDanhSachMany = () => {
   return useMutation({
     mutationFn: deleteCongViecDanhSachMany,
     onSuccess: (_, ids) => {
-      queryClient.setQueryData<CongViecDanhSach[]>(listKey, (old) =>
-        old?.filter((x) => !ids.includes(x.id)),
-      );
+      queryClient.invalidateQueries({ queryKey: listKey });
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.congViecDanhSach.detail(id) });
       }

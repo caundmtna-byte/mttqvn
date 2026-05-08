@@ -107,7 +107,13 @@ export const useTaskReportLookup = (
   });
 
 export const useTaskReportFilterOptions = (
-  range: { p_start: string; p_end: string },
+  range: {
+    p_start: string;
+    p_end: string;
+    p_viewer_id: number | null;
+    p_viewer_phong_ban_id: number | null;
+    p_view_all: boolean;
+  },
   opts: BaseOpts = {},
 ) =>
   useQuery({

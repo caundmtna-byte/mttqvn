@@ -1,11 +1,22 @@
 import React, { useId } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
-  icon?: React.ReactNode;
+  /** `ReactNode` hoặc icon Lucide (`User`, `Mail`…) — component được render `<Icon className="h-4 w-4" />`. */
+  icon?: React.ReactNode | LucideIcon;
   required?: boolean;
+}
+
+/** Lucide `User` / `Mail` hoặc element sẵn — dùng chung cho `Input` và `*Input` bọc label. */
+export function renderInputIcon(icon: NonNullable<InputProps['icon']>): React.ReactNode {
+  if (typeof icon === 'function') {
+    const Icon = icon as LucideIcon;
+    return <Icon className="h-4 w-4 shrink-0" aria-hidden />;
+  }
+  return icon;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -18,7 +29,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full">
         {label && (
           <label htmlFor={inputId} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-1.5 flex items-center gap-1.5">
-            {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
+            {icon != null && <span className="text-muted-foreground shrink-0">{renderInputIcon(icon)}</span>}
             {label}
             {required && (
               <span className="text-red-600 dark:text-red-400 font-semibold" aria-hidden="true">

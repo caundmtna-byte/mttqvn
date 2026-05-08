@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { useIsMaxWidth } from '../../lib/use-media-query';
 import { txt } from '../../lib/text';
 import { createPortal } from 'react-dom';
@@ -19,8 +19,13 @@ import Combobox, { type Option } from '../ui/Combobox';
 import { hslToHex, PRIMARY_COLOR_MAP } from '../../lib/theme-utils';
 import Breadcrumbs from '../shared/Breadcrumbs';
 import MobileBottomNav from './MobileBottomNav';
-import { CommandPalette } from './CommandPalette';
+// Lazy: chỉ tải khi user mở (Cmd/Ctrl+K hoặc click) — giảm bundle ban đầu.
+const CommandPalette = lazy(() =>
+  import('./CommandPalette').then((m) => ({ default: m.CommandPalette })),
+);
 import { SIDEBAR_MENU } from '../../lib/sidebar-menu';
+import { isSidebarPathVisibleForUser } from '../../lib/nav-module-visibility';
+import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
 import { toast } from 'sonner';
 
 /** Sidebar width: expanded 240px (gọn), collapsed 64px (4rem, 8px grid) */
@@ -29,6 +34,9 @@ const SIDEBAR_WIDTH_COLLAPSED = 64;
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuthStore();
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
+  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
   const { sidebarOpen, toggleSidebar, companyInfo, primaryColor, setTheme } = useUIStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -145,8 +153,13 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   };
 
   const navItems = useMemo(
-    () => SIDEBAR_MENU.map(({ path, nameKey, icon }) => ({ name: txt(nameKey), icon, path })),
-    [],
+    () =>
+      SIDEBAR_MENU.filter((m) => isSidebarPathVisibleForUser(user, m.path)).map(({ path, nameKey, icon }) => ({
+        name: txt(nameKey),
+        icon,
+        path,
+      })),
+    [user, matrixActive, grantsByModule, chucVuCapBac],
   );
 
   const sidebarTransition = { duration: 0.15, ease: 'circOut' as const };
@@ -589,11 +602,15 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         )}
       </AnimatePresence>
 
-      <CommandPalette
-        key={commandPaletteKey}
-        open={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-      />
+      {commandPaletteOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette
+            key={commandPaletteKey}
+            open={commandPaletteOpen}
+            onClose={() => setCommandPaletteOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

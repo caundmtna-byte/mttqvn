@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, lazy, Suspense, startTransition } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -16,6 +16,7 @@ import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
+import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog from '@/components/shared/ImportDialog';
 import Button from '@/components/ui/Button';
@@ -61,6 +62,14 @@ const KyHopPage: React.FC = () => {
   const canView = useCan('view', 'matTranSession');
   const { canCreate } = useResourcePermissions('matTranSession');
   const tinhCapLabel = txt('matTranKyHop.tinhCap');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('matTranKyHop.noViewPermission'));
+    navigate('/mat-tran-to-quoc', { replace: true });
+  }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqKyHop | null>(null);
@@ -212,6 +221,9 @@ const KyHopPage: React.FC = () => {
       { key: 'ky_thu', label: txt('matTranKyHop.store.kyThuCol') },
       { key: 'ngay_hop', label: txt('matTranKyHop.store.ngayHopCol') },
       { key: 'noi_dung_ky_hop', label: txt('matTranKyHop.store.noiDungCol') },
+      { key: 'diem_danh_co_mat', label: txt('matTranKyHop.store.diemDanhCoMatCol') },
+      { key: 'diem_danh_vang_mat', label: txt('matTranKyHop.store.diemDanhVangMatCol') },
+      { key: 'diem_danh_chua', label: txt('matTranKyHop.store.diemDanhChuaCol') },
       { key: 'tai_lieu_hop', label: txt('matTranKyHop.form.taiLieuHop') },
       { key: 'ghi_chu', label: txt('matTranKyHop.form.ghiChu') },
       { key: 'ho_va_ten_nguoi_tao', label: txt('matTranKyHop.store.nguoiTaoCol') },
@@ -243,6 +255,9 @@ const KyHopPage: React.FC = () => {
       ky_thu: item.ky_thu,
       ngay_hop: item.ngay_hop ?? '',
       noi_dung_ky_hop: item.noi_dung_ky_hop ?? '',
+      diem_danh_co_mat: item.diem_danh_co_mat,
+      diem_danh_vang_mat: item.diem_danh_vang_mat,
+      diem_danh_chua: item.diem_danh_chua,
       tai_lieu_hop: item.tai_lieu_hop ?? '',
       ghi_chu: item.ghi_chu ?? '',
       ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? '',
@@ -274,7 +289,11 @@ const KyHopPage: React.FC = () => {
 
   const handleEditFromList = async (item: MttqKyHopListRow) => {
     try {
-      const full = await getMttqKyHopById(item.id);
+      const full = await queryClient.fetchQuery({
+        queryKey: queryKeys.mttqKyHop.detail(item.id),
+        queryFn: () => getMttqKyHopById(item.id),
+        ...defaultServerQueryOptions,
+      });
       if (!full) {
         toast.error(txt('matTranKyHop.service.notFound'));
         return;
@@ -377,8 +396,12 @@ const KyHopPage: React.FC = () => {
 
   if (!canView) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center text-muted-foreground">
-        <p className="text-sm">{txt('matTranKyHop.noViewPermission')}</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }

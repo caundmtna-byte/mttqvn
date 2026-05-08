@@ -61,9 +61,7 @@ export const createThietLapKhac = async (data: ThietLapKhacFormValues): Promise<
 };
 
 export const updateThietLapKhac = async (id: string, data: ThietLapKhacFormValues): Promise<BaiVietThietLapKhac> => {
-  const existing = await repo.getById(id);
-  if (!existing) throw new Error(txt('articleSettings.service.notFoundKhac'));
-
+  // Bỏ tiền-fetch `getById`: nếu id sai, `repo.update` throw lỗi PostgREST.
   const ten = data.ten.trim();
   const moTa = data.mo_ta != null && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
 

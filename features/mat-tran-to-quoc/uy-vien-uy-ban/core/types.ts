@@ -33,6 +33,14 @@ export interface MttqUyVienUyBan {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /** `var_nhan_vien.id_phong_ban` của người tạo — phục vụ gating phân quyền xem. */
+  id_phong_ban_nguoi_tao?: string | null;
 }
 
-export type MttqUyVienUyBanListRow = MttqUyVienUyBan;
+/** Một dòng list ủy viên — thêm tổng hợp điểm danh theo nhiệm kỳ (view / batch). */
+export type MttqUyVienUyBanListRow = MttqUyVienUyBan & {
+  so_ky_hop: number;
+  diem_danh_co_mat: number;
+  diem_danh_vang_mat: number;
+  diem_danh_chua: number;
+};

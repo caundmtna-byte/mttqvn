@@ -8,9 +8,10 @@ export function useCan(action: AppAction, resource: AppResource): boolean {
   const user = useAuthStore((s) => s.user);
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
+  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
   return useMemo(
     () => can(user, action, resource),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- invalidate when permission matrix hydrates
-    [user, action, resource, matrixActive, grantsByModule]
+    [user, action, resource, matrixActive, grantsByModule, chucVuCapBac]
   );
 }

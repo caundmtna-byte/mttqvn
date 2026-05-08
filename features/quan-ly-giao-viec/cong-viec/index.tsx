@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   lazy,
   Suspense,
   startTransition,
@@ -12,7 +13,6 @@ import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { getLanguage } from '@/lib/utils';
-import { matchesSearchTerm } from '@/lib/searchUtils';
 import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
@@ -23,11 +23,11 @@ import { useCan } from '@/hooks/use-can';
 import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useEmployees } from '@/features/he-thong/nhan-vien/hooks/use-nhan-vien';
-import { useCongViecDanhSachList, useDeleteCongViecDanhSachMany } from './hooks/use-cong-viec-danh-sach';
+import { useCongViecDanhSachPage, useDeleteCongViecDanhSachMany } from './hooks/use-cong-viec-danh-sach';
+import type { CongViecListScopeRpc } from './services/cong-viec-danh-sach-service';
 import { useCongViecDanhSachStore } from './store/useCongViecDanhSachStore';
 import type { CongViecDanhSachRow, CongViecListScope } from './core/types';
 import { CONG_VIEC_MUC_DO, CONG_VIEC_TRANG_THAI } from './core/constants';
-import { CONG_VIEC_DANH_SACH_SEARCHABLE_KEYS } from './utils/search-keys';
 import { congViecMatchesColumnSearch } from './utils/column-search';
 import { deadlineProgressSortKey, formatCongViecTienDoTheoHan } from './utils/deadline-progress';
 import CongViecToolbar from './components/cong-viec-toolbar';
@@ -60,6 +60,14 @@ const CongViecPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'tasks');
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('taskList.noViewPermission'));
+    navigate('/quan-ly-giao-viec', { replace: true });
+  }, [user, canView, navigate]);
 
   const [listScope, setListScope] = useState<CongViecListScope>(TAB_DO);
   const [showForm, setShowForm] = useState(false);
@@ -68,11 +76,51 @@ const CongViecPage: React.FC = () => {
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
 
-  const { searchTerm, filters, sort, resetState, clearSelection, selectedIds, pagination, columns } =
-    useCongViecDanhSachStore();
+  const {
+    searchTerm,
+    filters,
+    sort,
+    resetState,
+    clearSelection,
+    selectedIds,
+    pagination,
+    columns,
+    setPage,
+  } = useCongViecDanhSachStore();
 
-  const { data: rows = [], isLoading } = useCongViecDanhSachList({ enabled: canView });
-  const { data: employees = [] } = useEmployees();
+  const listScopeRpc: CongViecListScopeRpc =
+    listScope === TAB_DO ? 'mine_do' : listScope === TAB_RELATED ? 'mine_related' : 'mine_assign';
+
+  const pageQuery = useMemo(
+    () => ({
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      search: searchTerm,
+      listScope: listScopeRpc,
+      viewerNhanVienId: nhanVienId || null,
+      trangThai: filters.trang_thai ?? [],
+      mucDo: filters.muc_do ?? [],
+    }),
+    [
+      pagination.page,
+      pagination.pageSize,
+      searchTerm,
+      listScopeRpc,
+      nhanVienId,
+      filters.trang_thai,
+      filters.muc_do,
+    ],
+  );
+
+  const { data: pageData, isLoading } = useCongViecDanhSachPage({
+    ...pageQuery,
+    enabled: canView && Boolean(nhanVienId),
+  });
+
+  const rows = pageData?.rows ?? [];
+  const serverHasNextPage = pageData?.hasNextPage ?? false;
+  const serverTotalRecords = pageData?.totalRecords ?? null;
+  const { data: employees = [] } = useEmployees({ enabled: canView });
   const deleteMutation = useDeleteCongViecDanhSachMany();
 
   const employeeMap = useMemo(() => new Map(employees.map((e) => [String(e.id), e])), [employees]);
@@ -95,35 +143,18 @@ const CongViecPage: React.FC = () => {
   }, [listScope, clearSelection]);
 
   useEffect(() => {
+    setPage(1);
+  }, [listScope, setPage]);
+
+  useEffect(() => {
     if (!viewing) return;
     const fresh = rowsEnriched.find((r) => r.id === viewing.id);
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [rowsEnriched, viewing]);
 
-  const filterFn = useCallback(
-    (item: CongViecDanhSachRow, term: string, f: typeof filters) => {
-      if (nhanVienId) {
-        if (listScope === TAB_DO && String(item.id_trach_nhiem) !== nhanVienId) return false;
-        if (
-          listScope === TAB_RELATED &&
-          !item.ids_ho_tro.some((id) => String(id) === nhanVienId)
-        ) {
-          return false;
-        }
-        if (listScope === TAB_ASSIGN && String(item.id_nguoi_tao) !== nhanVienId) return false;
-      }
-      const matchesSearch = matchesSearchTerm(
-        item as unknown as Record<string, unknown>,
-        term,
-        CONG_VIEC_DANH_SACH_SEARCHABLE_KEYS,
-      );
-      if (f.trang_thai?.length && !f.trang_thai.includes(item.trang_thai)) return false;
-      if (f.muc_do?.length && !f.muc_do.includes(item.muc_do)) return false;
-      const matchesCol = congViecMatchesColumnSearch(item, f);
-      return matchesSearch && matchesCol;
-    },
-    [listScope, nhanVienId],
-  );
+  const filterFn = useCallback((item: CongViecDanhSachRow, _term: string, f: typeof filters) => {
+    return congViecMatchesColumnSearch(item, f);
+  }, []);
 
   const filtered = useListWithFilter(rowsEnriched, searchTerm, filters, filterFn);
 
@@ -276,40 +307,21 @@ const CongViecPage: React.FC = () => {
     [tabs, listScope],
   );
 
-  const scopeRows = useMemo(() => {
-    if (!nhanVienId) return rowsEnriched;
-    return rowsEnriched.filter((item) => {
-      if (listScope === TAB_DO && String(item.id_trach_nhiem) !== nhanVienId) return false;
-      if (listScope === TAB_RELATED && !item.ids_ho_tro.some((id) => String(id) === nhanVienId)) return false;
-      if (listScope === TAB_ASSIGN && String(item.id_nguoi_tao) !== nhanVienId) return false;
-      return true;
-    });
-  }, [rowsEnriched, listScope, nhanVienId]);
-
   const trangThaiChipOptions = useMemo(
-    () =>
-      CONG_VIEC_TRANG_THAI.map((v) => ({
-        label: v,
-        value: v,
-        count: scopeRows.filter((r) => r.trang_thai === v).length,
-      })),
-    [scopeRows],
+    () => CONG_VIEC_TRANG_THAI.map((v) => ({ label: v, value: v })),
+    [],
   );
 
-  const mucDoChipOptions = useMemo(
-    () =>
-      CONG_VIEC_MUC_DO.map((v) => ({
-        label: v,
-        value: v,
-        count: scopeRows.filter((r) => r.muc_do === v).length,
-      })),
-    [scopeRows],
-  );
+  const mucDoChipOptions = useMemo(() => CONG_VIEC_MUC_DO.map((v) => ({ label: v, value: v })), []);
 
   if (!canView) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] px-4 text-center text-muted-foreground">
-        <p className="text-sm">{txt('taskList.noViewPermission')}</p>
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -350,6 +362,9 @@ const CongViecPage: React.FC = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={setViewing}
+            serverSidePagination={Boolean(nhanVienId)}
+            serverTotalRecords={serverTotalRecords}
+            serverHasNextPage={serverHasNextPage}
           />
         </div>
       </div>

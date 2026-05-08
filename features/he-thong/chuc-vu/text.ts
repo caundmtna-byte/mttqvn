@@ -1,5 +1,6 @@
 /** Chức vụ */
 export const position = {
+  "noViewPermission": "Bạn không có quyền xem module Chức vụ.",
   "title": "Chức vụ",
   "deleteTitle": "Xóa chức vụ",
   "deleteMessage": "Bạn có chắc chắn muốn xóa chức vụ này không?",

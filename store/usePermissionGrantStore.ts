@@ -9,8 +9,10 @@ import type { ActionType } from '@/features/he-thong/phan-quyen/core/types';
 export interface PermissionGrantState {
   matrixActive: boolean;
   grantsByModule: Record<string, ActionType[]>;
+  /** `var_chuc_vu.cap_bac` của chức vụ đang hydrate ma trận. */
+  chucVuCapBac: number | null;
   /** Bật matrix + gán quyền (gọi từ service sau khi load chức vụ / phân quyền). */
-  setMatrixGrants: (grants: Record<string, ActionType[]>) => void;
+  setMatrixGrants: (grants: Record<string, ActionType[]>, chucVuCapBac?: number | null) => void;
   /** Đăng xuất hoặc trước khi đăng nhập lại — tắt matrix, xóa grants. */
   clearMatrix: () => void;
 }
@@ -18,6 +20,13 @@ export interface PermissionGrantState {
 export const usePermissionGrantStore = create<PermissionGrantState>((set) => ({
   matrixActive: false,
   grantsByModule: {},
-  setMatrixGrants: (grants) => set({ matrixActive: true, grantsByModule: grants }),
-  clearMatrix: () => set({ matrixActive: false, grantsByModule: {} }),
+  chucVuCapBac: null,
+  setMatrixGrants: (grants, chucVuCapBac = null) =>
+    set({
+      matrixActive: true,
+      grantsByModule: grants,
+      chucVuCapBac:
+        chucVuCapBac != null && Number.isFinite(Number(chucVuCapBac)) ? Number(chucVuCapBac) : null,
+    }),
+  clearMatrix: () => set({ matrixActive: false, grantsByModule: {}, chucVuCapBac: null }),
 }));

@@ -1,7 +1,10 @@
-import React, { useState, useCallback, useEffect, useMemo, lazy, Suspense, startTransition } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense, startTransition } from 'react';
 import { txt } from '../../../lib/text';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../../store/useStore';
+import { useCan } from '../../../hooks/use-can';
 import PhongBanToolbar from './components/phong-ban-toolbar';
 import DepartmentList from './components/phong-ban-list';
 import ExportDialog from '../../../components/shared/ExportDialog';
@@ -37,6 +40,18 @@ const DrawerLazyFallback: React.FC = () => (
 );
 
 const DepartmentPage = () => {
+  const user = useAuthStore((s) => s.user);
+  const canView = useCan('view', 'departments');
+  const navigate = useNavigate();
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('department.noViewPermission'));
+    navigate('/he-thong', { replace: true });
+  }, [user, canView, navigate]);
+
   const confirm = useConfirmStore((s) => s.confirm);
   const {
     searchTerm,
@@ -61,7 +76,7 @@ const DepartmentPage = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  const { data: departments = [], isLoading } = useDepartments();
+  const { data: departments = [], isLoading } = useDepartments({ enabled: canView });
   const deleteMutation = useDeleteDepartment();
   const statusMutation = useUpdateStatusDepartment();
   const importMutation = useImportDepartments(() => setShowImport(false));
@@ -323,6 +338,17 @@ const DepartmentPage = () => {
     setShowExport(true);
   };
 
+  if (!canView) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('department.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-page relative">

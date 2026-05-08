@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { txt } from '../lib/text';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import MainCard from '../components/dashboard/MainCard';
 import { useAuthStore } from '../store/useStore';
+import { usePermissionGrantStore } from '../store/usePermissionGrantStore';
 import { SIDEBAR_MENU } from '../lib/sidebar-menu';
+import { isSidebarPathVisibleForUser } from '../lib/nav-module-visibility';
 import 'dayjs/locale/vi';
 
 function getGreetingKey(hour: number): string {
@@ -16,6 +18,9 @@ function getGreetingKey(hour: number): string {
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
+  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
   const hour = new Date().getHours();
   const greetingKey = getGreetingKey(hour);
 
@@ -36,13 +41,17 @@ const Home: React.FC = () => {
     },
   };
 
-  const modules = SIDEBAR_MENU.filter((m) => m.path !== '/').map((m) => ({
-    title: txt(m.nameKey),
-    description: m.descriptionKey ? txt(m.descriptionKey) : '',
-    icon: m.icon,
-    path: m.path,
-    gradient: m.gradient,
-  }));
+  const modules = useMemo(
+    () =>
+      SIDEBAR_MENU.filter((m) => m.path !== '/' && isSidebarPathVisibleForUser(user, m.path)).map((m) => ({
+        title: txt(m.nameKey),
+        description: m.descriptionKey ? txt(m.descriptionKey) : '',
+        icon: m.icon,
+        path: m.path,
+        gradient: m.gradient,
+      })),
+    [user, matrixActive, grantsByModule, chucVuCapBac],
+  );
 
   return (
     <div className="pb-10 pt-2 shrink-0">

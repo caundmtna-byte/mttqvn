@@ -5,6 +5,7 @@ import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import type { MttqUyVienUyBan, MttqUyVienUyBanListRow } from '../core/types';
+import { getUyVienDiemDanhSummariesForIds } from '@/features/mat-tran-to-quoc/ky-hop/services/mttq-diem-danh-service';
 import {
   mttqUyVienUyBanSchema,
   type MttqUyVienUyBanFormInput,
@@ -42,7 +43,11 @@ function boolVal(v: unknown): boolean {
 }
 
 export function flattenRow(row: Record<string, unknown>): MttqUyVienUyBan {
-  const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nv = pickEmbedded<{
+    ho_va_ten?: string;
+    ten_tai_khoan?: string;
+    id_phong_ban?: string | number | null;
+  }>(row.nguoi_tao);
   const nk = pickEmbedded<{ ten_nhiem_ky?: string }>(row.nhiem_ky);
   const dv = pickEmbedded<{ ten?: string }>(row.don_vi);
   const rest = { ...row };
@@ -80,7 +85,27 @@ export function flattenRow(row: Record<string, unknown>): MttqUyVienUyBan {
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
   };
+}
+
+function mergeUyVienDiemDanhListSummary(row: MttqUyVienUyBan, s?: { so_ky_hop: number; co_mat: number; vang_mat: number; chua: number }): MttqUyVienUyBanListRow {
+  return {
+    ...row,
+    so_ky_hop: s?.so_ky_hop ?? 0,
+    diem_danh_co_mat: s?.co_mat ?? 0,
+    diem_danh_vang_mat: s?.vang_mat ?? 0,
+    diem_danh_chua: s?.chua ?? 0,
+  };
+}
+
+async function withUyVienDiemDanhSummaries(rows: MttqUyVienUyBan[]): Promise<MttqUyVienUyBanListRow[]> {
+  if (rows.length === 0) return [];
+  const map = await getUyVienDiemDanhSummariesForIds(rows.map((r) => r.id));
+  return rows.map((r) => {
+    const s = map.get(r.id);
+    return mergeUyVienDiemDanhListSummary(r, s ? { so_ky_hop: s.so_ky_hop, co_mat: s.co_mat, vang_mat: s.vang_mat, chua: s.chua_diem_danh } : undefined);
+  });
 }
 
 let mockRows = structuredClone(MTTQ_UY_VIEN_UY_BAN_MOCK);
@@ -117,10 +142,12 @@ function payloadFromForm(data: MttqUyVienUyBanFormValues) {
 
 export async function getMttqUyVienUyBanList(): Promise<MttqUyVienUyBanListRow[]> {
   if (!isSupabase()) {
-    return mockRows.map((r) => ({ ...r }));
+    const base = mockRows.map((r) => ({ ...r }));
+    return withUyVienDiemDanhSummaries(base);
   }
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
-  return list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  const flat = list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  return withUyVienDiemDanhSummaries(flat);
 }
 
 /** Danh sách ủy viên thuộc một nhiệm kỳ (drawer chi tiết nhiệm kỳ). */
@@ -128,18 +155,20 @@ export async function getMttqUyVienUyBanListForNhiemKyId(nhiemKyId: string): Pro
   const id = nhiemKyId.trim();
   if (!id) return [];
   if (!isSupabase()) {
-    return mockRows.filter((r) => r.nhiem_ky_id === id).map((r) => ({ ...r }));
+    const base = mockRows.filter((r) => r.nhiem_ky_id === id).map((r) => ({ ...r }));
+    return withUyVienDiemDanhSummaries(base);
   }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('mttq_uy_vien_uy_ban')
-    .select(MTTQ_UY_VIEN_UY_BAN_SELECT_FULL)
+    .select(MTTQ_UY_VIEN_UY_BAN_SELECT_LIST)
     .eq('nhiem_ky_id', id)
     .order('tg_cap_nhat', { ascending: false })
     .limit(500);
   if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  const flat = (data ?? []).map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  return withUyVienDiemDanhSummaries(flat);
 }
 
 export async function getMttqUyVienUyBanById(id: string): Promise<MttqUyVienUyBan | null> {
@@ -179,6 +208,7 @@ export async function createMttqUyVienUyBan(
       tg_cap_nhat: now,
       ho_va_ten_nguoi_tao: 'Mock',
       ten_tai_khoan_nguoi_tao: 'mock',
+      id_phong_ban_nguoi_tao: null,
     };
     mockRows.push(row);
     return { ...row };
@@ -195,9 +225,6 @@ export async function createMttqUyVienUyBan(
 }
 
 export async function updateMttqUyVienUyBan(id: string, data: MttqUyVienUyBanFormValues): Promise<MttqUyVienUyBan> {
-  const existing = await getMttqUyVienUyBanById(id);
-  if (!existing) throw new Error(txt('matTranUyVienUyBan.service.notFound'));
-
   if (!isSupabase()) {
     const idx = mockRows.findIndex((r) => r.id === id);
     if (idx === -1) throw new Error(txt('matTranUyVienUyBan.service.notFound'));

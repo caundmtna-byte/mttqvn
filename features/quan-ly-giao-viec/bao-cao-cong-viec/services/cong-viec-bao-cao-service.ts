@@ -179,6 +179,9 @@ export async function getTaskReportLookup(
 export async function getTaskReportFilterOptions(args: {
   p_start: string;
   p_end: string;
+  p_viewer_id: number | null;
+  p_viewer_phong_ban_id: number | null;
+  p_view_all: boolean;
 }): Promise<TaskReportFilterOptions> {
   const supabase = getClient();
   const { data, error } = await supabase.rpc('cong_viec_bao_cao_filter_options', args as never);

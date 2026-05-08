@@ -17,7 +17,12 @@ import {
   EMPLOYEE_RETURNING_FULL,
   EMPLOYEE_RETURNING_STATUS_ONLY,
   EMPLOYEE_SELECT_FULL,
+  EMPLOYEE_SELECT_LIST,
 } from '../core/supabase-select';
+import { getSupabase } from '@/lib/supabase/client';
+import { handleSupabaseError } from '@/lib/supabase/errors';
+import { SUPABASE_DEFAULT_MAX_ROWS } from '@/lib/data/supabase-repository';
+import { uploadEmployeeAvatarIfDataUrl } from './avatar-storage';
 
 /**
  * Lỗi báo trước khi tạo / đổi `ten_tai_khoan`: email Auth tương ứng đã tồn tại.
@@ -76,12 +81,33 @@ async function enrichEmployee(raw: Employee, lookups?: {
   };
 }
 
+/**
+ * List nhân viên — dùng `EMPLOYEE_SELECT_LIST` (không có `hinh_anh`) để giảm egress.
+ * `hinh_anh` chỉ load khi mở detail/form sửa qua `getEmployeeById`.
+ */
 export const getEmployees = async (params: GetEmployeesParams = {}): Promise<Employee[]> => {
   const limit = params.limit ?? EMPLOYEES_LIST_QUERY_PARAMS.limit;
   const offset = params.offset ?? EMPLOYEES_LIST_QUERY_PARAMS.offset;
   const orderBy = params.orderBy ?? EMPLOYEES_LIST_QUERY_PARAMS.orderBy;
   const ascending = params.ascending ?? EMPLOYEES_LIST_QUERY_PARAMS.ascending;
-  const list = await repo.getAll({ limit, offset, orderBy, ascending });
+
+  let list: Employee[];
+  if (isSupabase()) {
+    const supabase = getSupabase();
+    if (!supabase) {
+      list = [];
+    } else {
+      const pageSize = limit ?? SUPABASE_DEFAULT_MAX_ROWS;
+      let q = supabase.from('var_nhan_vien').select(EMPLOYEE_SELECT_LIST);
+      if (orderBy) q = q.order(orderBy, { ascending: ascending !== false });
+      q = q.range(offset, offset + pageSize - 1);
+      const { data, error } = await q;
+      if (error) handleSupabaseError(error);
+      list = (data ?? []) as unknown as Employee[];
+    }
+  } else {
+    list = await repo.getAll({ limit, offset, orderBy, ascending });
+  }
   if (list.length === 0) return list;
   const [depts, positions] = await Promise.all([getDepartments(), getPositions()]);
   const lookups = {
@@ -134,22 +160,40 @@ async function fetchLookups() {
 }
 
 async function insertEmployeeRow(data: EmployeeFormValues): Promise<Employee> {
+  // Bước 1: insert với hinh_anh = null để có id; bước 2: upload avatar (nếu có)
+  // và update lại column. Hai bước nhỏ gọn hơn là 1 bước upload trước rồi insert
+  // (sẽ phải tự sinh id-ngẫu-nhiên cho path), và đảm bảo path Storage khớp với id thực.
+  const payload = toRowPayload(data);
+  const hinhAnhRaw = payload.hinh_anh;
   const [inserted, lookups] = await Promise.all([
     repo.insert(
-      toRowPayload(data) as unknown as Omit<Employee, 'id'> & { id?: string },
+      { ...payload, hinh_anh: null } as unknown as Omit<Employee, 'id'> & { id?: string },
       { returningSelect: EMPLOYEE_RETURNING_FULL },
     ),
     fetchLookups(),
   ]);
+  const insertedId = String((inserted as Employee).id);
+  const url = await uploadEmployeeAvatarIfDataUrl(hinhAnhRaw, insertedId);
+  if (url !== null) {
+    const updated = await repo.update(
+      insertedId,
+      { hinh_anh: url, tg_cap_nhat: now() } as unknown as Partial<Employee>,
+      { returningSelect: EMPLOYEE_RETURNING_FULL },
+    );
+    return enrichEmployee(updated, lookups);
+  }
   return enrichEmployee(inserted, lookups);
 }
 
 async function updateEmployeeRow(id: string, data: EmployeeFormValues): Promise<Employee> {
+  const payload = toRowPayload(data);
+  // Nếu là data URL → upload trước, lưu URL vào column.
+  payload.hinh_anh = await uploadEmployeeAvatarIfDataUrl(payload.hinh_anh, id);
   const [updated, lookups] = await Promise.all([
     repo.update(
       id,
       {
-        ...toRowPayload(data),
+        ...payload,
         tg_cap_nhat: now(),
       } as unknown as Partial<Employee>,
       { returningSelect: EMPLOYEE_RETURNING_FULL },

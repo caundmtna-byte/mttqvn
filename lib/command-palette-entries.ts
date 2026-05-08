@@ -25,6 +25,7 @@ export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/quan-ly-viet-bai/bc-thong-ke-bai-viet', nameKey: 'page.articleDashboard.statsReport', groupKey: 'nav.commandPalette.groupArticleMgmt' },
   { path: '/quan-ly-viet-bai/thiet-lap-bai-viet', nameKey: 'page.articleDashboard.settings', groupKey: 'nav.commandPalette.groupArticleMgmt' },
   { path: '/quan-ly-giao-viec', nameKey: 'nav.quanLyGiaoViec', groupKey: 'nav.commandPalette.groupTaskMgmt' },
+  { path: '/quan-ly-giao-viec/chuong-trinh-nam', nameKey: 'page.taskDashboard.yearProgram', groupKey: 'nav.commandPalette.groupTaskMgmt' },
   { path: '/quan-ly-giao-viec/cong-viec', nameKey: 'page.taskDashboard.tasks', groupKey: 'nav.commandPalette.groupTaskMgmt' },
   { path: '/quan-ly-giao-viec/bao-cao-cong-viec', nameKey: 'page.taskDashboard.taskReport', groupKey: 'nav.commandPalette.groupTaskMgmt' },
   { path: '/trang-thong-tin-khac', nameKey: 'nav.trangThongTinKhac', groupKey: 'nav.commandPalette.groupGeneral' },

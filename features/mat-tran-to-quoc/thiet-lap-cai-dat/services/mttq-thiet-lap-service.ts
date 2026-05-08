@@ -58,9 +58,7 @@ export const createMttqThietLap = async (data: MttqThietLapFormValues): Promise<
 };
 
 export const updateMttqThietLap = async (id: string, data: MttqThietLapFormValues): Promise<MttqThietLap> => {
-  const existing = await repo.getById(id);
-  if (!existing) throw new Error(txt('page.matTranThietLap.service.notFound'));
-
+  // Bỏ tiền-fetch `getById`: nếu id sai, `repo.update` throw lỗi PostgREST.
   const ten = data.ten.trim();
   const moTa = data.mo_ta != null && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
 

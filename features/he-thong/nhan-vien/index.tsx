@@ -10,7 +10,11 @@ import React, {
 } from 'react';
 import { txt } from '../../../lib/text';
 import { AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../../../store/useStore';
+import { useCan } from '../../../hooks/use-can';
 
 import ToggleSwitch from '../../../components/ui/ToggleSwitch';
 import { queryKeys } from '@/lib/query-keys';
@@ -22,6 +26,7 @@ import EmployeeToolbar from './components/nhan-vien-toolbar';
 import EmployeeTable from './components/nhan-vien-table';
 
 import { useEmployees, useDeleteWithUndo, useUpdateStatusEmployee } from './hooks/use-nhan-vien';
+import { getEmployeeById } from './services/nhan-vien-service';
 import { useEmployeeStore } from './store/useEmployeeStore';
 import { Employee } from './core/types';
 import { STATUS_OPTIONS, type TrangThaiNhanVien } from './core/constants';
@@ -83,6 +88,18 @@ const NHAN_VIEN_SEARCHABLE_KEYS: string[] = [
 ];
 
 const EmployeePage: React.FC = () => {
+  const user = useAuthStore((s) => s.user);
+  const canView = useCan('view', 'employees');
+  const navigate = useNavigate();
+  const didRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!user || canView || didRedirect.current) return;
+    didRedirect.current = true;
+    toast.error(txt('employee.noViewPermission'));
+    navigate('/he-thong', { replace: true });
+  }, [user, canView, navigate]);
+
   const [showForm, setShowForm] = useState(false);
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [viewingEmp, setViewingEmp] = useState<Employee | null>(null);
@@ -99,7 +116,7 @@ const EmployeePage: React.FC = () => {
   } = useEmployeeStore();
 
   const queryClient = useQueryClient();
-  const { data: employees = [], isLoading } = useEmployees();
+  const { data: employees = [], isLoading } = useEmployees({ enabled: canView });
 
   useEffect(() => { viewingEmpRef.current = viewingEmp; }, [viewingEmp]);
   useEffect(() => { editingEmpRef.current = editingEmp; }, [editingEmp]);
@@ -108,6 +125,7 @@ const EmployeePage: React.FC = () => {
 
   /** Prefetch master data cho form. */
   useEffect(() => {
+    if (!canView) return;
     const opts = defaultServerQueryOptions;
     void queryClient.prefetchQuery({
       queryKey: queryKeys.departments.all,
@@ -119,7 +137,7 @@ const EmployeePage: React.FC = () => {
       queryFn: getPositions,
       ...opts,
     });
-  }, [queryClient]);
+  }, [queryClient, canView]);
 
   const { deleteWithUndo } = useDeleteWithUndo();
   const statusMutation = useUpdateStatusEmployee();
@@ -174,17 +192,55 @@ const EmployeePage: React.FC = () => {
     return sorted;
   }, [filteredEmployees, sort]);
 
-  const handleEdit = useCallback((item: Employee) => {
-    startTransition(() => {
-      setFormOrigin(viewingEmpRef.current ? 'detail' : 'list');
-      setEditingEmp(item);
-      setShowForm(true);
-    });
-  }, []);
+  /**
+   * Mở form sửa: list không còn ship `hinh_anh` (P1.1) nên cần fetch full row qua
+   * cache TanStack Query trước khi gán `editingEmp` để form pre-fill avatar đúng.
+   */
+  const handleEdit = useCallback(
+    (item: Employee) => {
+      const origin: FormOrigin = viewingEmpRef.current ? 'detail' : 'list';
+      void (async () => {
+        try {
+          const full = await queryClient.fetchQuery({
+            queryKey: queryKeys.employees.detail(item.id),
+            queryFn: () => getEmployeeById(item.id),
+            ...defaultServerQueryOptions,
+          });
+          startTransition(() => {
+            setFormOrigin(origin);
+            setEditingEmp((full ?? item) as Employee);
+            setShowForm(true);
+          });
+        } catch {
+          startTransition(() => {
+            setFormOrigin(origin);
+            setEditingEmp(item);
+            setShowForm(true);
+          });
+        }
+      })();
+    },
+    [queryClient],
+  );
 
-  const handleView = useCallback((item: Employee) => {
-    startTransition(() => setViewingEmp(item));
-  }, []);
+  /** Detail drawer: prefetch full row (có `hinh_anh`) qua cache để tránh ship lặp lại trong list. */
+  const handleView = useCallback(
+    (item: Employee) => {
+      void (async () => {
+        try {
+          const full = await queryClient.fetchQuery({
+            queryKey: queryKeys.employees.detail(item.id),
+            queryFn: () => getEmployeeById(item.id),
+            ...defaultServerQueryOptions,
+          });
+          startTransition(() => setViewingEmp((full ?? item) as Employee));
+        } catch {
+          startTransition(() => setViewingEmp(item));
+        }
+      })();
+    },
+    [queryClient],
+  );
 
   const closeDetail = useCallback(() => setViewingEmp(null), []);
 
@@ -274,6 +330,18 @@ const EmployeePage: React.FC = () => {
       },
     });
   };
+
+  if (!canView) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy="true"
+        aria-label={txt('employee.title')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-page relative">

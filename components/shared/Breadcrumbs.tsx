@@ -26,6 +26,7 @@ const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/quan-ly-viet-bai/bc-thong-ke-bai-viet': { label: t('breadcrumb.articleStats'), parentPath: '/quan-ly-viet-bai' },
   '/quan-ly-viet-bai/thiet-lap-bai-viet': { label: t('breadcrumb.articleSettings'), parentPath: '/quan-ly-viet-bai' },
   '/quan-ly-giao-viec': { label: t('breadcrumb.quanLyGiaoViec'), parentPath: '/' },
+  '/quan-ly-giao-viec/chuong-trinh-nam': { label: t('breadcrumb.taskChuongTrinhNam'), parentPath: '/quan-ly-giao-viec' },
   '/quan-ly-giao-viec/cong-viec': { label: t('breadcrumb.taskCongViec'), parentPath: '/quan-ly-giao-viec' },
   '/quan-ly-giao-viec/bao-cao-cong-viec': { label: t('breadcrumb.taskBaoCaoCongViec'), parentPath: '/quan-ly-giao-viec' },
   '/trang-thong-tin-khac': { label: t('breadcrumb.trangThongTinKhac'), parentPath: '/' },
@@ -43,6 +44,9 @@ const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
 /** Cấp cha theo breadcrumb/router (không dùng lịch sử trình duyệt). Dùng cho nút Back / bottom nav. */
 export function getParentPath(pathname: string, t: TFunction): string | undefined {
   if (pathname === '/') return undefined;
+  if (pathname.startsWith('/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky/diem-danh/')) {
+    return '/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky';
+  }
   if (pathname.startsWith('/ho-so-nhan-vien/')) {
     return '/he-thong/nhan-vien';
   }
@@ -65,6 +69,27 @@ const Breadcrumbs: React.FC = () => {
   const breadcrumbs = useMemo<BreadcrumbItem[]>(() => {
     const currentPath = location.pathname;
     const items: BreadcrumbItem[] = [];
+
+    if (currentPath.startsWith('/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky/diem-danh/')) {
+      return [
+        {
+          label: ROUTE_CONFIG['/mat-tran-to-quoc'].label,
+          to: '/mat-tran-to-quoc',
+          isLast: false,
+        },
+        {
+          label: ROUTE_CONFIG['/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky'].label,
+          to: '/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky',
+          isLast: false,
+        },
+        {
+          label: txt('breadcrumb.matTranNhiemKyDiemDanhMatrix'),
+          to: currentPath,
+          isLast: true,
+        },
+      ];
+    }
+
     const currentConfig = ROUTE_CONFIG[currentPath];
 
     if (currentConfig) {
@@ -110,7 +135,7 @@ const Breadcrumbs: React.FC = () => {
     }
 
     return items;
-  }, [location.pathname, ROUTE_CONFIG]);
+  }, [location.pathname, ROUTE_CONFIG, txt]);
 
   if (location.pathname === '/') {
     return (

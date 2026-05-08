@@ -1,0 +1,228 @@
+---
+description: Quy tắc bắt buộc về egress Supabase + bandwidth Vercel — kiểm tra mỗi khi sửa service, hooks, query, mutation, hoặc file build
+globs: "features/**/services/*.ts,features/**/hooks/use-*.ts,features/**/core/supabase-select.ts,features/**/utils/search-keys.ts,vercel.json,vite.config.ts,index.tsx,hooks/use-hydrate-position-permissions.ts"
+alwaysApply: false
+---
+
+# Egress Supabase + Vercel — Anti-pattern checklist
+
+Tham chiếu đầy đủ: [docs/supabase-egress.md](mdc:docs/supabase-egress.md).
+
+Khi sửa file thuộc service / hook / select / query / build, dò thẳng các
+anti-pattern bên dưới. Tìm thấy bất kỳ → cảnh báo người dùng và ưu tiên fix
+trong cùng PR.
+
+## A. PostgREST select / embed
+
+### A1. `SELECT_FULL = SELECT_LIST`
+
+❌ Sai — toàn cột về list:
+
+```ts
+export const FOO_SELECT_FULL = `${BASE_COLS},${EMBED}`;
+export const FOO_SELECT_LIST = FOO_SELECT_FULL; // cấm
+```
+
+✅ Đúng — tách cột nặng (long-text, base64, join chỉ dùng detail) khỏi LIST:
+
+```ts
+const LIST_COLS = ['id','ten','tg_tao','tg_cap_nhat'].join(',');
+const FULL_COLS = [LIST_COLS, 'noi_dung', 'tai_lieu', 'ghi_chu'].join(',');
+export const FOO_SELECT_LIST = `${LIST_COLS},${EMBED_LIST}`;
+export const FOO_SELECT_FULL = `${FULL_COLS},${EMBED_FULL}`;
+```
+
+Đồng thời `SEARCHABLE_KEYS` (nếu có) phải subset của LIST_COLS.
+
+### A2. `mttq_*_ct(id)` để đếm
+
+❌ Sai — kéo array of ids chỉ để `.length`:
+
+```ts
+const SELECT = `id,ten,mttq_khen_thuong_ct(id)`;
+// service: lines.length
+```
+
+✅ Đúng — PostgREST aggregate `(count)`:
+
+```ts
+const SELECT = `id,ten,mttq_khen_thuong_ct(count)`;
+// service: (lines[0]?.count ?? lines.length) ?? 0
+```
+
+### A3. `select('*')` trong PostgREST hoặc `returningSelect`
+
+❌ Sai — trả full row sau mutation rồi vứt đi:
+
+```ts
+await repo.update(id, payload, { returningSelect: '*' });
+```
+
+✅ Đúng — narrow nếu có `getById` ngay sau, hoặc trả đủ field caller cần:
+
+```ts
+await repo.update(id, payload, { returningSelect: 'id,tg_cap_nhat' });
+```
+
+## B. Service-layer round-trips
+
+### B1. `getById` trước `update`
+
+❌ Sai:
+
+```ts
+const existing = await getById(id);
+if (!existing) throw notFound;
+return await repo.update(id, payload);
+```
+
+✅ Đúng — Supabase trả empty array nếu id sai, để repo throw:
+
+```ts
+return await repo.update(id, payload);
+```
+
+### B2. `getAll()` để đọc 1 thứ
+
+❌ Sai (vd `phong-ban.updateDepartment` cũ):
+
+```ts
+const all = await repo.getAll();
+const cur = all.find(d => d.id === id);
+```
+
+✅ Đúng — fetch đúng row(s) cần hoặc dùng RPC server-side aggregate:
+
+```ts
+const { data } = await supabase
+  .from('var_phong_ban')
+  .select('id,cha_id,duong_dan,cap_do')
+  .in('id', [id, parentId])
+  .limit(2);
+// hoặc: supabase.rpc('get_phong_ban_path_level', { p_id, p_cha_id })
+```
+
+### B3. CRUD bảng con loop từng row (N+1)
+
+❌ Sai:
+
+```ts
+for (const line of lines) {
+  if (line.id) await q.update(base).eq('id', line.id);
+  else await q.insert({ ...base, parent_id });
+}
+```
+
+✅ Đúng — batch tối đa 3 round-trip:
+
+```ts
+if (toDelete.length) await q.delete().in('id', toDelete);
+if (toUpsert.length) await q.upsert(toUpsert, { onConflict: 'id' });
+if (toInsert.length) await q.insert(toInsert);
+```
+
+### B4. Lưu base64 vào DB (avatar/file)
+
+❌ Sai — `var_nhan_vien.hinh_anh = 'data:image/png;base64,...'`.
+
+✅ Đúng — upload qua Supabase Storage bucket `avatars` **private**, cột DB
+lưu **path** (`nhan-vien/...`), hiển thị bằng `createSignedUrl`. Form dùng
+`uploadEmployeeAvatarIfDataUrl()`.
+
+## C. TanStack Query
+
+### C1. `staleTime: 0` cho master data
+
+❌ Sai — refetch mọi lần mount/reconnect:
+
+```ts
+useQuery({ queryKey, queryFn, staleTime: 0 });
+```
+
+✅ Đúng — `MASTER_DATA_STALE_TIME_MS` (30 phút) cho permission/lookup:
+
+```ts
+useQuery({ queryKey, queryFn, ...masterDataQueryOptions });
+```
+
+### C2. `invalidateQueries` cho mutation 1 row
+
+❌ Sai — refetch cả list khi chỉ patch được 1 row:
+
+```ts
+onSuccess: () => queryClient.invalidateQueries({ queryKey: listKey });
+```
+
+✅ Đúng — `setQueryData` patch local + invalidate stale cho query không
+mounted (`refetchType: 'none'`):
+
+```ts
+onSuccess: (updated, { id }) => {
+  queryClient.setQueryData(detailKey(id), updated);
+  queryClient.setQueryData<Row[]>(listKey, (cur) =>
+    cur?.map((r) => (r.id === id ? { ...r, ...updated } : r)),
+  );
+  queryClient.invalidateQueries({ queryKey: relatedPrefix, refetchType: 'none' });
+},
+```
+
+### C3. `handleEditFromList` bypass cache
+
+❌ Sai — mỗi click 1 round-trip:
+
+```ts
+const full = await getById(item.id);
+```
+
+✅ Đúng — qua `fetchQuery` để dùng cache TanStack:
+
+```ts
+const full = await queryClient.fetchQuery({
+  queryKey: queryKeys.<module>.detail(item.id),
+  queryFn: () => getById(item.id),
+  ...defaultServerQueryOptions,
+});
+```
+
+### C4. QueryClient default thiếu `refetchOnReconnect: false` / `refetchOnMount: false`
+
+`index.tsx` mặc định toàn cục:
+
+```ts
+queries: {
+  staleTime: SERVER_STALE_TIME_MS,
+  gcTime: SERVER_GC_TIME_MS,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+  refetchOnMount: false,
+  ...
+}
+```
+
+## D. Vercel bandwidth
+
+### D1. `vercel.json` thiếu `Cache-Control`
+
+Phải có header `public, max-age=31536000, immutable` cho `/assets/*` và
+`*.{js,css,woff2,...}` (file đã hash). HTML/SW ngắn hạn.
+
+### D2. `vite.config.ts` thiếu drop console / compression
+
+Phải có:
+
+- `esbuild: { drop: ['console','debugger'] }`.
+- `viteCompression({ algorithm: 'brotliCompress' })` + `'gzip'`.
+- `manualChunks` tách: `framer-motion`, `@tanstack`, `recharts`,
+  `@tiptap`, `jspdf`, `lucide-react`, `xlsx`, `dompurify`, `@supabase`.
+
+## E. Đề xuất khi review
+
+Khi user thay đổi service/hook/select, kiểm tra:
+
+1. Có thêm cột nặng vào `SELECT_LIST` không? → đề xuất chuyển sang `_FULL`.
+2. Có pattern N+1 trong loop CRUD không? → đề xuất batch.
+3. Có `'*'` trong select / `returningSelect` không?
+4. Có `getById` trước `update` không?
+5. Mutation onSuccess có invalidate list lớn khi chỉ thay đổi 1 row?
+6. Có dùng cache cho data tĩnh (`getXaPhuongAll`, `lookups`) không?
+7. List đang mount mà mutation invalidate liên tục không? → `refetchType: 'none'`.

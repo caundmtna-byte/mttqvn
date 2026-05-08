@@ -2,6 +2,8 @@ import { Department } from '../core/types';
 import { DepartmentFormValues } from '../core/schema';
 import { createRepository } from '@/lib/data/create-repository';
 import { isSupabase } from '@/lib/data/config';
+import { getSupabase } from '@/lib/supabase/client';
+import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import {
   DEPARTMENT_RETURNING_FULL,
@@ -111,20 +113,83 @@ export const createDepartment = async (data: DepartmentFormValues): Promise<Depa
   return normalizeDepartmentRow(newDep as Department);
 };
 
+/**
+ * Cập nhật phòng ban — tránh `repo.getAll()` để recompute `duong_dan`/`cap_do`:
+ *  - Supabase: ưu tiên RPC `get_phong_ban_path_level` (1 round-trip, server-side)
+ *    với fallback `.in('id', [...])` chỉ 4 cột nhẹ nếu RPC chưa apply.
+ *  - Mock: vẫn dùng `getAll()` (in-memory, không egress).
+ *
+ * Egress giảm từ O(N_phongBan × all_cols) xuống O(1) row nhỏ.
+ */
 export const updateDepartment = async (id: string, data: DepartmentFormValues): Promise<Department> => {
-  const existingRaw = await repo.getById(id);
-  if (!existingRaw) throw new Error(txt('department.service.notFound'));
-  const existing = normalizeDepartmentRow(existingRaw as Department);
-
-  const all = (await repo.getAll()).map((d) => normalizeDepartmentRow(d as Department));
   const chaId = resolveChaIdForm(data.cha_id);
-  let { duong_dan, cap_do } = buildPathAndLevel(id, chaId, all);
-  if (chaId === existing.cha_id) {
-    duong_dan = existing.duong_dan;
-    cap_do = existing.cap_do;
+  const ten = data.ten_phong_ban.trim();
+  let duong_dan: string;
+  let cap_do: number;
+
+  if (isSupabase()) {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error('Supabase client is not configured.');
+
+    const idNum = normInt8Fk(id);
+    const chaNum = normInt8Fk(chaId ?? undefined);
+
+    // Lấy current row để biết cha_id cũ (nếu giữ nguyên cha thì không thay path).
+    const { data: existingRow, error: e0 } = await supabase
+      .from('var_phong_ban')
+      .select('id, cha_id, duong_dan, cap_do')
+      .eq('id', idNum as number)
+      .maybeSingle();
+    if (e0) handleSupabaseError(e0);
+    if (!existingRow) throw new Error(txt('department.service.notFound'));
+    const existing = {
+      cha_id: (existingRow as { cha_id: number | string | null }).cha_id == null
+        ? null
+        : String((existingRow as { cha_id: number | string }).cha_id),
+      duong_dan: String((existingRow as { duong_dan: string }).duong_dan),
+      cap_do: Number((existingRow as { cap_do: number | string }).cap_do),
+    };
+
+    if (chaId === existing.cha_id) {
+      duong_dan = existing.duong_dan;
+      cap_do = existing.cap_do;
+    } else {
+      // RPC tính path/level phía DB; fallback: tự tính từ row cha (1 round-trip nữa).
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('get_phong_ban_path_level', {
+        p_id: idNum,
+        p_cha_id: chaNum,
+      });
+      const rpcRow = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!rpcErr && rpcRow) {
+        duong_dan = String((rpcRow as { duong_dan: string }).duong_dan);
+        cap_do = Number((rpcRow as { cap_do: number | string }).cap_do);
+      } else if (chaNum == null) {
+        duong_dan = `/${id}`;
+        cap_do = 1;
+      } else {
+        const { data: parentRow } = await supabase
+          .from('var_phong_ban')
+          .select('duong_dan, cap_do')
+          .eq('id', chaNum)
+          .maybeSingle();
+        if (parentRow) {
+          duong_dan = `${(parentRow as { duong_dan: string }).duong_dan}/${id}`;
+          cap_do = Number((parentRow as { cap_do: number | string }).cap_do) + 1;
+        } else {
+          duong_dan = existing.duong_dan;
+          cap_do = existing.cap_do;
+        }
+      }
+    }
+  } else {
+    const all = (await repo.getAll()).map((d) => normalizeDepartmentRow(d as Department));
+    const existing = all.find((d) => d.id === id);
+    if (!existing) throw new Error(txt('department.service.notFound'));
+    const built = buildPathAndLevel(id, chaId, all);
+    duong_dan = chaId === existing.cha_id ? existing.duong_dan : built.duong_dan;
+    cap_do = chaId === existing.cha_id ? existing.cap_do : built.cap_do;
   }
 
-  const ten = data.ten_phong_ban.trim();
   const updated = await repo.update(
     id,
     {
@@ -154,9 +219,24 @@ export const updateDepartmentStatus = async (id: string, status: TrangThaiHoatDo
 };
 
 export const deleteDepartment = async (id: string): Promise<void> => {
-  const all = (await repo.getAll()).map((d) => normalizeDepartmentRow(d as Department));
-  const hasChildren = all.some((d) => d.cha_id === id);
-  if (hasChildren) throw new Error(txt('department.service.hasChildren'));
+  if (isSupabase()) {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error('Supabase client is not configured.');
+    // Server-side count (`head: true`) — chỉ trả số, không kéo rows.
+    const idNum = normInt8Fk(id);
+    if (idNum != null) {
+      const { count, error } = await supabase
+        .from('var_phong_ban')
+        .select('id', { count: 'exact', head: true })
+        .eq('cha_id', idNum);
+      if (error) handleSupabaseError(error);
+      if ((count ?? 0) > 0) throw new Error(txt('department.service.hasChildren'));
+    }
+  } else {
+    const all = (await repo.getAll()).map((d) => normalizeDepartmentRow(d as Department));
+    const hasChildren = all.some((d) => d.cha_id === id);
+    if (hasChildren) throw new Error(txt('department.service.hasChildren'));
+  }
   await repo.remove([id]);
 };
 
