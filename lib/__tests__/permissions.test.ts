@@ -15,6 +15,8 @@ const member: User = {
   email: 'u@test.com',
   role: 'user',
   created_at: '',
+  /** Ma trận bật (`VITE_USE_PERMISSION_MATRIX`) — không có chức vụ thì `can()` deny toàn bộ. */
+  id_chuc_vu: '1',
 };
 
 beforeEach(() => {
@@ -112,5 +114,20 @@ describe('can', () => {
   it('matrix: departments — admin token in matrix grants full CRUD', () => {
     usePermissionGrantStore.getState().setMatrixGrants({ 'he-thong/phong-ban': ['admin'] }, 9);
     expect(can(member, 'delete', 'departments')).toBe(true);
+  });
+
+  it('matrix: annualPrograms — view on chuong-trinh-nam module grants view only', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({ 'quan-ly-giao-viec/chuong-trinh-nam': ['view'] }, 2);
+    expect(can(member, 'view', 'annualPrograms')).toBe(true);
+    expect(can(member, 'create', 'annualPrograms')).toBe(false);
+    expect(can(member, 'delete', 'annualPrograms')).toBe(false);
+  });
+
+  it('matrix: annualPrograms — update grants edit', () => {
+    usePermissionGrantStore.getState().setMatrixGrants(
+      { 'quan-ly-giao-viec/chuong-trinh-nam': ['view', 'update'] },
+      2
+    );
+    expect(can(member, 'edit', 'annualPrograms')).toBe(true);
   });
 });

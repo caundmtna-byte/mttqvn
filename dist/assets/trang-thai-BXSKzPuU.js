@@ -1,0 +1,1 @@
+const o=["Ngừng hoạt động","Đang hoạt động"];function r(g){const n=String(g??"").trim();if(n==="Đang hoạt động"||n==="Ngừng hoạt động")return n;const t=Number(g);return Number.isFinite(t)&&t===0?"Ngừng hoạt động":"Đang hoạt động"}export{o as T,r as p};

@@ -24,6 +24,7 @@ import Button from '@/components/ui/Button';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -283,25 +284,21 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
         footerCompact
       >
         <div className="space-y-5">
-          <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-primary/20 shadow-lg shrink-0">
-              <Award size={24} className="text-white" aria-hidden />
-            </div>
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <div className="flex items-start justify-between gap-2 min-w-0">
-                <h2 className="text-base font-bold text-foreground leading-tight truncate flex-1 min-w-0 tracking-tight">
-                  {data.so_qd}
-                </h2>
-                <div className="shrink-0">
-                  <EnumBadge value={data.trang_thai} config={trangThaiBadgeConfig} shape="pill" truncate />
-                </div>
-              </div>
-              <p className="text-body-sm text-muted-foreground tabular-nums">
+          <DetailSummaryCard
+            leading={
+              <DetailSummaryIconTile>
+                <Award size={26} className="text-white" aria-hidden />
+              </DetailSummaryIconTile>
+            }
+            title={data.so_qd}
+            badge={<EnumBadge value={data.trang_thai} config={trangThaiBadgeConfig} shape="pill" truncate />}
+            subtitle={
+              <p className="tabular-nums m-0">
                 {data.ngay_khen_thuong ? formatDateShort(data.ngay_khen_thuong) : txt('common.emptyCell')}
                 {data.don_vi_de_xuat?.trim() ? ` · ${data.don_vi_de_xuat}` : ''}
               </p>
-            </div>
-          </div>
+            }
+          />
 
           {toolbarActions.length > 0 ? (
             <DetailToolbar actions={toolbarActions} className="bg-card rounded-xl border border-border" />

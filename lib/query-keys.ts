@@ -63,9 +63,17 @@ export const queryKeys = {
       theLoaiIds: readonly string[];
     }) => ['bai-viet-danh-sach', 'page', args] as const,
   },
+  chuongTrinhNam: {
+    all: ['chuong-trinh-nam'] as const,
+    detail: (id: string) => ['chuong-trinh-nam', 'detail', id] as const,
+  },
   congViecDanhSach: {
     all: ['cong-viec-danh-sach'] as const,
     detail: (id: string) => ['cong-viec-danh-sach', 'detail', id] as const,
+    /** Invalidate mọi query theo chương trình: `queryKey` bắt đầu bằng prefix này, `exact: false`. */
+    byChuongTrinhPrefix: ['cong-viec-danh-sach', 'by-chuong-trinh'] as const,
+    byChuongTrinh: (chuongTrinhId: string) =>
+      ['cong-viec-danh-sach', 'by-chuong-trinh', chuongTrinhId] as const,
     page: (args: {
       page: number;
       pageSize: number;

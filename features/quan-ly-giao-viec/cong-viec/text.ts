@@ -14,6 +14,7 @@ export const taskList = {
     nguoiTaoCol: 'Người giao',
     tgCapNhatCol: 'Cập nhật',
     ghiChuCol: 'Ghi chú',
+    chuongTrinhCol: 'Chương trình năm',
   },
   form: {
     mucDo: 'Mức độ',
@@ -28,12 +29,15 @@ export const taskList = {
     ketQua: 'Kết quả',
     linkKq: 'Link kết quả',
     ngayHoanThanh: 'Ngày hoàn thành',
+    chuongTrinhNam: 'Chương trình năm',
+    chuongTrinhNamPlaceholder: 'Chọn chương trình (tuỳ chọn)',
     createSubtitle: 'Thêm công việc mới',
     editSubtitle: 'Cập nhật công việc',
   },
   detail: {
     title: 'Chi tiết công việc',
     subtitle: 'Theo dõi tiến độ và phân công',
+    chuongTrinhEmpty: 'Chưa gắn chương trình',
     sectionInfo: 'Thông tin công việc',
     sectionResult: 'Kết quả',
     openLink: 'Mở liên kết',

@@ -26,12 +26,16 @@ export interface CongViecDanhSach {
   link_kq: string | null;
   ngay_hoan_thanh: string | null;
   id_nguoi_tao: string;
+  /** FK chương trình năm (nullable). */
+  id_chuong_trinh: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
   ho_va_ten_trach_nhiem?: string | null;
   ten_tai_khoan_trach_nhiem?: string | null;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /** Từ embed PostgREST `chuong_trinh_nam`. */
+  ten_chuong_trinh?: string | null;
 }
 
 /** Bản ghi đã join tên hỗ trợ (chỉ client, phục vụ tìm kiếm / cột). */

@@ -61,6 +61,12 @@ const CongViecTable = memo(function CongViecTable({
               <span className="truncate font-semibold text-foreground text-sm">{item.ten_cong_viec}</span>
             </div>
           );
+        case 'ten_chuong_trinh':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate">
+              {item.ten_chuong_trinh?.trim() ? item.ten_chuong_trinh : txt('common.emptyCell')}
+            </span>
+          );
         case 'muc_do':
           return (
             <EnumBadge

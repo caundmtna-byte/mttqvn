@@ -4,6 +4,7 @@ import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import { formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -81,15 +82,15 @@ const ArticleKhacDetail: React.FC<Props> = ({ data, sectionLabel, onClose, onEdi
       maxWidthClass={DRAWER_WIDTH_DETAIL}
     >
       <div className="space-y-5">
-        <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-primary/20 shadow-lg shrink-0">
-            <Settings2 size={24} className="text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-foreground leading-tight truncate">{data.ten}</h2>
-            <p className="text-body-sm text-muted-foreground mt-0.5">{loaiLabel(data.loai)}</p>
-          </div>
-        </div>
+        <DetailSummaryCard
+          leading={
+            <DetailSummaryIconTile>
+              <Settings2 size={26} className="text-white" />
+            </DetailSummaryIconTile>
+          }
+          title={data.ten}
+          subtitle={<p className="m-0">{loaiLabel(data.loai)}</p>}
+        />
 
         <DetailSection title={txt('page.articleSettings.detailBasic')} icon={<Settings2 size={14} />} variant="primary">
           <DetailFieldGrid>

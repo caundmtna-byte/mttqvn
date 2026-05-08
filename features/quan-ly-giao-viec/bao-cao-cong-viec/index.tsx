@@ -132,12 +132,14 @@ function toCongViecRow(row: TaskReportLookupRow): CongViecDanhSachRow {
     link_kq: row.link_kq,
     ngay_hoan_thanh: row.ngay_hoan_thanh,
     id_nguoi_tao: row.id_nguoi_tao,
+    id_chuong_trinh: row.id_chuong_trinh ?? null,
     tg_tao: row.tg_tao,
     tg_cap_nhat: row.tg_cap_nhat,
     ho_va_ten_trach_nhiem: row.ho_va_ten_trach_nhiem,
     ten_tai_khoan_trach_nhiem: row.ten_tai_khoan_trach_nhiem,
     ho_va_ten_nguoi_tao: row.ho_va_ten_nguoi_tao,
     ten_tai_khoan_nguoi_tao: row.ten_tai_khoan_nguoi_tao,
+    ten_chuong_trinh: row.ten_chuong_trinh ?? null,
     ho_tro_display: '',
   };
 }

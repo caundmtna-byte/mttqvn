@@ -10,6 +10,7 @@ import { STATUS_BADGE_CONFIG } from '../core/constants';
 import { formatDate, formatDateTimeShort } from '../../../../lib/utils';
 import { EmployeeAvatarImg } from './employee-avatar-img';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '../../../../components/shared/GenericDrawer';
+import DetailSummaryCard from '../../../../components/shared/DetailSummaryCard';
 import DetailSection from '../../../../components/shared/DetailSection';
 import DetailField from '../../../../components/shared/DetailField';
 import DetailFieldGrid from '../../../../components/shared/DetailFieldGrid';
@@ -96,26 +97,20 @@ const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
       maxWidthClass={DRAWER_WIDTH_DETAIL}
     >
       <div className="space-y-5">
-        <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-          <EmployeeAvatarImg
-            hinh_anh={data.hinh_anh}
-            ho_va_ten={data.ho_va_ten}
-            fallbackSize={96}
-            alt={data.ho_va_ten}
-            className="h-16 w-16 rounded-xl object-cover border border-border shadow-md shrink-0"
-          />
-          <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-            <div className="flex items-start justify-between gap-2 min-w-0">
-              <h2 className="text-base font-bold text-foreground leading-tight truncate flex-1 min-w-0">
-                {data.ho_va_ten}
-              </h2>
-              <div className="shrink-0">
-                <EnumBadge value={data.trang_thai} config={STATUS_BADGE_CONFIG} />
-              </div>
-            </div>
-            <p className="text-body-sm text-muted-foreground font-mono">@{data.ten_tai_khoan}</p>
-          </div>
-        </div>
+        <DetailSummaryCard
+          leading={
+            <EmployeeAvatarImg
+              hinh_anh={data.hinh_anh}
+              ho_va_ten={data.ho_va_ten}
+              fallbackSize={96}
+              alt={data.ho_va_ten}
+              className="h-16 w-16 rounded-xl object-cover border border-border shadow-md shrink-0"
+            />
+          }
+          title={data.ho_va_ten}
+          badge={<EnumBadge value={data.trang_thai} config={STATUS_BADGE_CONFIG} />}
+          subtitle={<p className="font-mono m-0">@{data.ten_tai_khoan}</p>}
+        />
 
         {toolbarActions.length > 0 && (
           <DetailToolbar actions={toolbarActions} className="bg-card rounded-xl border border-border" />

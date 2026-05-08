@@ -25,9 +25,11 @@ Ngoại lệ `cap_bac=1`: Phòng ban dùng `canDepartmentsWithCapBac` — bypass
 
 Thêm resource vào `APP_RESOURCE_TO_MODULE`:
 ```ts
-myModule: 'section/ten-module',  // khớp với module_key trong var_phan_quyen
+myModule: 'section/ten-module',  // khớp với `module_id` đầy đủ; `module_key` DB = segment cuối (hoặc `storageKey` trong `permission-modules-config.ts`)
 ```
 Module không có trong map → `can()` dùng `legacyCan` (view=true mọi người, còn lại false).
+
+**Ví dụ Chương trình năm:** `annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam'` — trong màn **Phân quyền** mục này nằm nhóm **Hệ thống / Sơ đồ tổ chức** (cạnh Phòng ban) để gán quyền cùng luồng nghiệp vụ cấu hình; route ứng dụng vẫn `/quan-ly-giao-viec/chuong-trinh-nam`.
 
 ## Lớp 2 — Module `index.tsx` (view guard)
 

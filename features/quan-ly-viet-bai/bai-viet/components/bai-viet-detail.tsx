@@ -1,10 +1,24 @@
 import React from 'react';
-import { Edit, Trash2, FileText, ExternalLink } from 'lucide-react';
+import {
+  Banknote,
+  Calendar,
+  CalendarClock,
+  Edit,
+  ExternalLink,
+  FileText,
+  LayoutTemplate,
+  Link2,
+  Newspaper,
+  Tags,
+  Trash2,
+  User,
+} from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import type { BaiVietDanhSach } from '../core/types';
 import { formatCurrency, formatDateShort, formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -69,48 +83,79 @@ const BaiVietDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
     <GenericDrawer
       title={txt('articleList.detail.title')}
       subtitle={txt('articleList.detail.subtitle')}
-      icon={<FileText size={20} />}
+      icon={<FileText size={18} />}
       onClose={onClose}
       footer={footer}
       maxWidthClass={DRAWER_WIDTH_DETAIL}
       footerCompact
     >
-      <div className="space-y-1 mb-4">
-        <h3 className="text-lg font-semibold text-foreground leading-tight">{data.ten_bai}</h3>
-        <p className="text-body-sm text-muted-foreground">
-          {formatDateShort(data.ngay_dang)} · {data.ten_the_loai ?? txt('common.emptyCell')}
-        </p>
-      </div>
+      <div className="space-y-5">
+        <DetailSummaryCard
+          leading={
+            <DetailSummaryIconTile>
+              <FileText size={26} className="text-white" />
+            </DetailSummaryIconTile>
+          }
+          title={data.ten_bai}
+          subtitle={
+            <p className="m-0">
+              {formatDateShort(data.ngay_dang)} · {data.ten_the_loai ?? txt('common.emptyCell')}
+            </p>
+          }
+        />
 
-      <DetailSection title={txt('articleList.detail.sectionInfo')} icon={<FileText size={14} />} variant="primary">
-        <DetailFieldGrid>
-          <DetailField label={txt('articleList.store.theLoaiCol')} value={data.ten_the_loai} />
-          <DetailField label={txt('articleList.store.donGiaCol')} value={formatCurrency(data.don_gia)} />
-          <DetailField label={txt('articleList.store.ngayDangCol')} value={formatDateShort(data.ngay_dang)} />
-          <DetailField label={txt('articleList.store.nguonDangCol')} value={data.ten_nguon_dang} />
-          <DetailField label={txt('articleList.store.trangDangCol')} value={data.ten_trang_dang} />
-          <DetailField
-            className={DETAIL_FIELD_SPAN_FULL}
-            label={txt('articleList.store.linkCol')}
-            value={
-              <a
-                href={data.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline break-all"
-              >
-                {data.link}
-                <ExternalLink size={12} className="shrink-0" aria-hidden />
-              </a>
-            }
-          />
-          <DetailField
-            label={txt('articleList.store.nguoiTaoCol')}
-            value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao}
-          />
-          <DetailField label={txt('articleList.store.tgCapNhatCol')} value={formatDateTimeShort(data.tg_cap_nhat)} />
-        </DetailFieldGrid>
-      </DetailSection>
+        <DetailSection title={txt('articleList.detail.sectionInfo')} icon={<FileText size={14} />} variant="primary">
+          <DetailFieldGrid>
+            <DetailField label={txt('articleList.store.theLoaiCol')} value={data.ten_the_loai} icon={<Tags size={12} />} />
+            <DetailField
+              label={txt('articleList.store.donGiaCol')}
+              value={formatCurrency(data.don_gia)}
+              icon={<Banknote size={12} />}
+            />
+            <DetailField
+              label={txt('articleList.store.ngayDangCol')}
+              value={formatDateShort(data.ngay_dang)}
+              icon={<Calendar size={12} />}
+            />
+            <DetailField
+              label={txt('articleList.store.nguonDangCol')}
+              value={data.ten_nguon_dang}
+              icon={<Newspaper size={12} />}
+            />
+            <DetailField
+              label={txt('articleList.store.trangDangCol')}
+              value={data.ten_trang_dang}
+              icon={<LayoutTemplate size={12} />}
+            />
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('articleList.store.linkCol')}
+              icon={<Link2 size={12} />}
+              value={
+                <a
+                  href={data.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline break-all"
+                >
+                  {data.link}
+                  <ExternalLink size={12} className="shrink-0" aria-hidden />
+                </a>
+              }
+            />
+            <DetailField
+              label={txt('articleList.store.nguoiTaoCol')}
+              value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao}
+              icon={<User size={12} />}
+            />
+            <DetailField
+              label={txt('articleList.store.tgCapNhatCol')}
+              value={formatDateTimeShort(data.tg_cap_nhat)}
+              icon={<CalendarClock size={12} />}
+            />
+          </DetailFieldGrid>
+        </DetailSection>
+      </div>
     </GenericDrawer>
   );
 };

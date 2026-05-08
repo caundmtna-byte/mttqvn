@@ -2,15 +2,22 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
   Building2,
+  Calendar,
+  CalendarClock,
+  Church,
   ClipboardList,
   Edit,
   Flag,
+  GraduationCap,
+  Hash,
   Info,
   MapPin,
+  Phone,
   StickyNote,
   Trash2,
   Type,
   User,
+  UserCircle2,
   Users,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -18,6 +25,7 @@ import Button from '@/components/ui/Button';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -138,15 +146,15 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
       footerCompact
     >
       <div className="space-y-5">
-        <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-primary/20 shadow-lg shrink-0">
-            <Users size={24} className="text-white" aria-hidden />
-          </div>
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <h2 className="text-base font-bold text-foreground leading-tight truncate tracking-tight">{data.ho_va_ten}</h2>
-            <p className="text-body-sm text-muted-foreground truncate">{data.ten_nhiem_ky}</p>
-          </div>
-        </div>
+        <DetailSummaryCard
+          leading={
+            <DetailSummaryIconTile>
+              <Users size={26} className="text-white" aria-hidden />
+            </DetailSummaryIconTile>
+          }
+          title={data.ho_va_ten}
+          subtitle={<p className="truncate m-0">{data.ten_nhiem_ky}</p>}
+        />
 
         <div className="w-full overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
           <TabGroup tabs={tabs} activeTab={detailTab} onChange={setDetailTab} />
@@ -158,6 +166,7 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
               <DetailFieldGrid>
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.maUv')}
+                  icon={<Hash size={12} />}
                   value={
                     maUvDisplay ? (
                       <span className="font-mono tabular-nums tracking-tight">{maUvDisplay}</span>
@@ -189,11 +198,13 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
               <DetailFieldGrid>
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.ngaySinh')}
+                  icon={<Calendar size={12} />}
                   value={formatUyVienDetailDate(data.ngay_sinh) ?? undefined}
                   emptyText={emptyCell}
                 />
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.gioiTinh')}
+                  icon={<UserCircle2 size={12} />}
                   value={
                     data.gioi_tinh?.trim() ? (
                       <EnumBadge
@@ -207,6 +218,7 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
                 />
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.trangThamGia')}
+                  icon={<Flag size={12} />}
                   value={
                     data.trang_thai_tham_gia?.trim() ? (
                       <EnumBadge
@@ -220,6 +232,7 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
                 />
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.ngayNhapTrangThai')}
+                  icon={<Calendar size={12} />}
                   value={formatUyVienDetailDate(data.ngay_nhap_trang_thai) ?? undefined}
                   emptyText={emptyCell}
                 />
@@ -228,11 +241,36 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
 
             <DetailSection title={txt('matTranUyVienUyBan.detail.sectionHocVan')} icon={<BookOpen size={14} />}>
               <DetailFieldGrid>
-                <DetailField label={txt('matTranUyVienUyBan.form.vanHoa')} value={data.van_hoa ?? undefined} emptyText={emptyCell} />
-                <DetailField label={txt('matTranUyVienUyBan.form.trinhDoCm')} value={data.trinh_do_cm ?? undefined} emptyText={emptyCell} />
-                <DetailField label={txt('matTranUyVienUyBan.form.trinhDoLlct')} value={data.trinh_do_llct ?? undefined} emptyText={emptyCell} />
-                <DetailField label={txt('matTranUyVienUyBan.form.danToc')} value={data.dan_toc ?? undefined} emptyText={emptyCell} />
-                <DetailField label={txt('matTranUyVienUyBan.form.tonGiao')} value={data.ton_giao ?? undefined} emptyText={emptyCell} />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.vanHoa')}
+                  icon={<BookOpen size={12} />}
+                  value={data.van_hoa ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.trinhDoCm')}
+                  icon={<GraduationCap size={12} />}
+                  value={data.trinh_do_cm ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.trinhDoLlct')}
+                  icon={<GraduationCap size={12} />}
+                  value={data.trinh_do_llct ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.danToc')}
+                  icon={<Users size={12} />}
+                  value={data.dan_toc ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.tonGiao')}
+                  icon={<Church size={12} />}
+                  value={data.ton_giao ?? undefined}
+                  emptyText={emptyCell}
+                />
               </DetailFieldGrid>
             </DetailSection>
 
@@ -240,10 +278,12 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
               <DetailFieldGrid>
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.dangVien')}
+                  icon={<Flag size={12} />}
                   value={<EnumBadge value={data.dang_vien ? 'Có' : 'Không'} config={getUyVienDangVienBadgeConfig()} />}
                 />
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.ngayVaoDang')}
+                  icon={<Calendar size={12} />}
                   value={formatUyVienDetailDate(data.ngay_vao_dang) ?? undefined}
                   emptyText={emptyCell}
                 />
@@ -255,17 +295,20 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
                 <DetailField
                   className={DETAIL_FIELD_SPAN_FULL}
                   label={txt('matTranUyVienUyBan.form.queQuan')}
+                  icon={<MapPin size={12} />}
                   value={data.que_quan ?? undefined}
                   emptyText={emptyCell}
                 />
                 <DetailField
                   className={DETAIL_FIELD_SPAN_FULL}
                   label={txt('matTranUyVienUyBan.form.noiOHienNay')}
+                  icon={<MapPin size={12} />}
                   value={data.noi_o_hien_nay ?? undefined}
                   emptyText={emptyCell}
                 />
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.soDienThoai')}
+                  icon={<Phone size={12} />}
                   value={
                     phoneDisplay
                       ? phoneHref
@@ -288,6 +331,7 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
               <DetailField
                 className={DETAIL_FIELD_SPAN_FULL}
                 label={txt('matTranUyVienUyBan.form.ghiChu')}
+                icon={<StickyNote size={12} />}
                 value={
                   data.ghi_chu?.trim() ? (
                     <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.ghi_chu}</p>
@@ -301,16 +345,19 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
               <DetailFieldGrid>
                 <DetailField
                   label={txt('matTranUyVienUyBan.store.nguoiTaoCol')}
+                  icon={<User size={12} />}
                   value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao ?? undefined}
                   emptyText={emptyCell}
                 />
                 <DetailField
                   label={txt('matTranUyVienUyBan.detail.tgTao')}
+                  icon={<Calendar size={12} />}
                   value={data.tg_tao ? formatDateTimeShort(data.tg_tao) : undefined}
                   emptyText={emptyCell}
                 />
                 <DetailField
                   label={txt('matTranUyVienUyBan.detail.tgCapNhat')}
+                  icon={<CalendarClock size={12} />}
                   value={data.tg_cap_nhat ? formatDateTimeShort(data.tg_cap_nhat) : undefined}
                   emptyText={emptyCell}
                 />

@@ -189,6 +189,7 @@ const CongViecPage: React.FC = () => {
   const EXPORT_COLUMNS = useMemo(
     () => [
       { key: 'ten_cong_viec', label: txt('taskList.store.tenCol') },
+      { key: 'ten_chuong_trinh', label: txt('taskList.store.chuongTrinhCol') },
       { key: 'muc_do', label: txt('taskList.store.mucDoCol') },
       { key: 'thoi_han', label: txt('taskList.store.thoiHanCol') },
       { key: 'tien_do', label: txt('taskList.store.tienDoCol') },
@@ -203,6 +204,7 @@ const CongViecPage: React.FC = () => {
   const exportMapFn = useCallback(
     (item: CongViecDanhSachRow) => ({
       ten_cong_viec: item.ten_cong_viec,
+      ten_chuong_trinh: item.ten_chuong_trinh?.trim() ? item.ten_chuong_trinh : '',
       muc_do: item.muc_do,
       thoi_han: item.thoi_han ?? '',
       tien_do: formatCongViecTienDoTheoHan(item.thoi_han, item.trang_thai),

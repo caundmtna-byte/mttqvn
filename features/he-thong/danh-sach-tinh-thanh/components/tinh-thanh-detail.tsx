@@ -3,6 +3,7 @@ import { MapPin, Calendar, Clock, Plus, Folder, Edit, Trash2 } from 'lucide-reac
 import { txt } from '@/lib/text';
 import { formatDate, formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid from '@/components/shared/DetailFieldGrid';
@@ -101,17 +102,19 @@ const TinhThanhDetail: React.FC<Props> = ({
       maxWidthClass={DRAWER_WIDTH_DETAIL}
     >
       <div className="space-y-5">
-        <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-primary/20 shadow-lg shrink-0">
-            <MapPin size={24} className="text-white" />
-          </div>
-          <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-            <h2 className="text-base font-bold text-foreground leading-tight truncate">{data.ten}</h2>
-            <p className="text-body-sm text-muted-foreground tabular-nums">
+        <DetailSummaryCard
+          leading={
+            <DetailSummaryIconTile>
+              <MapPin size={26} className="text-white" />
+            </DetailSummaryIconTile>
+          }
+          title={data.ten}
+          subtitle={
+            <p className="tabular-nums m-0">
               {txt('diaBan.colThuTu')}: {data.thu_tu}
             </p>
-          </div>
-        </div>
+          }
+        />
 
         <DetailSection title={txt('diaBan.detail.basicInfo')} icon={<MapPin size={14} />} variant="primary">
           <DetailFieldGrid>

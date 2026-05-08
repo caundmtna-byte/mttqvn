@@ -7,6 +7,7 @@ import Button from '../../../../components/ui/Button';
 import { Department } from '../core/types';
 import { formatDate, formatDateTimeShort } from '../../../../lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '../../../../components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '../../../../components/shared/DetailSummaryCard';
 import DetailSection from '../../../../components/shared/DetailSection';
 import DetailField from '../../../../components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '../../../../components/shared/DetailFieldGrid';
@@ -128,21 +129,15 @@ const DepartmentDetail: React.FC<Props> = ({
       stackLevel={stackLevel}
     >
       <div className="space-y-5">
-        <div className="flex items-center gap-4 rounded-xl border border-border/50 bg-card p-4 shadow-sm">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg shadow-primary/20">
-            <Building2 size={24} className="text-white" />
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div className="flex min-w-0 items-start justify-between gap-2">
-              <h2 className="min-w-0 flex-1 truncate text-base font-bold leading-tight text-foreground">
-                {data.ten_phong_ban}
-              </h2>
-              <div className="shrink-0">
-                <EnumBadge shape="pill" value={data.trang_thai} config={statusBadgeConfig} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <DetailSummaryCard
+          leading={
+            <DetailSummaryIconTile>
+              <Building2 size={26} className="text-white" />
+            </DetailSummaryIconTile>
+          }
+          title={data.ten_phong_ban}
+          badge={<EnumBadge shape="pill" value={data.trang_thai} config={statusBadgeConfig} />}
+        />
 
         {toolbarActions.length > 0 && (
           <DetailToolbar actions={toolbarActions} className="bg-card rounded-xl border border-border" />

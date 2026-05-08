@@ -49,6 +49,10 @@ function normLookupRow(raw: Record<string, unknown>): TaskReportLookupRow {
     link_kq: raw.link_kq == null ? null : String(raw.link_kq),
     ngay_hoan_thanh: raw.ngay_hoan_thanh == null ? null : String(raw.ngay_hoan_thanh).slice(0, 10),
     id_nguoi_tao: String(raw.id_nguoi_tao ?? ''),
+    id_chuong_trinh:
+      raw.id_chuong_trinh == null || raw.id_chuong_trinh === '' ? null : String(raw.id_chuong_trinh),
+    ten_chuong_trinh:
+      raw.ten_chuong_trinh == null || raw.ten_chuong_trinh === '' ? null : String(raw.ten_chuong_trinh),
     tg_tao: String(raw.tg_tao ?? ''),
     tg_cap_nhat: String(raw.tg_cap_nhat ?? ''),
     ho_va_ten_trach_nhiem: raw.ho_va_ten_trach_nhiem == null ? null : String(raw.ho_va_ten_trach_nhiem),

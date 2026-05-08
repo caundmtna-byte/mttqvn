@@ -1,5 +1,21 @@
 import React from 'react';
-import { Edit, Trash2, Users } from 'lucide-react';
+import {
+  BadgeCheck,
+  BookOpen,
+  Briefcase,
+  Building2,
+  Calendar,
+  CalendarClock,
+  Church,
+  Edit,
+  Layers,
+  MapPin,
+  Phone,
+  Trash2,
+  User,
+  UserCircle2,
+  Users,
+} from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import type { MttqCanBoRow } from '../core/types';
@@ -11,6 +27,7 @@ import {
   trimmedDisplay,
 } from '../utils/display-format';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -31,6 +48,7 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
   const tuoi = data.tuoi ?? computeAgeFromBirthDate(data.ngay_sinh);
   const phoneDisplay = formatCanBoPhoneDisplay(data.dien_thoai);
   const phoneHref = canBoPhoneTelHref(data.dien_thoai);
+  const summarySubtitleParts = [trimmedDisplay(data.ten_chuc_vu), trimmedDisplay(data.ten_to_chuc)].filter(Boolean);
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -81,27 +99,60 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
       onClose={onClose}
       title={txt('matTranCanBo.detail.title')}
       maxWidthClass={DRAWER_WIDTH_DETAIL}
-      icon={<Users size={18} />}
+      icon={<Users size={18} aria-hidden />}
       subtitle={`${txt('matTranCanBo.detail.subtitle')} · ${data.ho_ten}`}
       footer={footer}
     >
-      <div className="space-y-6">
+      <div className="space-y-5">
+        <DetailSummaryCard
+          leading={
+            <DetailSummaryIconTile>
+              <Users size={26} className="text-white" aria-hidden />
+            </DetailSummaryIconTile>
+          }
+          title={trimmedDisplay(data.ho_ten) ?? txt('common.emptyCell')}
+          subtitle={
+            summarySubtitleParts.length > 0 ? (
+              <p className="m-0 truncate">{summarySubtitleParts.join(' · ')}</p>
+            ) : undefined
+          }
+        />
+
         <DetailSection title={txt('matTranCanBo.detail.sectionNhanThan')}>
           <DetailFieldGrid>
-            <DetailField label={txt('matTranCanBo.form.hoTen')} value={trimmedDisplay(data.ho_ten) ?? undefined} />
+            <DetailField
+              label={txt('matTranCanBo.form.hoTen')}
+              icon={<User size={12} />}
+              value={trimmedDisplay(data.ho_ten) ?? undefined}
+            />
             <DetailField
               label={txt('matTranCanBo.form.ngaySinh')}
+              icon={<Calendar size={12} />}
               value={formatCanBoDetailDate(data.ngay_sinh) ?? undefined}
             />
             <DetailField
               label={txt('matTranCanBo.store.tuoiCol')}
+              icon={<UserCircle2 size={12} />}
               value={tuoi != null ? txt('matTranCanBo.display.ageYears', { years: String(tuoi) }) : undefined}
             />
-            <DetailField label={txt('matTranCanBo.form.gioiTinh')} value={trimmedDisplay(data.gioi_tinh) ?? undefined} />
-            <DetailField label={txt('matTranCanBo.form.danToc')} value={trimmedDisplay(data.ten_dan_toc) ?? undefined} />
-            <DetailField label={txt('matTranCanBo.form.tonGiao')} value={trimmedDisplay(data.ton_giao) ?? undefined} />
+            <DetailField
+              label={txt('matTranCanBo.form.gioiTinh')}
+              icon={<UserCircle2 size={12} />}
+              value={trimmedDisplay(data.gioi_tinh) ?? undefined}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.danToc')}
+              icon={<Users size={12} />}
+              value={trimmedDisplay(data.ten_dan_toc) ?? undefined}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.tonGiao')}
+              icon={<Church size={12} />}
+              value={trimmedDisplay(data.ton_giao) ?? undefined}
+            />
             <DetailField
               label={txt('matTranCanBo.form.dangVien')}
+              icon={<BadgeCheck size={12} />}
               value={data.dang_vien ? txt('matTranCanBo.detail.dangVienYes') : txt('matTranCanBo.detail.dangVienNo')}
             />
           </DetailFieldGrid>
@@ -109,11 +160,24 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
 
         <DetailSection title={txt('matTranCanBo.detail.sectionToChuc')}>
           <DetailFieldGrid>
-            <DetailField label={txt('matTranCanBo.form.capQuanLy')} value={trimmedDisplay(data.ten_cap_quan_ly) ?? undefined} />
-            <DetailField label={txt('matTranCanBo.form.toChuc')} value={trimmedDisplay(data.ten_to_chuc) ?? undefined} />
-            <DetailField label={txt('matTranCanBo.form.chucVu')} value={trimmedDisplay(data.ten_chuc_vu) ?? undefined} />
+            <DetailField
+              label={txt('matTranCanBo.form.capQuanLy')}
+              icon={<Layers size={12} />}
+              value={trimmedDisplay(data.ten_cap_quan_ly) ?? undefined}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.toChuc')}
+              icon={<Building2 size={12} />}
+              value={trimmedDisplay(data.ten_to_chuc) ?? undefined}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.chucVu')}
+              icon={<Briefcase size={12} />}
+              value={trimmedDisplay(data.ten_chuc_vu) ?? undefined}
+            />
             <DetailField
               label={txt('matTranCanBo.form.ngayThamGiaToChuc')}
+              icon={<Calendar size={12} />}
               value={formatCanBoDetailDate(data.ngay_tham_gia_to_chuc) ?? undefined}
             />
           </DetailFieldGrid>
@@ -121,8 +185,16 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
 
         <DetailSection title={txt('matTranCanBo.detail.sectionHocVan')}>
           <DetailFieldGrid>
-            <DetailField label={txt('matTranCanBo.form.trinhDo')} value={trimmedDisplay(data.ten_trinh_do) ?? undefined} />
-            <DetailField label={txt('matTranCanBo.form.lyLuanChinhTri')} value={trimmedDisplay(data.ten_ly_luan_chinh_tri) ?? undefined} />
+            <DetailField
+              label={txt('matTranCanBo.form.trinhDo')}
+              icon={<BookOpen size={12} />}
+              value={trimmedDisplay(data.ten_trinh_do) ?? undefined}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.lyLuanChinhTri')}
+              icon={<BookOpen size={12} />}
+              value={trimmedDisplay(data.ten_ly_luan_chinh_tri) ?? undefined}
+            />
           </DetailFieldGrid>
         </DetailSection>
 
@@ -131,6 +203,7 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('matTranCanBo.form.diaChi')}
+              icon={<MapPin size={12} />}
               value={(() => {
                 const d = trimmedDisplay(data.dia_chi);
                 return d ? <p className="whitespace-pre-wrap break-words">{d}</p> : undefined;
@@ -138,6 +211,7 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
             />
             <DetailField
               label={txt('matTranCanBo.form.dienThoai')}
+              icon={<Phone size={12} />}
               value={
                 phoneDisplay
                   ? phoneHref
@@ -157,9 +231,14 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
 
         <DetailSection title={txt('matTranCanBo.detail.sectionTrangThai')}>
           <DetailFieldGrid>
-            <DetailField label={txt('matTranCanBo.form.trangThai')} value={trimmedDisplay(data.ten_trang_thai) ?? undefined} />
+            <DetailField
+              label={txt('matTranCanBo.form.trangThai')}
+              icon={<BadgeCheck size={12} />}
+              value={trimmedDisplay(data.ten_trang_thai) ?? undefined}
+            />
             <DetailField
               label={txt('matTranCanBo.form.ngayNhapTrangThai')}
+              icon={<Calendar size={12} />}
               value={formatCanBoDetailDate(data.ngay_nhap_trang_thai) ?? undefined}
             />
           </DetailFieldGrid>
@@ -169,14 +248,23 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
           <DetailFieldGrid>
             <DetailField
               label={txt('matTranCanBo.detail.creator')}
+              icon={<User size={12} />}
               value={
                 trimmedDisplay(data.ho_va_ten_nguoi_tao)
                 ?? trimmedDisplay(data.ten_tai_khoan_nguoi_tao)
                 ?? undefined
               }
             />
-            <DetailField label={txt('matTranCanBo.detail.createdAt')} value={formatDateTimeShort(data.tg_tao)} />
-            <DetailField label={txt('matTranCanBo.detail.updatedAt')} value={formatDateTimeShort(data.tg_cap_nhat)} />
+            <DetailField
+              label={txt('matTranCanBo.detail.createdAt')}
+              icon={<Calendar size={12} />}
+              value={formatDateTimeShort(data.tg_tao)}
+            />
+            <DetailField
+              label={txt('matTranCanBo.detail.updatedAt')}
+              icon={<CalendarClock size={12} />}
+              value={formatDateTimeShort(data.tg_cap_nhat)}
+            />
           </DetailFieldGrid>
         </DetailSection>
 

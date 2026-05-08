@@ -6,6 +6,7 @@ import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { CongViecDanhSach } from '../core/types';
 import type { CongViecDanhSachFormValues } from '../core/schema';
 import {
+  CONG_VIEC_BY_CHUONG_TRINH_SELECT,
   CONG_VIEC_DANH_SACH_RETURNING_FULL,
   CONG_VIEC_DANH_SACH_SELECT_FULL,
 } from '../core/supabase-select';
@@ -36,9 +37,11 @@ function dateOnly(v: unknown): string | null {
 export function flattenCongViecDanhSachRow(row: Record<string, unknown>): CongViecDanhSach {
   const tr = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.trach_nhiem);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const ct = pickEmbedded<{ ten_chuong_trinh?: string }>(row.chuong_trinh);
   const rest = { ...row };
   delete rest.trach_nhiem;
   delete rest.nguoi_tao;
+  delete rest.chuong_trinh;
   const r = rest as Record<string, unknown>;
   const td = r.tien_do;
   const tienDo = typeof td === 'number' ? td : Number(td);
@@ -52,6 +55,8 @@ export function flattenCongViecDanhSachRow(row: Record<string, unknown>): CongVi
     thoi_han: dateOnly(r.thoi_han),
     tien_do: Number.isFinite(tienDo) ? Math.min(100, Math.max(0, Math.round(tienDo))) : 0,
     id_trach_nhiem: String(r.id_trach_nhiem ?? ''),
+    id_chuong_trinh:
+      r.id_chuong_trinh == null || r.id_chuong_trinh === '' ? null : String(r.id_chuong_trinh),
     ids_ho_tro: normalizeIdsHoTro(r.ids_ho_tro),
     trang_thai: r.trang_thai as CongViecDanhSach['trang_thai'],
     ket_qua: r.ket_qua == null || r.ket_qua === '' ? null : String(r.ket_qua),
@@ -64,6 +69,7 @@ export function flattenCongViecDanhSachRow(row: Record<string, unknown>): CongVi
     ten_tai_khoan_trach_nhiem: tr?.ten_tai_khoan ?? null,
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    ten_chuong_trinh: ct?.ten_chuong_trinh?.trim() ? String(ct.ten_chuong_trinh) : null,
   };
 }
 
@@ -72,6 +78,8 @@ function normalize(raw: CongViecDanhSach): CongViecDanhSach {
     ...raw,
     id: String(raw.id),
     id_trach_nhiem: String(raw.id_trach_nhiem),
+    id_chuong_trinh:
+      raw.id_chuong_trinh == null || raw.id_chuong_trinh === '' ? null : String(raw.id_chuong_trinh),
     id_nguoi_tao: String(raw.id_nguoi_tao),
     ids_ho_tro: raw.ids_ho_tro.map(String),
     tien_do:
@@ -96,6 +104,10 @@ function formToPayload(data: CongViecDanhSachFormValues, idNguoiTao?: string) {
     ket_qua: data.ket_qua?.trim() ?? null,
     link_kq: data.link_kq?.trim() ?? null,
     ngay_hoan_thanh: ngayHt,
+    id_chuong_trinh:
+      data.id_chuong_trinh != null && String(data.id_chuong_trinh).trim() !== ''
+        ? Number(String(data.id_chuong_trinh).trim())
+        : null,
   };
   if (idNguoiTao !== undefined) {
     return { ...base, id_nguoi_tao: idNguoiTao };
@@ -103,9 +115,40 @@ function formToPayload(data: CongViecDanhSachFormValues, idNguoiTao?: string) {
   return base;
 }
 
+/** Giới hạn số dòng công việc embed trong drawer chi tiết chương trình. */
+export const CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT = 200;
+
 export async function getCongViecDanhSachList(): Promise<CongViecDanhSach[]> {
   const list = await repo.getAll({ orderBy: 'thoi_han', ascending: false });
   return list.map((row) => normalize(flattenCongViecDanhSachRow(row as unknown as Record<string, unknown>)));
+}
+
+/** Công việc gắn một chương trình năm (drawer chi tiết CTN). */
+export async function getCongViecByChuongTrinhNamId(chuongTrinhId: string): Promise<CongViecDanhSach[]> {
+  const id = String(chuongTrinhId ?? '').trim();
+  if (!id) return [];
+
+  if (!isSupabase()) {
+    const all = await getCongViecDanhSachList();
+    return all
+      .filter((c) => c.id_chuong_trinh === id)
+      .slice(0, CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT)
+      .map((c) => normalize(c));
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('cong_viec_danh_sach')
+    .select(CONG_VIEC_BY_CHUONG_TRINH_SELECT)
+    .eq('id_chuong_trinh', id)
+    .order('thoi_han', { ascending: false, nullsFirst: false })
+    .limit(CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT);
+  if (error) handleSupabaseError(error);
+  return (data ?? []).map((row) =>
+    normalize(flattenCongViecDanhSachRow(row as unknown as Record<string, unknown>)),
+  );
 }
 
 export async function getCongViecDanhSachById(id: string): Promise<CongViecDanhSach | null> {

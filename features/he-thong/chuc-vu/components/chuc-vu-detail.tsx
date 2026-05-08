@@ -7,6 +7,7 @@ import type { BadgeConfig } from '../../../../components/ui/EnumBadge';
 import { Position } from '../core/types';
 import { formatDate, formatDateTimeShort } from '../../../../lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '../../../../components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '../../../../components/shared/DetailSummaryCard';
 import DetailSection from '../../../../components/shared/DetailSection';
 import DetailField from '../../../../components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '../../../../components/shared/DetailFieldGrid';
@@ -99,24 +100,16 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
       maxWidthClass={DRAWER_WIDTH_DETAIL}
     >
       <div className="space-y-5">
-        <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-primary/20 shadow-lg shrink-0">
-            <Briefcase size={24} className="text-white" />
-          </div>
-          <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-            <div className="flex items-start justify-between gap-2 min-w-0">
-              <h2 className="text-base font-bold text-foreground leading-tight truncate flex-1 min-w-0">
-                {data.ten_chuc_vu}
-              </h2>
-              <div className="shrink-0">
-                <EnumBadge value={data.trang_thai} config={trangThaiBadgeConfig} />
-              </div>
-            </div>
-            {data.ten_phong_ban ? (
-              <p className="text-body-sm text-muted-foreground">{data.ten_phong_ban}</p>
-            ) : null}
-          </div>
-        </div>
+        <DetailSummaryCard
+          leading={
+            <DetailSummaryIconTile>
+              <Briefcase size={26} className="text-white" />
+            </DetailSummaryIconTile>
+          }
+          title={data.ten_chuc_vu}
+          badge={<EnumBadge value={data.trang_thai} config={trangThaiBadgeConfig} />}
+          subtitle={data.ten_phong_ban ? <p className="m-0 truncate">{data.ten_phong_ban}</p> : undefined}
+        />
 
         {toolbarActions.length > 0 && (
           <DetailToolbar actions={toolbarActions} className="bg-card rounded-xl border border-border" />

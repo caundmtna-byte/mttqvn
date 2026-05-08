@@ -1,6 +1,7 @@
 const EMBED = [
   'trach_nhiem:var_nhan_vien!cong_viec_danh_sach_id_trach_nhiem_fkey(ho_va_ten,ten_tai_khoan)',
   'nguoi_tao:var_nhan_vien!cong_viec_danh_sach_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan)',
+  'chuong_trinh:chuong_trinh_nam!cong_viec_danh_sach_id_chuong_trinh_fkey(ten_chuong_trinh)',
 ].join(',');
 
 const BASE_COLS = [
@@ -18,9 +19,17 @@ const BASE_COLS = [
   'link_kq',
   'ngay_hoan_thanh',
   'id_nguoi_tao',
+  'id_chuong_trinh',
   'tg_tao',
   'tg_cap_nhat',
 ].join(',');
 
+/** Danh sách con trong drawer chương trình — embed trách nhiệm, không embed chương trình / người tạo. */
+const EMBED_BY_CHUONG = [
+  'trach_nhiem:var_nhan_vien!cong_viec_danh_sach_id_trach_nhiem_fkey(ho_va_ten,ten_tai_khoan)',
+].join(',');
+
 export const CONG_VIEC_DANH_SACH_SELECT_FULL = `${BASE_COLS},${EMBED}`;
 export const CONG_VIEC_DANH_SACH_RETURNING_FULL = CONG_VIEC_DANH_SACH_SELECT_FULL;
+
+export const CONG_VIEC_BY_CHUONG_TRINH_SELECT = `${BASE_COLS},${EMBED_BY_CHUONG}`;

@@ -37,6 +37,14 @@ export const congViecDanhSachSchema = z.object({
   ),
   id_trach_nhiem: z.string().trim().min(1, txt('taskList.validation.trachNhiemRequired')),
   ids_ho_tro: z.array(z.string()),
+  id_chuong_trinh: z
+    .union([z.string(), z.null(), z.undefined()])
+    .optional()
+    .transform((v) => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      return s === '' ? null : s;
+    }),
   trang_thai: z.enum(CONG_VIEC_TRANG_THAI, { message: txt('taskList.validation.trangThaiRequired') }),
   ket_qua: z
     .string()
@@ -60,6 +68,7 @@ export function congViecRowToFormValues(row: CongViecDanhSach): CongViecDanhSach
     tien_do: row.tien_do,
     id_trach_nhiem: row.id_trach_nhiem,
     ids_ho_tro: [...row.ids_ho_tro],
+    id_chuong_trinh: row.id_chuong_trinh ?? null,
     trang_thai: row.trang_thai,
     ket_qua: row.ket_qua ?? undefined,
     link_kq: row.link_kq ?? undefined,

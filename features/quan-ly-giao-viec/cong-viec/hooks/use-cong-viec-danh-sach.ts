@@ -9,6 +9,7 @@ import type { CongViecDanhSachFormValues } from '../core/schema';
 import {
   createCongViecDanhSach,
   deleteCongViecDanhSachMany,
+  getCongViecByChuongTrinhNamId,
   getCongViecDanhSachById,
   getCongViecDanhSachList,
   getCongViecDanhSachPage,
@@ -54,6 +55,31 @@ export const useCongViecDanhSachDetail = (id: string | null) =>
     ...listQueryOptions,
   });
 
+export const useCongViecByChuongTrinhNamId = (chuongTrinhId: string | null, options?: { enabled?: boolean }) => {
+  const id = chuongTrinhId?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.congViecDanhSach.byChuongTrinh(id),
+    queryFn: () => getCongViecByChuongTrinhNamId(id),
+    enabled: Boolean(id) && (options?.enabled !== false),
+    ...listQueryOptions,
+  });
+};
+
+function invalidateCongViecByChuongQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  chuongTrinhId: string | null | undefined,
+) {
+  const s = chuongTrinhId?.trim();
+  if (s) {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.congViecDanhSach.byChuongTrinh(s) });
+  } else {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.congViecDanhSach.byChuongTrinhPrefix,
+      exact: false,
+    });
+  }
+}
+
 export const useCreateCongViecDanhSach = (onSuccess?: () => void) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -62,6 +88,7 @@ export const useCreateCongViecDanhSach = (onSuccess?: () => void) => {
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: listKey });
       queryClient.setQueryData(queryKeys.congViecDanhSach.detail(created.id), created);
+      invalidateCongViecByChuongQueries(queryClient, created.id_chuong_trinh);
       invalidateReportCache(queryClient);
       toast.success(txt('taskList.toast.create'));
       onSuccess?.();
@@ -75,9 +102,11 @@ export const useUpdateCongViecDanhSach = (onSuccess?: () => void) => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CongViecDanhSachFormValues }) =>
       updateCongViecDanhSach(id, data),
-    onSuccess: (updated, { id }) => {
+    onSuccess: (updated, { id, data }) => {
       queryClient.invalidateQueries({ queryKey: listKey });
       queryClient.setQueryData(queryKeys.congViecDanhSach.detail(id), updated);
+      invalidateCongViecByChuongQueries(queryClient, updated.id_chuong_trinh);
+      invalidateCongViecByChuongQueries(queryClient, data.id_chuong_trinh ?? undefined);
       invalidateReportCache(queryClient);
       toast.success(txt('taskList.toast.update'));
       onSuccess?.();
@@ -95,6 +124,7 @@ export const useDeleteCongViecDanhSachMany = () => {
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.congViecDanhSach.detail(id) });
       }
+      invalidateCongViecByChuongQueries(queryClient, null);
       invalidateReportCache(queryClient);
       toast.success(txt('taskList.toast.delete', { count: ids.length }));
     },

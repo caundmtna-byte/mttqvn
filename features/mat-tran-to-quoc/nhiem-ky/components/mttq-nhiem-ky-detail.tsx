@@ -8,6 +8,7 @@ import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import { formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -345,19 +346,21 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
         footerCompact
       >
         <div className="space-y-5">
-          <div className="bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4">
-            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white shadow-primary/20 shadow-lg shrink-0">
-              <CalendarClock size={24} className="text-white" aria-hidden />
-            </div>
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <h2 className="text-base font-bold text-foreground leading-tight truncate tracking-tight">{data.ten_nhiem_ky}</h2>
-              <p className="text-body-sm text-muted-foreground tabular-nums">
+          <DetailSummaryCard
+            leading={
+              <DetailSummaryIconTile>
+                <CalendarClock size={26} className="text-white" aria-hidden />
+              </DetailSummaryIconTile>
+            }
+            title={data.ten_nhiem_ky}
+            subtitle={
+              <p className="tabular-nums m-0">
                 {data.tu_nam != null || data.den_nam != null
                   ? `${data.tu_nam ?? '—'} → ${data.den_nam ?? '—'}`
                   : txt('common.emptyCell')}
               </p>
-            </div>
-          </div>
+            }
+          />
 
           <div className="w-full overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
             <TabGroup tabs={tabs} activeTab={detailTab} onChange={handleDetailTabChange} />

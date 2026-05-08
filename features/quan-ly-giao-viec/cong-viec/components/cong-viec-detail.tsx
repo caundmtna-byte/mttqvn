@@ -1,10 +1,28 @@
 import React, { useMemo, useState } from 'react';
-import { Edit, Trash2, ListTodo, ExternalLink, ClipboardList, Ban } from 'lucide-react';
+import {
+  Ban,
+  Calendar,
+  CalendarClock,
+  CalendarRange,
+  ClipboardList,
+  Edit,
+  ExternalLink,
+  FileText,
+  Link2,
+  ListOrdered,
+  ListTodo,
+  Percent,
+  Tag,
+  Trash2,
+  User,
+  Users,
+} from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import type { CongViecDanhSachRow } from '../core/types';
 import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -31,9 +49,10 @@ interface Props {
   onClose: () => void;
   onEdit: (item: CongViecDanhSachRow) => void;
   onDelete: (id: string) => void;
+  stackLevel?: number;
 }
 
-const CongViecDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
+const CongViecDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, stackLevel = 0 }) => {
   const { canEdit, canDelete } = useResourcePermissions('tasks');
   const confirm = useConfirmStore((s) => s.confirm);
   const { data: employees = [] } = useEmployees();
@@ -137,40 +156,64 @@ const CongViecDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =>
       <GenericDrawer
         title={txt('taskList.detail.title')}
         subtitle={txt('taskList.detail.subtitle')}
-        icon={<ListTodo size={20} />}
+        icon={<ListTodo size={18} />}
         onClose={onClose}
         footer={footer}
         maxWidthClass={DRAWER_WIDTH_DETAIL}
+        stackLevel={stackLevel}
         footerCompact
       >
         <div className="space-y-5">
-          <div className="space-y-2 mb-1">
-            <h3 className="text-lg font-semibold text-foreground leading-tight">{data.ten_cong_viec}</h3>
-            <div className="flex flex-wrap items-center gap-2">
-              <EnumBadge value={data.trang_thai} config={CONG_VIEC_TRANG_THAI_BADGE_CONFIG} truncate />
+          <DetailSummaryCard
+            leading={
+              <DetailSummaryIconTile>
+                <ListTodo size={26} className="text-white" aria-hidden />
+              </DetailSummaryIconTile>
+            }
+            title={data.ten_cong_viec}
+            badge={<EnumBadge value={data.trang_thai} config={CONG_VIEC_TRANG_THAI_BADGE_CONFIG} truncate />}
+            subtitle={
+              <p className="m-0 min-w-0 truncate">
+                {data.ten_chuong_trinh?.trim() || txt('taskList.detail.chuongTrinhEmpty')}
+              </p>
+            }
+          >
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               <EnumBadge value={data.muc_do} config={CONG_VIEC_MUC_DO_BADGE_CONFIG} shape="rounded" truncate />
               {data.thoi_han ? (
-                <span className={congViecDeadlineChipClass(congViecThoiHanChipTone(data.thoi_han, data.trang_thai))}>
-                  {formatDateShort(data.thoi_han)}
-                </span>
+                <span className="tabular-nums text-foreground">{formatDateShort(data.thoi_han)}</span>
               ) : (
-                <span className="text-xs text-muted-foreground">{txt('common.emptyCell')}</span>
+                <span>{txt('common.emptyCell')}</span>
               )}
             </div>
-          </div>
+          </DetailSummaryCard>
 
           {toolbarActions.length > 0 ? (
             <DetailToolbar actions={toolbarActions} className="bg-card rounded-xl border border-border" />
           ) : null}
 
           <DetailSection title={txt('taskList.detail.sectionInfo')} icon={<ListTodo size={14} />} variant="primary">
-            <DetailFieldGrid>
+            <DetailFieldGrid cols={2} className="gap-y-3 gap-x-4">
+              <DetailField
+                className={DETAIL_FIELD_SPAN_FULL}
+                label={txt('taskList.store.chuongTrinhCol')}
+                icon={<CalendarRange size={12} />}
+                value={data.ten_chuong_trinh?.trim() ? data.ten_chuong_trinh : undefined}
+                emptyText={txt('taskList.detail.chuongTrinhEmpty')}
+              />
               <DetailField
                 label={txt('taskList.store.mucDoCol')}
+                icon={<ListOrdered size={12} />}
                 value={<EnumBadge value={data.muc_do} config={CONG_VIEC_MUC_DO_BADGE_CONFIG} shape="rounded" truncate />}
               />
               <DetailField
+                label={txt('taskList.store.trangThaiCol')}
+                icon={<Tag size={12} />}
+                value={<EnumBadge value={data.trang_thai} config={CONG_VIEC_TRANG_THAI_BADGE_CONFIG} truncate />}
+              />
+              <DetailField
                 label={txt('taskList.store.thoiHanCol')}
+                icon={<Calendar size={12} />}
                 value={
                   data.thoi_han ? (
                     <span className={congViecDeadlineChipClass(congViecThoiHanChipTone(data.thoi_han, data.trang_thai))}>
@@ -181,6 +224,7 @@ const CongViecDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =>
               />
               <DetailField
                 label={txt('taskList.store.tienDoCol')}
+                icon={<Percent size={12} />}
                 value={
                   <span className={congViecDeadlineChipClass(tienDoTone)} title={tienDoLabel}>
                     {tienDoLabel}
@@ -188,16 +232,19 @@ const CongViecDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =>
                 }
               />
               <DetailField
-                label={txt('taskList.store.trangThaiCol')}
-                value={<EnumBadge value={data.trang_thai} config={CONG_VIEC_TRANG_THAI_BADGE_CONFIG} truncate />}
+                label={txt('taskList.store.trachNhiemCol')}
+                icon={<User size={12} />}
+                value={data.ho_va_ten_trach_nhiem ?? data.ten_tai_khoan_trach_nhiem}
               />
               <DetailField
-                label={txt('taskList.store.trachNhiemCol')}
-                value={data.ho_va_ten_trach_nhiem ?? data.ten_tai_khoan_trach_nhiem}
+                label={txt('taskList.store.nguoiTaoCol')}
+                icon={<User size={12} />}
+                value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao}
               />
               <DetailField
                 className={DETAIL_FIELD_SPAN_FULL}
                 label={txt('taskList.store.hoTroCol')}
+                icon={<Users size={12} />}
                 value={
                   data.ids_ho_tro.length === 0
                     ? undefined
@@ -207,31 +254,48 @@ const CongViecDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =>
                 }
               />
               <DetailField
-                label={txt('taskList.store.nguoiTaoCol')}
-                value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao}
+                className={DETAIL_FIELD_SPAN_FULL}
+                label={txt('taskList.store.ghiChuCol')}
+                icon={<FileText size={12} />}
+                value={data.ghi_chu ?? undefined}
               />
-              <DetailField className={DETAIL_FIELD_SPAN_FULL} label={txt('taskList.store.ghiChuCol')} value={data.ghi_chu ?? undefined} />
               <DetailField
                 className={DETAIL_FIELD_SPAN_FULL}
                 label={txt('taskList.form.linkTaiLieu')}
+                icon={<Link2 size={12} />}
                 value={linkField(data.link_tai_lieu)}
               />
             </DetailFieldGrid>
           </DetailSection>
 
           <DetailSection title={txt('taskList.detail.sectionResult')} icon={<ExternalLink size={14} />} variant="muted">
-            <DetailFieldGrid>
-              <DetailField className={DETAIL_FIELD_SPAN_FULL} label={txt('taskList.form.ketQua')} value={data.ket_qua ?? undefined} />
-              <DetailField className={DETAIL_FIELD_SPAN_FULL} label={txt('taskList.form.linkKq')} value={linkField(data.link_kq)} />
+            <DetailFieldGrid cols={2} className="gap-y-3 gap-x-4">
+              <DetailField
+                className={DETAIL_FIELD_SPAN_FULL}
+                label={txt('taskList.form.ketQua')}
+                icon={<FileText size={12} />}
+                value={data.ket_qua ?? undefined}
+              />
+              <DetailField
+                className={DETAIL_FIELD_SPAN_FULL}
+                label={txt('taskList.form.linkKq')}
+                icon={<Link2 size={12} />}
+                value={linkField(data.link_kq)}
+              />
               <DetailField
                 label={txt('taskList.form.ngayHoanThanh')}
+                icon={<Calendar size={12} />}
                 value={
                   data.ngay_hoan_thanh ? (
                     <span className={congViecDeadlineChipClass('emerald')}>{formatDateShort(data.ngay_hoan_thanh)}</span>
                   ) : undefined
                 }
               />
-              <DetailField label={txt('taskList.store.tgCapNhatCol')} value={formatDateTimeShort(data.tg_cap_nhat)} />
+              <DetailField
+                label={txt('taskList.store.tgCapNhatCol')}
+                icon={<CalendarClock size={12} />}
+                value={formatDateTimeShort(data.tg_cap_nhat)}
+              />
             </DetailFieldGrid>
           </DetailSection>
         </div>

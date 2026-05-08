@@ -200,7 +200,7 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 
 ### 9.1 Thứ tự block (từ trên xuống)
 
-- [ ] **Summary card** (trên **DetailToolbar**): bố cục **chuẩn template** — **hàng 1:** icon + **title + badge trạng thái** cùng hàng (flex, badge không “lơ lửng”); **hàng 2:** mã / mã số (`subtitle` hoặc `DetailField` tương đương); meta (ngày, cấp, …) tiếp theo nếu có. Tham chiếu trực quan: module **Chức vụ** (`chuc-vu-detail`).
+- [ ] **Summary card** (trên **DetailToolbar**): **bắt buộc** `DetailSummaryCard` (`components/shared/DetailSummaryCard.tsx`) — **không** copy tay class `bg-card p-4 rounded-xl border…`. **Hàng 1:** `leading` (avatar hoặc **`DetailSummaryIconTile`** + icon ~26px) + **title + badge** (nếu có) cùng hàng; **hàng 2:** `subtitle` (mã, @tài khoản, ngày `tabular-nums`, …); **`children`:** meta thêm nếu có. Tham chiếu trực tiếp trong repo: `nhan-vien-detail`, `chuc-vu-detail`, `phong-ban-detail`, `chuong-trinh-nam-detail`, `cong-viec-detail`, `bai-viet-detail`, địa bản, thiết lập bài viết / MTTQ (kỳ họp, nhiệm kỳ, ủy viên, khen thưởng, tập huấn, thiết lập, cán bộ), v.v.
 - [ ] **DetailToolbar**: hành động “nổi bật” (đổi trạng thái, thêm bản ghi con, …) — chỉ hiện khi `canEdit` / đúng nghiệp vụ. **Đổi / chuyển trạng thái** → popup modal (`GenericDrawer` `variant="modal"`), không dùng drawer trượt — `docs/patterns-detail-status-change.md`.
 - [ ] **DetailSection** + **DetailField**: nhóm “Thông tin chung”, “Liên hệ”, … — mỗi field một label + value.
 

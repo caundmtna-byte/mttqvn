@@ -81,7 +81,6 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
       {
         groupTitleKey: 'page.taskDashboard.groupMain',
         modules: [
-          { id: 'quan-ly-giao-viec/chuong-trinh-nam', nameKey: 'page.taskDashboard.yearProgram' },
           { id: 'quan-ly-giao-viec/cong-viec', nameKey: 'page.taskDashboard.tasks' },
           { id: 'quan-ly-giao-viec/bao-cao-cong-viec', nameKey: 'page.taskDashboard.taskReport' },
         ],
@@ -111,6 +110,8 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         groupTitleKey: 'page.systemDashboard.orgChartGroup',
         modules: [
           { id: 'he-thong/phong-ban', nameKey: 'page.systemDashboard.department' },
+          /** Route vẫn `/quan-ly-giao-viec/chuong-trinh-nam` — `module_id` đầy đủ khớp `APP_RESOURCE_TO_MODULE.annualPrograms`. */
+          { id: 'quan-ly-giao-viec/chuong-trinh-nam', nameKey: 'page.taskDashboard.yearProgram' },
           { id: 'he-thong/chuc-vu', nameKey: 'page.systemDashboard.position' },
           { id: 'he-thong/nhan-vien', nameKey: 'page.systemDashboard.employee' },
         ],

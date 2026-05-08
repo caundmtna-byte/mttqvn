@@ -114,6 +114,9 @@ export interface TaskReportLookupRow {
   link_kq: string | null;
   ngay_hoan_thanh: string | null;
   id_nguoi_tao: string;
+  /** Có thể bổ sung từ RPC tra cứu sau này; hiện thường null. */
+  id_chuong_trinh?: string | null;
+  ten_chuong_trinh?: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
   ho_va_ten_trach_nhiem: string | null;
