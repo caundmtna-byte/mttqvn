@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import { renderInputIcon, type InputProps } from './Input';
 
 export interface Option {
   label: string;
@@ -21,8 +22,8 @@ interface ComboboxProps {
   className?: string;
   disabled?: boolean;
   searchPlaceholder?: string;
-  /** Icon hiển thị bên trái ô trigger */
-  icon?: React.ReactNode;
+  /** Icon hiển thị bên trái label — element (`<X />`) hoặc Lucide (`User`). */
+  icon?: InputProps['icon'];
   /** Khi true (mặc định) hiển thị ô tìm kiếm trong dropdown */
   searchable?: boolean;
   /** Custom render cho từng option (vd. preview font) */
@@ -56,6 +57,9 @@ const Combobox: React.FC<ComboboxProps> = ({
   dropdownInPortal = false,
   clearable = true,
 }) => {
+  const labelIcon =
+    icon != null ? renderInputIcon(icon as NonNullable<InputProps['icon']>) : null;
+
   const optionValueEquals = useCallback((a: string | number | null | undefined, b: string | number | null | undefined) => {
     if (a === b) return true;
     if (a === '' || a == null) return b === '' || b == null;
@@ -149,7 +153,7 @@ const Combobox: React.FC<ComboboxProps> = ({
     <div className={cn("w-full relative", className)} ref={containerRef}>
       {label && (
         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-1.5 flex items-center gap-1.5 text-foreground">
-          {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
+          {labelIcon != null && <span className="text-muted-foreground shrink-0">{labelIcon}</span>}
           {label}
           {required && (
             <span className="text-red-600 dark:text-red-400 font-semibold ml-0.5" aria-hidden="true">

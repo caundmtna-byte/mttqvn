@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Tag, Users } from 'lucide-react';
+import { Plus, Download, Upload, Tag, Users } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -22,6 +22,7 @@ interface Props {
   gioiTinhOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
+  onImport?: () => void;
   onDeleteMany: (ids: string[]) => void;
 }
 
@@ -31,9 +32,10 @@ const MttqCanBoToolbar: React.FC<Props> = ({
   gioiTinhOptions,
   onAdd,
   onExport,
+  onImport,
   onDeleteMany,
 }) => {
-  const { canCreate, canExport, canDelete } = useResourcePermissions('matTranOfficerList');
+  const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('matTranOfficerList');
 
   const {
     searchTerm,
@@ -114,27 +116,45 @@ const MttqCanBoToolbar: React.FC<Props> = ({
   );
 
   const mobileActions = useMemo<ActionItem[]>(
-    () =>
-      canExport
+    () => [
+      ...(canImport && onImport
+        ? [{ key: 'import', label: txt('common.import'), icon: Upload, onClick: onImport, description: '' }]
+        : []),
+      ...(canExport
         ? [{ key: 'export', label: txt('common.export'), icon: Download, onClick: onExport, description: '' }]
-        : [],
-    [canExport, onExport],
+        : []),
+    ],
+    [canImport, onImport, canExport, onExport],
   );
 
   const renderActions = (
     <>
-      {canExport ? (
+      {(canImport && onImport) || canExport ? (
         <div className="hidden sm:flex items-center gap-2">
-          <Tooltip content={txt('common.export')} placement="bottom">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExport}
-              className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-          </Tooltip>
+          {canImport && onImport ? (
+            <Tooltip content={txt('common.import')} placement="bottom">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onImport}
+                className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+              >
+                <Upload className="w-4 h-4" />
+              </Button>
+            </Tooltip>
+          ) : null}
+          {canExport ? (
+            <Tooltip content={txt('common.export')} placement="bottom">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExport}
+                className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </Tooltip>
+          ) : null}
         </div>
       ) : null}
       {canCreate && (

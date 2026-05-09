@@ -10,17 +10,38 @@ import {
   createMttqLopTapHuan,
   deleteMttqLopTapHuanMany,
   getMttqLopTapHuanById,
+  getMttqLopTapHuanChiTietFlatList,
+  getMttqLopTapHuanChiTietFlatListForCanBoId,
   getMttqLopTapHuanList,
   updateMttqLopTapHuan,
 } from '../services/mttq-tap-huan-service';
+import type { MttqTapHuanChiTietFlatRow } from '../core/types';
 
 const listKey = queryKeys.mttqLopTapHuan.all;
+const chiTietFlatListKey = queryKeys.mttqLopTapHuan.chiTietFlatList;
 
 export const useMttqLopTapHuanList = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: listKey,
     queryFn: getMttqLopTapHuanList,
     enabled: options?.enabled !== false,
+    ...listQueryOptions,
+  });
+
+export const useMttqLopTapHuanChiTietFlatList = (options?: { enabled?: boolean }) =>
+  useQuery({
+    queryKey: chiTietFlatListKey,
+    queryFn: getMttqLopTapHuanChiTietFlatList,
+    enabled: options?.enabled !== false,
+    ...listQueryOptions,
+  });
+
+/** Dòng tập huấn (chi tiết phẳng) gắn một cán bộ — drawer detail cán bộ. */
+export const useMttqTapHuanLinesForCanBo = (canBoId: string | null, options?: { enabled?: boolean }) =>
+  useQuery<MttqTapHuanChiTietFlatRow[]>({
+    queryKey: queryKeys.mttqLopTapHuan.byCanBo(canBoId?.trim() ?? ''),
+    queryFn: () => getMttqLopTapHuanChiTietFlatListForCanBoId(canBoId!.trim()),
+    enabled: Boolean(canBoId?.trim()) && (options?.enabled !== false),
     ...listQueryOptions,
   });
 
@@ -39,6 +60,11 @@ export const useCreateMttqLopTapHuan = (onSuccess?: () => void) => {
       createMttqLopTapHuan(data, idNguoiTao),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.mttqLopTapHuan.byCanBoPrefix,
+        refetchType: 'none',
+      });
       toast.success(txt('matTranTapHuan.toast.create'));
       onSuccess?.();
     },
@@ -53,6 +79,11 @@ export const useUpdateMttqLopTapHuan = (onSuccess?: () => void) => {
       updateMttqLopTapHuan(id, data),
     onSuccess: (updated, { id }) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.mttqLopTapHuan.byCanBoPrefix,
+        refetchType: 'none',
+      });
       queryClient.setQueryData<MttqLopTapHuan | null>(queryKeys.mttqLopTapHuan.detail(id), updated);
       toast.success(txt('matTranTapHuan.toast.update'));
       onSuccess?.();
@@ -67,6 +98,11 @@ export const useDeleteMttqLopTapHuanMany = () => {
     mutationFn: deleteMttqLopTapHuanMany,
     onSuccess: (_, ids) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.mttqLopTapHuan.byCanBoPrefix,
+        refetchType: 'none',
+      });
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.mttqLopTapHuan.detail(id) });
       }

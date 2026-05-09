@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarClock, Hash, StickyNote, Type } from 'lucide-react';
+import { CalendarClock, FileText, Hash, StickyNote, Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
@@ -145,6 +145,7 @@ const MttqNhiemKyForm: React.FC<Props> = ({ initialData, onClose }) => {
                     value={field.value ?? ''}
                     label={txt('matTranNhiemKy.form.thongTin')}
                     rows={3}
+                    icon={<FileText size={12} />}
                     error={errors.thong_tin?.message}
                   />
                 )}
@@ -191,6 +192,7 @@ const MttqNhiemKyForm: React.FC<Props> = ({ initialData, onClose }) => {
                     onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
                     type="number"
                     label={label}
+                    icon={<Hash size={12} />}
                     error={errors[name]?.message}
                   />
                 )}

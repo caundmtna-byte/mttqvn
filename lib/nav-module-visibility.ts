@@ -22,11 +22,13 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
     return [
       'matTranThietLapCaiDat',
       'matTranOfficerList',
+      'matTranOfficerStats',
       'matTranRewardList',
       'matTranTrainingList',
       'matTranTerm',
       'matTranSession',
       'matTranCommitteeMembers',
+      'matTranCommitteeMemberStats',
     ];
   }
   if (path === '/quan-ly-viet-bai') {
@@ -36,7 +38,12 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
     return ['annualPrograms', 'tasks', 'taskReports'];
   }
   if (path === '/trang-thong-tin-khac') {
-    return ['otherInfoMttqNews', 'otherInfoZaloOa'];
+    return [
+      'otherInfoMttqNews',
+      'otherInfoZaloOa',
+      'otherInfoMatTranSo',
+      'otherInfoQuanLyVanBan',
+    ];
   }
   return null; // `/`, `/thong-tin-ban-quyen` → luôn hiện
 }

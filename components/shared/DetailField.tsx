@@ -1,10 +1,11 @@
 import React, { isValidElement } from 'react';
 import { cn } from '../../lib/utils';
+import { renderInputIcon, type InputProps } from '../ui/Input';
 
 interface DetailFieldProps {
   label: string;
   value: React.ReactNode;
-  icon?: React.ReactNode;
+  icon?: InputProps['icon'];
   className?: string;
   emptyText?: string;
   /** Hành động tùy chọn bên phải giá trị (placement inline — xem lib/detail-action-placement) */
@@ -20,6 +21,9 @@ const DetailField: React.FC<DetailFieldProps> = ({
   emptyText = 'Chưa cập nhật',
   trailing,
 }) => {
+  const labelIcon =
+    icon != null ? renderInputIcon(icon as NonNullable<InputProps['icon']>) : null;
+
   const isEmpty = value === undefined || value === null || value === '';
 
   const valueBlock =
@@ -34,7 +38,7 @@ const DetailField: React.FC<DetailFieldProps> = ({
   return (
     <div className={cn('space-y-1 min-w-0 w-full', className)}>
       <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-        {icon}
+        {labelIcon}
         {label}
       </span>
       {trailing ? (

@@ -14,7 +14,7 @@ export const taskList = {
     nguoiTaoCol: 'Người giao',
     tgCapNhatCol: 'Cập nhật',
     ghiChuCol: 'Ghi chú',
-    chuongTrinhCol: 'Chương trình năm',
+    chuongTrinhCol: 'Chương trình BTT',
   },
   form: {
     mucDo: 'Mức độ',
@@ -29,7 +29,7 @@ export const taskList = {
     ketQua: 'Kết quả',
     linkKq: 'Link kết quả',
     ngayHoanThanh: 'Ngày hoàn thành',
-    chuongTrinhNam: 'Chương trình năm',
+    chuongTrinhNam: 'Chương trình BTT',
     chuongTrinhNamPlaceholder: 'Chọn chương trình (tuỳ chọn)',
     createSubtitle: 'Thêm công việc mới',
     editSubtitle: 'Cập nhật công việc',

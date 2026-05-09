@@ -28,7 +28,6 @@ import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
-import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
 import { StatsKpiGrid, StatsCard, StatsTableCard } from '@/components/shared/stats';
 import type { StatsTableRow } from '@/components/shared/stats/types';
@@ -108,7 +107,8 @@ const BcThongKeBaiVietPage: React.FC = () => {
   const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
-  const { canExport } = useResourcePermissions('articles');
+  const canExport =
+    useCan('export', 'articleStats') || useCan('export', 'articles');
   const canViewStats = useCan('view', 'articleStats');
   const canViewArticles = useCan('view', 'articles');
   const canOpenPage = canViewStats || canViewArticles;
@@ -477,7 +477,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
         filters={filterRowDesktop}
         filtersSingleRow
         filterGroups={filterGroups}
-        actions={<div className="hidden sm:flex items-center gap-2 shrink-0">{renderExportToolbarButton()}</div>}
+        actions={renderExportToolbarButton()}
         mobileActions={renderExportToolbarButton()}
         activeFilterCount={activeFilterCount}
         onClearFilters={activeFilterCount ? clearFilters : undefined}
@@ -498,7 +498,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StatsCard title={txt('articleStats.chartTrendCount')} icon={FileText} spanTwo={false}>
                 <div className="h-[240px] w-full min-w-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
@@ -512,7 +512,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
 
               <StatsCard title={txt('articleStats.chartTrendAmount')} icon={Hash}>
                 <div className="h-[240px] w-full min-w-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />

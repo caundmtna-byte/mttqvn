@@ -40,6 +40,8 @@ export const position = {
     "levelPlaceholder": "Chọn cấp bậc...",
     "department": "Phòng ban",
     "departmentPlaceholder": "Chọn phòng ban...",
+    "managementLevel": "Cấp quản lý",
+    "managementLevelPlaceholder": "Chọn cấp quản lý…",
     "description": "Mô tả",
     "descriptionPlaceholder": "Mô tả nhiệm vụ, trách nhiệm...",
     "status": "Trạng thái"
@@ -49,6 +51,7 @@ export const position = {
     "codeCol": "Mã chức vụ",
     "nameCol": "Tên chức vụ",
     "levelCol": "Cấp bậc",
+    "managementLevelCol": "Cấp quản lý",
     "deptCol": "Phòng ban",
     "descCol": "Mô tả",
     "statusCol": "Trạng thái",
@@ -61,8 +64,14 @@ export const position = {
     "nameMin": "Tên chức vụ phải có ít nhất 3 ký tự",
     "nameMax": "Tên chức vụ quá dài",
     "descMax": "Mô tả tối đa 500 ký tự",
-    "statusInvalid": "Trạng thái không hợp lệ"
+    "statusInvalid": "Trạng thái không hợp lệ",
+    "levelRequired": "Vui lòng chọn cấp bậc",
+    "departmentRequired": "Vui lòng chọn phòng ban",
+    "managementLevelRequired": "Vui lòng chọn cấp quản lý",
+    "managementLevelInvalid": "Cấp quản lý phải là \"Tỉnh\" hoặc \"Xã phường\""
   },
+  "capQuanLyTinh": "Tỉnh",
+  "capQuanLyXaPhuong": "Xã phường",
   "toast": {
     "createSuccess": "Tạo chức vụ thành công",
     "updateSuccess": "Cập nhật thành công",
@@ -82,6 +91,7 @@ export const position = {
     "systemInfo": "Thông tin hệ thống",
     "description": "Mô tả",
     "level": "Cấp bậc",
+    "managementLevel": "Cấp quản lý",
     "department": "Phòng ban",
     "order": "Thứ tự hiển thị",
     "updated": "Cập nhật",

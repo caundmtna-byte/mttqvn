@@ -258,9 +258,14 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                 </div>
                             ) : null}
 
-                            {/* Search */}
+                            {/* Search — phân nhóm sau Back / Tab (mobile) */}
                             {!hideSearch ? (
-                                <div className="relative flex-1 min-w-0 max-w-[21rem]">
+                                <div
+                                    className={cn(
+                                        'relative flex-1 min-w-0 max-w-[21rem]',
+                                        desktopStartSlot && 'border-l border-border pl-3 ml-1',
+                                    )}
+                                >
                                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                                     <input
                                         ref={mobileSearchInputRef}
@@ -397,20 +402,37 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
 
                             {desktopStartSlot}
 
-                            {filters && (
-                                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            {(filters || (activeFilterCount > 0 && onClearAllFilters)) &&
+                            (showBack || desktopStartSlot) ? (
+                                <div className="border-l border-border pl-3 ml-1 flex items-center gap-2 flex-wrap min-w-0">
                                     {filters}
+                                    {activeFilterCount > 0 && onClearAllFilters && (
+                                        <button
+                                            onClick={onClearAllFilters}
+                                            className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95"
+                                        >
+                                            <X size={11} className="stroke-[2.5px]" />
+                                            {txt('common.clearFilters', { count: activeFilterCount })}
+                                        </button>
+                                    )}
                                 </div>
-                            )}
-
-                            {activeFilterCount > 0 && onClearAllFilters && (
-                                <button
-                                    onClick={onClearAllFilters}
-                                    className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95"
-                                >
-                                    <X size={11} className="stroke-[2.5px]" />
-                                    {txt('common.clearFilters', { count: activeFilterCount })}
-                                </button>
+                            ) : (
+                                <>
+                                    {filters && (
+                                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                            {filters}
+                                        </div>
+                                    )}
+                                    {activeFilterCount > 0 && onClearAllFilters && (
+                                        <button
+                                            onClick={onClearAllFilters}
+                                            className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95"
+                                        >
+                                            <X size={11} className="stroke-[2.5px]" />
+                                            {txt('common.clearFilters', { count: activeFilterCount })}
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </motion.div>
                     )}

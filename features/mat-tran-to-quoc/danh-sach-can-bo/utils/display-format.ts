@@ -1,8 +1,4 @@
-import {
-  formatDate,
-  formatDateShort,
-  formatDateShortTime,
-} from '@/lib/utils';
+import { formatDate, formatDateShortTime } from '@/lib/utils';
 
 /** Chuỗi hiển thị sau trim; rỗng → null (để DetailField dùng empty). */
 export function trimmedDisplay(value: string | null | undefined): string | null {
@@ -43,9 +39,10 @@ export function canBoPhoneTelHref(value: string | null | undefined): string | nu
   return `tel:${n}`;
 }
 
+/** List / thẻ mobile: ngày đầy đủ kèm năm (DD/MM/YYYY). */
 export function formatCanBoListDate(iso: string | null | undefined, emptyLabel: string): string {
   if (iso == null || !String(iso).trim()) return emptyLabel;
-  return formatDateShort(iso);
+  return formatDate(iso);
 }
 
 export function formatCanBoDetailDate(iso: string | null | undefined): string | null {

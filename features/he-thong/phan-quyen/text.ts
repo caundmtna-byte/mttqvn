@@ -85,6 +85,7 @@ export const permission = {
     "provinceList": "Tỉnh thành – xã phường",
     "articleSettings": "Thiết lập bài viết",
     "articleList": "Danh sách bài viết",
+    "articleCommission": "Nhuận bút",
     "articleStatsReport": "BC thống kê bài viết",
     "taskList": "Danh sách công việc",
     "taskReport": "Báo cáo công việc",
@@ -93,7 +94,9 @@ export const permission = {
     "matTranTerm": "Nhiệm kỳ",
     "matTranSession": "Kỳ họp",
     "matTranCommitteeMembers": "Ủy viên ủy ban",
+    "matTranCommitteeMemberStatsReport": "Báo cáo ủy viên",
     "matTranOfficerList": "Danh sách cán bộ",
+    "matTranOfficerStatsReport": "Báo cáo cán bộ",
     "matTranSetupSettings": "Thiết lập cài đặt"
   },
   "validation": {

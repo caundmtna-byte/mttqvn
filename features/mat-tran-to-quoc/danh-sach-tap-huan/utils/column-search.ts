@@ -1,5 +1,5 @@
 import { formatDateTimeShort } from '@/lib/utils';
-import type { MttqLopTapHuanListRow } from '../core/types';
+import type { MttqLopTapHuanListRow, MttqTapHuanChiTietFlatRow } from '../core/types';
 
 /**
  * Cột dùng MultiSelect trong header — không áp thêm `columnSearch` text cho cùng key
@@ -51,6 +51,36 @@ export function mttqTapHuanMatchesColumnSearch(
         break;
       default: {
         const raw = row[colId as keyof MttqLopTapHuanListRow];
+        haystack = raw == null ? '' : String(raw);
+      }
+    }
+    if (!haystack.toLowerCase().includes(trimmed.toLowerCase())) return false;
+  }
+  return true;
+}
+
+/** Lọc cột tab Danh sách chi tiết (dòng phẳng `mttq_lop_tap_huan_ct`). */
+export function mttqTapHuanChiTietFlatMatchesColumnSearch(
+  row: MttqTapHuanChiTietFlatRow,
+  columnSearch: Record<string, string> | undefined,
+): boolean {
+  if (!columnSearch) return true;
+  const skip = MTTQ_TAP_HUAN_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
+
+  for (const [colId, q] of Object.entries(columnSearch)) {
+    if (skip.includes(colId)) continue;
+    const trimmed = q.trim();
+    if (!trimmed) continue;
+
+    let haystack = '';
+    switch (colId) {
+      case 'tg_cap_nhat_lop':
+        haystack = `${row.tg_cap_nhat_lop ?? ''} ${
+          row.tg_cap_nhat_lop ? formatDateTimeShort(row.tg_cap_nhat_lop) : ''
+        }`.trim();
+        break;
+      default: {
+        const raw = row[colId as keyof MttqTapHuanChiTietFlatRow];
         haystack = raw == null ? '' : String(raw);
       }
     }

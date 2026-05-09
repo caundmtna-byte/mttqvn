@@ -26,6 +26,7 @@ import {
   formatCanBoPhoneDisplay,
   trimmedDisplay,
 } from '../utils/display-format';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
@@ -34,6 +35,7 @@ import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/Det
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { computeAgeFromBirthDate } from '../utils/age';
+import MttqCanBoTapHuanSection from './mttq-can-bo-tap-huan-section';
 import MttqCanBoKhenThuongSection from './mttq-can-bo-khen-thuong-section';
 
 interface Props {
@@ -155,25 +157,46 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
               icon={<BadgeCheck size={12} />}
               value={data.dang_vien ? txt('matTranCanBo.detail.dangVienYes') : txt('matTranCanBo.detail.dangVienNo')}
             />
+            <DetailField
+              label={txt('matTranCanBo.form.ngayVaoDang')}
+              icon={<Calendar size={12} />}
+              value={formatCanBoDetailDate(data.ngay_vao_dang) ?? undefined}
+            />
           </DetailFieldGrid>
         </DetailSection>
 
         <DetailSection title={txt('matTranCanBo.detail.sectionToChuc')}>
           <DetailFieldGrid>
             <DetailField
-              label={txt('matTranCanBo.form.capQuanLy')}
-              icon={<Layers size={12} />}
-              value={trimmedDisplay(data.ten_cap_quan_ly) ?? undefined}
-            />
-            <DetailField
               label={txt('matTranCanBo.form.toChuc')}
               icon={<Building2 size={12} />}
               value={trimmedDisplay(data.ten_to_chuc) ?? undefined}
             />
             <DetailField
+              label={txt('matTranCanBo.form.phongBan')}
+              icon={<Layers size={12} />}
+              value={trimmedDisplay(data.ten_phong_ban) ?? undefined}
+            />
+            <DetailField
               label={txt('matTranCanBo.form.chucVu')}
               icon={<Briefcase size={12} />}
               value={trimmedDisplay(data.ten_chuc_vu) ?? undefined}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.donVi')}
+              icon={<MapPin size={12} />}
+              value={
+                (() => {
+                  const d = formatTenDonViCongTacDisplay(data.chuc_vu_cap_quan_ly, data.ten_don_vi);
+                  if (d === txt('common.emptyCell')) return undefined;
+                  return (
+                    <span className="text-body-sm text-foreground whitespace-pre-wrap break-words">
+                      {d}
+                    </span>
+                  );
+                })()
+              }
+              emptyText={txt('common.emptyCell')}
             />
             <DetailField
               label={txt('matTranCanBo.form.ngayThamGiaToChuc')}
@@ -195,6 +218,11 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
               icon={<BookOpen size={12} />}
               value={trimmedDisplay(data.ten_ly_luan_chinh_tri) ?? undefined}
             />
+            <DetailField
+              label={txt('matTranCanBo.form.vanHoa')}
+              icon={<BookOpen size={12} />}
+              value={trimmedDisplay(data.van_hoa) ?? undefined}
+            />
           </DetailFieldGrid>
         </DetailSection>
 
@@ -206,6 +234,24 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
               icon={<MapPin size={12} />}
               value={(() => {
                 const d = trimmedDisplay(data.dia_chi);
+                return d ? <p className="whitespace-pre-wrap break-words">{d}</p> : undefined;
+              })()}
+            />
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('matTranCanBo.form.queQuan')}
+              icon={<MapPin size={12} />}
+              value={(() => {
+                const d = trimmedDisplay(data.que_quan);
+                return d ? <p className="whitespace-pre-wrap break-words">{d}</p> : undefined;
+              })()}
+            />
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('matTranCanBo.form.noiOHienNay')}
+              icon={<MapPin size={12} />}
+              value={(() => {
+                const d = trimmedDisplay(data.noi_o_hien_nay);
                 return d ? <p className="whitespace-pre-wrap break-words">{d}</p> : undefined;
               })()}
             />
@@ -268,6 +314,7 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
           </DetailFieldGrid>
         </DetailSection>
 
+        <MttqCanBoTapHuanSection canBoId={data.id} />
         <MttqCanBoKhenThuongSection canBoId={data.id} />
       </div>
     </GenericDrawer>

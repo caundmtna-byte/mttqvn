@@ -45,7 +45,7 @@ function labelMonth(key: string): string {
   return `${m}/${y}`;
 }
 
-/** Gom KPI + chuỗi chart/bảng từ danh sách bài (don_gia = hoa hồng). */
+/** Gom KPI + chuỗi chart/bảng từ danh sách bài (don_gia = nhuận bút). */
 export function aggregateCommission(
   rows: BaiVietDanhSach[],
   scope: CommissionScope,

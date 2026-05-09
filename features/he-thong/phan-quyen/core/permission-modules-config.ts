@@ -46,12 +46,14 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky', nameKey: 'page.matTranDashboard.term' },
           { id: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop', nameKey: 'page.matTranDashboard.session' },
           { id: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien', nameKey: 'page.matTranDashboard.committeeMembers' },
+          { id: 'mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien', nameKey: 'page.matTranDashboard.committeeMemberStatsReport' },
         ],
       },
       {
         groupTitleKey: 'page.matTranDashboard.groupOtherSettings',
         modules: [
           { id: 'mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo', nameKey: 'page.matTranDashboard.officerList' },
+          { id: 'mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo', nameKey: 'page.matTranDashboard.officerStatsReport' },
           { id: 'mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat', nameKey: 'page.matTranDashboard.setupSettings' },
         ],
       },
@@ -66,7 +68,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         groupTitleKey: 'page.articleDashboard.groupMain',
         modules: [
           { id: 'quan-ly-viet-bai/bai-viet', nameKey: 'page.articleDashboard.articles' },
-          { id: 'quan-ly-viet-bai/hoa-hong-viet-bai', nameKey: 'page.articleDashboard.commission' },
+          { id: 'quan-ly-viet-bai/nhuan-but-viet-bai', nameKey: 'page.articleDashboard.commission' },
           { id: 'quan-ly-viet-bai/bc-thong-ke-bai-viet', nameKey: 'page.articleDashboard.statsReport' },
           { id: 'quan-ly-viet-bai/thiet-lap-bai-viet', nameKey: 'page.articleDashboard.settings' },
         ],
@@ -97,6 +99,8 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         modules: [
           { id: 'trang-thong-tin-khac/tin-tuc-mttq', nameKey: 'page.externalLinksDashboard.mttqNews' },
           { id: 'trang-thong-tin-khac/zalo-oa', nameKey: 'page.externalLinksDashboard.zaloOa' },
+          { id: 'trang-thong-tin-khac/mat-tran-so', nameKey: 'page.externalLinksDashboard.matTranSo' },
+          { id: 'trang-thong-tin-khac/quan-ly-van-ban', nameKey: 'page.externalLinksDashboard.quanLyVanBan' },
         ],
       },
     ],

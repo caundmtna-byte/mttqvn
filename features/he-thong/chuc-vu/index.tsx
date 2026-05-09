@@ -120,10 +120,11 @@ const PositionPage: React.FC = () => {
   const IMPORT_COLUMNS = useMemo(
     () => [
       { key: 'ten_chuc_vu', label: txt('position.form.name'), required: true },
-      { key: 'cap_bac', label: `${txt('position.form.level')} (id/số)` },
+      { key: 'cap_bac', label: `${txt('position.form.level')} (id/số)`, required: true },
       { key: 'ma_cap_bac', label: `${txt('position.form.level')} (mã)` },
-      { key: 'ten_phong_ban', label: `${txt('position.form.department')} (tên)` },
+      { key: 'ten_phong_ban', label: `${txt('position.form.department')} (tên)`, required: true },
       { key: 'mo_ta', label: txt('position.form.description') },
+      { key: 'cap_quan_ly', label: txt('position.store.managementLevelCol'), required: true },
       { key: 'thu_tu', label: txt('position.store.orderCol') },
       { key: 'trang_thai', label: txt('common.status') },
     ],
@@ -171,6 +172,7 @@ const PositionPage: React.FC = () => {
     () => [
       { key: 'ten_chuc_vu', label: txt('position.exportName') },
       { key: 'mo_ta', label: txt('position.exportDesc') },
+      { key: 'cap_quan_ly', label: txt('position.store.managementLevelCol') },
       { key: 'trang_thai_text', label: txt('position.exportStatus') },
     ],
     []
@@ -180,6 +182,7 @@ const PositionPage: React.FC = () => {
     (item: Position) => ({
       ten_chuc_vu: item.ten_chuc_vu,
       mo_ta: item.mo_ta ?? '',
+      cap_quan_ly: item.cap_quan_ly ?? '',
       trang_thai_text: item.trang_thai,
     }),
     []

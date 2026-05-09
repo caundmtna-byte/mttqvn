@@ -1,31 +1,37 @@
 import { useMemo } from 'react';
-import { APP_RESOURCE_TO_MODULE } from '@/lib/permissions';
+import { APP_RESOURCE_TO_MODULE, isChucVuCapBacOne } from '@/lib/permissions';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
+import type { CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
+import type { MttqTapHuanCap } from '../core/constants';
 
 export interface MttqLopTapHuanViewer {
-  /** True ⇒ bypass gating: cap_bac ∈ {1,2}, quan_tri (admin/all), role=admin, hoặc legacy mode chưa hydrate matrix. */
+  /** True ⇒ bypass: `cap_bac === 1`, quan_tri (`admin`/`all`), `role=admin`, hoặc legacy khi chưa hydrate matrix. */
   canViewAll: boolean;
-  /** `var_nhan_vien.id_phong_ban` của user hiện tại (string-safe) hoặc null. */
-  viewerPhongBanId: string | null;
+  /** `var_chuc_vu.cap_quan_ly` sau hydrate — Tỉnh / Xã phường / null. */
+  chucVuCapQuanLy: CapQuanLy | null;
+  /** `var_nhan_vien.don_vi_id` — so khớp `mttq_lop_tap_huan.don_vi_id` khi lớp Cấp xã. */
+  viewerDonViId: string | null;
 }
 
 /**
- * Tổng hợp viewer cho module Danh sách tập huấn.
+ * Tổng hợp viewer cho module Danh sách tập huấn (tab lớp + Danh sách CT).
  *
- * Quy tắc `canViewAll`:
- * - `user.role === 'admin'`: mock admin xem hết.
- * - `!matrixActive`: chế độ legacy / chưa hydrate matrix — giữ trải nghiệm cũ, không vô tình ẩn data.
- * - `chucVuCapBac ∈ {1, 2}`: cấp lãnh đạo bypass.
- * - Token `admin` / `all` (map từ `quan_tri`) trong grants của module danh sách tập huấn.
+ * `canViewAll`:
+ * - `user.role === 'admin'`
+ * - `!matrixActive` (legacy, không ẩn dữ liệu khi chưa hydrate)
+ * - `var_chuc_vu.cap_bac === 1`
+ * - Grant `admin` / `all` (map từ `quan_tri`) trên module danh sách tập huấn
  *
- * Còn lại (cap_bac >= 3 hoặc null): chỉ thấy bản ghi do người cùng phòng ban tạo.
+ * Không bypass: theo `cap_tap_huan` của lớp và `cap_quan_ly` chức vụ —
+ * Cấp tỉnh chỉ Tỉnh; Cấp xã là Tỉnh hoặc Xã phường (có `don_vi_id` NV) khớp `don_vi_id` lớp.
  */
 export function useMttqLopTapHuanViewer(): MttqLopTapHuanViewer {
   const user = useAuthStore((s) => s.user);
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
   const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
+  const chucVuCapQuanLy = usePermissionGrantStore((s) => s.chucVuCapQuanLy);
 
   return useMemo(() => {
     const moduleId =
@@ -35,24 +41,38 @@ export function useMttqLopTapHuanViewer(): MttqLopTapHuanViewer {
     const canViewAll =
       user?.role === 'admin' ||
       !matrixActive ||
-      (chucVuCapBac != null && chucVuCapBac >= 1 && chucVuCapBac <= 2) ||
+      isChucVuCapBacOne(chucVuCapBac) ||
       allowed.includes('admin') ||
       allowed.includes('all');
-    const phongBan = user?.id_phong_ban?.toString().trim();
+    const dv = user?.don_vi_id?.toString().trim();
     return {
       canViewAll,
-      viewerPhongBanId: phongBan ? phongBan : null,
+      chucVuCapQuanLy: chucVuCapQuanLy ?? null,
+      viewerDonViId: dv ? dv : null,
     };
-  }, [user?.role, user?.id_phong_ban, matrixActive, grantsByModule, chucVuCapBac]);
+  }, [user?.role, user?.don_vi_id, matrixActive, grantsByModule, chucVuCapBac, chucVuCapQuanLy]);
 }
 
-/** Helper rút gọn dùng cho cả danh sách và detail. */
-export function canViewLopTapHuanRow(
-  viewer: MttqLopTapHuanViewer,
-  row: { id_phong_ban_nguoi_tao?: string | null },
-): boolean {
+export type LopTapHuanRowForViewGate = {
+  cap_tap_huan: MttqTapHuanCap;
+  don_vi_id?: string | null;
+};
+
+/** Helper rút gọn dùng cho cả danh sách lớp, tab CT và detail (thuần hàm — dễ unit test). */
+export function canViewLopTapHuanRow(viewer: MttqLopTapHuanViewer, row: LopTapHuanRowForViewGate): boolean {
   if (viewer.canViewAll) return true;
-  if (!viewer.viewerPhongBanId) return false;
-  const rowPb = row.id_phong_ban_nguoi_tao?.toString().trim();
-  return Boolean(rowPb) && rowPb === viewer.viewerPhongBanId;
+  const cap = row.cap_tap_huan;
+  if (cap === 'Cấp tỉnh') {
+    return viewer.chucVuCapQuanLy === 'Tỉnh';
+  }
+  if (cap === 'Cấp xã') {
+    if (viewer.chucVuCapQuanLy === 'Tỉnh') return true;
+    if (viewer.chucVuCapQuanLy === 'Xã phường') {
+      if (!viewer.viewerDonViId) return false;
+      const rowDv = row.don_vi_id?.toString().trim();
+      return Boolean(rowDv) && rowDv === viewer.viewerDonViId;
+    }
+    return false;
+  }
+  return false;
 }

@@ -8,7 +8,9 @@ import {
   CalendarDays,
   Users,
   IdCard,
+  BarChart3,
   Settings,
+  PieChart,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -71,6 +73,13 @@ const MatTranToQuocDashboard: React.FC = () => {
             icon: Users,
             color: 'bg-purple-500',
           },
+          {
+            path: '/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien',
+            title: txt('page.matTranDashboard.committeeMemberStatsReport'),
+            description: txt('page.matTranDashboard.committeeMemberStatsReportDesc'),
+            icon: PieChart,
+            color: 'bg-indigo-600',
+          },
         ],
       },
       {
@@ -82,6 +91,13 @@ const MatTranToQuocDashboard: React.FC = () => {
             description: txt('page.matTranDashboard.officerListDesc'),
             icon: IdCard,
             color: 'bg-slate-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo',
+            title: txt('page.matTranDashboard.officerStatsReport'),
+            description: txt('page.matTranDashboard.officerStatsReportDesc'),
+            icon: BarChart3,
+            color: 'bg-teal-600',
           },
           {
             path: '/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat',

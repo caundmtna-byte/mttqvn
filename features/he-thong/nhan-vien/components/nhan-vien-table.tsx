@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { txt } from '../../../../lib/text';
-import { Briefcase, Building2, Layers } from 'lucide-react';
+import { Briefcase, Building2, Layers, MapPin } from 'lucide-react';
 import { Employee } from '../core/types';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import type { ColumnConfig } from '../../../../store/createGenericStore';
@@ -13,6 +13,7 @@ import { useDepartments } from '../../phong-ban/hooks/use-phong-ban';
 import { usePositions } from '../../chuc-vu/hooks/use-chuc-vu';
 import { useFilterCounts } from '../hooks/use-filter-counts';
 import { STATUS_BADGE_CONFIG, STATUS_OPTIONS } from '../core/constants';
+import { capQuanLyBadgeConfig } from '../../chuc-vu/utils/cap-quan-ly';
 import {
   ColumnHeaderFilter,
   ColumnHeaderSortMenu,
@@ -75,6 +76,11 @@ const EmployeeTable = memo(function EmployeeTable({
       count: statusCounts[String(s.value)] || 0,
     })),
     [statusCounts],
+  );
+
+  const capQuanLyBadge = useMemo(
+    () => capQuanLyBadgeConfig(txt('position.capQuanLyTinh'), txt('position.capQuanLyXaPhuong')),
+    [],
   );
 
   const renderColumnHeaderAccessory = useCallback(
@@ -206,6 +212,26 @@ const EmployeeTable = memo(function EmployeeTable({
             </span>
           </div>
         );
+      case 'cap_quan_ly':
+        return item.cap_quan_ly ? (
+          <EnumBadge value={item.cap_quan_ly} config={capQuanLyBadge} shape="rounded" truncate />
+        ) : (
+          <span className="text-xs text-muted-foreground italic">{txt('common.emptyCell')}</span>
+        );
+      case 'ten_don_vi':
+        if (item.cap_quan_ly === 'Tỉnh') {
+          return <span className="text-body-sm text-muted-foreground tabular-nums">-</span>;
+        }
+        return item.ten_don_vi?.trim() ? (
+          <div className="flex items-center gap-1.5 text-body-sm text-foreground min-w-0">
+            <MapPin size={12} className="text-primary/60 shrink-0" />
+            <span className="truncate" title={item.ten_don_vi}>
+              {item.ten_don_vi}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground italic">{txt('common.emptyCell')}</span>
+        );
       case 'trang_thai':
         return <EnumBadge value={item.trang_thai} config={STATUS_BADGE_CONFIG} truncate />;
       case 'actions':
@@ -222,7 +248,7 @@ const EmployeeTable = memo(function EmployeeTable({
       default:
         return null;
     }
-  }, [onEdit, onDelete, onStatusChange, rowMenuOpenId]);
+  }, [onEdit, onDelete, onStatusChange, rowMenuOpenId, capQuanLyBadge]);
 
   const renderMobileCard = useCallback((item: Employee, isSelected: boolean) => (
     <MobileListCard
@@ -263,6 +289,8 @@ const EmployeeTable = memo(function EmployeeTable({
         <p className="truncate text-xs text-muted-foreground">
           @{item.ten_tai_khoan}
           {item.ten_chuc_vu ? ` · ${item.ten_chuc_vu}` : ''}
+          {item.cap_quan_ly ? ` · ${item.cap_quan_ly}` : ''}
+          {item.cap_quan_ly === 'Tỉnh' ? ' · -' : item.ten_don_vi?.trim() ? ` · ${item.ten_don_vi}` : ''}
         </p>
       )}
       footerStart={(

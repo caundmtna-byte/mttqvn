@@ -17,7 +17,12 @@ import { CONG_VIEC_MUC_DO, CONG_VIEC_TRANG_THAI } from '../core/constants';
 import { congViecDanhSachSchema, type CongViecDanhSachFormValues } from '../core/schema';
 import type { CongViecDanhSach } from '../core/types';
 import { useCreateCongViecDanhSach, useUpdateCongViecDanhSach } from '../hooks/use-cong-viec-danh-sach';
+import { useCongViecAssigneeScope } from '../hooks/use-cong-viec-assignee-scope';
 import { useChuongTrinhNamList } from '@/features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam';
+import {
+  useChuongTrinhNamViewer,
+  canViewChuongTrinhNamRow,
+} from '@/features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer';
 
 const DEFAULT_VALUES: CongViecDanhSachFormValues = {
   muc_do: CONG_VIEC_MUC_DO[0],
@@ -53,29 +58,51 @@ const CongViecForm: React.FC<Props> = ({ initialData, onClose, defaultIdChuongTr
 
   const lockChuongTrinh = Boolean(String(defaultIdChuongTrinh ?? '').trim());
   const { data: chuongTrinhRows = [] } = useChuongTrinhNamList();
+  const chuongTrinhViewer = useChuongTrinhNamViewer();
+  const chuongTrinhRowsInScope = useMemo(
+    () =>
+      chuongTrinhViewer.viewAll
+        ? chuongTrinhRows
+        : chuongTrinhRows.filter((r) => canViewChuongTrinhNamRow(chuongTrinhViewer, r)),
+    [chuongTrinhRows, chuongTrinhViewer],
+  );
   const chuongTrinhOptions = useMemo(
-    () => chuongTrinhRows.map((r) => ({ label: r.ten_chuong_trinh, value: String(r.id) })),
-    [chuongTrinhRows],
+    () => chuongTrinhRowsInScope.map((r) => ({ label: r.ten_chuong_trinh, value: String(r.id) })),
+    [chuongTrinhRowsInScope],
   );
 
   const lockedProgramName = useMemo(() => {
     const id = String(defaultIdChuongTrinh ?? '').trim();
     if (!id) return '';
     return (
+      chuongTrinhRowsInScope.find((r) => String(r.id) === id)?.ten_chuong_trinh?.trim() ||
       chuongTrinhRows.find((r) => String(r.id) === id)?.ten_chuong_trinh?.trim() ||
       initialData?.ten_chuong_trinh?.trim() ||
       ''
     );
-  }, [defaultIdChuongTrinh, chuongTrinhRows, initialData?.ten_chuong_trinh]);
+  }, [defaultIdChuongTrinh, chuongTrinhRowsInScope, chuongTrinhRows, initialData?.ten_chuong_trinh]);
 
   const { data: employees = [] } = useEmployees();
-  const employeeOptions = useMemo(
-    () =>
-      employees
-        .filter((e) => e.trang_thai === 'Hoạt động')
-        .map((e) => ({ label: `${e.ho_va_ten} (${e.ten_tai_khoan})`, value: String(e.id) })),
-    [employees],
-  );
+  const { canSelectAll, viewerPhongBanId } = useCongViecAssigneeScope();
+
+  const employeeOptions = useMemo(() => {
+    const active = employees.filter((e) => e.trang_thai === 'Hoạt động');
+    const inScope = canSelectAll
+      ? active
+      : active.filter((e) => {
+          if (viewerPhongBanId && e.id_phong_ban === viewerPhongBanId) return true;
+          // Edit mode: giữ assignee đã lưu (dù khác phòng ban) để form không drop value hợp lệ.
+          if (initialData?.id_trach_nhiem && String(e.id) === initialData.id_trach_nhiem) return true;
+          if (initialData?.ids_ho_tro?.includes(String(e.id))) return true;
+          // Viewer luôn được chọn chính mình (mặc định trách nhiệm khi tạo mới).
+          if (idNguoiTao && String(e.id) === idNguoiTao) return true;
+          return false;
+        });
+    return inScope.map((e) => ({
+      label: `${e.ho_va_ten} (${e.ten_tai_khoan})`,
+      value: String(e.id),
+    }));
+  }, [employees, canSelectAll, viewerPhongBanId, initialData, idNguoiTao]);
 
   const mucDoOptions = useMemo(
     () => CONG_VIEC_MUC_DO.map((m) => ({ label: m, value: m })),

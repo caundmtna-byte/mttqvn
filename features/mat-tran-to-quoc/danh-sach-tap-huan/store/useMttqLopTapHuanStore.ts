@@ -32,12 +32,20 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 2,
   },
   {
+    id: 'ten_don_vi',
+    label: txt('matTranTapHuan.store.donViCol'),
+    visible: true,
+    minWidth: 140,
+    maxWidth: 220,
+    order: 3,
+  },
+  {
     id: 'so_dong',
     label: txt('matTranTapHuan.store.soDongCol'),
     visible: true,
     minWidth: 72,
     maxWidth: 96,
-    order: 3,
+    order: 4,
   },
   {
     id: 'ho_va_ten_nguoi_tao',
@@ -45,14 +53,14 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 180,
-    order: 4,
+    order: 5,
   },
   {
     id: 'tg_cap_nhat',
     label: txt('matTranTapHuan.store.tgCapNhatCol'),
     visible: false,
     ...P.datetime,
-    order: 5,
+    order: 6,
   },
 ];
 

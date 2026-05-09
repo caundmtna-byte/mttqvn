@@ -24,10 +24,12 @@ const CongViecPage = lazy(() => import('./features/quan-ly-giao-viec/cong-viec/i
 const BaoCaoCongViecPage = lazy(() => import('./features/quan-ly-giao-viec/bao-cao-cong-viec/index'));
 const ThietLapCaiDatPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-cai-dat/index'));
 const DanhSachCanBoPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-can-bo/index'));
+const BaoCaoCanBoPage = lazy(() => import('./features/mat-tran-to-quoc/bao-cao-can-bo/index'));
 const DanhSachKhenThuongPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-khen-thuong/index'));
 const NhiemKyPage = lazy(() => import('./features/mat-tran-to-quoc/nhiem-ky/index'));
 const NhiemKyDiemDanhMatrixPage = lazy(() => import('./features/mat-tran-to-quoc/nhiem-ky/pages/mttq-nhiem-ky-diem-danh-matrix-page'));
 const UyVienUyBanPage = lazy(() => import('./features/mat-tran-to-quoc/uy-vien-uy-ban/index'));
+const BaoCaoUyVienPage = lazy(() => import('./features/mat-tran-to-quoc/bao-cao-uy-vien/index'));
 const KyHopPage = lazy(() => import('./features/mat-tran-to-quoc/ky-hop/index'));
 const DanhSachTapHuanPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tap-huan/index'));
 
@@ -93,11 +95,17 @@ const App = () => {
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky/diem-danh/:nhiemKyId" element={<NhiemKyDiemDanhMatrixPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<KyHopPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<UyVienUyBanPage />} />
+          <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien" element={<BaoCaoUyVienPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
+          <Route path="/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo" element={<BaoCaoCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
           <Route path="/quan-ly-viet-bai" element={<QuanLyVietBaiDashboard />} />
           <Route path="/quan-ly-viet-bai/bai-viet" element={<BaiVietDanhSachPage />} />
-          <Route path="/quan-ly-viet-bai/hoa-hong-viet-bai" element={<HoaHongVietBaiPage />} />
+          <Route
+            path="/quan-ly-viet-bai/hoa-hong-viet-bai"
+            element={<Navigate to="/quan-ly-viet-bai/nhuan-but-viet-bai" replace />}
+          />
+          <Route path="/quan-ly-viet-bai/nhuan-but-viet-bai" element={<HoaHongVietBaiPage />} />
           <Route path="/quan-ly-viet-bai/bc-thong-ke-bai-viet" element={<BcThongKeBaiVietPage />} />
           <Route path="/quan-ly-viet-bai/thiet-lap-bai-viet" element={<ThietLapBaiVietPage />} />
           <Route path="/quan-ly-giao-viec" element={<QuanLyGiaoViecDashboard />} />

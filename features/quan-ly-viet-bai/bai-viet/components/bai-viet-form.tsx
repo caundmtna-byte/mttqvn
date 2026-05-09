@@ -16,6 +16,7 @@ import { useThietLapKhacAll } from '../../thiet-lap-bai-viet/hooks/use-thiet-lap
 import { baiVietDanhSachSchema, type BaiVietDanhSachFormValues } from '../core/schema';
 import type { BaiVietDanhSach } from '../core/types';
 import { useCreateBaiVietDanhSach, useUpdateBaiVietDanhSach } from '../hooks/use-bai-viet-danh-sach';
+import { useCanEditBaiVietDonGia } from '../hooks/use-can-edit-bai-viet-don-gia';
 
 const DEFAULT_VALUES: BaiVietDanhSachFormValues = {
   ten_bai: '',
@@ -39,6 +40,7 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const createMutation = useCreateBaiVietDanhSach(onClose);
   const updateMutation = useUpdateBaiVietDanhSach(onClose);
+  const canEditDonGia = useCanEditBaiVietDonGia();
 
   const { data: theLoais = [] } = useTheLoais();
   const { data: khacRows = [] } = useThietLapKhacAll();
@@ -98,12 +100,12 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
   }, [initialData, reset]);
 
   useEffect(() => {
-    if (isEdit) return;
     if (!watchedTheLoai) return;
+    if (isEdit && canEditDonGia) return;
     const tl = theLoais.find((t) => String(t.id) === watchedTheLoai);
     if (!tl) return;
     setValue('don_gia', typeof tl.don_gia === 'number' ? tl.don_gia : Number(tl.don_gia) || 0);
-  }, [watchedTheLoai, theLoais, isEdit, setValue]);
+  }, [watchedTheLoai, theLoais, isEdit, canEditDonGia, setValue]);
 
   const onSubmit: SubmitHandler<BaiVietDanhSachFormValues> = (data) => {
     if (isEdit && initialData) {
@@ -168,21 +170,27 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
                 />
               )}
             />
-            <Controller
-              name="don_gia"
-              control={control}
-              render={({ field }) => (
-                <CurrencyInput
-                  label={txt('articleList.form.donGia')}
-                  required
-                  suffix=""
-                  icon={<Banknote size={12} />}
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={errors.don_gia?.message}
-                />
-              )}
-            />
+            <div className="space-y-1.5">
+              <Controller
+                name="don_gia"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    label={txt('articleList.form.donGia')}
+                    required
+                    disabled={!canEditDonGia}
+                    suffix=""
+                    icon={<Banknote size={12} />}
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.don_gia?.message}
+                  />
+                )}
+              />
+              {!canEditDonGia ? (
+                <p className="text-xs text-muted-foreground m-0">{txt('articleList.form.donGiaLockedHint')}</p>
+              ) : null}
+            </div>
             <Input
               label={txt('articleList.form.ngayDang')}
               type="date"

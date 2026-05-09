@@ -4,6 +4,8 @@ import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
+import { flattenMttqCanBoRow } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/services/mttq-can-bo-service';
+import { MTTQ_CAN_BO_MOCK_DATA } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/mock-data';
 import type { MttqUyVienUyBan, MttqUyVienUyBanListRow } from '../core/types';
 import { getUyVienDiemDanhSummariesForIds } from '@/features/mat-tran-to-quoc/ky-hop/services/mttq-diem-danh-service';
 import {
@@ -14,8 +16,10 @@ import {
 import {
   MTTQ_UY_VIEN_UY_BAN_SELECT_FULL,
   MTTQ_UY_VIEN_UY_BAN_SELECT_LIST,
+  MTTQ_UY_VIEN_UY_BAN_SELECT_STATS,
 } from '../core/supabase-select';
 import { MTTQ_UY_VIEN_UY_BAN_MOCK } from '../mock-data';
+import { formatTenPhongBanHienThi } from '../utils/phong-ban-hien-thi';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -25,6 +29,15 @@ const repo = createRepository<RepoRow>({
   delay: 400,
   mockData: [],
 });
+
+const repoStats = isSupabase()
+  ? createRepository<RepoRow>({
+      tableName: 'mttq_uy_vien_uy_ban',
+      select: MTTQ_UY_VIEN_UY_BAN_SELECT_STATS,
+      delay: 400,
+      mockData: [],
+    })
+  : repo;
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
   if (v == null) return undefined;
@@ -37,9 +50,76 @@ function nullableStr(v: unknown): string | null {
   return String(v);
 }
 
-function boolVal(v: unknown): boolean {
-  if (v === true || v === 'true' || v === 1 || v === '1') return true;
-  return false;
+function mergeDisplayFromMockCanBo(canBoId: string): Pick<
+  MttqUyVienUyBan,
+  | 'ho_va_ten'
+  | 'chuc_vu_don_vi'
+  | 'ngay_sinh'
+  | 'gioi_tinh'
+  | 'dan_toc'
+  | 'ton_giao'
+  | 'dang_vien'
+  | 'so_dien_thoai'
+  | 'trinh_do_cm'
+  | 'trinh_do_llct'
+  | 'ten_to_chuc'
+  | 'ten_phong_ban_hien_thi'
+  | 'ten_don_vi_can_bo'
+  | 'dia_chi_can_bo'
+  | 'ten_trang_thai_can_bo'
+  | 'ngay_nhap_trang_thai'
+  | 'van_hoa'
+  | 'ngay_vao_dang'
+  | 'que_quan'
+  | 'noi_o_hien_nay'
+> {
+  const c = MTTQ_CAN_BO_MOCK_DATA.find((x) => String(x.id) === String(canBoId));
+  if (!c) {
+    return {
+      ho_va_ten: '',
+      chuc_vu_don_vi: null,
+      ngay_sinh: null,
+      gioi_tinh: null,
+      dan_toc: null,
+      ton_giao: null,
+      dang_vien: false,
+      so_dien_thoai: null,
+      trinh_do_cm: null,
+      trinh_do_llct: null,
+      ten_to_chuc: null,
+      ten_phong_ban_hien_thi: null,
+      ten_don_vi_can_bo: null,
+      dia_chi_can_bo: null,
+      ten_trang_thai_can_bo: null,
+      ngay_nhap_trang_thai: null,
+      van_hoa: null,
+      ngay_vao_dang: null,
+      que_quan: null,
+      noi_o_hien_nay: null,
+    };
+  }
+  return {
+    ho_va_ten: c.ho_ten,
+    chuc_vu_don_vi: c.ten_chuc_vu,
+    ngay_sinh: c.ngay_sinh,
+    gioi_tinh: c.gioi_tinh,
+    dan_toc: c.ten_dan_toc,
+    ton_giao: c.ton_giao,
+    dang_vien: c.dang_vien,
+    so_dien_thoai: c.dien_thoai,
+    trinh_do_cm: c.ten_trinh_do,
+    trinh_do_llct: c.ten_ly_luan_chinh_tri,
+    ten_to_chuc: c.ten_to_chuc,
+    ten_phong_ban_hien_thi: formatTenPhongBanHienThi(c.ten_phong_ban, c.ten_bo_phan),
+    ten_don_vi_can_bo: c.ten_don_vi,
+    dia_chi_can_bo: c.dia_chi ?? null,
+    ten_trang_thai_can_bo: c.ten_trang_thai ?? null,
+    ngay_nhap_trang_thai: c.ngay_nhap_trang_thai,
+    van_hoa: c.van_hoa,
+    ngay_vao_dang: c.ngay_vao_dang,
+    que_quan: c.que_quan,
+    noi_o_hien_nay: c.noi_o_hien_nay,
+  };
 }
 
 export function flattenRow(row: Record<string, unknown>): MttqUyVienUyBan {
@@ -50,35 +130,41 @@ export function flattenRow(row: Record<string, unknown>): MttqUyVienUyBan {
   }>(row.nguoi_tao);
   const nk = pickEmbedded<{ ten_nhiem_ky?: string }>(row.nhiem_ky);
   const dv = pickEmbedded<{ ten?: string }>(row.don_vi);
+  const cbRaw = pickEmbedded<Record<string, unknown>>(row.can_bo);
+  const canBo = cbRaw ? flattenMttqCanBoRow(cbRaw) : null;
+
   const rest = { ...row };
   delete rest.nguoi_tao;
   delete rest.nhiem_ky;
   delete rest.don_vi;
+  delete rest.can_bo;
   const r = rest as Record<string, unknown>;
 
   return {
     id: String(r.id),
+    can_bo_id: String(r.can_bo_id ?? ''),
     ma_uv: nullableStr(r.ma_uv),
     nhiem_ky_id: String(r.nhiem_ky_id ?? ''),
     ten_nhiem_ky: String(nk?.ten_nhiem_ky ?? ''),
     don_vi_id: r.don_vi_id == null || r.don_vi_id === '' ? null : String(r.don_vi_id),
     ten_don_vi: dv?.ten != null && String(dv.ten).trim() !== '' ? String(dv.ten) : null,
-    ho_va_ten: String(r.ho_va_ten ?? ''),
-    chuc_vu_don_vi: nullableStr(r.chuc_vu_don_vi),
-    ngay_sinh: nullableStr(r.ngay_sinh),
-    gioi_tinh: nullableStr(r.gioi_tinh),
+    ho_va_ten: canBo?.ho_ten ?? '',
+    chuc_vu_don_vi: canBo?.ten_chuc_vu ?? null,
+    ngay_sinh: canBo?.ngay_sinh ?? null,
+    gioi_tinh: canBo?.gioi_tinh ?? null,
     trang_thai_tham_gia: nullableStr(r.trang_thai_tham_gia),
-    ngay_nhap_trang_thai: nullableStr(r.ngay_nhap_trang_thai),
-    van_hoa: nullableStr(r.van_hoa),
-    trinh_do_cm: nullableStr(r.trinh_do_cm),
-    trinh_do_llct: nullableStr(r.trinh_do_llct),
-    dan_toc: nullableStr(r.dan_toc),
-    ton_giao: nullableStr(r.ton_giao),
-    dang_vien: boolVal(r.dang_vien),
-    ngay_vao_dang: nullableStr(r.ngay_vao_dang),
-    que_quan: nullableStr(r.que_quan),
-    noi_o_hien_nay: nullableStr(r.noi_o_hien_nay),
-    so_dien_thoai: nullableStr(r.so_dien_thoai),
+    ten_trang_thai_can_bo: canBo?.ten_trang_thai ?? null,
+    ngay_nhap_trang_thai: canBo?.ngay_nhap_trang_thai ?? null,
+    van_hoa: canBo?.van_hoa ?? null,
+    trinh_do_cm: canBo?.ten_trinh_do ?? null,
+    trinh_do_llct: canBo?.ten_ly_luan_chinh_tri ?? null,
+    dan_toc: canBo?.ten_dan_toc ?? null,
+    ton_giao: canBo?.ton_giao ?? null,
+    dang_vien: canBo?.dang_vien ?? false,
+    ngay_vao_dang: canBo?.ngay_vao_dang ?? null,
+    que_quan: canBo?.que_quan ?? null,
+    noi_o_hien_nay: canBo?.noi_o_hien_nay ?? null,
+    so_dien_thoai: canBo?.dien_thoai ?? null,
     ghi_chu: nullableStr(r.ghi_chu),
     id_nguoi_tao: String(r.id_nguoi_tao ?? ''),
     tg_tao: String(r.tg_tao ?? ''),
@@ -86,10 +172,17 @@ export function flattenRow(row: Record<string, unknown>): MttqUyVienUyBan {
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
     id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
+    ten_to_chuc: canBo?.ten_to_chuc ?? null,
+    ten_phong_ban_hien_thi: canBo ? formatTenPhongBanHienThi(canBo.ten_phong_ban, canBo.ten_bo_phan) : null,
+    ten_don_vi_can_bo: canBo?.ten_don_vi ?? null,
+    dia_chi_can_bo: canBo?.dia_chi ?? null,
   };
 }
 
-function mergeUyVienDiemDanhListSummary(row: MttqUyVienUyBan, s?: { so_ky_hop: number; co_mat: number; vang_mat: number; chua: number }): MttqUyVienUyBanListRow {
+function mergeUyVienDiemDanhListSummary(
+  row: MttqUyVienUyBan,
+  s?: { so_ky_hop: number; co_mat: number; vang_mat: number; chua: number },
+): MttqUyVienUyBanListRow {
   return {
     ...row,
     so_ky_hop: s?.so_ky_hop ?? 0,
@@ -104,7 +197,10 @@ async function withUyVienDiemDanhSummaries(rows: MttqUyVienUyBan[]): Promise<Mtt
   const map = await getUyVienDiemDanhSummariesForIds(rows.map((r) => r.id));
   return rows.map((r) => {
     const s = map.get(r.id);
-    return mergeUyVienDiemDanhListSummary(r, s ? { so_ky_hop: s.so_ky_hop, co_mat: s.co_mat, vang_mat: s.vang_mat, chua: s.chua_diem_danh } : undefined);
+    return mergeUyVienDiemDanhListSummary(
+      r,
+      s ? { so_ky_hop: s.so_ky_hop, co_mat: s.co_mat, vang_mat: s.vang_mat, chua: s.chua_diem_danh } : undefined,
+    );
   });
 }
 
@@ -117,26 +213,29 @@ function mockNextId(): string {
 
 function payloadFromForm(data: MttqUyVienUyBanFormValues) {
   return {
+    can_bo_id: data.can_bo_id,
     ma_uv: data.ma_uv,
     nhiem_ky_id: data.nhiem_ky_id,
     don_vi_id: data.don_vi_id,
-    ho_va_ten: data.ho_va_ten,
-    chuc_vu_don_vi: data.chuc_vu_don_vi,
-    ngay_sinh: data.ngay_sinh,
-    gioi_tinh: data.gioi_tinh,
     trang_thai_tham_gia: data.trang_thai_tham_gia,
-    ngay_nhap_trang_thai: data.ngay_nhap_trang_thai,
-    van_hoa: data.van_hoa,
-    trinh_do_cm: data.trinh_do_cm,
-    trinh_do_llct: data.trinh_do_llct,
-    dan_toc: data.dan_toc,
-    ton_giao: data.ton_giao,
-    dang_vien: data.dang_vien,
-    ngay_vao_dang: data.ngay_vao_dang,
-    que_quan: data.que_quan,
-    noi_o_hien_nay: data.noi_o_hien_nay,
-    so_dien_thoai: data.so_dien_thoai,
     ghi_chu: data.ghi_chu,
+  };
+}
+
+function mockRowFromForm(data: MttqUyVienUyBanFormValues, id: string, idNguoiTao: string, now: string): MttqUyVienUyBan {
+  const disp = mergeDisplayFromMockCanBo(data.can_bo_id);
+  return {
+    id,
+    ...payloadFromForm(data),
+    ...disp,
+    ten_nhiem_ky: 'Mock nhiệm kỳ',
+    ten_don_vi: null,
+    id_nguoi_tao: idNguoiTao,
+    tg_tao: now,
+    tg_cap_nhat: now,
+    ho_va_ten_nguoi_tao: 'Mock',
+    ten_tai_khoan_nguoi_tao: 'mock',
+    id_phong_ban_nguoi_tao: null,
   };
 }
 
@@ -148,6 +247,15 @@ export async function getMttqUyVienUyBanList(): Promise<MttqUyVienUyBanListRow[]
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   const flat = list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
   return withUyVienDiemDanhSummaries(flat);
+}
+
+/** Payload gọn cho trang báo cáo (không gộp điểm danh). */
+export async function getMttqUyVienUyBanStatsList(): Promise<MttqUyVienUyBan[]> {
+  if (!isSupabase()) {
+    return mockRows.map((r) => ({ ...r }));
+  }
+  const list = await repoStats.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
+  return list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
 }
 
 /** Danh sách ủy viên thuộc một nhiệm kỳ (drawer chi tiết nhiệm kỳ). */
@@ -198,18 +306,7 @@ export async function createMttqUyVienUyBan(
   if (!isSupabase()) {
     const id = mockNextId();
     const now = new Date().toISOString();
-    const row: MttqUyVienUyBan = {
-      id,
-      ...payloadFromForm(data),
-      ten_nhiem_ky: 'Mock nhiệm kỳ',
-      ten_don_vi: null,
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-      ho_va_ten_nguoi_tao: 'Mock',
-      ten_tai_khoan_nguoi_tao: 'mock',
-      id_phong_ban_nguoi_tao: null,
-    };
+    const row = mockRowFromForm(data, id, trimmed, now);
     mockRows.push(row);
     return { ...row };
   }
@@ -229,11 +326,14 @@ export async function updateMttqUyVienUyBan(id: string, data: MttqUyVienUyBanFor
     const idx = mockRows.findIndex((r) => r.id === id);
     if (idx === -1) throw new Error(txt('matTranUyVienUyBan.service.notFound'));
     const now = new Date().toISOString();
-    mockRows[idx] = {
+    const merged = {
       ...mockRows[idx],
-      ...payloadFromForm(data),
-      tg_cap_nhat: now,
+      ...mockRowFromForm(data, id, mockRows[idx].id_nguoi_tao, now),
+      id,
+      id_nguoi_tao: mockRows[idx].id_nguoi_tao,
+      tg_tao: mockRows[idx].tg_tao,
     };
+    mockRows[idx] = merged;
     return { ...mockRows[idx] };
   }
 
@@ -292,64 +392,82 @@ async function resolveDonViIdByTen(tenDonVi: string): Promise<string | null> {
   return partial?.id ?? null;
 }
 
-function parseImportBool(v: unknown): boolean | undefined {
-  if (v === undefined || v === null || String(v).trim() === '') return undefined;
-  if (typeof v === 'boolean') return v;
-  const s = String(v).trim().toLowerCase();
-  if (['1', 'true', 'x', 'có', 'co', 'yes'].includes(s)) return true;
-  if (['0', 'false', 'không', 'khong', 'no'].includes(s)) return false;
-  return undefined;
+async function resolveCanBoIdFromImportRow(raw: Record<string, unknown>): Promise<string | null> {
+  const idRaw = raw.can_bo_id != null ? String(raw.can_bo_id).trim() : '';
+  if (/^\d+$/.test(idRaw)) return idRaw;
+
+  const hoTen = String(raw.ho_va_ten ?? raw.ho_ten ?? '').trim();
+  if (!hoTen) return null;
+
+  const nsRaw = raw.ngay_sinh != null && String(raw.ngay_sinh).trim() !== '' ? String(raw.ngay_sinh).trim() : '';
+  const ns = nsRaw.length >= 10 ? nsRaw.slice(0, 10) : nsRaw || null;
+
+  if (!isSupabase()) {
+    const exact = MTTQ_CAN_BO_MOCK_DATA.find(
+      (c) =>
+        c.ho_ten.trim().toLowerCase() === hoTen.toLowerCase() &&
+        (ns == null || c.ngay_sinh == null || (c.ngay_sinh && c.ngay_sinh.slice(0, 10) === ns)),
+    );
+    if (exact) return String(exact.id);
+    const byName = MTTQ_CAN_BO_MOCK_DATA.filter((c) => c.ho_ten.trim().toLowerCase() === hoTen.toLowerCase());
+    if (byName.length === 1) return String(byName[0].id);
+    return null;
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data: eqData, error: eqErr } = await supabase
+    .from('mttq_can_bo')
+    .select('id,ho_ten,ngay_sinh')
+    .eq('ho_ten', hoTen)
+    .limit(10);
+  if (eqErr) handleSupabaseError(eqErr);
+  let rows = eqData ?? [];
+  if (rows.length === 0) {
+    const esc = hoTen.replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const { data: likeData, error: likeErr } = await supabase
+      .from('mttq_can_bo')
+      .select('id,ho_ten,ngay_sinh')
+      .ilike('ho_ten', `%${esc}%`)
+      .limit(40);
+    if (likeErr) handleSupabaseError(likeErr);
+    rows = likeData ?? [];
+  }
+  const lower = hoTen.toLowerCase();
+  const exactDob = rows.filter(
+    (r) =>
+      String(r.ho_ten ?? '')
+        .trim()
+        .toLowerCase() === lower &&
+      (ns == null ||
+        r.ngay_sinh == null ||
+        String(r.ngay_sinh).slice(0, 10) === ns),
+  );
+  if (exactDob.length === 1) return String(exactDob[0].id);
+  const exactName = rows.filter((r) => String(r.ho_ten ?? '').trim().toLowerCase() === lower);
+  if (exactName.length === 1) return String(exactName[0].id);
+  return null;
 }
 
 function importRowToFormInput(
   row: Record<string, unknown>,
-  resolved: { nhiem_ky_id: string; don_vi_id: string },
+  resolved: { nhiem_ky_id: string; don_vi_id: string; can_bo_id: string },
 ): MttqUyVienUyBanFormInput {
-  const dv = parseImportBool(row.dang_vien);
   return {
+    can_bo_id: resolved.can_bo_id,
     ma_uv: row.ma_uv != null && String(row.ma_uv).trim() !== '' ? String(row.ma_uv) : undefined,
     nhiem_ky_id: resolved.nhiem_ky_id,
     don_vi_id: resolved.don_vi_id,
-    ho_va_ten: String(row.ho_va_ten ?? '').trim(),
-    chuc_vu_don_vi:
-      row.chuc_vu_don_vi != null && String(row.chuc_vu_don_vi).trim() !== ''
-        ? String(row.chuc_vu_don_vi)
-        : undefined,
-    ngay_sinh: row.ngay_sinh != null && String(row.ngay_sinh).trim() !== '' ? String(row.ngay_sinh) : '',
-    gioi_tinh:
-      row.gioi_tinh != null && String(row.gioi_tinh).trim() !== '' ? String(row.gioi_tinh) : undefined,
     trang_thai_tham_gia:
       row.trang_thai_tham_gia != null && String(row.trang_thai_tham_gia).trim() !== ''
         ? String(row.trang_thai_tham_gia)
         : undefined,
-    ngay_nhap_trang_thai:
-      row.ngay_nhap_trang_thai != null && String(row.ngay_nhap_trang_thai).trim() !== ''
-        ? String(row.ngay_nhap_trang_thai)
-        : '',
-    van_hoa: row.van_hoa != null && String(row.van_hoa).trim() !== '' ? String(row.van_hoa) : undefined,
-    trinh_do_cm:
-      row.trinh_do_cm != null && String(row.trinh_do_cm).trim() !== '' ? String(row.trinh_do_cm) : undefined,
-    trinh_do_llct:
-      row.trinh_do_llct != null && String(row.trinh_do_llct).trim() !== ''
-        ? String(row.trinh_do_llct)
-        : undefined,
-    dan_toc: row.dan_toc != null && String(row.dan_toc).trim() !== '' ? String(row.dan_toc) : undefined,
-    ton_giao: row.ton_giao != null && String(row.ton_giao).trim() !== '' ? String(row.ton_giao) : undefined,
-    dang_vien: dv,
-    ngay_vao_dang:
-      row.ngay_vao_dang != null && String(row.ngay_vao_dang).trim() !== '' ? String(row.ngay_vao_dang) : '',
-    que_quan: row.que_quan != null && String(row.que_quan).trim() !== '' ? String(row.que_quan) : undefined,
-    noi_o_hien_nay:
-      row.noi_o_hien_nay != null && String(row.noi_o_hien_nay).trim() !== ''
-        ? String(row.noi_o_hien_nay)
-        : undefined,
-    so_dien_thoai:
-      row.so_dien_thoai != null && String(row.so_dien_thoai).trim() !== '' ? String(row.so_dien_thoai) : undefined,
     ghi_chu: row.ghi_chu != null && String(row.ghi_chu).trim() !== '' ? String(row.ghi_chu) : undefined,
   };
 }
 
-/** Import chỉ thêm mới. Cột: ten_nhiem_ky hoặc nhiem_ky_id; ten_don_vi hoặc don_vi_id; ho_va_ten (bắt buộc); các cột khác tùy chọn. */
+/** Import chỉ thêm mới. Cột: ten_nhiem_ky hoặc nhiem_ky_id; ten_don_vi hoặc don_vi_id; can_bo_id hoặc ho_va_ten (+ ngày sinh). */
 export async function importMttqUyVienUyBan(
   rows: Record<string, unknown>[],
   idNguoiTao: string,
@@ -384,7 +502,15 @@ export async function importMttqUyVienUyBan(
       don_vi_id = (await resolveDonViIdByTen(tenDv)) ?? '';
     }
 
-    const input = importRowToFormInput(raw, { nhiem_ky_id, don_vi_id });
+    const can_bo_id = await resolveCanBoIdFromImportRow(raw);
+    if (!can_bo_id) {
+      errors.push(
+        txt('matTranUyVienUyBan.import.rowError', { row: i + 2, message: txt('matTranUyVienUyBan.import.badCanBo') }),
+      );
+      continue;
+    }
+
+    const input = importRowToFormInput(raw, { nhiem_ky_id, don_vi_id, can_bo_id });
 
     const parsed = mttqUyVienUyBanSchema.safeParse(input);
     if (!parsed.success) {

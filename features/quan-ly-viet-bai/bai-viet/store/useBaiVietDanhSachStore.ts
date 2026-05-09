@@ -20,6 +20,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 const initialFilters: BaiVietDanhSachFilters = {
   columnSearch: {},
   id_the_loai: [],
+  id_nguon_dang: [],
+  id_trang_dang: [],
 };
 
 export const useBaiVietDanhSachStore = createGenericStore<BaiVietDanhSachFilters>(initialFilters, DEFAULT_COLUMNS);

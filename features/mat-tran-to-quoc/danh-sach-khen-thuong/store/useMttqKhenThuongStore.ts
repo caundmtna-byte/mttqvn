@@ -46,6 +46,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 const initialFilters: MttqKhenThuongFilters = {
   columnSearch: {},
   trang_thai: [],
+  nam_khen_thuong: [],
+  don_vi_de_xuat: [],
 };
 
 export const useMttqKhenThuongStore = createGenericStore<MttqKhenThuongFilters>(initialFilters, DEFAULT_COLUMNS);

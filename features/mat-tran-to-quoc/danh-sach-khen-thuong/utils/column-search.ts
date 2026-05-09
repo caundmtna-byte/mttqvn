@@ -1,5 +1,5 @@
 import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
-import type { MttqKhenThuongListRow } from '../core/types';
+import type { MttqKhenThuongChiTietFlatRow, MttqKhenThuongFilters, MttqKhenThuongListRow } from '../core/types';
 
 /**
  * Cột dùng MultiSelect trong header (`ColumnHeaderFilter`) —
@@ -8,13 +8,20 @@ import type { MttqKhenThuongListRow } from '../core/types';
 export const MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT = ['trang_thai'] as const;
 
 /** Số ô columnSearch đang có nội dung (bỏ cột đã có MultiSelect trong header). */
-export function countKhenThuongColumnSearchActive(columnSearch: Record<string, string> | undefined): number {
+export function countKhenThuongColumnSearchActive(
+  columnSearch: Record<string, string> | undefined,
+  chip?: Pick<MttqKhenThuongFilters, 'don_vi_de_xuat' | 'nam_khen_thuong'>,
+): number {
   if (!columnSearch) return 0;
   const skip = MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
+  const skipDonVi = (chip?.don_vi_de_xuat?.length ?? 0) > 0;
+  const skipNam = (chip?.nam_khen_thuong?.length ?? 0) > 0;
   let n = 0;
   for (const [colId, q] of Object.entries(columnSearch)) {
     if (!q.trim()) continue;
     if (skip.includes(colId)) continue;
+    if (skipDonVi && colId === 'don_vi_de_xuat') continue;
+    if (skipNam && colId === 'ngay_khen_thuong') continue;
     n += 1;
   }
   return n;
@@ -27,12 +34,17 @@ export function countKhenThuongColumnSearchActive(columnSearch: Record<string, s
 export function mttqKhenThuongMatchesColumnSearch(
   row: MttqKhenThuongListRow,
   columnSearch: Record<string, string> | undefined,
+  chip?: Pick<MttqKhenThuongFilters, 'don_vi_de_xuat' | 'nam_khen_thuong'>,
 ): boolean {
   if (!columnSearch) return true;
   const skip = MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
+  const skipDonVi = (chip?.don_vi_de_xuat?.length ?? 0) > 0;
+  const skipNam = (chip?.nam_khen_thuong?.length ?? 0) > 0;
 
   for (const [colId, q] of Object.entries(columnSearch)) {
     if (skip.includes(colId)) continue;
+    if (skipDonVi && colId === 'don_vi_de_xuat') continue;
+    if (skipNam && colId === 'ngay_khen_thuong') continue;
     const trimmed = q.trim();
     if (!trimmed) continue;
 
@@ -53,6 +65,49 @@ export function mttqKhenThuongMatchesColumnSearch(
         break;
       default: {
         const raw = row[colId as keyof MttqKhenThuongListRow];
+        haystack = raw == null ? '' : String(raw);
+      }
+    }
+    if (!haystack.toLowerCase().includes(trimmed.toLowerCase())) return false;
+  }
+  return true;
+}
+
+/**
+ * Lọc cột tab Danh sách chi tiết (dòng phẳng `mttq_khen_thuong_ct`).
+ * Bỏ qua `trang_thai` (toolbar) và cột trùng chip năm / đơn vị khi chip đang bật.
+ */
+export function mttqKhenThuongChiTietFlatMatchesColumnSearch(
+  row: MttqKhenThuongChiTietFlatRow,
+  columnSearch: Record<string, string> | undefined,
+  chip?: Pick<MttqKhenThuongFilters, 'don_vi_de_xuat' | 'nam_khen_thuong'>,
+): boolean {
+  if (!columnSearch) return true;
+  const skip = MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
+  const skipDonVi = (chip?.don_vi_de_xuat?.length ?? 0) > 0;
+  const skipNam = (chip?.nam_khen_thuong?.length ?? 0) > 0;
+
+  for (const [colId, q] of Object.entries(columnSearch)) {
+    if (skip.includes(colId)) continue;
+    if (skipDonVi && colId === 'don_vi_de_xuat') continue;
+    if (skipNam && colId === 'ngay_khen_thuong') continue;
+    const trimmed = q.trim();
+    if (!trimmed) continue;
+
+    let haystack = '';
+    switch (colId) {
+      case 'ngay_khen_thuong':
+        haystack = `${row.ngay_khen_thuong ?? ''} ${
+          row.ngay_khen_thuong ? formatDateShort(row.ngay_khen_thuong) : ''
+        }`.trim();
+        break;
+      case 'tg_cap_nhat_qd':
+        haystack = `${row.tg_cap_nhat_qd ?? ''} ${
+          row.tg_cap_nhat_qd ? formatDateTimeShort(row.tg_cap_nhat_qd) : ''
+        }`.trim();
+        break;
+      default: {
+        const raw = row[colId as keyof MttqKhenThuongChiTietFlatRow];
         haystack = raw == null ? '' : String(raw);
       }
     }

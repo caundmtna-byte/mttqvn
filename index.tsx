@@ -63,6 +63,8 @@ const queryClient = new QueryClient({
  * Persist React Query cache to localStorage so page reloads within the gcTime
  * window (30 min) restore data instantly without re-fetching from Supabase.
  * buster is incremented whenever the cache schema changes to avoid stale shapes.
+ * v2: invalidate persisted RQ sau khi thêm cột / shape danh sách chức vụ (vd. cap_quan_ly).
+ * v3: danh sách nhân viên thêm `don_vi_id` / `ten_don_vi`.
  */
 const localStoragePersister = createSyncStoragePersister({
   storage: window.localStorage,
@@ -84,7 +86,7 @@ root.render(
           persistOptions={{
             persister: localStoragePersister,
             maxAge: SERVER_GC_TIME_MS,
-            buster: '1',
+            buster: '3',
           }}
         >
           <App />

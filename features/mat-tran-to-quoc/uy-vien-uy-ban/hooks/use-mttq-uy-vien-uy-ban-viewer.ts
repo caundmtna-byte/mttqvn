@@ -1,31 +1,38 @@
 import { useMemo } from 'react';
-import { APP_RESOURCE_TO_MODULE } from '@/lib/permissions';
+import { APP_RESOURCE_TO_MODULE, isChucVuCapBacOne } from '@/lib/permissions';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
+import type { CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 
 export interface MttqUyVienUyBanViewer {
-  /** True ⇒ bypass gating: cap_bac ∈ {1,2}, quan_tri (admin/all), role=admin, hoặc legacy mode chưa hydrate matrix. */
+  /** True ⇒ bypass gating: `cap_bac === 1`, quan_tri (`admin`/`all`), `role=admin`, hoặc legacy khi chưa hydrate matrix. */
   canViewAll: boolean;
-  /** `var_nhan_vien.id_phong_ban` của user hiện tại (string-safe) hoặc null. */
-  viewerPhongBanId: string | null;
+  /** `var_chuc_vu.cap_quan_ly` sau hydrate — Tỉnh / Xã phường / null. */
+  chucVuCapQuanLy: CapQuanLy | null;
+  /** `var_nhan_vien.id` user hiện tại (string) — so khớp `id_nguoi_tao`. */
+  viewerNhanVienId: string | null;
+  /** `var_nhan_vien.don_vi_id` — so khớp `mttq_uy_vien_uy_ban.don_vi_id` khi cấp Xã. */
+  viewerDonViId: string | null;
 }
 
 /**
  * Tổng hợp viewer cho module Ủy viên ủy ban.
  *
- * Quy tắc `canViewAll`:
- * - `user.role === 'admin'`: mock admin xem hết.
- * - `!matrixActive`: chế độ legacy / chưa hydrate matrix — giữ trải nghiệm cũ, không vô tình ẩn data.
- * - `chucVuCapBac ∈ {1, 2}`: cấp lãnh đạo bypass.
- * - Token `admin` / `all` (map từ `quan_tri`) trong grants của module danh sách ủy viên.
+ * `canViewAll`:
+ * - `user.role === 'admin'`
+ * - `!matrixActive` (legacy, không ẩn dữ liệu khi chưa hydrate)
+ * - `var_chuc_vu.cap_bac === 1`
+ * - Grant `admin` / `all` (map từ `quan_tri`) trên module danh sách ủy viên
  *
- * Còn lại (cap_bac >= 3 hoặc null): chỉ thấy bản ghi do người cùng phòng ban tạo.
+ * Không bypass: theo `cap_quan_ly` chức vụ — Tỉnh xem hết; Xã phường (có `don_vi_id` NV) xem dòng cùng `don_vi_id`;
+ * Xã phường mà NV không có `don_vi_id` → không xem dòng nào; còn lại chỉ dòng do mình tạo (`id_nguoi_tao`).
  */
 export function useMttqUyVienUyBanViewer(): MttqUyVienUyBanViewer {
   const user = useAuthStore((s) => s.user);
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
   const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
+  const chucVuCapQuanLy = usePermissionGrantStore((s) => s.chucVuCapQuanLy);
 
   return useMemo(() => {
     const moduleId =
@@ -35,24 +42,42 @@ export function useMttqUyVienUyBanViewer(): MttqUyVienUyBanViewer {
     const canViewAll =
       user?.role === 'admin' ||
       !matrixActive ||
-      (chucVuCapBac != null && chucVuCapBac >= 1 && chucVuCapBac <= 2) ||
+      isChucVuCapBacOne(chucVuCapBac) ||
       allowed.includes('admin') ||
       allowed.includes('all');
-    const phongBan = user?.id_phong_ban?.toString().trim();
+    const nv = user?.nhan_vien_id?.toString().trim();
+    const dv = user?.don_vi_id?.toString().trim();
     return {
       canViewAll,
-      viewerPhongBanId: phongBan ? phongBan : null,
+      chucVuCapQuanLy: chucVuCapQuanLy ?? null,
+      viewerNhanVienId: nv ? nv : null,
+      viewerDonViId: dv ? dv : null,
     };
-  }, [user?.role, user?.id_phong_ban, matrixActive, grantsByModule, chucVuCapBac]);
+  }, [
+    user?.role,
+    user?.nhan_vien_id,
+    user?.don_vi_id,
+    matrixActive,
+    grantsByModule,
+    chucVuCapBac,
+    chucVuCapQuanLy,
+  ]);
 }
 
-/** Helper rút gọn dùng cho cả danh sách và detail. */
-export function canViewUyVienUyBanRow(
-  viewer: MttqUyVienUyBanViewer,
-  row: { id_phong_ban_nguoi_tao?: string | null },
-): boolean {
+export type UyVienUyBanRowForViewGate = {
+  don_vi_id?: string | null;
+  id_nguoi_tao?: string | null;
+};
+
+/** Helper rút gọn dùng cho cả danh sách và detail (thuần hàm — dễ unit test). */
+export function canViewUyVienUyBanRow(viewer: MttqUyVienUyBanViewer, row: UyVienUyBanRowForViewGate): boolean {
   if (viewer.canViewAll) return true;
-  if (!viewer.viewerPhongBanId) return false;
-  const rowPb = row.id_phong_ban_nguoi_tao?.toString().trim();
-  return Boolean(rowPb) && rowPb === viewer.viewerPhongBanId;
+  if (viewer.chucVuCapQuanLy === 'Tỉnh') return true;
+  if (viewer.chucVuCapQuanLy === 'Xã phường') {
+    if (!viewer.viewerDonViId) return false;
+    const rowDv = row.don_vi_id?.toString().trim();
+    return Boolean(rowDv) && rowDv === viewer.viewerDonViId;
+  }
+  const creator = row.id_nguoi_tao?.toString().trim();
+  return Boolean(viewer.viewerNhanVienId) && Boolean(creator) && creator === viewer.viewerNhanVienId;
 }

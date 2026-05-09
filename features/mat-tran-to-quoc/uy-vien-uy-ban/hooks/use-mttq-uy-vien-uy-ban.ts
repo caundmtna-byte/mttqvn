@@ -12,16 +12,26 @@ import {
   getMttqUyVienUyBanById,
   getMttqUyVienUyBanList,
   getMttqUyVienUyBanListForNhiemKyId,
+  getMttqUyVienUyBanStatsList,
   importMttqUyVienUyBan,
   updateMttqUyVienUyBan,
 } from '../services/mttq-uy-vien-uy-ban-service';
 
 const listKey = queryKeys.mttqUyVienUyBan.all;
+const statsListKey = queryKeys.mttqUyVienUyBan.stats;
 
 export const useMttqUyVienUyBanList = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: listKey,
     queryFn: getMttqUyVienUyBanList,
+    enabled: options?.enabled !== false,
+    ...listQueryOptions,
+  });
+
+export const useMttqUyVienUyBanStatsList = (options?: { enabled?: boolean }) =>
+  useQuery({
+    queryKey: statsListKey,
+    queryFn: getMttqUyVienUyBanStatsList,
     enabled: options?.enabled !== false,
     ...listQueryOptions,
   });
@@ -51,6 +61,7 @@ export const useCreateMttqUyVienUyBan = (onSuccess?: () => void) => {
       createMttqUyVienUyBan(data, idNguoiTao),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: statsListKey });
       toast.success(txt('matTranUyVienUyBan.toast.create'));
       onSuccess?.();
     },
@@ -65,6 +76,7 @@ export const useUpdateMttqUyVienUyBan = (onSuccess?: () => void) => {
       updateMttqUyVienUyBan(id, data),
     onSuccess: (updated, { id }) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: statsListKey });
       queryClient.setQueryData<MttqUyVienUyBan | null>(queryKeys.mttqUyVienUyBan.detail(id), updated);
       toast.success(txt('matTranUyVienUyBan.toast.update'));
       onSuccess?.();
@@ -79,6 +91,7 @@ export const useDeleteMttqUyVienUyBanMany = () => {
     mutationFn: deleteMttqUyVienUyBanMany,
     onSuccess: (_, ids) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: statsListKey });
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.mttqUyVienUyBan.detail(id) });
       }
@@ -95,6 +108,7 @@ export const useImportMttqUyVienUyBan = (onSuccess?: () => void) => {
       importMttqUyVienUyBan(rows, idNguoiTao),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: statsListKey });
       if (result.created > 0) {
         toast.success(txt('matTranUyVienUyBan.toast.importSuccess', { count: result.created }));
       }

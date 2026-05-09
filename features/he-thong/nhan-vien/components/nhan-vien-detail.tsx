@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { txt } from '../../../../lib/text';
 import {
-  Edit, Trash2, User, AtSign, Building2, Briefcase, Layers, Power, Calendar, Clock, RefreshCw,
+  Edit, Trash2, User, AtSign, Building2, Briefcase, Layers, MapPin, MapPinned, Power, Calendar, Clock, RefreshCw,
 } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import EnumBadge from '../../../../components/ui/EnumBadge';
@@ -17,6 +17,7 @@ import DetailFieldGrid from '../../../../components/shared/DetailFieldGrid';
 import DetailToolbar, { DetailToolbarAction } from '../../../../components/shared/DetailToolbar';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '../../../../lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { capQuanLyBadgeConfig } from '../../chuc-vu/utils/cap-quan-ly';
 
 interface Props {
   data: Employee;
@@ -28,6 +29,11 @@ interface Props {
 
 const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onStatusChange }) => {
   const { canEdit, canDelete } = useResourcePermissions('employees');
+
+  const capQuanLyBadge = useMemo(
+    () => capQuanLyBadgeConfig(txt('position.capQuanLyTinh'), txt('position.capQuanLyXaPhuong')),
+    [],
+  );
 
   const toolbarActions: DetailToolbarAction[] = [
     ...(onStatusChange && canEdit
@@ -142,6 +148,22 @@ const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
               label={txt('employee.form.position')}
               value={data.ten_chuc_vu ?? txt('common.emptyCell')}
               icon={<Briefcase size={12} />}
+              emptyText={txt('common.emptyCell')}
+            />
+            <DetailField
+              label={txt('position.store.managementLevelCol')}
+              value={data.cap_quan_ly ? <EnumBadge value={data.cap_quan_ly} config={capQuanLyBadge} shape="rounded" /> : ''}
+              icon={<MapPinned size={12} />}
+              emptyText={txt('common.emptyCell')}
+            />
+            <DetailField
+              label={txt('employee.form.donViXaPhuong')}
+              value={
+                data.cap_quan_ly === 'Tỉnh'
+                  ? '-'
+                  : (data.ten_don_vi ?? txt('common.emptyCell'))
+              }
+              icon={<MapPin size={12} />}
               emptyText={txt('common.emptyCell')}
             />
           </DetailFieldGrid>

@@ -25,6 +25,10 @@ export const matTranKhenThuong = {
     danhHieuRequired: 'Chọn danh hiệu.',
     chiTietMin: 'Cần ít nhất một dòng chi tiết (cán bộ được khen).',
   },
+  filter: {
+    namChip: 'Năm khen thưởng',
+    donViNone: '— Trống —',
+  },
   store: {
     soQdCol: 'Số QĐ',
     ngayCol: 'Ngày khen',
@@ -36,6 +40,32 @@ export const matTranKhenThuong = {
   },
   toolbar: {
     title: 'Danh sách khen thưởng',
+  },
+  tabs: {
+    danhSach: 'Danh sách',
+    chiTietList: 'Chi tiết',
+    thongKe: 'Thống kê',
+  },
+  chiTietList: {
+    searchPlaceholder: 'Tìm theo số QĐ, cán bộ, hình thức, danh hiệu…',
+    emptyTitle: 'Chưa có dòng chi tiết',
+    emptyHint: 'Thêm người được khen trong quyết định hoặc đổi bộ lọc.',
+    cols: {
+      tenCanBo: 'Cán bộ',
+      tgCapNhatQd: 'Cập nhật QĐ',
+    },
+  },
+  stats: {
+    loading: 'Đang tải dữ liệu…',
+    noData: 'Không có dữ liệu khen thưởng trong phạm vi bạn được xem.',
+    noDataHint: 'Thêm quyết định hoặc kiểm tra bộ lọc trên tab Danh sách / Chi tiết.',
+    kpiTotalQd: 'Tổng quyết định',
+    kpiTotalNguoi: 'Tổng số người được khen (dòng chi tiết)',
+    chartTrangThai: 'Theo trạng thái',
+    chartNam: 'Theo năm (ngày khen thưởng)',
+    tableTopDonVi: 'Đơn vị đề xuất (Top)',
+    colLabel: 'Nhóm',
+    colValue: 'Số lượng',
   },
   searchPlaceholder: 'Tìm theo số QĐ, đơn vị, trạng thái…',
   emptyTitle: 'Chưa có quyết định khen thưởng',

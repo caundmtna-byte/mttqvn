@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import React, { useEffect, useMemo } from 'react';
+import { useForm, Controller, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2, IdCard, ListChecks, UserCircle, Users } from 'lucide-react';
+import { Briefcase, Building2, Layers, ListChecks, UserCircle, Users } from 'lucide-react';
 import { txt } from '@/lib/text';
-import Input from '@/components/ui/Input';
 import Combobox from '@/components/ui/Combobox';
+import Input from '@/components/ui/Input';
 import GenericDrawer from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
@@ -14,12 +14,11 @@ import {
   mttqTapHuanChiTietLineSchema,
   type MttqTapHuanChiTietLineFormValues,
 } from '../core/schema';
+import type { TapHuanCanBoThreeColDisplay } from '../utils/snapshot-from-can-bo';
 
 const EMPTY_LINE: MttqTapHuanChiTietLineFormValues = {
   id: undefined,
   can_bo_id: '',
-  chuc_vu: '',
-  don_vi_cong_tac: '',
   thuoc_dien: 'Biên chế',
 };
 
@@ -31,8 +30,8 @@ interface Props {
   initialLine: MttqTapHuanChiTietLineFormValues;
   canBoOptions: { label: string; value: string }[];
   thuocDienOpts: { label: string; value: string }[];
-  /** Điền chức vụ / đơn vị từ hồ sơ cán bộ khi đổi combobox cán bộ. */
-  resolveFromCanBo: (canBoId: string) => { chuc_vu: string; don_vi_cong_tac: string };
+  /** Tổ chức / phòng ban / chức vụ từ Danh sách cán bộ (chỉ hiển thị, không ghi DB). */
+  resolveFromCanBo: (canBoId: string) => TapHuanCanBoThreeColDisplay;
   /** Trả về Promise khi cần đợi ghi DB trước khi đóng drawer (vd. lưu từ màn detail). */
   onSave: (values: MttqTapHuanChiTietLineFormValues) => void | Promise<void>;
   /** Đang ghi DB (vd. cập nhật từ drawer detail). */
@@ -58,14 +57,18 @@ const MttqTapHuanChiTietLineDrawer: React.FC<Props> = ({
   const {
     handleSubmit,
     control,
-    register,
     reset,
-    setValue,
     formState: { errors },
   } = useForm<MttqTapHuanChiTietLineFormValues>({
     resolver: zodResolver(mttqTapHuanChiTietLineSchema) as Resolver<MttqTapHuanChiTietLineFormValues>,
     defaultValues: EMPTY_LINE,
   });
+
+  const watchedCanBoId = useWatch({ control, name: 'can_bo_id' });
+  const displaySnap = useMemo(
+    () => resolveFromCanBo(String(watchedCanBoId ?? '').trim()),
+    [watchedCanBoId, resolveFromCanBo],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -74,8 +77,6 @@ const MttqTapHuanChiTietLineDrawer: React.FC<Props> = ({
       ...initialLine,
       id: initialLine.id,
       can_bo_id: initialLine.can_bo_id ?? '',
-      chuc_vu: initialLine.chuc_vu ?? '',
-      don_vi_cong_tac: initialLine.don_vi_cong_tac ?? '',
       thuoc_dien: initialLine.thuoc_dien ?? 'Biên chế',
     });
   }, [open, initialLine, reset]);
@@ -127,14 +128,7 @@ const MttqTapHuanChiTietLineDrawer: React.FC<Props> = ({
                   options={canBoOptions}
                   value={field.value}
                   onChange={(v) => {
-                    const id = String(v);
-                    field.onChange(id);
-                    const snap = resolveFromCanBo(id);
-                    setValue('chuc_vu', snap.chuc_vu, { shouldDirty: true, shouldValidate: true });
-                    setValue('don_vi_cong_tac', snap.don_vi_cong_tac, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
+                    field.onChange(String(v));
                   }}
                   placeholder={txt('common.select')}
                   error={errors.can_bo_id?.message}
@@ -144,22 +138,37 @@ const MttqTapHuanChiTietLineDrawer: React.FC<Props> = ({
                 />
               )}
             />
+            <p className={`${FORM_GRID_SPAN_FULL} text-xs text-muted-foreground m-0 -mt-1`}>
+              {txt('matTranTapHuan.form.chiTietSnapshotHint')}
+            </p>
             <div className={FORM_GRID_SPAN_FULL}>
               <Input
-                label={txt('matTranTapHuan.form.chucVu')}
-                icon={<IdCard size={12} />}
-                {...register('chuc_vu')}
-                error={errors.chuc_vu?.message}
-                required
+                readOnly
+                tabIndex={-1}
+                label={txt('matTranCanBo.form.toChuc')}
+                icon={Building2}
+                value={displaySnap.ten_to_chuc.trim() ? displaySnap.ten_to_chuc : '—'}
+                className="cursor-default"
               />
             </div>
             <div className={FORM_GRID_SPAN_FULL}>
               <Input
-                label={txt('matTranTapHuan.form.donViCongTac')}
-                icon={<Building2 size={12} />}
-                {...register('don_vi_cong_tac')}
-                error={errors.don_vi_cong_tac?.message}
-                required
+                readOnly
+                tabIndex={-1}
+                label={txt('matTranCanBo.form.phongBan')}
+                icon={Layers}
+                value={displaySnap.ten_phong_ban.trim() ? displaySnap.ten_phong_ban : '—'}
+                className="cursor-default"
+              />
+            </div>
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Input
+                readOnly
+                tabIndex={-1}
+                label={txt('matTranCanBo.form.chucVu')}
+                icon={Briefcase}
+                value={displaySnap.ten_chuc_vu.trim() ? displaySnap.ten_chuc_vu : '—'}
+                className="cursor-default"
               />
             </div>
             <Controller

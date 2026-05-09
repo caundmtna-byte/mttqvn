@@ -22,12 +22,17 @@ export const matTranUyVienUyBan = {
     rowError: 'Dòng {{row}}: {{message}}',
     templateName: 'mau-nhap-uy-vien-uy-ban',
     badNhiemKy: 'Không tìm thấy nhiệm kỳ (ten_nhiem_ky / nhiem_ky_id).',
+    badCanBo: 'Không map được cán bộ (can_bo_id hoặc họ tên + ngày sinh khớp mttq_can_bo).',
   },
   validation: {
     nhiemKyRequired: 'Chọn nhiệm kỳ.',
     hoVaTenRequired: 'Nhập họ và tên.',
+    canBoRequired: 'Chọn cán bộ từ Danh sách cán bộ.',
+    importCanBoRequired: 'Cần can_bo_id (số) hoặc cặp họ tên + ngày sinh khớp một cán bộ.',
   },
   store: {
+    canBoIdCol: 'ID cán bộ (can_bo_id)',
+    importHoTenMapCol: 'Họ và tên (map cán bộ khi không có can_bo_id)',
     hoVaTenCol: 'Họ và tên',
     maUvCol: 'Mã UV',
     tenNhiemKyCol: 'Nhiệm kỳ',
@@ -49,6 +54,10 @@ export const matTranUyVienUyBan = {
   emptyHint: 'Thêm ủy viên mới để bắt đầu.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',
   form: {
+    canBo: 'Cán bộ',
+    sectionCanBo: 'Hồ sơ cán bộ (Danh sách cán bộ)',
+    snapshotHint: 'Các trường dưới đây lấy từ hồ sơ cán bộ — chỉnh trong module Danh sách cán bộ.',
+    diaChiCanBo: 'Địa chỉ (hồ sơ cán bộ)',
     sectionMain: 'Thông tin chính',
     sectionCaNhan: 'Nhân thân & tham gia',
     sectionHocVan: 'Trình độ & dân tộc - tôn giáo',

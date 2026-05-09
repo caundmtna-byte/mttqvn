@@ -1,8 +1,24 @@
-import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { BookOpen, Building2, Flag, MapPin, StickyNote, Type, User, Users } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import {
+  Activity,
+  BookOpen,
+  Building2,
+  Briefcase,
+  Calendar,
+  Flag,
+  Home,
+  Landmark,
+  Layers,
+  MapPin,
+  Phone,
+  StickyNote,
+  Type,
+  User,
+  Users,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { useForm, Controller, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -16,6 +32,8 @@ import { useCan } from '@/hooks/use-can';
 import { useMttqNhiemKyList } from '@/features/mat-tran-to-quoc/nhiem-ky/hooks/use-mttq-nhiem-ky';
 import { useTinhThanhList } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import { useMttqCanBoList } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/hooks/use-mttq-can-bo';
+import type { MttqCanBo } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/core/types';
 import {
   mttqUyVienUyBanSchema,
   mttqUyVienUyBanToFormInput,
@@ -24,6 +42,7 @@ import {
 } from '../core/schema';
 import type { MttqUyVienUyBan } from '../core/types';
 import { useCreateMttqUyVienUyBan, useUpdateMttqUyVienUyBan } from '../hooks/use-mttq-uy-vien-uy-ban';
+import { formatTenPhongBanHienThi } from '../utils/phong-ban-hien-thi';
 
 const FORM_ID = 'mttq-uy-vien-uy-ban-form';
 
@@ -32,8 +51,105 @@ const TINH_CAP_VALUE = '__tinh_cap__';
 interface Props {
   initialData?: MttqUyVienUyBan | null;
   onClose: () => void;
-  /** Khi tạo mới — gán sẵn nhiệm kỳ (vd. từ drawer chi tiết nhiệm kỳ). */
   defaultNhiemKyId?: string;
+}
+
+interface CanBoSnap {
+  ho_va_ten: string;
+  ngay_sinh: string;
+  gioi_tinh: string;
+  dan_toc: string;
+  ton_giao: string;
+  dang_vien: boolean;
+  dien_thoai: string;
+  dia_chi: string;
+  ten_to_chuc: string;
+  ten_phong_ban: string;
+  ten_chuc_vu: string;
+  ten_don_vi: string;
+  ten_trinh_do: string;
+  ten_llct: string;
+  ten_trang_thai: string;
+  ngay_nhap_trang_thai: string;
+  van_hoa: string;
+  ngay_vao_dang: string;
+  que_quan: string;
+  noi_o_hien_nay: string;
+}
+
+function canBoDisplayFromCanBo(c: MttqCanBo | undefined): CanBoSnap {
+  if (!c) {
+    return {
+      ho_va_ten: '',
+      ngay_sinh: '',
+      gioi_tinh: '',
+      dan_toc: '',
+      ton_giao: '',
+      dang_vien: false,
+      dien_thoai: '',
+      dia_chi: '',
+      ten_to_chuc: '',
+      ten_phong_ban: '',
+      ten_chuc_vu: '',
+      ten_don_vi: '',
+      ten_trinh_do: '',
+      ten_llct: '',
+      ten_trang_thai: '',
+      ngay_nhap_trang_thai: '',
+      van_hoa: '',
+      ngay_vao_dang: '',
+      que_quan: '',
+      noi_o_hien_nay: '',
+    };
+  }
+  return {
+    ho_va_ten: c.ho_ten.trim(),
+    ngay_sinh: c.ngay_sinh?.trim() ?? '',
+    gioi_tinh: c.gioi_tinh?.trim() ?? '',
+    dan_toc: (c.ten_dan_toc ?? '').trim(),
+    ton_giao: (c.ton_giao ?? '').trim(),
+    dang_vien: c.dang_vien,
+    dien_thoai: (c.dien_thoai ?? '').trim(),
+    dia_chi: (c.dia_chi ?? '').trim(),
+    ten_to_chuc: (c.ten_to_chuc ?? '').trim(),
+    ten_phong_ban: formatTenPhongBanHienThi(c.ten_phong_ban, c.ten_bo_phan)?.trim() ?? '',
+    ten_chuc_vu: (c.ten_chuc_vu ?? '').trim(),
+    ten_don_vi: (c.ten_don_vi ?? '').trim(),
+    ten_trinh_do: (c.ten_trinh_do ?? '').trim(),
+    ten_llct: (c.ten_ly_luan_chinh_tri ?? '').trim(),
+    ten_trang_thai: (c.ten_trang_thai ?? '').trim(),
+    ngay_nhap_trang_thai: (c.ngay_nhap_trang_thai ?? '').trim().slice(0, 10),
+    van_hoa: (c.van_hoa ?? '').trim(),
+    ngay_vao_dang: (c.ngay_vao_dang ?? '').trim().slice(0, 10),
+    que_quan: (c.que_quan ?? '').trim(),
+    noi_o_hien_nay: (c.noi_o_hien_nay ?? '').trim(),
+  };
+}
+
+/** Khi embed cán bộ chưa load nhưng đã có bản ghi flatten (sửa từ cache). */
+function canBoDisplayFromUyRow(d: MttqUyVienUyBan): CanBoSnap {
+  return {
+    ho_va_ten: (d.ho_va_ten ?? '').trim(),
+    ngay_sinh: (d.ngay_sinh ?? '').trim(),
+    gioi_tinh: (d.gioi_tinh ?? '').trim(),
+    dan_toc: (d.dan_toc ?? '').trim(),
+    ton_giao: (d.ton_giao ?? '').trim(),
+    dang_vien: d.dang_vien,
+    dien_thoai: (d.so_dien_thoai ?? '').trim(),
+    dia_chi: (d.dia_chi_can_bo ?? '').trim(),
+    ten_to_chuc: (d.ten_to_chuc ?? '').trim(),
+    ten_phong_ban: (d.ten_phong_ban_hien_thi ?? '').trim(),
+    ten_chuc_vu: (d.chuc_vu_don_vi ?? '').trim(),
+    ten_don_vi: (d.ten_don_vi_can_bo ?? '').trim(),
+    ten_trinh_do: (d.trinh_do_cm ?? '').trim(),
+    ten_llct: (d.trinh_do_llct ?? '').trim(),
+    ten_trang_thai: (d.ten_trang_thai_can_bo ?? '').trim(),
+    ngay_nhap_trang_thai: (d.ngay_nhap_trang_thai ?? '').trim().slice(0, 10),
+    van_hoa: (d.van_hoa ?? '').trim(),
+    ngay_vao_dang: (d.ngay_vao_dang ?? '').trim().slice(0, 10),
+    que_quan: (d.que_quan ?? '').trim(),
+    noi_o_hien_nay: (d.noi_o_hien_nay ?? '').trim(),
+  };
 }
 
 const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId }) => {
@@ -41,9 +157,11 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
   const user = useAuthStore((s) => s.user);
   const idNguoiTao = String(user?.nhan_vien_id ?? '').trim();
   const canViewNhiemKy = useCan('view', 'matTranTerm');
+  const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: nhiemKyList = [] } = useMttqNhiemKyList({ enabled: canViewNhiemKy });
   const { data: tinhList = [] } = useTinhThanhList();
   const { data: xaList = [] } = useXaPhuongForTab(true, '');
+  const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
 
   const createMutation = useCreateMttqUyVienUyBan(onClose);
   const updateMutation = useUpdateMttqUyVienUyBan(onClose);
@@ -82,6 +200,30 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     return [tinhCap, ...rest];
   }, [xaList, tinhMap]);
 
+  const canBoMap = useMemo(() => {
+    const m = new Map<string, MttqCanBo>();
+    for (const c of canBoList) m.set(String(c.id), c);
+    return m;
+  }, [canBoList]);
+
+  const canBoOptions = useMemo(() => {
+    const ensureId = initialData?.can_bo_id?.trim();
+    const rows = [...canBoList].sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, 'vi'));
+    const opts = rows.map((c) => ({
+      value: String(c.id),
+      label: c.ho_ten,
+      subLabel: [c.ten_chuc_vu, c.ten_don_vi].filter(Boolean).join(' · ') || undefined,
+    }));
+    if (ensureId && !canBoMap.has(ensureId)) {
+      opts.unshift({
+        value: ensureId,
+        label: initialData?.ho_va_ten ? `${initialData.ho_va_ten} (#${ensureId})` : `#${ensureId}`,
+        subLabel: undefined,
+      });
+    }
+    return opts;
+  }, [canBoList, canBoMap, initialData?.can_bo_id, initialData?.ho_va_ten]);
+
   const defaultValues = useMemo(() => {
     const base = mttqUyVienUyBanToFormInput(initialData ?? null);
     if (!initialData && defaultNhiemKyId?.trim()) {
@@ -100,6 +242,20 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     defaultValues,
     resolver: zodResolver(mttqUyVienUyBanSchema) as Resolver<MttqUyVienUyBanFormInput, unknown, MttqUyVienUyBanFormValues>,
   });
+
+  const watchedCanBoId = useWatch({ control, name: 'can_bo_id' });
+  const snap = useMemo(
+    () => canBoDisplayFromCanBo(canBoMap.get(String(watchedCanBoId ?? '').trim())),
+    [watchedCanBoId, canBoMap],
+  );
+
+  const displaySnap = useMemo(() => {
+    const id = String(watchedCanBoId ?? '').trim();
+    if (!id) return snap;
+    if (canBoMap.has(id)) return snap;
+    if (isEdit && initialData && id === String(initialData.can_bo_id).trim()) return canBoDisplayFromUyRow(initialData);
+    return snap;
+  }, [watchedCanBoId, snap, canBoMap, isEdit, initialData]);
 
   useEffect(() => {
     const base = mttqUyVienUyBanToFormInput(initialData ?? null);
@@ -152,6 +308,24 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
         <FormSection title={txt('matTranUyVienUyBan.form.sectionMain')} icon={<Type size={14} />}>
           <FormGrid>
             <Controller
+              name="can_bo_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={canBoOptions}
+                  value={field.value === '' ? null : field.value}
+                  onChange={(v) => field.onChange(v === '' || v == null ? '' : String(v))}
+                  label={txt('matTranUyVienUyBan.form.canBo')}
+                  placeholder={txt('common.select')}
+                  error={errors.can_bo_id?.message}
+                  icon={<Users size={12} />}
+                  required
+                  dropdownInPortal
+                  disabled={!canViewCanBo || canBoOptions.length === 0}
+                />
+              )}
+            />
+            <Controller
               name="ma_uv"
               control={control}
               render={({ field }) => (
@@ -175,6 +349,7 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
                   label={txt('matTranUyVienUyBan.form.nhiemKy')}
                   placeholder={txt('matTranUyVienUyBan.form.nhiemKy')}
                   error={errors.nhiem_ky_id?.message}
+                  icon={<Calendar size={12} />}
                   required
                   clearable={false}
                   dropdownInPortal
@@ -207,87 +382,205 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
                 />
               )}
             />
-            <div className={FORM_GRID_SPAN_FULL}>
-              <Input
-                label={txt('matTranUyVienUyBan.form.hoVaTen')}
-                required
-                icon={Users}
-                {...register('ho_va_ten')}
-                error={errors.ho_va_ten?.message}
-              />
-            </div>
-            <div className={FORM_GRID_SPAN_FULL}>
-              <Input
-                label={txt('matTranUyVienUyBan.form.chucVuDonVi')}
-                icon={Building2}
-                {...register('chuc_vu_don_vi')}
-                error={errors.chuc_vu_don_vi?.message}
-              />
-            </div>
           </FormGrid>
         </FormSection>
 
-        <FormSection title={txt('matTranUyVienUyBan.form.sectionCaNhan')} icon={<User size={14} />}>
+        <FormSection title={txt('matTranUyVienUyBan.form.sectionCanBo')} icon={<User size={14} />} variant="primary">
           <FormGrid>
-            <Input label={txt('matTranUyVienUyBan.form.ngaySinh')} type="date" {...register('ngay_sinh')} error={errors.ngay_sinh?.message} />
-            <Input label={txt('matTranUyVienUyBan.form.gioiTinh')} {...register('gioi_tinh')} error={errors.gioi_tinh?.message} />
-            <Input label={txt('matTranUyVienUyBan.form.trangThamGia')} {...register('trang_thai_tham_gia')} error={errors.trang_thai_tham_gia?.message} />
+            <p className={`${FORM_GRID_SPAN_FULL} text-xs text-muted-foreground m-0`}>
+              {txt('matTranUyVienUyBan.form.snapshotHint')}
+            </p>
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Input
+                readOnly
+                tabIndex={-1}
+                label={txt('matTranUyVienUyBan.form.hoVaTen')}
+                icon={Users}
+                value={displaySnap.ho_va_ten.trim() ? displaySnap.ho_va_ten : '—'}
+                className="cursor-default"
+              />
+            </div>
             <Input
-              label={txt('matTranUyVienUyBan.form.ngayNhapTrangThai')}
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.toChuc')}
+              icon={Building2}
+              value={displaySnap.ten_to_chuc.trim() ? displaySnap.ten_to_chuc : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.phongBan')}
+              icon={Layers}
+              value={displaySnap.ten_phong_ban.trim() ? displaySnap.ten_phong_ban : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.chucVu')}
+              icon={Briefcase}
+              value={displaySnap.ten_chuc_vu.trim() ? displaySnap.ten_chuc_vu : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.diaChiCanBo')}
+              icon={<MapPin size={12} />}
+              value={displaySnap.dia_chi.trim() ? displaySnap.dia_chi : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.donVi')}
+              icon={<MapPin size={12} />}
+              value={displaySnap.ten_don_vi.trim() ? displaySnap.ten_don_vi : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.ngaySinh')}
               type="date"
-              {...register('ngay_nhap_trang_thai')}
-              error={errors.ngay_nhap_trang_thai?.message}
+              icon={<Calendar size={12} />}
+              value={displaySnap.ngay_sinh}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.gioiTinh')}
+              icon={<User size={12} />}
+              value={displaySnap.gioi_tinh.trim() ? displaySnap.gioi_tinh : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.danToc')}
+              icon={<Flag size={12} />}
+              value={displaySnap.dan_toc.trim() ? displaySnap.dan_toc : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.tonGiao')}
+              icon={<Landmark size={12} />}
+              value={displaySnap.ton_giao.trim() ? displaySnap.ton_giao : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.trinhDoCm')}
+              icon={<BookOpen size={12} />}
+              value={displaySnap.ten_trinh_do.trim() ? displaySnap.ten_trinh_do : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.trinhDoLlct')}
+              icon={<BookOpen size={12} />}
+              value={displaySnap.ten_llct.trim() ? displaySnap.ten_llct : '—'}
+              className="cursor-default"
+            />
+            <div className="flex items-center gap-2 pt-6">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-default">
+                <input
+                  type="checkbox"
+                  className="rounded border-border text-primary accent-primary pointer-events-none"
+                  checked={displaySnap.dang_vien}
+                  readOnly
+                  tabIndex={-1}
+                />
+                {txt('matTranUyVienUyBan.form.dangVien')}
+              </label>
+            </div>
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.trangThai')}
+              icon={<Activity size={12} />}
+              value={displaySnap.ten_trang_thai.trim() ? displaySnap.ten_trang_thai : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.ngayNhapTrangThai')}
+              type="date"
+              icon={<Calendar size={12} />}
+              value={displaySnap.ngay_nhap_trang_thai}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.vanHoa')}
+              icon={<BookOpen size={12} />}
+              value={displaySnap.van_hoa.trim() ? displaySnap.van_hoa : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.ngayVaoDang')}
+              type="date"
+              icon={<Calendar size={12} />}
+              value={displaySnap.ngay_vao_dang}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.queQuan')}
+              icon={<MapPin size={12} />}
+              value={displaySnap.que_quan.trim() ? displaySnap.que_quan : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranCanBo.form.noiOHienNay')}
+              icon={<Home size={12} />}
+              value={displaySnap.noi_o_hien_nay.trim() ? displaySnap.noi_o_hien_nay : '—'}
+              className="cursor-default"
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              label={txt('matTranUyVienUyBan.form.soDienThoai')}
+              icon={<Phone size={12} />}
+              value={displaySnap.dien_thoai.trim() ? displaySnap.dien_thoai : '—'}
+              className="cursor-default"
             />
           </FormGrid>
         </FormSection>
 
-        <FormSection title={txt('matTranUyVienUyBan.form.sectionHocVan')} icon={<BookOpen size={14} />}>
+        <FormSection title={txt('matTranUyVienUyBan.form.sectionCaNhan')} icon={<Activity size={14} />}>
           <FormGrid>
-            <Input label={txt('matTranUyVienUyBan.form.vanHoa')} {...register('van_hoa')} error={errors.van_hoa?.message} />
-            <Input label={txt('matTranUyVienUyBan.form.trinhDoCm')} {...register('trinh_do_cm')} error={errors.trinh_do_cm?.message} />
-            <Input label={txt('matTranUyVienUyBan.form.trinhDoLlct')} {...register('trinh_do_llct')} error={errors.trinh_do_llct?.message} />
-            <Input label={txt('matTranUyVienUyBan.form.danToc')} {...register('dan_toc')} error={errors.dan_toc?.message} />
-            <Input label={txt('matTranUyVienUyBan.form.tonGiao')} {...register('ton_giao')} error={errors.ton_giao?.message} />
-          </FormGrid>
-        </FormSection>
-
-        <FormSection title={txt('matTranUyVienUyBan.form.sectionDang')} icon={<Flag size={14} />}>
-          <FormGrid cols={2}>
-            <div className="flex items-center gap-2 pt-6">
-              <Controller
-                name="dang_vien"
-                control={control}
-                render={({ field }) => (
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-border text-primary accent-primary"
-                      checked={field.value ?? false}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                    />
-                    {txt('matTranUyVienUyBan.form.dangVien')}
-                  </label>
-                )}
-              />
-            </div>
-            <Input label={txt('matTranUyVienUyBan.form.ngayVaoDang')} type="date" {...register('ngay_vao_dang')} error={errors.ngay_vao_dang?.message} />
-          </FormGrid>
-        </FormSection>
-
-        <FormSection title={txt('matTranUyVienUyBan.form.sectionLienHe')} icon={<MapPin size={14} />}>
-          <FormGrid>
-            <div className={FORM_GRID_SPAN_FULL}>
-              <Textarea label={txt('matTranUyVienUyBan.form.queQuan')} {...register('que_quan')} rows={2} error={errors.que_quan?.message} />
-            </div>
-            <div className={FORM_GRID_SPAN_FULL}>
-              <Textarea label={txt('matTranUyVienUyBan.form.noiOHienNay')} {...register('noi_o_hien_nay')} rows={2} error={errors.noi_o_hien_nay?.message} />
-            </div>
-            <Input label={txt('matTranUyVienUyBan.form.soDienThoai')} {...register('so_dien_thoai')} error={errors.so_dien_thoai?.message} />
+            <Input
+              label={txt('matTranUyVienUyBan.form.trangThamGia')}
+              icon={<Activity size={12} />}
+              {...register('trang_thai_tham_gia')}
+              error={errors.trang_thai_tham_gia?.message}
+            />
           </FormGrid>
         </FormSection>
 
         <FormSection title={txt('matTranUyVienUyBan.form.sectionGhiChu')} icon={<StickyNote size={14} />}>
-          <Textarea label={txt('matTranUyVienUyBan.form.ghiChu')} {...register('ghi_chu')} rows={3} error={errors.ghi_chu?.message} />
+          <Textarea
+            label={txt('matTranUyVienUyBan.form.ghiChu')}
+            icon={<StickyNote size={12} />}
+            {...register('ghi_chu')}
+            rows={3}
+            error={errors.ghi_chu?.message}
+          />
         </FormSection>
       </form>
     </GenericDrawer>

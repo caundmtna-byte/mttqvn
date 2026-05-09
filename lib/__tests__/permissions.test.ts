@@ -46,6 +46,8 @@ describe('can', () => {
       'he-thong/nhan-vien': ['view'],
     });
     expect(can(member, 'view', 'employees')).toBe(true);
+    expect(can(member, 'export', 'employees')).toBe(true);
+    expect(can(member, 'import', 'employees')).toBe(true);
     expect(can(member, 'edit', 'employees')).toBe(false);
     expect(can(member, 'delete', 'employees')).toBe(false);
   });
@@ -80,12 +82,44 @@ describe('can', () => {
     expect(can(member, 'create', 'articles')).toBe(false);
   });
 
-  it('matrix: member with view on bc-thong-ke-bai-viet can view articleStats', () => {
+  it('matrix: member with view on bc-thong-ke-bai-viet can view and export articleStats', () => {
     usePermissionGrantStore.getState().setMatrixGrants({
       'quan-ly-viet-bai/bc-thong-ke-bai-viet': ['view'],
     });
     expect(can(member, 'view', 'articleStats')).toBe(true);
+    expect(can(member, 'export', 'articleStats')).toBe(true);
+    expect(can(member, 'import', 'articleStats')).toBe(true);
     expect(can(member, 'edit', 'articleStats')).toBe(false);
+  });
+
+  it('matrix: member with view on bao-cao-can-bo can view matTranOfficerStats', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo': ['view'],
+    });
+    expect(can(member, 'view', 'matTranOfficerStats')).toBe(true);
+    expect(can(member, 'edit', 'matTranOfficerStats')).toBe(false);
+  });
+
+  it('matrix: member with export on bao-cao-can-bo can export matTranOfficerStats', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo': ['view', 'export'],
+    });
+    expect(can(member, 'export', 'matTranOfficerStats')).toBe(true);
+  });
+
+  it('matrix: member with view on bao-cao-uy-vien can view matTranCommitteeMemberStats', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien': ['view'],
+    });
+    expect(can(member, 'view', 'matTranCommitteeMemberStats')).toBe(true);
+    expect(can(member, 'edit', 'matTranCommitteeMemberStats')).toBe(false);
+  });
+
+  it('matrix: member with export on bao-cao-uy-vien can export matTranCommitteeMemberStats', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien': ['view', 'export'],
+    });
+    expect(can(member, 'export', 'matTranCommitteeMemberStats')).toBe(true);
   });
 
   it('matrix: departments — no grant and cap_bac≠1 cannot view', () => {
@@ -97,12 +131,14 @@ describe('can', () => {
     expect(can(member, 'edit', 'departments')).toBe(false);
   });
 
-  it('matrix: departments — cap_bac=1 bypasses matrix for view/create/edit/delete', () => {
+  it('matrix: departments — cap_bac=1 bypasses matrix for view/create/edit/delete/export/import', () => {
     usePermissionGrantStore.getState().setMatrixGrants({ 'he-thong/nhan-vien': ['view'] }, 1);
     expect(can(member, 'view', 'departments')).toBe(true);
     expect(can(member, 'create', 'departments')).toBe(true);
     expect(can(member, 'edit', 'departments')).toBe(true);
     expect(can(member, 'delete', 'departments')).toBe(true);
+    expect(can(member, 'export', 'departments')).toBe(true);
+    expect(can(member, 'import', 'departments')).toBe(true);
   });
 
   it('matrix: departments — view on phong-ban module grants view only', () => {

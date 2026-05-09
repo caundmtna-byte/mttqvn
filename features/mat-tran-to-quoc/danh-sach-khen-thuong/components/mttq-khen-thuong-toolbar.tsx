@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Tag } from 'lucide-react';
+import { Plus, Download, Tag, CalendarRange, Landmark } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -19,17 +19,29 @@ interface ChipOption {
 interface Props {
   onPageBack: () => void;
   trangThaiOptions: ChipOption[];
+  namKhenThuongOptions: ChipOption[];
+  donViDeXuatOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
+  /** Tab Danh sách / Thống kê — đặt sau nút Back. */
+  desktopStartSlot?: React.ReactNode;
+  /** Tab Thống kê: ẩn tìm kiếm, export, thêm, xóa nhiều, cột — vẫn giữ chip lọc. */
+  hideListControls?: boolean;
 }
+
+const noopSearch = () => {};
 
 const MttqKhenThuongToolbar: React.FC<Props> = ({
   onPageBack,
   trangThaiOptions,
+  namKhenThuongOptions,
+  donViDeXuatOptions,
   onAdd,
   onExport,
   onDeleteMany,
+  desktopStartSlot,
+  hideListControls,
 }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranRewardList');
 
@@ -50,18 +62,25 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
   const selectedCount = selectedIds.size;
 
   const activeFilterCount = useMemo(() => {
-    const columnSearchN = countKhenThuongColumnSearchActive(filters.columnSearch);
-    return (
-      (searchTerm ? 1 : 0) +
+    const columnSearchN = countKhenThuongColumnSearchActive(filters.columnSearch, {
+      don_vi_de_xuat: filters.don_vi_de_xuat,
+      nam_khen_thuong: filters.nam_khen_thuong,
+    });
+    const chipAndCol =
       columnSearchN +
-      (filters.trang_thai.length > 0 ? 1 : 0)
-    );
-  }, [searchTerm, filters]);
+      (filters.trang_thai.length > 0 ? 1 : 0) +
+      (filters.nam_khen_thuong.length > 0 ? 1 : 0) +
+      (filters.don_vi_de_xuat.length > 0 ? 1 : 0);
+    if (hideListControls) return chipAndCol;
+    return (searchTerm ? 1 : 0) + chipAndCol;
+  }, [hideListControls, searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setFilter('columnSearch', {});
     setFilter('trang_thai', []);
+    setFilter('nam_khen_thuong', []);
+    setFilter('don_vi_de_xuat', []);
     setSort(null, null);
   };
 
@@ -76,9 +95,33 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
           icon={Tag}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
         />
+        <FilterChipMultiSelect
+          options={namKhenThuongOptions}
+          value={filters.nam_khen_thuong}
+          onChange={(val) => setFilter('nam_khen_thuong', val)}
+          placeholder={txt('matTranKhenThuong.filter.namChip')}
+          icon={CalendarRange}
+          className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
+        />
+        <FilterChipMultiSelect
+          options={donViDeXuatOptions}
+          value={filters.don_vi_de_xuat}
+          onChange={(val) => setFilter('don_vi_de_xuat', val)}
+          placeholder={txt('matTranKhenThuong.store.donViCol')}
+          icon={Landmark}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[280px]"
+        />
       </div>
     ),
-    [trangThaiOptions, filters.trang_thai, setFilter],
+    [
+      trangThaiOptions,
+      namKhenThuongOptions,
+      donViDeXuatOptions,
+      filters.trang_thai,
+      filters.nam_khen_thuong,
+      filters.don_vi_de_xuat,
+      setFilter,
+    ],
   );
 
   const filterGroups = useMemo(
@@ -91,8 +134,32 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
         value: filters.trang_thai,
         onChange: (val: string[]) => setFilter('trang_thai', val),
       },
+      {
+        key: 'nam_khen_thuong',
+        label: txt('matTranKhenThuong.filter.namChip'),
+        icon: CalendarRange,
+        options: namKhenThuongOptions,
+        value: filters.nam_khen_thuong,
+        onChange: (val: string[]) => setFilter('nam_khen_thuong', val),
+      },
+      {
+        key: 'don_vi_de_xuat',
+        label: txt('matTranKhenThuong.store.donViCol'),
+        icon: Landmark,
+        options: donViDeXuatOptions,
+        value: filters.don_vi_de_xuat,
+        onChange: (val: string[]) => setFilter('don_vi_de_xuat', val),
+      },
     ],
-    [trangThaiOptions, filters.trang_thai, setFilter],
+    [
+      trangThaiOptions,
+      namKhenThuongOptions,
+      donViDeXuatOptions,
+      filters.trang_thai,
+      filters.nam_khen_thuong,
+      filters.don_vi_de_xuat,
+      setFilter,
+    ],
   );
 
   const mobileActions = useMemo<ActionItem[]>(
@@ -134,23 +201,25 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
 
   return (
     <GenericToolbar
+      desktopStartSlot={desktopStartSlot}
       selectedCount={selectedCount}
-      searchTerm={searchTerm}
-      onSearchChange={setSearchTerm}
+      searchTerm={hideListControls ? '' : searchTerm}
+      onSearchChange={hideListControls ? noopSearch : setSearchTerm}
       onClearSelection={clearSelection}
-      actions={renderActions}
+      hideSearch={hideListControls}
+      actions={hideListControls ? undefined : renderActions}
       filters={filtersSlot}
       filterGroups={filterGroups}
-      mobileActions={mobileActions}
-      onAdd={canCreate ? onAdd : undefined}
+      mobileActions={hideListControls ? undefined : mobileActions}
+      onAdd={hideListControls ? undefined : canCreate ? onAdd : undefined}
       searchPlaceholder={txt('matTranKhenThuong.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
-      onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}
-      columns={columns}
-      onToggleColumn={toggleColumn}
-      onReorderColumns={reorderColumns}
-      onResetColumns={resetColumns}
+      onDeleteMany={hideListControls ? undefined : canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}
+      columns={hideListControls ? undefined : columns}
+      onToggleColumn={hideListControls ? undefined : toggleColumn}
+      onReorderColumns={hideListControls ? undefined : reorderColumns}
+      onResetColumns={hideListControls ? undefined : resetColumns}
       showBack
       onBack={onPageBack}
     />

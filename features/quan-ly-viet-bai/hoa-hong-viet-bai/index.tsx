@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { FolderOpen, Coins, FileText, Users, TrendingUp } from 'lucide-react';
+import { FolderOpen, Coins, FileText, Users, TrendingUp, Download } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
+import ExportDialog from '@/components/shared/ExportDialog';
 import TabGroup from '@/components/ui/TabGroup';
 import Button from '@/components/ui/Button';
+import Tooltip from '@/components/ui/Tooltip';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
@@ -25,6 +27,8 @@ import {
   CommissionByAuthorChart,
 } from './components/commission-charts';
 import { useCommissionAllTabViewer, rowVisibleOnCommissionAllTab } from './hooks/use-commission-all-tab-viewer';
+import { useExportData } from '@/lib/useExportData';
+import type { BaiVietDanhSach } from '../bai-viet/core/types';
 
 const TAB_MINE: CommissionScope = 'mine';
 const TAB_ALL: CommissionScope = 'all';
@@ -37,13 +41,17 @@ const initialDateRange: DateRangeValue = {
   customEnd: '',
 };
 
+const EXPORT_PAGINATION = { page: 1, pageSize: 100_000 };
+
 const HoaHongVietBaiPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
-  /** Tab "Tất cả": quyền xem danh sách bài hoặc module Hoa hồng trong ma trận phân quyền. */
+  /** Tab "Tất cả": quyền xem danh sách bài hoặc module Nhuận bút trong ma trận phân quyền. */
   const canViewArticles = useCan('view', 'articles');
   const canViewCommissionModule = useCan('view', 'articleCommission');
+  const canExport =
+    useCan('export', 'articleCommission') || useCan('export', 'articles');
   const canOpenPage = canViewArticles || canViewCommissionModule;
   const didRedirect = useRef(false);
 
@@ -61,6 +69,7 @@ const HoaHongVietBaiPage: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
   const [theLoaiIds, setTheLoaiIds] = useState<string[]>([]);
   const [authorIds, setAuthorIds] = useState<string[]>([]);
+  const [showExport, setShowExport] = useState(false);
 
   const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: canOpenPage });
   const allTabViewer = useCommissionAllTabViewer();
@@ -168,6 +177,47 @@ const HoaHongVietBaiPage: React.FC = () => {
       }),
     [scopedRows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds],
   );
+
+  const exportColumns = useMemo(
+    () => [
+      { key: 'ten_bai', label: txt('articleCommission.exportColTenBai') },
+      { key: 'ten_the_loai', label: txt('articleCommission.exportColTheLoai') },
+      { key: 'don_gia_num', label: txt('articleCommission.exportColDonGia') },
+      { key: 'ngay_dang', label: txt('articleCommission.exportColNgayDang') },
+      { key: 'ten_nguon_dang', label: txt('articleCommission.exportColNguon') },
+      { key: 'ten_trang_dang', label: txt('articleCommission.exportColTrang') },
+      { key: 'ho_va_ten_nguoi_tao', label: txt('articleCommission.exportColNguoi') },
+      { key: 'link', label: txt('articleCommission.exportColLink') },
+      { key: 'range_start', label: txt('articleCommission.exportRangeFrom') },
+      { key: 'range_end', label: txt('articleCommission.exportRangeTo') },
+    ],
+    [],
+  );
+
+  const exportMapFn = useCallback(
+    (item: BaiVietDanhSach) => ({
+      ten_bai: item.ten_bai,
+      ten_the_loai: item.ten_the_loai ?? '',
+      don_gia_num: item.don_gia,
+      ngay_dang: item.ngay_dang,
+      ten_nguon_dang: item.ten_nguon_dang ?? '',
+      ten_trang_dang: item.ten_trang_dang ?? '',
+      ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? item.ten_tai_khoan_nguoi_tao ?? '',
+      link: item.link,
+      range_start: dateFrom ?? '',
+      range_end: dateTo ?? '',
+    }),
+    [dateFrom, dateTo],
+  );
+
+  const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
+    data: agg.filteredRows,
+    isOpen: showExport,
+    mapFn: exportMapFn,
+    pagination: EXPORT_PAGINATION,
+    selectedIds: new Set(),
+    keyExtractor: (r) => r.id,
+  });
 
   const handleClearFilters = useCallback(() => {
     setDateRange(initialDateRange);
@@ -303,6 +353,29 @@ const HoaHongVietBaiPage: React.FC = () => {
     />
   );
 
+  const handleExportOpen = useCallback(() => {
+    if (agg.filteredRows.length === 0) {
+      toast.warning(txt('articleCommission.noExportData'));
+      return;
+    }
+    setShowExport(true);
+  }, [agg.filteredRows.length]);
+
+  const renderExportToolbarButton = () =>
+    canExport ? (
+      <Tooltip content={txt('common.export')} placement="bottom">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          onClick={handleExportOpen}
+          className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+        >
+          <Download className="w-4 h-4" />
+        </Button>
+      </Tooltip>
+    ) : null;
+
   if (!canOpenPage) {
     return (
       <div
@@ -331,6 +404,8 @@ const HoaHongVietBaiPage: React.FC = () => {
         filterGroups={filterGroups}
         activeFilterCount={activeFilterCount}
         onClearFilters={handleClearFilters}
+        actions={renderExportToolbarButton()}
+        mobileActions={renderExportToolbarButton()}
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
@@ -427,6 +502,17 @@ const HoaHongVietBaiPage: React.FC = () => {
           </p>
         )}
       </div>
+
+      <ExportDialog
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        columns={exportColumns}
+        data={exportData}
+        paginatedData={paginatedExportData}
+        selectedData={selectedExportData}
+        fileName={txt('articleCommission.exportFileName')}
+        visibleColumnKeys={exportColumns.map((c) => c.key)}
+      />
     </div>
   );
 };

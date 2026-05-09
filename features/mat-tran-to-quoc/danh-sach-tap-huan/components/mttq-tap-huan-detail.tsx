@@ -1,18 +1,21 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Briefcase,
   Building2,
   CalendarDays,
   Clock,
   Edit,
   FileText,
   GraduationCap,
-  IdCard,
+  Layers,
   ListChecks,
+  MapPin,
   Plus,
   StickyNote,
   Tag,
   Trash2,
   User,
+  UserCircle,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,7 +23,9 @@ import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateTimeShort } from '@/lib/utils';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import { DRAWER_WIDTH_DETAIL_SMALL } from '@/lib/dialog-sizes';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
@@ -33,9 +38,10 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { useCan } from '@/hooks/use-can';
 import { useMttqCanBoList } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/hooks/use-mttq-can-bo';
 import type { MttqLopTapHuan, MttqLopTapHuanCt } from '../core/types';
-import type {
-  MttqTapHuanFormValues,
-  MttqTapHuanChiTietLineFormValues,
+import {
+  createMttqTapHuanSchema,
+  type MttqTapHuanFormValues,
+  type MttqTapHuanChiTietLineFormValues,
 } from '../core/schema';
 import { MTTQ_TAP_HUAN_THUOC_DIEN } from '../core/constants';
 import { useUpdateMttqLopTapHuan } from '../hooks/use-mttq-tap-huan';
@@ -46,6 +52,11 @@ import {
   getTapHuanCapBadgeConfig,
   getTapHuanThuocDienBadgeConfig,
 } from '../utils/display-format';
+import {
+  tapHuanCanBoThreeColFromCanBo,
+  tapHuanThreeColForChiTietRow,
+} from '../utils/snapshot-from-can-bo';
+import { buildTapHuanCanBoOptions } from '../utils/can-bo-options-for-lop';
 
 interface Props {
   data: MttqLopTapHuan;
@@ -62,10 +73,12 @@ function chiTietToLineForm(c: MttqLopTapHuanCt): MttqTapHuanChiTietLineFormValue
   return {
     id: c.id,
     can_bo_id: c.can_bo_id,
-    chuc_vu: c.chuc_vu ?? '',
-    don_vi_cong_tac: c.don_vi_cong_tac ?? '',
     thuoc_dien: c.thuoc_dien,
   };
+}
+
+function toFormFk(v: string | null | undefined): string {
+  return v != null && String(v).trim() !== '' ? String(v) : '';
 }
 
 function parentToFormValues(
@@ -76,12 +89,13 @@ function parentToFormValues(
     ten_lop_tap_huan: d.ten_lop_tap_huan,
     nam_tap_huan: d.nam_tap_huan,
     cap_tap_huan: d.cap_tap_huan,
+    don_vi_id: toFormFk(d.don_vi_id),
     ghi_chu: d.ghi_chu ?? undefined,
     chi_tiet: chiLines,
   };
 }
 
-const CHI_TIET_TABLE_CLASS = 'min-w-[64rem]';
+const CHI_TIET_TABLE_CLASS = 'min-w-[76rem]';
 const CELL_NOWRAP = 'whitespace-nowrap align-top';
 
 function chiTietCellClass(extra: string) {
@@ -96,18 +110,30 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
 
   const [lineDrawer, setLineDrawer] = useState<LineDrawerState>(null);
+  /** Bấm vào dòng bảng con → drawer xem (read-only), không mở form. */
+  const [viewLineIndex, setViewLineIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setViewLineIndex(null);
+  }, [data.id]);
 
   const capBadgeConfig = useMemo(() => getTapHuanCapBadgeConfig(), []);
   const thuocDienBadgeConfig = useMemo(() => getTapHuanThuocDienBadgeConfig(), []);
 
   const lineFormRows = useMemo(() => data.chi_tiet.map(chiTietToLineForm), [data.chi_tiet]);
 
+  const ensureCanBoIdForDrawer =
+    lineDrawer?.mode === 'edit' ? lineFormRows[lineDrawer.index]?.can_bo_id : undefined;
+
   const canBoOptions = useMemo(
     () =>
-      [...canBoList]
-        .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, 'vi'))
-        .map((c) => ({ label: c.ho_ten, value: String(c.id) })),
-    [canBoList],
+      buildTapHuanCanBoOptions({
+        cap: data.cap_tap_huan,
+        donViIdLop: toFormFk(data.don_vi_id),
+        canBoList,
+        ensureCanBoId: ensureCanBoIdForDrawer,
+      }),
+    [data.cap_tap_huan, data.don_vi_id, canBoList, ensureCanBoIdForDrawer],
   );
 
   const thuocDienOpts = useMemo(
@@ -122,13 +148,7 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   }, [canBoList]);
 
   const resolveFromCanBo = useCallback(
-    (canBoId: string) => {
-      const c = canBoMap.get(canBoId.trim());
-      return {
-        chuc_vu: (c?.ten_chuc_vu ?? '').trim(),
-        don_vi_cong_tac: (c?.ten_to_chuc ?? '').trim(),
-      };
-    },
+    (canBoId: string) => tapHuanCanBoThreeColFromCanBo(canBoMap.get(canBoId.trim())),
     [canBoMap],
   );
 
@@ -138,9 +158,11 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   );
 
   const openAddLine = useCallback(() => {
+    setViewLineIndex(null);
     setLineDrawer({ mode: 'add' });
   }, []);
   const openEditLine = useCallback((index: number) => {
+    setViewLineIndex(null);
     setLineDrawer({ mode: 'edit', index });
   }, []);
 
@@ -153,12 +175,21 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
       } else {
         nextLines = lineFormRows.map((l, i) => (i === lineDrawer.index ? values : l));
       }
+      const payload = parentToFormValues(data, nextLines);
+      const parsed = createMttqTapHuanSchema(canBoList).safeParse(payload);
+      if (!parsed.success) {
+        const msg =
+          parsed.error.issues.map((i) => i.message).filter(Boolean).join(' ') ||
+          txt('matTranTapHuan.validation.canBoDonViMismatch');
+        toast.error(msg);
+        return;
+      }
       await updateMutation.mutateAsync({
         id: data.id,
-        data: parentToFormValues(data, nextLines),
+        data: parsed.data,
       });
     },
-    [data, lineDrawer, lineFormRows, updateMutation],
+    [data, lineDrawer, lineFormRows, canBoList, updateMutation],
   );
 
   const handleRemoveLine = useCallback(
@@ -174,11 +205,20 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
         confirmText: CONFIRM_DELETE(),
         onConfirm: () => {
           const nextLines = lineFormRows.filter((_, i) => i !== index);
-          updateMutation.mutate({ id: data.id, data: parentToFormValues(data, nextLines) });
+          const payload = parentToFormValues(data, nextLines);
+          const parsed = createMttqTapHuanSchema(canBoList).safeParse(payload);
+          if (!parsed.success) {
+            const msg =
+              parsed.error.issues.map((i) => i.message).filter(Boolean).join(' ') ||
+              txt('matTranTapHuan.validation.canBoDonViMismatch');
+            toast.error(msg);
+            return;
+          }
+          updateMutation.mutate({ id: data.id, data: parsed.data });
         },
       });
     },
-    [confirm, data, lineFormRows, updateMutation],
+    [confirm, data, lineFormRows, canBoList, updateMutation],
   );
 
   const lineDrawerInitial = useMemo(() => {
@@ -189,6 +229,12 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
       ? { ...MTTQ_TAP_HUAN_CHI_TIET_EMPTY_LINE, ...row }
       : MTTQ_TAP_HUAN_CHI_TIET_EMPTY_LINE;
   }, [lineDrawer, lineFormRows]);
+
+  const viewedLine =
+    viewLineIndex != null ? (data.chi_tiet[viewLineIndex] ?? null) : null;
+  const viewedThreeCols = viewedLine
+    ? tapHuanThreeColForChiTietRow(viewedLine, canBoMap.get(String(viewedLine.can_bo_id)))
+    : null;
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -285,6 +331,18 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                 value={<EnumBadge value={data.cap_tap_huan} config={capBadgeConfig} shape="pill" />}
                 icon={<Tag size={12} />}
               />
+              {data.cap_tap_huan === 'Cấp xã' ? (
+                <DetailField
+                  label={txt('matTranTapHuan.form.donVi')}
+                  value={
+                    data.ten_don_vi?.trim() ? (
+                      <span className="text-body-sm text-foreground">{data.ten_don_vi}</span>
+                    ) : undefined
+                  }
+                  icon={<MapPin size={12} />}
+                  emptyText={txt('common.emptyCell')}
+                />
+              ) : null}
               <DetailField
                 className={DETAIL_FIELD_SPAN_FULL}
                 label={txt('matTranTapHuan.form.ghiChu')}
@@ -296,31 +354,6 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                   ) : undefined
                 }
                 icon={<StickyNote size={12} />}
-                emptyText={txt('common.emptyCell')}
-              />
-            </DetailFieldGrid>
-          </DetailSection>
-
-          <DetailSection
-            title={txt('matTranTapHuan.detail.systemInfo')}
-            icon={<Clock size={14} />}
-            variant="primary"
-          >
-            <DetailFieldGrid>
-              <DetailField
-                label={txt('matTranTapHuan.detail.tgTao')}
-                value={<span className="tabular-nums">{formatDateTimeShort(data.tg_tao)}</span>}
-                icon={<CalendarDays size={12} />}
-              />
-              <DetailField
-                label={txt('matTranTapHuan.detail.tgCapNhat')}
-                value={<span className="tabular-nums">{formatDateTimeShort(data.tg_cap_nhat)}</span>}
-                icon={<Clock size={12} />}
-              />
-              <DetailField
-                label={txt('matTranTapHuan.store.nguoiTaoCol')}
-                value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao ?? undefined}
-                icon={<User size={12} />}
                 emptyText={txt('common.emptyCell')}
               />
             </DetailFieldGrid>
@@ -355,7 +388,7 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                 getRowKey={(r) => r.id}
                 maxVisibleBodyRows={8}
                 tableClassName={CHI_TIET_TABLE_CLASS}
-                onRowClick={canEdit ? (r) => openEditLine(r.rowIndex) : undefined}
+                onRowClick={(r) => setViewLineIndex(r.rowIndex)}
                 labelColumn={{
                   minWidthClass: 'min-w-[12rem] w-[12rem]',
                   header: (
@@ -376,43 +409,77 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                 }}
                 columns={[
                   {
-                    id: 'chuc_vu',
-                    header: (
-                      <span className="inline-flex items-center gap-1.5">
-                        <IdCard size={12} className="shrink-0 opacity-90" aria-hidden />
-                        {txt('matTranTapHuan.form.chucVu')}
-                      </span>
-                    ),
-                    headerClassName: 'min-w-[10rem]',
-                    cellClassName: chiTietCellClass('min-w-[10rem]'),
-                    renderCell: (r) =>
-                      r.chuc_vu?.trim() ? r.chuc_vu : txt('common.emptyCell'),
-                  },
-                  {
-                    id: 'don_vi',
+                    id: 'ten_to_chuc',
                     header: (
                       <span className="inline-flex items-center gap-1.5">
                         <Building2 size={12} className="shrink-0 opacity-90" aria-hidden />
-                        {txt('matTranTapHuan.form.donViCongTac')}
-                      </span>
-                    ),
-                    headerClassName: 'min-w-[14rem]',
-                    cellClassName: chiTietCellClass('min-w-[14rem]'),
-                    renderCell: (r) =>
-                      r.don_vi_cong_tac?.trim() ? r.don_vi_cong_tac : txt('common.emptyCell'),
-                  },
-                  {
-                    id: 'cap_quan_ly',
-                    header: (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Tag size={12} className="shrink-0 opacity-90" aria-hidden />
-                        {txt('matTranTapHuan.form.capQuanLy')}
+                        {txt('matTranCanBo.form.toChuc')}
                       </span>
                     ),
                     headerClassName: 'min-w-[10rem]',
                     cellClassName: chiTietCellClass('min-w-[10rem]'),
-                    renderCell: (r) =>
-                      r.ten_cap_quan_ly?.trim() ? r.ten_cap_quan_ly : txt('common.emptyCell'),
+                    renderCell: (r) => {
+                      const t = tapHuanThreeColForChiTietRow(r, canBoMap.get(String(r.can_bo_id)));
+                      return t.ten_to_chuc.trim() ? t.ten_to_chuc : txt('common.emptyCell');
+                    },
+                  },
+                  {
+                    id: 'ten_phong_ban',
+                    header: (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Layers size={12} className="shrink-0 opacity-90" aria-hidden />
+                        {txt('matTranCanBo.form.phongBan')}
+                      </span>
+                    ),
+                    headerClassName: 'min-w-[11rem]',
+                    cellClassName: chiTietCellClass('min-w-[11rem]'),
+                    renderCell: (r) => {
+                      const t = tapHuanThreeColForChiTietRow(r, canBoMap.get(String(r.can_bo_id)));
+                      return t.ten_phong_ban.trim() ? t.ten_phong_ban : txt('common.emptyCell');
+                    },
+                  },
+                  {
+                    id: 'ten_chuc_vu',
+                    header: (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Briefcase size={12} className="shrink-0 opacity-90" aria-hidden />
+                        {txt('matTranCanBo.form.chucVu')}
+                      </span>
+                    ),
+                    headerClassName: 'min-w-[10rem]',
+                    cellClassName: chiTietCellClass('min-w-[10rem]'),
+                    renderCell: (r) => {
+                      const t = tapHuanThreeColForChiTietRow(r, canBoMap.get(String(r.can_bo_id)));
+                      return t.ten_chuc_vu.trim() ? t.ten_chuc_vu : txt('common.emptyCell');
+                    },
+                  },
+                  {
+                    id: 'don_vi_ho_so',
+                    header: (
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin size={12} className="shrink-0 opacity-90" aria-hidden />
+                        {txt('matTranCanBo.store.donViCol')}
+                      </span>
+                    ),
+                    headerClassName: 'min-w-[12rem]',
+                    cellClassName: chiTietCellClass('min-w-[12rem]'),
+                    renderCell: (r) => {
+                      const ec = txt('common.emptyCell');
+                      const capQl =
+                        r.chuc_vu_cap_quan_ly ??
+                        canBoMap.get(String(r.can_bo_id))?.chuc_vu_cap_quan_ly ??
+                        null;
+                      const d = formatTenDonViCongTacDisplay(capQl, r.ten_don_vi_can_bo);
+                      if (capQl === 'Tỉnh') {
+                        return (
+                          <span className="text-body-sm text-muted-foreground tabular-nums">{d}</span>
+                        );
+                      }
+                      if (d === ec) {
+                        return <span className="text-body-sm text-muted-foreground italic">{ec}</span>;
+                      }
+                      return d;
+                    },
                   },
                   {
                     id: 'thuoc_dien',
@@ -463,8 +530,174 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
               />
             )}
           </DetailSection>
+
+          <DetailSection
+            title={txt('matTranTapHuan.detail.systemInfo')}
+            icon={<Clock size={14} />}
+            variant="primary"
+          >
+            <DetailFieldGrid>
+              <DetailField
+                label={txt('matTranTapHuan.detail.tgTao')}
+                value={<span className="tabular-nums">{formatDateTimeShort(data.tg_tao)}</span>}
+                icon={<CalendarDays size={12} />}
+              />
+              <DetailField
+                label={txt('matTranTapHuan.detail.tgCapNhat')}
+                value={<span className="tabular-nums">{formatDateTimeShort(data.tg_cap_nhat)}</span>}
+                icon={<Clock size={12} />}
+              />
+              <DetailField
+                label={txt('matTranTapHuan.store.nguoiTaoCol')}
+                value={data.ho_va_ten_nguoi_tao ?? data.ten_tai_khoan_nguoi_tao ?? undefined}
+                icon={<User size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+            </DetailFieldGrid>
+          </DetailSection>
         </div>
       </GenericDrawer>
+
+      {viewedLine && viewedThreeCols ? (
+        <GenericDrawer
+          stackLevel={1}
+          maxWidthClass={DRAWER_WIDTH_DETAIL_SMALL}
+          onClose={() => setViewLineIndex(null)}
+          title={txt('matTranTapHuan.chiTietDrawer.lineDetailTitle')}
+          subtitle={
+            <span className="inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <span className="font-medium text-foreground">
+                {viewedLine.ten_can_bo?.trim()
+                  ? viewedLine.ten_can_bo
+                  : `#${viewedLine.can_bo_id}`}
+              </span>
+              <span className="text-muted-foreground text-sm font-normal">
+                · {data.ten_lop_tap_huan}
+              </span>
+            </span>
+          }
+          icon={<UserCircle size={18} />}
+          footerCompact
+          footer={
+            <div className="flex items-center justify-end w-full gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewLineIndex(null)}
+                className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground border border-border"
+              >
+                {BTN_CLOSE()}
+              </Button>
+              {canEdit ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const idx = viewLineIndex;
+                    if (idx == null) return;
+                    openEditLine(idx);
+                  }}
+                  className="h-8 px-3 text-xs bg-primary text-white shadow-sm hover:bg-primary/90"
+                >
+                  <Edit className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                  {BTN_EDIT()}
+                </Button>
+              ) : null}
+            </div>
+          }
+        >
+          <DetailSection
+            title={txt('matTranTapHuan.detail.sectionChiTiet')}
+            icon={<Users size={14} />}
+            variant="primary"
+          >
+            <DetailFieldGrid>
+              <DetailField
+                className={DETAIL_FIELD_SPAN_FULL}
+                label={txt('matTranTapHuan.form.canBo')}
+                value={
+                  <span className="font-medium text-foreground">
+                    {viewedLine.ten_can_bo?.trim()
+                      ? viewedLine.ten_can_bo
+                      : `#${viewedLine.can_bo_id}`}
+                  </span>
+                }
+                icon={<Users size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={txt('matTranCanBo.form.toChuc')}
+                value={
+                  viewedThreeCols.ten_to_chuc.trim() ? (
+                    <span className="text-body-sm text-foreground whitespace-pre-wrap break-words">
+                      {viewedThreeCols.ten_to_chuc}
+                    </span>
+                  ) : undefined
+                }
+                icon={<Building2 size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={txt('matTranCanBo.form.phongBan')}
+                value={
+                  viewedThreeCols.ten_phong_ban.trim() ? (
+                    <span className="text-body-sm text-foreground whitespace-pre-wrap break-words">
+                      {viewedThreeCols.ten_phong_ban}
+                    </span>
+                  ) : undefined
+                }
+                icon={<Layers size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={txt('matTranCanBo.form.chucVu')}
+                value={
+                  viewedThreeCols.ten_chuc_vu.trim() ? (
+                    <span className="text-body-sm text-foreground whitespace-pre-wrap break-words">
+                      {viewedThreeCols.ten_chuc_vu}
+                    </span>
+                  ) : undefined
+                }
+                icon={<Briefcase size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                className={DETAIL_FIELD_SPAN_FULL}
+                label={txt('matTranCanBo.store.donViCol')}
+                value={
+                  (() => {
+                    const capQl =
+                      viewedLine.chuc_vu_cap_quan_ly ??
+                      canBoMap.get(String(viewedLine.can_bo_id))?.chuc_vu_cap_quan_ly ??
+                      null;
+                    const d = formatTenDonViCongTacDisplay(capQl, viewedLine.ten_don_vi_can_bo);
+                    const ec = txt('common.emptyCell');
+                    if (d === ec) return undefined;
+                    return (
+                      <span className="text-body-sm text-foreground whitespace-pre-wrap break-words">
+                        {d}
+                      </span>
+                    );
+                  })()
+                }
+                icon={<MapPin size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={txt('matTranTapHuan.form.thuocDien')}
+                value={
+                  <EnumBadge
+                    value={viewedLine.thuoc_dien}
+                    config={thuocDienBadgeConfig}
+                    shape="rounded"
+                    truncate
+                  />
+                }
+                icon={<ListChecks size={12} />}
+              />
+            </DetailFieldGrid>
+          </DetailSection>
+        </GenericDrawer>
+      ) : null}
 
       {lineDrawer && canEdit ? (
         <MttqTapHuanChiTietLineDrawer

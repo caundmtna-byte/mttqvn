@@ -75,6 +75,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 const initialFilters: ChuongTrinhNamFilters = {
   columnSearch: {},
   trang_thai: [],
+  id_phong_ban: [],
+  nam_bat_dau: [],
 };
 
 export const useChuongTrinhNamStore = createGenericStore<ChuongTrinhNamFilters>(

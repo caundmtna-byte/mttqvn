@@ -11,7 +11,6 @@ FROM (
     ('dan_toc', 'Kinh', null, 1),
     ('trinh_do', 'Đại học', null, 1),
     ('ly_luan_chinh_tri', 'Cao cấp', null, 1),
-    ('chuc_vu', 'Chủ tịch', null, 1),
     ('trang_thai', 'Đang công tác', null, 1)
 ) AS v(loai, ten, mo_ta, thu_tu)
 WHERE NOT EXISTS (

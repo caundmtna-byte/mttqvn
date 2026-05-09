@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { isValidElement, useId, type ElementType } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -10,13 +10,25 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   required?: boolean;
 }
 
+/** `forwardRef` / `memo` (Lucide mới) là object `{$$typeof, render}`, không phải `function`. */
+function isIconComponentType(icon: unknown): icon is ElementType {
+  if (typeof icon === 'function') return true;
+  if (typeof icon !== 'object' || icon === null) return false;
+  const $$typeof = (icon as { $$typeof?: symbol }).$$typeof;
+  return (
+    $$typeof === Symbol.for('react.forward_ref') ||
+    $$typeof === Symbol.for('react.memo')
+  );
+}
+
 /** Lucide `User` / `Mail` hoặc element sẵn — dùng chung cho `Input` và `*Input` bọc label. */
 export function renderInputIcon(icon: NonNullable<InputProps['icon']>): React.ReactNode {
-  if (typeof icon === 'function') {
-    const Icon = icon as LucideIcon;
-    return <Icon className="h-4 w-4 shrink-0" aria-hidden />;
+  if (isValidElement(icon)) return icon;
+  if (isIconComponentType(icon)) {
+    const Comp = icon;
+    return <Comp className="h-4 w-4 shrink-0" aria-hidden />;
   }
-  return icon;
+  return icon as React.ReactNode;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(

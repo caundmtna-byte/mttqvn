@@ -149,6 +149,8 @@ export type BaiVietPageQuery = {
   viewerNhanVienId: string | null;
   viewerPhongBanId: string | null;
   theLoaiIds: readonly string[];
+  nguonDangIds: readonly string[];
+  trangDangIds: readonly string[];
 };
 
 export type BaiVietPageResult = {
@@ -172,6 +174,8 @@ function filterBaiVietMockForPage(
     viewerNhanVienId: string | null;
     viewerPhongBanId: string | null;
     theLoaiIds: readonly string[];
+    nguonDangIds: readonly string[];
+    trangDangIds: readonly string[];
   },
 ): BaiVietDanhSach[] {
   let list = [...all];
@@ -195,6 +199,14 @@ function filterBaiVietMockForPage(
   if (opts.theLoaiIds.length) {
     const set = new Set(opts.theLoaiIds.map(String));
     list = list.filter((b) => set.has(String(b.id_the_loai)));
+  }
+  if (opts.nguonDangIds.length) {
+    const set = new Set(opts.nguonDangIds.map(String));
+    list = list.filter((b) => set.has(String(b.id_nguon_dang)));
+  }
+  if (opts.trangDangIds.length) {
+    const set = new Set(opts.trangDangIds.map(String));
+    list = list.filter((b) => set.has(String(b.id_trang_dang)));
   }
   list.sort((a, b) => b.ngay_dang.localeCompare(a.ngay_dang) || a.ten_bai.localeCompare(b.ten_bai));
   return list;
@@ -228,6 +240,12 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
   const theLoaiNums = q.theLoaiIds
     .map((x) => Number(String(x).trim()))
     .filter((n) => Number.isFinite(n));
+  const nguonNums = q.nguonDangIds
+    .map((x) => Number(String(x).trim()))
+    .filter((n) => Number.isFinite(n));
+  const trangNums = q.trangDangIds
+    .map((x) => Number(String(x).trim()))
+    .filter((n) => Number.isFinite(n));
 
   if (!isSupabase()) {
     const all = await getBaiVietDanhSachList();
@@ -237,6 +255,8 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
       viewerNhanVienId: q.viewerNhanVienId,
       viewerPhongBanId: q.viewerPhongBanId,
       theLoaiIds: q.theLoaiIds,
+      nguonDangIds: q.nguonDangIds,
+      trangDangIds: q.trangDangIds,
     });
     const slice = filtered.slice(offset, offset + fetchLimit);
     const hasNextPage = slice.length > pageSize;
@@ -256,6 +276,8 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
     p_viewer_nhan_vien_id: toRpcBigint(q.viewerNhanVienId),
     p_viewer_phong_ban_id: toRpcBigint(q.viewerPhongBanId),
     p_the_loai_ids: theLoaiNums.length ? theLoaiNums : null,
+    p_nguon_dang_ids: nguonNums.length ? nguonNums : null,
+    p_trang_dang_ids: trangNums.length ? trangNums : null,
   } as never);
   if (error) handleSupabaseError(error);
 

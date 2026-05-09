@@ -4,23 +4,33 @@ import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
-import type { MttqKhenThuong, MttqKhenThuongLineForCanBo } from '../core/types';
+import type { MttqKhenThuong, MttqKhenThuongChiTietFlatRow, MttqKhenThuongLineForCanBo } from '../core/types';
 import type { MttqKhenThuongFormValues } from '../core/schema';
 import {
   createMttqKhenThuong,
   deleteMttqKhenThuongMany,
   getMttqKhenThuongById,
+  getMttqKhenThuongChiTietFlatList,
   getMttqKhenThuongList,
   getMttqKhenThuongLinesForCanBoId,
   updateMttqKhenThuong,
 } from '../services/mttq-khen-thuong-service';
 
 const listKey = queryKeys.mttqKhenThuong.all;
+const chiTietFlatListKey = queryKeys.mttqKhenThuong.chiTietFlatList;
 
 export const useMttqKhenThuongList = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: listKey,
     queryFn: getMttqKhenThuongList,
+    enabled: options?.enabled !== false,
+    ...listQueryOptions,
+  });
+
+export const useMttqKhenThuongChiTietFlatList = (options?: { enabled?: boolean }) =>
+  useQuery<MttqKhenThuongChiTietFlatRow[]>({
+    queryKey: chiTietFlatListKey,
+    queryFn: getMttqKhenThuongChiTietFlatList,
     enabled: options?.enabled !== false,
     ...listQueryOptions,
   });
@@ -49,6 +59,7 @@ export const useCreateMttqKhenThuong = (onSuccess?: () => void) => {
       createMttqKhenThuong(data, idNguoiTao),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
       // `byCanBoPrefix` chỉ active trên trang detail cán bộ — mark stale, refetch
       // khi user mở lại detail. Tránh refetch tất cả `byCanBo(*)` cache lúc tạo mới.
       void queryClient.invalidateQueries({
@@ -68,6 +79,7 @@ export const useUpdateMttqKhenThuong = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: MttqKhenThuongFormValues }) => updateMttqKhenThuong(id, data),
     onSuccess: (updated, { id }) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix,
         refetchType: 'none',
@@ -86,6 +98,7 @@ export const useDeleteMttqKhenThuongMany = () => {
     mutationFn: deleteMttqKhenThuongMany,
     onSuccess: (_, ids) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix,
         refetchType: 'none',

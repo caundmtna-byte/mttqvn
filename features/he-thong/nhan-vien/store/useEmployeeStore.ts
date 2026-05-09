@@ -6,7 +6,7 @@ import { txt } from '../../../../lib/text';
 const P = TABLE_COLUMN_PRESETS;
 
 /**
- * Cột bảng nhân viên (8 trường nghiệp vụ — gộp ảnh + họ tên vào cột `ho_va_ten`).
+ * Cột bảng nhân viên (gộp ảnh + họ tên vào cột `ho_va_ten`).
  */
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'ten_tai_khoan', label: txt('employee.store.usernameCol'), visible: true, ...P.code, order: 0 },
@@ -14,7 +14,15 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'ten_phong_ban', label: txt('employee.store.departmentCol'), visible: true, ...P.branch, order: 2 },
   { id: 'ten_bo_phan', label: txt('employee.store.unitCol'), visible: true, ...P.branch, order: 3 },
   { id: 'ten_chuc_vu', label: txt('employee.store.positionCol'), visible: true, ...P.titleShort, order: 4 },
-  { id: 'trang_thai', label: txt('employee.store.statusCol'), visible: true, ...P.enumBadge, order: 5 },
+  {
+    id: 'cap_quan_ly',
+    label: txt('position.store.managementLevelCol'),
+    visible: true,
+    ...P.enumBadgeShort,
+    order: 5,
+  },
+  { id: 'ten_don_vi', label: txt('employee.store.donViCol'), visible: true, ...P.branch, order: 6 },
+  { id: 'trang_thai', label: txt('employee.store.statusCol'), visible: true, ...P.enumBadge, order: 7 },
 ];
 
 const initialFilters: EmployeeFilters = {

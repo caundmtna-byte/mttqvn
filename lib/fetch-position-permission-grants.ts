@@ -1,10 +1,12 @@
 import type { ActionType } from '@/features/he-thong/phan-quyen/core/types';
+import type { CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { getRoleByChucVu } from '@/features/he-thong/phan-quyen/services/phan-quyen-service';
 import { mergeModulePermissionsToGrants } from '@/lib/permission-merge';
 
 export interface PositionPermissionGrantsPayload {
   grantsByModule: Record<string, ActionType[]>;
   chucVuCapBac: number | null;
+  chucVuCapQuanLy: CapQuanLy | null;
 }
 
 /**
@@ -15,7 +17,7 @@ export interface PositionPermissionGrantsPayload {
 export async function fetchPositionPermissionGrants(id_chuc_vu: string): Promise<PositionPermissionGrantsPayload> {
   const role = await getRoleByChucVu(id_chuc_vu);
   if (!role) {
-    return { grantsByModule: {}, chucVuCapBac: null };
+    return { grantsByModule: {}, chucVuCapBac: null, chucVuCapQuanLy: null };
   }
   const cap =
     role.cap_bac != null && String(role.cap_bac).trim() !== '' && Number.isFinite(Number(role.cap_bac))
@@ -24,5 +26,6 @@ export async function fetchPositionPermissionGrants(id_chuc_vu: string): Promise
   return {
     grantsByModule: mergeModulePermissionsToGrants(role.quyen_han),
     chucVuCapBac: cap,
+    chucVuCapQuanLy: role.cap_quan_ly ?? null,
   };
 }

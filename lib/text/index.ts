@@ -18,6 +18,8 @@ import { chuongTrinhNam } from '../../features/quan-ly-giao-viec/chuong-trinh-na
 import { taskList } from '../../features/quan-ly-giao-viec/cong-viec/text';
 import { taskReport } from '../../features/quan-ly-giao-viec/bao-cao-cong-viec/text';
 import { matTranCanBo } from '../../features/mat-tran-to-quoc/danh-sach-can-bo/text';
+import { matTranOfficerStats } from '../../features/mat-tran-to-quoc/bao-cao-can-bo/text';
+import { matTranCommitteeMemberStats } from '../../features/mat-tran-to-quoc/bao-cao-uy-vien/text';
 import { matTranKhenThuong } from '../../features/mat-tran-to-quoc/danh-sach-khen-thuong/text';
 import { matTranTapHuan } from '../../features/mat-tran-to-quoc/danh-sach-tap-huan/text';
 import { matTranNhiemKy } from '../../features/mat-tran-to-quoc/nhiem-ky/text';
@@ -57,6 +59,8 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('taskList', taskList),
   ...flatten('taskReport', taskReport),
   ...flatten('matTranCanBo', matTranCanBo),
+  ...flatten('matTranOfficerStats', matTranOfficerStats),
+  ...flatten('matTranCommitteeMemberStats', matTranCommitteeMemberStats),
   ...flatten('matTranKhenThuong', matTranKhenThuong),
   ...flatten('matTranTapHuan', matTranTapHuan),
   ...flatten('matTranNhiemKy', matTranNhiemKy),
@@ -109,10 +113,13 @@ export {
   taskList,
   taskReport,
   matTranCanBo,
+  matTranOfficerStats,
+  matTranCommitteeMemberStats,
   matTranKhenThuong,
   matTranTapHuan,
   matTranNhiemKy,
   matTranKyHop,
+  matTranUyVienUyBan,
   diaBan,
 };
 export { fmt };

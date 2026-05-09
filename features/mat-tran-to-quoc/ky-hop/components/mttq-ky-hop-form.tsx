@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarDays, FileText, Hash, MapPin, StickyNote, Type } from 'lucide-react';
+import { Calendar, CalendarDays, FileText, Hash, MapPin, StickyNote, Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
@@ -158,6 +158,7 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
                   label={txt('matTranKyHop.form.nhiemKy')}
                   placeholder={txt('matTranKyHop.form.nhiemKy')}
                   error={errors.nhiem_ky_id?.message}
+                  icon={<Calendar size={12} />}
                   required
                   clearable={false}
                   dropdownInPortal
@@ -227,6 +228,7 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
                     value={field.value ?? ''}
                     label={txt('matTranKyHop.form.noiDungKyHop')}
                     rows={3}
+                    icon={<FileText size={12} />}
                     error={errors.noi_dung_ky_hop?.message}
                   />
                 )}

@@ -23,6 +23,7 @@ import { useCan } from '@/hooks/use-can';
 import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useTheLoais } from '../thiet-lap-bai-viet/hooks/use-the-loai';
+import { useThietLapKhacAll } from '../thiet-lap-bai-viet/hooks/use-thiet-lap-khac';
 import { useArticleAllTabViewer, rowVisibleOnArticleAllTab } from '../hooks/use-article-all-tab-viewer';
 import { useBaiVietDanhSachPage, useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
 import { useBaiVietDanhSachStore } from './store/useBaiVietDanhSachStore';
@@ -89,6 +90,7 @@ const BaiVietDanhSachPage: React.FC = () => {
 
   const allTabViewer = useArticleAllTabViewer();
   const { data: theLoais = [] } = useTheLoais({ enabled: canView });
+  const { data: khacRows = [] } = useThietLapKhacAll({ enabled: canView });
 
   const rpcScope: BaiVietRpcScope =
     listScope === TAB_MINE ? 'mine' : allTabViewer.canViewAllOrg ? 'all' : 'all_dept';
@@ -107,6 +109,8 @@ const BaiVietDanhSachPage: React.FC = () => {
       viewerNhanVienId: listScope === TAB_MINE ? nhanVienId : null,
       viewerPhongBanId: rpcScope === 'all_dept' ? allTabViewer.viewerPhongBanId : null,
       theLoaiIds: filters.id_the_loai,
+      nguonDangIds: filters.id_nguon_dang,
+      trangDangIds: filters.id_trang_dang,
     }),
     [
       pagination.page,
@@ -117,6 +121,8 @@ const BaiVietDanhSachPage: React.FC = () => {
       nhanVienId,
       allTabViewer.viewerPhongBanId,
       filters.id_the_loai,
+      filters.id_nguon_dang,
+      filters.id_trang_dang,
     ],
   );
 
@@ -144,6 +150,16 @@ const BaiVietDanhSachPage: React.FC = () => {
   }, [listScope, setPage]);
 
   useEffect(() => {
+    setPage(1);
+  }, [
+    searchTerm,
+    filters.id_the_loai.join(','),
+    filters.id_nguon_dang.join(','),
+    filters.id_trang_dang.join(','),
+    setPage,
+  ]);
+
+  useEffect(() => {
     if (!viewing) return;
     const fresh = rows.find((r) => r.id === viewing.id);
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
@@ -154,6 +170,8 @@ const BaiVietDanhSachPage: React.FC = () => {
       if (listScope === TAB_MINE && String(item.id_nguoi_tao) !== nhanVienId) return false;
       if (listScope === TAB_ALL && !rowVisibleOnArticleAllTab(allTabViewer, item)) return false;
       if (f.id_the_loai?.length && !f.id_the_loai.includes(String(item.id_the_loai))) return false;
+      if (f.id_nguon_dang?.length && !f.id_nguon_dang.includes(String(item.id_nguon_dang))) return false;
+      if (f.id_trang_dang?.length && !f.id_trang_dang.includes(String(item.id_trang_dang))) return false;
       const matchesCol = baiVietMatchesColumnSearch(item, f);
       return matchesCol;
     },
@@ -309,6 +327,38 @@ const BaiVietDanhSachPage: React.FC = () => {
     [theLoais],
   );
 
+  const nguonDangChipOptions = useMemo(() => {
+    const masters = [...khacRows]
+      .filter((r) => r.loai === 'nguon_dang')
+      .sort((a, b) => a.ten.localeCompare(b.ten, getLanguage()));
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const id = String(r.id_nguon_dang);
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return masters.map((m) => ({
+      value: String(m.id),
+      label: m.ten,
+      count: counts.get(String(m.id)) ?? 0,
+    }));
+  }, [khacRows, rows]);
+
+  const trangDangChipOptions = useMemo(() => {
+    const masters = [...khacRows]
+      .filter((r) => r.loai === 'trang_dang')
+      .sort((a, b) => a.ten.localeCompare(b.ten, getLanguage()));
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const id = String(r.id_trang_dang);
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return masters.map((m) => ({
+      value: String(m.id),
+      label: m.ten,
+      count: counts.get(String(m.id)) ?? 0,
+    }));
+  }, [khacRows, rows]);
+
   if (!canView) {
     return (
       <div
@@ -328,6 +378,8 @@ const BaiVietDanhSachPage: React.FC = () => {
           onPageBack={() => navigate('/quan-ly-viet-bai')}
           tabsSlot={tabsSlot}
           theLoaiOptions={theLoaiChipOptions}
+          nguonDangOptions={nguonDangChipOptions}
+          trangDangOptions={trangDangChipOptions}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');

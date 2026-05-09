@@ -26,8 +26,9 @@ export const queryKeys = {
   departments: {
     all: ['departments'] as const,
   },
+  /** Segment thứ 2 đổi khi schema fetch chức vụ đổi — tránh dùng cache persist cũ thiếu field. */
   positions: {
-    all: ['positions'] as const,
+    all: ['positions', 'v2'] as const,
   },
   roles: {
     all: ['roles'] as const,
@@ -61,6 +62,8 @@ export const queryKeys = {
       viewerNhanVienId: string | null;
       viewerPhongBanId: string | null;
       theLoaiIds: readonly string[];
+      nguonDangIds: readonly string[];
+      trangDangIds: readonly string[];
     }) => ['bai-viet-danh-sach', 'page', args] as const,
   },
   chuongTrinhNam: {
@@ -110,10 +113,13 @@ export const queryKeys = {
   },
   mttqCanBo: {
     all: ['mttq-can-bo'] as const,
+    /** Danh sách gọn cho báo cáo thống kê (select nhẹ hơn LIST). */
+    stats: ['mttq-can-bo', 'stats'] as const,
     detail: (id: string) => ['mttq-can-bo', 'detail', id] as const,
   },
   mttqKhenThuong: {
     all: ['mttq-khen-thuong'] as const,
+    chiTietFlatList: ['mttq-khen-thuong', 'chi-tiet-flat-list'] as const,
     detail: (id: string) => ['mttq-khen-thuong', 'detail', id] as const,
     /** Dòng khen thưởng gắn một cán bộ — dùng detail cán bộ + invalidate theo prefix `by-can-bo`. */
     byCanBo: (canBoId: string) => ['mttq-khen-thuong', 'by-can-bo', canBoId] as const,
@@ -122,6 +128,10 @@ export const queryKeys = {
   mttqLopTapHuan: {
     all: ['mttq-lop-tap-huan'] as const,
     detail: (id: string) => ['mttq-lop-tap-huan', 'detail', id] as const,
+    chiTietFlatList: ['mttq-lop-tap-huan', 'chi-tiet-flat-list'] as const,
+    /** Dòng tập huấn (chi tiết phẳng) gắn một cán bộ — detail cán bộ + invalidate prefix `by-can-bo`. */
+    byCanBo: (canBoId: string) => ['mttq-lop-tap-huan', 'by-can-bo', canBoId] as const,
+    byCanBoPrefix: ['mttq-lop-tap-huan', 'by-can-bo'] as const,
   },
   mttqNhiemKy: {
     all: ['mttq-nhiem-ky'] as const,
@@ -138,6 +148,7 @@ export const queryKeys = {
   },
   mttqUyVienUyBan: {
     all: ['mttq-uy-vien-uy-ban'] as const,
+    stats: ['mttq-uy-vien-uy-ban', 'stats'] as const,
     detail: (id: string) => ['mttq-uy-vien-uy-ban', 'detail', id] as const,
     byNhiemKy: (nhiemKyId: string) => ['mttq-uy-vien-uy-ban', 'by-nhiem-ky', nhiemKyId] as const,
   },

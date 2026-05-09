@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Tag } from 'lucide-react';
+import { Plus, Download, Tag, Building2, CalendarRange } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -18,7 +18,11 @@ interface ChipOption {
 
 interface Props {
   onPageBack: () => void;
+  /** Tab Danh sách / Thống kê — sau nút Back trên GenericToolbar */
+  tabsSlot?: React.ReactNode;
   trangThaiOptions: ChipOption[];
+  phongBanOptions: ChipOption[];
+  namBatDauOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
@@ -26,7 +30,10 @@ interface Props {
 
 const ChuongTrinhNamToolbar: React.FC<Props> = ({
   onPageBack,
+  tabsSlot,
   trangThaiOptions,
+  phongBanOptions,
+  namBatDauOptions,
   onAdd,
   onExport,
   onDeleteMany,
@@ -51,8 +58,13 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
   const activeFilterCount = useMemo(() => {
     return (
       (searchTerm ? 1 : 0) +
-      countChuongTrinhNamColumnSearchActive(filters.columnSearch) +
-      (filters.trang_thai.length > 0 ? 1 : 0)
+      countChuongTrinhNamColumnSearchActive(filters.columnSearch, {
+        id_phong_ban: filters.id_phong_ban,
+        nam_bat_dau: filters.nam_bat_dau,
+      }) +
+      (filters.trang_thai.length > 0 ? 1 : 0) +
+      (filters.id_phong_ban.length > 0 ? 1 : 0) +
+      (filters.nam_bat_dau.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -61,6 +73,8 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
     const st = useChuongTrinhNamStore.getState();
     st.setFilter('columnSearch', {});
     st.setFilter('trang_thai', []);
+    st.setFilter('id_phong_ban', []);
+    st.setFilter('nam_bat_dau', []);
   };
 
   const filtersSlot = useMemo(
@@ -74,9 +88,33 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
           icon={Tag}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
         />
+        <FilterChipMultiSelect
+          options={phongBanOptions}
+          value={filters.id_phong_ban}
+          onChange={(val) => setFilter('id_phong_ban', val)}
+          placeholder={txt('chuongTrinhNam.store.phongBanCol')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
+        <FilterChipMultiSelect
+          options={namBatDauOptions}
+          value={filters.nam_bat_dau}
+          onChange={(val) => setFilter('nam_bat_dau', val)}
+          placeholder={txt('chuongTrinhNam.filter.namBatDauChip')}
+          icon={CalendarRange}
+          className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
+        />
       </div>
     ),
-    [trangThaiOptions, filters.trang_thai, setFilter],
+    [
+      trangThaiOptions,
+      phongBanOptions,
+      namBatDauOptions,
+      filters.trang_thai,
+      filters.id_phong_ban,
+      filters.nam_bat_dau,
+      setFilter,
+    ],
   );
 
   const filterGroups = useMemo(
@@ -89,8 +127,32 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
         value: filters.trang_thai,
         onChange: (val: string[]) => setFilter('trang_thai', val),
       },
+      {
+        key: 'id_phong_ban',
+        label: txt('chuongTrinhNam.store.phongBanCol'),
+        icon: Building2,
+        options: phongBanOptions,
+        value: filters.id_phong_ban,
+        onChange: (val: string[]) => setFilter('id_phong_ban', val),
+      },
+      {
+        key: 'nam_bat_dau',
+        label: txt('chuongTrinhNam.filter.namBatDauChip'),
+        icon: CalendarRange,
+        options: namBatDauOptions,
+        value: filters.nam_bat_dau,
+        onChange: (val: string[]) => setFilter('nam_bat_dau', val),
+      },
     ],
-    [trangThaiOptions, filters.trang_thai, setFilter],
+    [
+      trangThaiOptions,
+      phongBanOptions,
+      namBatDauOptions,
+      filters.trang_thai,
+      filters.id_phong_ban,
+      filters.nam_bat_dau,
+      setFilter,
+    ],
   );
 
   const mobileActions = useMemo<ActionItem[]>(
@@ -159,6 +221,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
+      desktopStartSlot={tabsSlot}
     />
   );
 };

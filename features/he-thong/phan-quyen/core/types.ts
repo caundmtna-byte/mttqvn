@@ -1,4 +1,5 @@
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
+import type { CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 
 export type ActionType = 'view' | 'create' | 'update' | 'delete' | 'approve' | 'export' | 'import' | 'admin' | 'all';
 
@@ -18,6 +19,8 @@ export interface PositionPermission {
   thu_tu_chuc_vu?: number;
   /** `var_chuc_vu.cap_bac` — dùng luật OR với ma trận (vd. Phòng ban). */
   cap_bac?: number | null;
+  /** `var_chuc_vu.cap_quan_ly` — Tỉnh | Xã phường (sau chuẩn hoá). */
+  cap_quan_ly?: CapQuanLy | null;
   mo_ta: string | null;
   so_nhan_vien: number;
   quyen_han: ModulePermission[];

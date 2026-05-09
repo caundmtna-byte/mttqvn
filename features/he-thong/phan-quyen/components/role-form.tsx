@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { txt } from '../../../../lib/text';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, Check, Star, Briefcase, Minus } from 'lucide-react';
+import { Save, Check, Star, Briefcase, Minus, Hash, Type } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
 import { roleSchema, RoleFormValues } from '../core/schema';
@@ -108,8 +108,20 @@ const RoleForm: React.FC<Props> = ({ initialData, onClose }) => {
              <div className="bg-card p-4 sm:p-5 rounded-xl border border-border shadow-sm space-y-4">
                 <h4 className="text-xs font-medium text-muted-foreground border-b border-border pb-2">{txt('permission.form.infoSection')}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label={txt('permission.form.codeLabel')} placeholder={txt('permission.form.codePlaceholder')} {...register('ma_vai_tro')} error={errors.ma_vai_tro?.message} />
-                    <Input label={txt('permission.form.nameLabel')} placeholder={txt('permission.form.namePlaceholder')} {...register('ten_vai_tro')} error={errors.ten_vai_tro?.message} />
+                    <Input
+                      label={txt('permission.form.codeLabel')}
+                      placeholder={txt('permission.form.codePlaceholder')}
+                      icon={<Hash size={12} />}
+                      {...register('ma_vai_tro')}
+                      error={errors.ma_vai_tro?.message}
+                    />
+                    <Input
+                      label={txt('permission.form.nameLabel')}
+                      placeholder={txt('permission.form.namePlaceholder')}
+                      icon={<Type size={12} />}
+                      {...register('ten_vai_tro')}
+                      error={errors.ten_vai_tro?.message}
+                    />
                 </div>
              </div>
 

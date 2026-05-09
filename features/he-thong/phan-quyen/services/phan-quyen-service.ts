@@ -17,6 +17,7 @@ import {
   resolveModuleIdFromStorageKey,
   moduleKeysForDbLookup,
 } from '../core/module-storage-key';
+import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 
 export const SYSTEM_MODULES_CONFIG = getAllPermissionModules().map((m) => ({
   id: m.id,
@@ -41,6 +42,7 @@ type VarChucVuRow = {
   mo_ta?: string | null;
   phong_ban_id?: number | string | null;
   cap_bac?: number | null;
+  cap_quan_ly?: string | null;
   trang_thai?: string | null;
   thu_tu?: number | null;
   tg_cap_nhat?: string | null;
@@ -92,6 +94,7 @@ function mapVarChucVuToPosition(
     thu_tu_phong_ban: pb?.thu_tu != null ? Number(pb.thu_tu) : undefined,
     thu_tu_chuc_vu: cv.thu_tu != null ? Number(cv.thu_tu) : undefined,
     cap_bac: cv.cap_bac != null && String(cv.cap_bac).trim() !== '' ? Number(cv.cap_bac) : null,
+    cap_quan_ly: normalizeCapQuanLyInput(cv.cap_quan_ly as string | null | undefined),
     mo_ta: cv.mo_ta == null || String(cv.mo_ta) === '' ? null : String(cv.mo_ta),
     so_nhan_vien: soNhanVien,
     quyen_han,
@@ -106,7 +109,7 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
 
   const { data: chucVuList, error: cvErr } = await supabase
     .from('var_chuc_vu')
-    .select('id, ten_chuc_vu, mo_ta, phong_ban_id, cap_bac, trang_thai, thu_tu, tg_cap_nhat')
+    .select('id, ten_chuc_vu, mo_ta, phong_ban_id, cap_bac, cap_quan_ly, trang_thai, thu_tu, tg_cap_nhat')
     .order('thu_tu', { ascending: true })
     .order('id', { ascending: true });
   if (cvErr) handleSupabaseError(cvErr);
@@ -179,7 +182,7 @@ async function fetchOneRoleFromSupabase(id_chuc_vu: string): Promise<PositionPer
 
   const { data: cv, error: cvErr } = await supabase
     .from('var_chuc_vu')
-    .select('id, ten_chuc_vu, mo_ta, phong_ban_id, cap_bac, trang_thai, thu_tu, tg_cap_nhat')
+    .select('id, ten_chuc_vu, mo_ta, phong_ban_id, cap_bac, cap_quan_ly, trang_thai, thu_tu, tg_cap_nhat')
     .eq('id', idNum)
     .maybeSingle();
   if (cvErr) handleSupabaseError(cvErr);

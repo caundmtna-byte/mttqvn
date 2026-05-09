@@ -11,6 +11,7 @@ import {
   POSITION_SELECT_FULL,
 } from '../core/supabase-select';
 import { txt } from '../../../../lib/text';
+import { normalizeCapQuanLyInput } from '../utils/cap-quan-ly';
 
 const repo = createRepository<Position>({
   tableName: 'var_chuc_vu',
@@ -51,6 +52,7 @@ function normalizePositionRow(raw: Position): Position {
     id: String(raw.id),
     phong_ban_id: raw.phong_ban_id == null || raw.phong_ban_id === '' ? null : String(raw.phong_ban_id),
     cap_bac: normalizeCapBacFromApi(raw.cap_bac as unknown),
+    cap_quan_ly: normalizeCapQuanLyInput(raw.cap_quan_ly as string | null | undefined),
     thu_tu: typeof raw.thu_tu === 'number' ? raw.thu_tu : Number(raw.thu_tu),
   };
 }
@@ -110,6 +112,7 @@ export const createPosition = async (data: PositionFormValues): Promise<Position
         ten_chuc_vu: ten,
         mo_ta: moTa,
         cap_bac: normInt16Fk(data.cap_bac ?? undefined),
+        cap_quan_ly: normalizeCapQuanLyInput(data.cap_quan_ly ?? undefined),
         phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
         thu_tu: data.thu_tu ?? 0,
         trang_thai: data.trang_thai,
@@ -128,6 +131,7 @@ export const createPosition = async (data: PositionFormValues): Promise<Position
       id,
       ten_chuc_vu: ten,
       cap_bac: data.cap_bac && String(data.cap_bac).trim() !== '' ? String(data.cap_bac).trim() : null,
+      cap_quan_ly: normalizeCapQuanLyInput(data.cap_quan_ly ?? undefined),
       phong_ban_id: data.phong_ban_id && String(data.phong_ban_id).trim() !== '' ? String(data.phong_ban_id).trim() : null,
       mo_ta: moTa,
       thu_tu: data.thu_tu ?? 0,
@@ -155,6 +159,7 @@ export const updatePosition = async (id: string, data: PositionFormValues): Prom
         ten_chuc_vu: ten,
         mo_ta: moTa,
         cap_bac: normInt16Fk(data.cap_bac ?? undefined),
+        cap_quan_ly: normalizeCapQuanLyInput(data.cap_quan_ly ?? undefined),
         phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
         thu_tu: data.thu_tu ?? existing.thu_tu,
         trang_thai: data.trang_thai,
@@ -164,6 +169,7 @@ export const updatePosition = async (id: string, data: PositionFormValues): Prom
         ten_chuc_vu: ten,
         mo_ta: moTa,
         cap_bac: data.cap_bac && String(data.cap_bac).trim() !== '' ? String(data.cap_bac).trim() : null,
+        cap_quan_ly: normalizeCapQuanLyInput(data.cap_quan_ly ?? undefined),
         phong_ban_id:
           data.phong_ban_id && String(data.phong_ban_id).trim() !== '' ? String(data.phong_ban_id).trim() : null,
         thu_tu: data.thu_tu ?? existing.thu_tu,
@@ -236,21 +242,38 @@ export const importPositions = async (
 
     const capRaw = row.cap_bac ?? row['cap_bac_id'] ?? row.ma_cap_bac;
     const pbRaw = row.phong_ban_id ?? row.ten_phong_ban;
-    const resolvedCapBac = resolveCapId(capRaw);
-    const phong_ban_id = resolveDeptId(pbRaw);
-    if (capRaw != null && String(capRaw).trim() !== '' && !resolvedCapBac) {
-      errors.push(`Dòng ${i + 2}: Không tìm thấy cấp bậc (mã hoặc id)`);
+    const capQuanLyRaw = row.cap_quan_ly;
+    const resolvedCapQuanLy = normalizeCapQuanLyInput(
+      capQuanLyRaw != null && String(capQuanLyRaw).trim() !== '' ? String(capQuanLyRaw) : undefined,
+    );
+    if (capQuanLyRaw != null && String(capQuanLyRaw).trim() !== '' && resolvedCapQuanLy == null) {
+      errors.push(`Dòng ${i + 2}: ${txt('position.validation.managementLevelInvalid')}`);
       continue;
     }
-    if (pbRaw != null && String(pbRaw).trim() !== '' && !phong_ban_id) {
-      errors.push(`Dòng ${i + 2}: Không tìm thấy phòng ban (tên hoặc id)`);
+    const resolvedCapBac = resolveCapId(capRaw);
+    const phong_ban_id = resolveDeptId(pbRaw);
+    if (!resolvedCapBac) {
+      errors.push(
+        `Dòng ${i + 2}: ${capRaw != null && String(capRaw).trim() !== '' ? 'Không tìm thấy cấp bậc (mã hoặc id)' : txt('position.validation.levelRequired')}`,
+      );
+      continue;
+    }
+    if (!phong_ban_id) {
+      errors.push(
+        `Dòng ${i + 2}: ${pbRaw != null && String(pbRaw).trim() !== '' ? 'Không tìm thấy phòng ban (tên hoặc id)' : txt('position.validation.departmentRequired')}`,
+      );
+      continue;
+    }
+    if (!resolvedCapQuanLy) {
+      errors.push(`Dòng ${i + 2}: ${txt('position.validation.managementLevelRequired')}`);
       continue;
     }
 
     const parsed = positionSchema.safeParse({
       ten_chuc_vu,
-      cap_bac: resolvedCapBac ?? '',
-      phong_ban_id: phong_ban_id ?? '',
+      cap_bac: resolvedCapBac,
+      cap_quan_ly: resolvedCapQuanLy,
+      phong_ban_id,
       mo_ta: row.mo_ta != null ? String(row.mo_ta) : '',
       thu_tu: row.thu_tu != null && String(row.thu_tu).trim() !== '' ? Number(row.thu_tu) : 0,
       trang_thai: parseTrangThaiHoatDongImport(row.trang_thai),
@@ -264,8 +287,6 @@ export const importPositions = async (
     try {
       await createPosition({
         ...parsed.data,
-        cap_bac: resolvedCapBac ?? null,
-        phong_ban_id: phong_ban_id ?? null,
         mo_ta: parsed.data.mo_ta?.trim() || null,
       });
       created++;

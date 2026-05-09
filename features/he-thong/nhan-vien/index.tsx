@@ -21,6 +21,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { getDepartments } from '../phong-ban/services/phong-ban-service';
 import { getPositions } from '../chuc-vu/services/chuc-vu-service';
+import { usePositions } from '../chuc-vu/hooks/use-chuc-vu';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import EmployeeToolbar from './components/nhan-vien-toolbar';
 import EmployeeTable from './components/nhan-vien-table';
@@ -36,6 +37,7 @@ import { getLanguage } from '../../../lib/utils';
 import { useListWithFilter } from '../../../lib/hooks';
 import { matchesSearchTerm } from '../../../lib/searchUtils';
 import { employeeMatchesColumnSearch } from './utils/column-search';
+import { mergeEmployeeChucVuFromPositions } from './utils/merge-employee-chuc-vu-from-positions';
 
 const EmployeeForm = lazy(() => import('./components/nhan-vien-form'));
 const EmployeeDetail = lazy(() => import('./components/nhan-vien-detail'));
@@ -84,6 +86,8 @@ const NHAN_VIEN_SEARCHABLE_KEYS: string[] = [
   'ten_phong_ban',
   'ten_bo_phan',
   'ten_chuc_vu',
+  'cap_quan_ly',
+  'ten_don_vi',
   'trang_thai',
 ];
 
@@ -117,11 +121,17 @@ const EmployeePage: React.FC = () => {
 
   const queryClient = useQueryClient();
   const { data: employees = [], isLoading } = useEmployees({ enabled: canView });
+  const { data: positions = [] } = usePositions({ enabled: canView });
+
+  const employeesDisplay = useMemo(
+    () => employees.map((e) => mergeEmployeeChucVuFromPositions(e, positions)),
+    [employees, positions],
+  );
 
   useEffect(() => { viewingEmpRef.current = viewingEmp; }, [viewingEmp]);
   useEffect(() => { editingEmpRef.current = editingEmp; }, [editingEmp]);
   useEffect(() => { formOriginRef.current = formOrigin; }, [formOrigin]);
-  useEffect(() => { employeesRef.current = employees; }, [employees]);
+  useEffect(() => { employeesRef.current = employeesDisplay; }, [employeesDisplay]);
 
   /** Prefetch master data cho form. */
   useEffect(() => {
@@ -150,9 +160,9 @@ const EmployeePage: React.FC = () => {
   // Đồng bộ viewing với list sau refetch (action từ detail hoặc nơi khác)
   useEffect(() => {
     if (!viewingEmp) return;
-    const fresh = employees.find((e) => e.id === viewingEmp.id);
+    const fresh = employeesDisplay.find((e) => e.id === viewingEmp.id);
     if (fresh && fresh !== viewingEmp) queueMicrotask(() => setViewingEmp(fresh));
-  }, [employees, viewingEmp]);
+  }, [employeesDisplay, viewingEmp]);
 
   const filterFn = useCallback(
     (emp: Employee, term: string, f: typeof filters) => {
@@ -174,7 +184,7 @@ const EmployeePage: React.FC = () => {
     [],
   );
 
-  const filteredEmployees = useListWithFilter(employees, searchTerm, filters, filterFn);
+  const filteredEmployees = useListWithFilter(employeesDisplay, searchTerm, filters, filterFn);
 
   const sortedEmployees = useMemo(() => {
     if (!sort.column || !sort.direction) return filteredEmployees;
@@ -208,19 +218,19 @@ const EmployeePage: React.FC = () => {
           });
           startTransition(() => {
             setFormOrigin(origin);
-            setEditingEmp((full ?? item) as Employee);
+            setEditingEmp(mergeEmployeeChucVuFromPositions((full ?? item) as Employee, positions));
             setShowForm(true);
           });
         } catch {
           startTransition(() => {
             setFormOrigin(origin);
-            setEditingEmp(item);
+            setEditingEmp(mergeEmployeeChucVuFromPositions(item, positions));
             setShowForm(true);
           });
         }
       })();
     },
-    [queryClient],
+    [queryClient, positions],
   );
 
   /** Detail drawer: prefetch full row (có `hinh_anh`) qua cache để tránh ship lặp lại trong list. */
@@ -233,13 +243,15 @@ const EmployeePage: React.FC = () => {
             queryFn: () => getEmployeeById(item.id),
             ...defaultServerQueryOptions,
           });
-          startTransition(() => setViewingEmp((full ?? item) as Employee));
+          startTransition(() =>
+            setViewingEmp(mergeEmployeeChucVuFromPositions((full ?? item) as Employee, positions)),
+          );
         } catch {
-          startTransition(() => setViewingEmp(item));
+          startTransition(() => setViewingEmp(mergeEmployeeChucVuFromPositions(item, positions)));
         }
       })();
     },
-    [queryClient],
+    [queryClient, positions],
   );
 
   const closeDetail = useCallback(() => setViewingEmp(null), []);
@@ -305,7 +317,7 @@ const EmployeePage: React.FC = () => {
   );
 
   const handleDeleteMany = (ids: string[]) => {
-    const emps = employees.filter((e) => ids.includes(e.id));
+    const emps = employeesDisplay.filter((e) => ids.includes(e.id));
     confirm({
       title: txt('employee.bulkDeleteTitle'),
       message: txt('employee.bulkDeleteMessage', { count: ids.length }),
@@ -347,7 +359,7 @@ const EmployeePage: React.FC = () => {
     <div className="flex flex-col h-page relative">
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <EmployeeToolbar
-          employees={employees}
+          employees={employeesDisplay}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');
@@ -362,7 +374,7 @@ const EmployeePage: React.FC = () => {
           <EmployeeTable
             data={sortedEmployees}
             isLoading={isLoading}
-            employeesForFilterCounts={employees}
+            employeesForFilterCounts={employeesDisplay}
             onEdit={handleEdit}
             onView={handleView}
             onDelete={handleDelete}

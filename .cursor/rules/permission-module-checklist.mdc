@@ -19,7 +19,9 @@ export:  quan_tri (admin)  OR  xuat
 import:  quan_tri (admin)  OR  nhap
 ```
 
-Ngoại lệ `cap_bac=1`: Phòng ban dùng `canDepartmentsWithCapBac` — bypass toàn bộ view/create/edit/delete nếu `chucVuCapBac === 1`.
+Ngoại lệ `cap_bac=1`: Phòng ban dùng `canDepartmentsWithCapBac` — bypass view/create/edit/delete/**export**/**import** nếu `chucVuCapBac === 1`; các module khác trong `APP_RESOURCE_TO_MODULE` cũng bypass đủ các action đó (xem `lib/permissions.ts`).
+
+Ma trận (`matrixActive`): chức vụ có token **xem** trên một `module_id` ⇒ `can(..., 'export'|'import', resource)` cũng **true** (xuất/nhập là thao tác client trên dữ liệu đã xem). Token **admin** / **all** vẫn cấp full quyền module.
 
 ## Lớp 1 — `lib/permissions.ts`
 
@@ -29,7 +31,9 @@ myModule: 'section/ten-module',  // khớp với `module_id` đầy đủ; `modu
 ```
 Module không có trong map → `can()` dùng `legacyCan` (view=true mọi người, còn lại false).
 
-**Ví dụ Chương trình năm:** `annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam'` — trong màn **Phân quyền** mục này nằm nhóm **Hệ thống / Sơ đồ tổ chức** (cạnh Phòng ban) để gán quyền cùng luồng nghiệp vụ cấu hình; route ứng dụng vẫn `/quan-ly-giao-viec/chuong-trinh-nam`.
+**Ví dụ Chương trình BTT:** `annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam'` — trong màn **Phân quyền** mục này nằm nhóm **Hệ thống / Sơ đồ tổ chức** (cạnh Phòng ban) để gán quyền cùng luồng nghiệp vụ cấu hình; route ứng dụng vẫn `/quan-ly-giao-viec/chuong-trinh-nam`.
+
+**Lọc dòng client (không mirror RLS):** `useChuongTrinhNamViewer` + `canViewChuongTrinhNamRow` trong [`features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts`](mdc:features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts) — xem hết khi `cap_bac=1`, quan_tri (`admin`/`all`), mock admin, hoặc `!matrixActive`; user chỉ `xem`: OR (do mình tạo **hoặc** cùng `id_phong_ban`). Form công việc lọc combobox chương trình cùng helper.
 
 ## Lớp 2 — Module `index.tsx` (view guard)
 
@@ -93,3 +97,22 @@ if (path === '/ten-section') return ['res1', 'res2', ...];
 ```
 Section chỉ hiện trên sidebar nếu `can('view', ...)` đúng với ít nhất 1 resource trong list.
 Reference: `lib/nav-module-visibility.ts`
+
+## Module Ủy viên ủy ban — lọc xem từng dòng (client)
+
+Ngoài `can('view', 'matTranCommitteeMembers')`, danh sách / báo cáo / tab liên quan dùng `useMttqUyVienUyBanViewer` + `canViewUyVienUyBanRow(viewer, row)` (`features/mat-tran-to-quoc/uy-vien-uy-ban/hooks/use-mttq-uy-vien-uy-ban-viewer.ts`). Thứ tự ưu tiên:
+
+1. **Xem hết:** `chucVuCapBac === 1`, hoặc grant **admin/all** (quan_tri) trên module danh sách, hoặc `user.role === 'admin'`, hoặc ma trận tắt (`!matrixActive`).
+2. **Chỉ xem (hạn chế) — Tỉnh:** `cap_quan_ly` chức vụ chuẩn hoá là **Tỉnh** → mọi dòng.
+3. **Chỉ xem — Xã phường:** nếu `user.don_vi_id` có giá trị → chỉ dòng có `mttq_uy_vien_uy_ban.don_vi_id` trùng (so sánh string-safe); nếu **không** có `don_vi_id` nhân viên → **không** dòng nào (kể cả dòng tự tạo).
+4. **Còn lại:** chỉ dòng `id_nguoi_tao === user.nhan_vien_id`.
+
+Báo cáo ủy viên lọc `rows` theo cùng helper trước khi aggregate. RLS mirror là tùy chọn riêng.
+
+## Danh sách tập huấn — lọc xem theo cấp lớp (client)
+
+Ngoài `can('view', 'matTranTrainingList')`, tab **Lớp** và **Danh sách CT** dùng `useMttqLopTapHuanViewer` + `canViewLopTapHuanRow(viewer, row)` (`features/mat-tran-to-quoc/danh-sach-tap-huan/hooks/use-mttq-tap-huan-viewer.ts`). `row` cần `cap_tap_huan` và `don_vi_id` (lớp; tab CT lấy từ embed lớp).
+
+**Xem hết:** `chucVuCapBac === 1`, grant **admin/all** trên module danh sách tập huấn, `user.role === 'admin'`, hoặc ma trận tắt.
+
+**Chỉ xem:** lớp **Cấp tỉnh** chỉ khi `cap_quan_ly` chức vụ là **Tỉnh**. Lớp **Cấp xã:** **Tỉnh** xem hết; **Xã phường** chỉ khi `user.don_vi_id` khớp `mttq_lop_tap_huan.don_vi_id` (string-safe); không có `don_vi_id` nhân viên → không thấy lớp cấp xã. `cap_quan_ly` null → không thấy cấp tỉnh; cấp xã không khớp đơn vị → không.

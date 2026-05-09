@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, FolderOpen } from 'lucide-react';
+import { Plus, Download, FolderOpen, Globe, MonitorSmartphone } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -19,12 +19,23 @@ interface Props {
   onPageBack: () => void;
   tabsSlot: React.ReactNode;
   theLoaiOptions: ChipOption[];
+  nguonDangOptions: ChipOption[];
+  trangDangOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
 }
 
-const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, theLoaiOptions, onAdd, onExport, onDeleteMany }) => {
+const BaiVietToolbar: React.FC<Props> = ({
+  onPageBack,
+  tabsSlot,
+  theLoaiOptions,
+  nguonDangOptions,
+  trangDangOptions,
+  onAdd,
+  onExport,
+  onDeleteMany,
+}) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('articles');
 
   const {
@@ -45,8 +56,14 @@ const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, theLoaiOptions,
   const activeFilterCount = useMemo(() => {
     return (
       (searchTerm ? 1 : 0) +
-      countBaiVietColumnSearchActive(filters.columnSearch, filters.id_the_loai) +
-      (filters.id_the_loai.length > 0 ? 1 : 0)
+      countBaiVietColumnSearchActive(filters.columnSearch, {
+        id_the_loai: filters.id_the_loai,
+        id_nguon_dang: filters.id_nguon_dang,
+        id_trang_dang: filters.id_trang_dang,
+      }) +
+      (filters.id_the_loai.length > 0 ? 1 : 0) +
+      (filters.id_nguon_dang.length > 0 ? 1 : 0) +
+      (filters.id_trang_dang.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -55,6 +72,8 @@ const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, theLoaiOptions,
     const st = useBaiVietDanhSachStore.getState();
     st.setFilter('columnSearch', {});
     st.setFilter('id_the_loai', []);
+    st.setFilter('id_nguon_dang', []);
+    st.setFilter('id_trang_dang', []);
   };
 
   const filtersSlot = useMemo(
@@ -68,9 +87,33 @@ const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, theLoaiOptions,
           icon={FolderOpen}
           className="shrink-0 w-full min-w-0 sm:w-[min(220px,30vw)] sm:max-w-[280px]"
         />
+        <FilterChipMultiSelect
+          options={nguonDangOptions}
+          value={filters.id_nguon_dang}
+          onChange={(val) => setFilter('id_nguon_dang', val)}
+          placeholder={txt('articleList.store.nguonDangCol')}
+          icon={Globe}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
+        <FilterChipMultiSelect
+          options={trangDangOptions}
+          value={filters.id_trang_dang}
+          onChange={(val) => setFilter('id_trang_dang', val)}
+          placeholder={txt('articleList.store.trangDangCol')}
+          icon={MonitorSmartphone}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
       </div>
     ),
-    [theLoaiOptions, filters.id_the_loai, setFilter],
+    [
+      theLoaiOptions,
+      nguonDangOptions,
+      trangDangOptions,
+      filters.id_the_loai,
+      filters.id_nguon_dang,
+      filters.id_trang_dang,
+      setFilter,
+    ],
   );
 
   const filterGroups = useMemo(
@@ -83,8 +126,32 @@ const BaiVietToolbar: React.FC<Props> = ({ onPageBack, tabsSlot, theLoaiOptions,
         value: filters.id_the_loai,
         onChange: (val: string[]) => setFilter('id_the_loai', val),
       },
+      {
+        key: 'id_nguon_dang',
+        label: txt('articleList.store.nguonDangCol'),
+        icon: Globe,
+        options: nguonDangOptions,
+        value: filters.id_nguon_dang,
+        onChange: (val: string[]) => setFilter('id_nguon_dang', val),
+      },
+      {
+        key: 'id_trang_dang',
+        label: txt('articleList.store.trangDangCol'),
+        icon: MonitorSmartphone,
+        options: trangDangOptions,
+        value: filters.id_trang_dang,
+        onChange: (val: string[]) => setFilter('id_trang_dang', val),
+      },
     ],
-    [theLoaiOptions, filters.id_the_loai, setFilter],
+    [
+      theLoaiOptions,
+      nguonDangOptions,
+      trangDangOptions,
+      filters.id_the_loai,
+      filters.id_nguon_dang,
+      filters.id_trang_dang,
+      setFilter,
+    ],
   );
 
   const renderActions = (

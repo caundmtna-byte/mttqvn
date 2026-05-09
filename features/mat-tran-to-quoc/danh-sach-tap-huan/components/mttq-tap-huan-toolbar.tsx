@@ -23,7 +23,21 @@ interface Props {
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
+  /** Sau nút Back: TabGroup hoặc nội dung tương tự. */
+  desktopStartSlot?: React.ReactNode;
+  /** Tab Thống kê: ẩn tìm kiếm, export, thêm, xóa nhiều, cột — vẫn giữ chip lọc. */
+  hideListControls?: boolean;
+  /** Khi `hideListControls`: vẫn hiện nút xuất nếu user có quyền export (đồng bộ tab Lớp). */
+  showExportWhenListHidden?: boolean;
+  /** Chip lọc bổ sung (vd. Thuộc diện / đơn vị lớp trên tab Thống kê). */
+  extraFiltersSlot?: React.ReactNode;
+  /** Cộng vào badge “đang lọc” (chip thống kê bổ sung). */
+  extraActiveFilterCount?: number;
+  /** Gọi khi “Xóa bộ lọc” — xóa thêm chip tab Thống kê. */
+  onClearExtraFilters?: () => void;
 }
+
+const noopSearch = () => {};
 
 const MttqLopTapHuanToolbar: React.FC<Props> = ({
   onPageBack,
@@ -32,6 +46,12 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
   onAdd,
   onExport,
   onDeleteMany,
+  desktopStartSlot,
+  hideListControls,
+  showExportWhenListHidden,
+  extraFiltersSlot,
+  extraActiveFilterCount = 0,
+  onClearExtraFilters,
 }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranTrainingList');
 
@@ -53,13 +73,14 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
 
   const activeFilterCount = useMemo(() => {
     const columnSearchN = countTapHuanColumnSearchActive(filters.columnSearch);
-    return (
-      (searchTerm ? 1 : 0) +
+    const chipAndCol =
       columnSearchN +
       (filters.cap_tap_huan.length > 0 ? 1 : 0) +
-      (filters.nam_tap_huan.length > 0 ? 1 : 0)
-    );
-  }, [searchTerm, filters]);
+      (filters.nam_tap_huan.length > 0 ? 1 : 0) +
+      extraActiveFilterCount;
+    if (hideListControls) return chipAndCol;
+    return (searchTerm ? 1 : 0) + chipAndCol;
+  }, [hideListControls, searchTerm, filters, extraActiveFilterCount]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
@@ -67,6 +88,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
     setFilter('cap_tap_huan', []);
     setFilter('nam_tap_huan', []);
     setSort(null, null);
+    onClearExtraFilters?.();
   };
 
   const filtersSlot = useMemo(
@@ -88,9 +110,10 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
           icon={CalendarDays}
           className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
         />
+        {extraFiltersSlot}
       </div>
     ),
-    [capOptions, namOptions, filters.cap_tap_huan, filters.nam_tap_huan, setFilter],
+    [capOptions, namOptions, filters.cap_tap_huan, filters.nam_tap_huan, setFilter, extraFiltersSlot],
   );
 
   const filterGroups = useMemo(
@@ -115,9 +138,11 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
     [capOptions, namOptions, filters.cap_tap_huan, filters.nam_tap_huan, setFilter],
   );
 
+  const exportAllowed = canExport && (!hideListControls || showExportWhenListHidden);
+
   const mobileActions = useMemo<ActionItem[]>(
     () =>
-      canExport
+      exportAllowed
         ? [
             {
               key: 'export',
@@ -128,12 +153,12 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
             },
           ]
         : [],
-    [canExport, onExport],
+    [exportAllowed, onExport],
   );
 
   const renderActions = (
     <>
-      {canExport ? (
+      {exportAllowed ? (
         <div className="hidden sm:flex items-center gap-2">
           <Tooltip content={txt('common.export')} placement="bottom">
             <Button
@@ -147,7 +172,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
           </Tooltip>
         </div>
       ) : null}
-      {canCreate && (
+      {canCreate && !hideListControls && (
         <Button
           onClick={onAdd}
           size="sm"
@@ -162,23 +187,25 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
 
   return (
     <GenericToolbar
+      desktopStartSlot={desktopStartSlot}
       selectedCount={selectedCount}
-      searchTerm={searchTerm}
-      onSearchChange={setSearchTerm}
+      searchTerm={hideListControls ? '' : searchTerm}
+      onSearchChange={hideListControls ? noopSearch : setSearchTerm}
       onClearSelection={clearSelection}
-      actions={renderActions}
+      hideSearch={hideListControls}
+      actions={hideListControls && !showExportWhenListHidden ? undefined : renderActions}
       filters={filtersSlot}
       filterGroups={filterGroups}
-      mobileActions={mobileActions}
-      onAdd={canCreate ? onAdd : undefined}
+      mobileActions={hideListControls && !showExportWhenListHidden ? undefined : mobileActions}
+      onAdd={hideListControls ? undefined : canCreate ? onAdd : undefined}
       searchPlaceholder={txt('matTranTapHuan.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
-      onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}
-      columns={columns}
-      onToggleColumn={toggleColumn}
-      onReorderColumns={reorderColumns}
-      onResetColumns={resetColumns}
+      onDeleteMany={hideListControls ? undefined : canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}
+      columns={hideListControls ? undefined : columns}
+      onToggleColumn={hideListControls ? undefined : toggleColumn}
+      onReorderColumns={hideListControls ? undefined : reorderColumns}
+      onResetColumns={hideListControls ? undefined : resetColumns}
       showBack
       onBack={onPageBack}
     />

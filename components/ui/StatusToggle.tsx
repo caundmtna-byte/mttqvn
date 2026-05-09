@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { cn } from '../../lib/utils';
 import { Check, X } from 'lucide-react';
+import { renderInputIcon, type InputProps } from './Input';
 
 export interface StatusToggleProps {
   label?: string;
@@ -14,8 +14,8 @@ export interface StatusToggleProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
-  /** Icon hiển thị cạnh label (chuẩn generic form) */
-  icon?: React.ReactNode;
+  /** Icon cạnh label — element hoặc Lucide (giống `Input`). */
+  icon?: InputProps['icon'];
 }
 
 /**
@@ -34,6 +34,9 @@ const StatusToggle: React.FC<StatusToggleProps> = ({
   className,
   icon,
 }) => {
+  const labelIcon =
+    icon != null ? renderInputIcon(icon as NonNullable<InputProps['icon']>) : null;
+
   const isActive =
     typeof value === 'string'
       ? value === activeLabel
@@ -52,7 +55,7 @@ const StatusToggle: React.FC<StatusToggleProps> = ({
     <div className={cn('w-full', className)}>
       {label && (
         <label className="text-sm font-medium leading-none mb-2 flex items-center gap-1.5 text-foreground">
-          {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
+          {labelIcon != null && <span className="text-muted-foreground shrink-0">{labelIcon}</span>}
           {label}
           {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>

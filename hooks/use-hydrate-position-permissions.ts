@@ -44,7 +44,9 @@ export function useHydratePositionPermissions(): void {
       return;
     }
     if (payload) {
-      usePermissionGrantStore.getState().setMatrixGrants(payload.grantsByModule, payload.chucVuCapBac);
+      usePermissionGrantStore
+        .getState()
+        .setMatrixGrants(payload.grantsByModule, payload.chucVuCapBac, payload.chucVuCapQuanLy);
     }
   }, [enabled, payload]);
 }

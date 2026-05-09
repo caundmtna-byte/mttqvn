@@ -1,1 +1,0 @@
-import{r as n}from"./vendor-icons-CWh9iG1l.js";import{a as i,f as s,j as m}from"./index-CXH8mZXB.js";function x(r,a){const e=i(t=>t.user),o=s(t=>t.matrixActive),u=s(t=>t.grantsByModule),c=s(t=>t.chucVuCapBac);return n.useMemo(()=>m(e,r,a),[e,r,a,o,u,c])}export{x as u};

@@ -1,4 +1,4 @@
-/** Chuỗi module Hoa hồng viết bài — prefix `articleCommission` trong STRINGS */
+/** Chuỗi module Nhuận bút — prefix `articleCommission` trong STRINGS */
 export const articleCommission = {
   tabMine: 'Của tôi',
   tabAll: 'Tất cả',
@@ -6,19 +6,19 @@ export const articleCommission = {
   filterAuthor: 'Người viết',
   /** Khoảng thời gian không giới hạn (bổ sung trên DateRangePicker chung với BC thống kê). */
   presetAll: 'Toàn bộ',
-  kpiTotal: 'Tổng hoa hồng',
+  kpiTotal: 'Tổng nhuận bút',
   kpiArticles: 'Số bài',
   kpiAvg: 'Trung bình / bài',
   kpiTopAuthor: 'Tác giả dẫn đầu',
   kpiTopAuthorEmpty: '—',
-  chartTrend: 'Hoa hồng theo tháng',
+  chartTrend: 'Nhuận bút theo tháng',
   chartByTheLoai: 'Theo thể loại',
   chartByAuthor: 'Theo người viết',
   chartOtherSlice: 'Khác',
   tableByAuthor: 'Chi tiết theo người viết',
   tableByTheLoai: 'Chi tiết theo thể loại',
   tableColLabel: 'Đối tượng',
-  tableColValue: 'Hoa hồng (lượt)',
+  tableColValue: 'Nhuận bút (lượt)',
   noData: 'Không có dữ liệu',
   noDataHint: 'Thử đổi bộ lọc hoặc khoảng thời gian.',
   loading: 'Đang tải…',
@@ -28,5 +28,17 @@ export const articleCommission = {
   goToArticles: 'Mở danh sách bài viết',
   /** Placeholder DateRangePicker (theo ngày đăng bài, khác BC thống kê). */
   dateRangePlaceholder: 'Khoảng thời gian',
-  noViewPermission: 'Bạn không có quyền xem module Hoa hồng viết bài.',
+  noViewPermission: 'Bạn không có quyền xem module Nhuận bút.',
+  exportFileName: 'Nhuan_But_Viet_Bai',
+  noExportData: 'Không có dữ liệu để xuất',
+  exportRangeFrom: 'Từ ngày (báo cáo)',
+  exportRangeTo: 'Đến ngày (báo cáo)',
+  exportColTenBai: 'Tên bài',
+  exportColTheLoai: 'Thể loại',
+  exportColDonGia: 'Đơn giá (VNĐ)',
+  exportColNgayDang: 'Ngày đăng',
+  exportColNguon: 'Nguồn đăng',
+  exportColTrang: 'Trang đăng',
+  exportColNguoi: 'Người tạo',
+  exportColLink: 'Liên kết',
 } as const;

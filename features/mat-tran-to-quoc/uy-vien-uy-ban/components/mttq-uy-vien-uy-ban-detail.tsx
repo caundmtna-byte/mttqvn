@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Activity,
   BookOpen,
   Building2,
+  Briefcase,
   Calendar,
   CalendarClock,
   Church,
@@ -11,6 +13,7 @@ import {
   GraduationCap,
   Hash,
   Info,
+  Layers,
   MapPin,
   Phone,
   StickyNote,
@@ -184,11 +187,77 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
                   value={donViDisplayLabel(data, tinhCap)}
                   icon={<MapPin size={12} />}
                 />
+              </DetailFieldGrid>
+            </DetailSection>
+
+            <DetailSection title={txt('matTranUyVienUyBan.form.sectionCanBo')} icon={<User size={14} />}>
+              <DetailFieldGrid>
                 <DetailField
                   className={DETAIL_FIELD_SPAN_FULL}
-                  label={txt('matTranUyVienUyBan.form.chucVuDonVi')}
-                  value={data.chuc_vu_don_vi ?? undefined}
+                  label={txt('matTranUyVienUyBan.form.hoVaTen')}
+                  value={<span className="font-semibold">{data.ho_va_ten}</span>}
+                  icon={<Users size={12} />}
+                />
+                <DetailField
+                  label={txt('matTranCanBo.form.toChuc')}
                   icon={<Building2 size={12} />}
+                  value={data.ten_to_chuc ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranCanBo.form.phongBan')}
+                  icon={<Layers size={12} />}
+                  value={data.ten_phong_ban_hien_thi ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranCanBo.form.chucVu')}
+                  icon={<Briefcase size={12} />}
+                  value={data.chuc_vu_don_vi ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranUyVienUyBan.form.diaChiCanBo')}
+                  icon={<MapPin size={12} />}
+                  value={data.dia_chi_can_bo ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranCanBo.form.trangThai')}
+                  icon={<Activity size={12} />}
+                  value={data.ten_trang_thai_can_bo ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranCanBo.form.ngayNhapTrangThai')}
+                  icon={<Calendar size={12} />}
+                  value={formatUyVienDetailDate(data.ngay_nhap_trang_thai) ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranCanBo.form.vanHoa')}
+                  icon={<BookOpen size={12} />}
+                  value={data.van_hoa ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('matTranCanBo.form.ngayVaoDang')}
+                  icon={<Calendar size={12} />}
+                  value={formatUyVienDetailDate(data.ngay_vao_dang) ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranCanBo.form.queQuan')}
+                  icon={<MapPin size={12} />}
+                  value={data.que_quan ?? undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  className={DETAIL_FIELD_SPAN_FULL}
+                  label={txt('matTranCanBo.form.noiOHienNay')}
+                  icon={<MapPin size={12} />}
+                  value={data.noi_o_hien_nay ?? undefined}
                   emptyText={emptyCell}
                 />
               </DetailFieldGrid>
@@ -230,23 +299,11 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
                   }
                   emptyText={emptyCell}
                 />
-                <DetailField
-                  label={txt('matTranUyVienUyBan.form.ngayNhapTrangThai')}
-                  icon={<Calendar size={12} />}
-                  value={formatUyVienDetailDate(data.ngay_nhap_trang_thai) ?? undefined}
-                  emptyText={emptyCell}
-                />
               </DetailFieldGrid>
             </DetailSection>
 
             <DetailSection title={txt('matTranUyVienUyBan.detail.sectionHocVan')} icon={<BookOpen size={14} />}>
               <DetailFieldGrid>
-                <DetailField
-                  label={txt('matTranUyVienUyBan.form.vanHoa')}
-                  icon={<BookOpen size={12} />}
-                  value={data.van_hoa ?? undefined}
-                  emptyText={emptyCell}
-                />
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.trinhDoCm')}
                   icon={<GraduationCap size={12} />}
@@ -281,31 +338,11 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
                   icon={<Flag size={12} />}
                   value={<EnumBadge value={data.dang_vien ? 'Có' : 'Không'} config={getUyVienDangVienBadgeConfig()} />}
                 />
-                <DetailField
-                  label={txt('matTranUyVienUyBan.form.ngayVaoDang')}
-                  icon={<Calendar size={12} />}
-                  value={formatUyVienDetailDate(data.ngay_vao_dang) ?? undefined}
-                  emptyText={emptyCell}
-                />
               </DetailFieldGrid>
             </DetailSection>
 
             <DetailSection title={txt('matTranUyVienUyBan.detail.sectionLienHe')} icon={<MapPin size={14} />}>
               <DetailFieldGrid>
-                <DetailField
-                  className={DETAIL_FIELD_SPAN_FULL}
-                  label={txt('matTranUyVienUyBan.form.queQuan')}
-                  icon={<MapPin size={12} />}
-                  value={data.que_quan ?? undefined}
-                  emptyText={emptyCell}
-                />
-                <DetailField
-                  className={DETAIL_FIELD_SPAN_FULL}
-                  label={txt('matTranUyVienUyBan.form.noiOHienNay')}
-                  icon={<MapPin size={12} />}
-                  value={data.noi_o_hien_nay ?? undefined}
-                  emptyText={emptyCell}
-                />
                 <DetailField
                   label={txt('matTranUyVienUyBan.form.soDienThoai')}
                   icon={<Phone size={12} />}

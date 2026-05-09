@@ -76,7 +76,7 @@ export const CommissionTrendChart: React.FC<{ series: CommissionSeriesPoint[] }>
   }
   return (
     <div className="h-[260px] w-full min-h-[200px]">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} className="text-muted-foreground" />
@@ -116,7 +116,7 @@ export const CommissionByTheLoaiChart: React.FC<{ series: CommissionSeriesPoint[
 
   return (
     <div className="h-[260px] w-full min-h-[200px] flex items-center justify-center">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <PieChart>
           <Pie
             data={data}
@@ -158,7 +158,7 @@ export const CommissionByAuthorChart: React.FC<{ series: CommissionSeriesPoint[]
 
   return (
     <div className="h-[280px] w-full min-h-[200px]">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => String(v)} />

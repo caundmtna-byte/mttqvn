@@ -12,6 +12,7 @@ import {
   formatCanBoListDateTime,
   formatCanBoPhoneDisplay,
 } from '../utils/display-format';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import { MttqCanBoTableRowActions } from './mttq-can-bo-table-row-actions';
 import {
   ColumnHeaderFilter,
@@ -163,16 +164,22 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
               {(item.ten_trang_thai ?? '').trim() || ec}
             </span>
           );
-        case 'ten_chuc_vu':
-          return (
-            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_chuc_vu ?? undefined}>
-              {item.ten_chuc_vu ?? ec}
-            </span>
-          );
         case 'ten_to_chuc':
           return (
             <span className="text-body-sm text-muted-foreground truncate" title={item.ten_to_chuc ?? undefined}>
               {item.ten_to_chuc ?? ec}
+            </span>
+          );
+        case 'ten_phong_ban':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_phong_ban ?? undefined}>
+              {item.ten_phong_ban ?? ec}
+            </span>
+          );
+        case 'ten_chuc_vu':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_chuc_vu ?? undefined}>
+              {item.ten_chuc_vu ?? ec}
             </span>
           );
         case 'dien_thoai': {
@@ -196,12 +203,23 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
               {item.dang_vien ? txt('matTranCanBo.detail.dangVienYes') : txt('matTranCanBo.detail.dangVienNo')}
             </span>
           );
-        case 'ten_cap_quan_ly':
-          return (
-            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_cap_quan_ly ?? undefined}>
-              {item.ten_cap_quan_ly ?? ec}
+        case 'ten_don_vi': {
+          const d = formatTenDonViCongTacDisplay(item.chuc_vu_cap_quan_ly, item.ten_don_vi);
+          if (item.chuc_vu_cap_quan_ly === 'Tỉnh') {
+            return (
+              <span className="text-body-sm text-muted-foreground tabular-nums" title={d}>
+                {d}
+              </span>
+            );
+          }
+          return d === ec ? (
+            <span className="text-body-sm text-muted-foreground italic">{ec}</span>
+          ) : (
+            <span className="text-body-sm text-muted-foreground truncate" title={d}>
+              {d}
             </span>
           );
+        }
         case 'tg_cap_nhat':
           return (
             <span className="text-xs tabular-nums text-muted-foreground">

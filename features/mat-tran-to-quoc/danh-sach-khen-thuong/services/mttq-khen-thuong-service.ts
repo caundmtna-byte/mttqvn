@@ -3,11 +3,22 @@ import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import type { MttqKhenThuong, MttqKhenThuongCt, MttqKhenThuongLineForCanBo, MttqKhenThuongListRow } from '../core/types';
+import type {
+  MttqKhenThuong,
+  MttqKhenThuongChiTietFlatRow,
+  MttqKhenThuongCt,
+  MttqKhenThuongLineForCanBo,
+  MttqKhenThuongListRow,
+} from '../core/types';
 import type { MttqKhenThuongFormValues } from '../core/schema';
 import type { MttqKhenThuongDanhHieu, MttqKhenThuongHinhThuc, MttqKhenThuongTrangThai } from '../core/constants';
-import { MTTQ_KHEN_THUONG_SELECT_FULL, MTTQ_KHEN_THUONG_SELECT_LIST } from '../core/supabase-select';
+import {
+  MTTQ_KHEN_THUONG_CT_SELECT_FLAT_LIST,
+  MTTQ_KHEN_THUONG_SELECT_FULL,
+  MTTQ_KHEN_THUONG_SELECT_LIST,
+} from '../core/supabase-select';
 import { MTTQ_KHEN_THUONG_MOCK_CHILDREN, MTTQ_KHEN_THUONG_MOCK_PARENTS } from '../mock-data';
+import type { MttqKhenThuongMockParent } from '../mock-data';
 
 type ParentRepoRow = { id: string } & Record<string, unknown>;
 
@@ -57,6 +68,13 @@ function tenCanBoFromEmbed(v: unknown): string | null {
   return t != null && String(t).trim() !== '' ? String(t) : null;
 }
 
+function donViIdFromCanBoEmbed(v: unknown): string | null {
+  const o = pickEmbedded<{ don_vi_id?: unknown }>(v);
+  const d = o?.don_vi_id;
+  if (d == null || d === '') return null;
+  return String(d);
+}
+
 export function flattenCtRow(row: Record<string, unknown>): MttqKhenThuongCt {
   return {
     id: String(row.id),
@@ -67,6 +85,7 @@ export function flattenCtRow(row: Record<string, unknown>): MttqKhenThuongCt {
     noi_dung_khen: nullableStr(row.noi_dung_khen),
     ho_so_khen: nullableStr(row.ho_so_khen),
     ten_can_bo: tenCanBoFromEmbed(row.can_bo),
+    can_bo_don_vi_id: donViIdFromCanBoEmbed(row.can_bo),
   };
 }
 
@@ -76,19 +95,34 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
     ten_tai_khoan?: string;
     id_phong_ban?: string | number | null;
   }>(row.nguoi_tao);
-  // PostgREST aggregate `mttq_khen_thuong_ct(count)` trả `[{ count: N }]` — không kéo
-  // mảng id chi tiết nữa (giảm egress đáng kể khi mỗi quyết định có nhiều cán bộ).
   const lines = row.mttq_khen_thuong_ct;
   let soDong = 0;
+  const rewardedDonViIds: string[] = [];
   if (Array.isArray(lines)) {
-    const first = lines[0] as { count?: unknown } | undefined;
-    const c = first?.count;
-    soDong =
-      typeof c === 'number'
-        ? c
-        : typeof c === 'string' && /^\d+$/.test(c)
-        ? Number(c)
-        : lines.length;
+    const onlyAggregateCount =
+      lines.length === 1 &&
+      lines[0] != null &&
+      typeof lines[0] === 'object' &&
+      'count' in (lines[0] as object);
+    if (onlyAggregateCount) {
+      const lo = lines[0] as Record<string, unknown>;
+      const c = lo.count;
+      soDong =
+        typeof c === 'number'
+          ? c
+          : typeof c === 'string' && /^\d+$/.test(c)
+          ? Number(c)
+          : 0;
+    } else {
+      for (const line of lines) {
+        if (line == null || typeof line !== 'object') continue;
+        const lo = line as Record<string, unknown>;
+        if ('count' in lo && lo.count != null) continue;
+        soDong += 1;
+        const dv = donViIdFromCanBoEmbed(lo.can_bo);
+        if (dv) rewardedDonViIds.push(dv);
+      }
+    }
   }
 
   const rest = { ...row };
@@ -110,6 +144,50 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
     id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
     so_dong: soDong,
+    rewarded_can_bo_don_vi_ids: rewardedDonViIds,
+  };
+}
+
+function mockQdEmbedFromParent(p: MttqKhenThuongMockParent): Record<string, unknown> {
+  return {
+    id: p.id,
+    id_nguoi_tao: p.id_nguoi_tao,
+    so_qd: p.so_qd,
+    ngay_khen_thuong: p.ngay_khen_thuong,
+    don_vi_de_xuat: p.don_vi_de_xuat,
+    trang_thai: p.trang_thai,
+    tg_cap_nhat: p.tg_cap_nhat,
+    nguoi_tao: {
+      ho_va_ten: p.ho_va_ten_nguoi_tao,
+      ten_tai_khoan: p.ten_tai_khoan_nguoi_tao,
+      id_phong_ban: p.id_phong_ban_nguoi_tao,
+    },
+  };
+}
+
+/** Dòng `mttq_khen_thuong_ct` + embed `qd` + `can_bo` (tab Danh sách chi tiết / Supabase). */
+export function flattenKhenThuongChiTietFlatRow(row: Record<string, unknown>): MttqKhenThuongChiTietFlatRow {
+  const qd = pickEmbedded<Record<string, unknown>>(row.qd);
+  const nv = pickEmbedded<{ id_phong_ban?: string | number | null }>(qd?.nguoi_tao);
+  const ct = flattenCtRow(row);
+
+  return {
+    id: String(row.id),
+    id_khen_thuong: String(row.id_khen_thuong ?? qd?.id ?? ''),
+    so_qd: String(qd?.so_qd ?? ''),
+    ngay_khen_thuong: dateOnly(qd?.ngay_khen_thuong),
+    don_vi_de_xuat: nullableStr(qd?.don_vi_de_xuat),
+    trang_thai: String(qd?.trang_thai ?? 'Mới') as MttqKhenThuongChiTietFlatRow['trang_thai'],
+    tg_cap_nhat_qd: String(qd?.tg_cap_nhat ?? ''),
+    id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
+    id_nguoi_tao: String(qd?.id_nguoi_tao ?? ''),
+    can_bo_id: ct.can_bo_id,
+    ten_can_bo: ct.ten_can_bo ?? null,
+    hinh_thuc_khen: ct.hinh_thuc_khen,
+    danh_hieu: ct.danh_hieu,
+    noi_dung_khen: ct.noi_dung_khen,
+    ho_so_khen: ct.ho_so_khen,
+    can_bo_don_vi_id: ct.can_bo_don_vi_id ?? null,
   };
 }
 
@@ -230,7 +308,12 @@ function syncChildrenMock(parentId: string, lines: MttqKhenThuongFormValues['chi
 export async function getMttqKhenThuongList(): Promise<MttqKhenThuongListRow[]> {
   if (!isSupabase()) {
     return mockParents.map((p) => {
-      const n = mockChildren.filter((c) => c.id_khen_thuong === p.id).length;
+      const kids = mockChildren.filter((c) => c.id_khen_thuong === p.id);
+      const rewarded_can_bo_don_vi_ids: string[] = [];
+      for (const c of kids) {
+        const dv = c.can_bo_don_vi_id?.toString().trim();
+        if (dv) rewarded_can_bo_don_vi_ids.push(dv);
+      }
       return {
         id: p.id,
         so_qd: p.so_qd,
@@ -244,7 +327,8 @@ export async function getMttqKhenThuongList(): Promise<MttqKhenThuongListRow[]> 
         ho_va_ten_nguoi_tao: p.ho_va_ten_nguoi_tao,
         ten_tai_khoan_nguoi_tao: p.ten_tai_khoan_nguoi_tao,
         id_phong_ban_nguoi_tao: p.id_phong_ban_nguoi_tao ?? null,
-        so_dong: n,
+        so_dong: kids.length,
+        rewarded_can_bo_don_vi_ids,
       };
     });
   }
@@ -259,7 +343,11 @@ export async function getMttqKhenThuongById(id: string): Promise<MttqKhenThuong 
     if (!p) return null;
     const chi = mockChildren
       .filter((c) => c.id_khen_thuong === id)
-      .map((c) => ({ ...c, ten_can_bo: null as string | null }));
+      .map((c) => ({
+        ...c,
+        ten_can_bo: null as string | null,
+        can_bo_don_vi_id: c.can_bo_don_vi_id ?? null,
+      }));
     return normalizeFull({
       ...p,
       chi_tiet: chi,
@@ -406,4 +494,39 @@ export async function getMttqKhenThuongLinesForCanBoId(canBoId: string): Promise
   });
   mapped.sort((a, b) => (b.ngay_khen_thuong || '').localeCompare(a.ngay_khen_thuong || ''));
   return mapped;
+}
+
+/** Toàn bộ dòng CT (client filter/sort). */
+export async function getMttqKhenThuongChiTietFlatList(): Promise<MttqKhenThuongChiTietFlatRow[]> {
+  if (!isSupabase()) {
+    const rows: Record<string, unknown>[] = [];
+    for (const c of mockChildren) {
+      const p = mockParents.find((x) => x.id === c.id_khen_thuong);
+      if (!p) continue;
+      rows.push({
+        id: c.id,
+        id_khen_thuong: c.id_khen_thuong,
+        can_bo_id: c.can_bo_id,
+        hinh_thuc_khen: c.hinh_thuc_khen,
+        danh_hieu: c.danh_hieu,
+        noi_dung_khen: c.noi_dung_khen,
+        ho_so_khen: c.ho_so_khen,
+        qd: mockQdEmbedFromParent(p),
+        can_bo: {
+          ho_ten: `Cán bộ ${c.can_bo_id}`,
+          don_vi_id: c.can_bo_don_vi_id ?? null,
+        },
+      });
+    }
+    return rows.map((r) => flattenKhenThuongChiTietFlatRow(r));
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('mttq_khen_thuong_ct')
+    .select(MTTQ_KHEN_THUONG_CT_SELECT_FLAT_LIST)
+    .order('id', { ascending: true });
+  if (error) handleSupabaseError(error);
+  return (data ?? []).map((row) => flattenKhenThuongChiTietFlatRow(row as unknown as Record<string, unknown>));
 }

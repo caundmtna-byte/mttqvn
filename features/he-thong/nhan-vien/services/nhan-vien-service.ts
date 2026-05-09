@@ -23,6 +23,9 @@ import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { SUPABASE_DEFAULT_MAX_ROWS } from '@/lib/data/supabase-repository';
 import { uploadEmployeeAvatarIfDataUrl } from './avatar-storage';
+import { getTinhThanhList, getXaPhuongAll } from '../../danh-sach-tinh-thanh/services/dia-ban-service';
+import type { XaPhuong } from '../../danh-sach-tinh-thanh/core/types';
+import { normalizeCapQuanLyInput } from '../../chuc-vu/utils/cap-quan-ly';
 
 /**
  * Lỗi báo trước khi tạo / đổi `ten_tai_khoan`: email Auth tương ứng đã tồn tại.
@@ -62,22 +65,49 @@ function normalizeEmployeeRow(raw: Employee): Employee {
     id_phong_ban: raw.id_phong_ban == null ? null : String(raw.id_phong_ban),
     id_bo_phan: raw.id_bo_phan == null ? null : String(raw.id_bo_phan),
     id_chuc_vu: raw.id_chuc_vu == null ? null : String(raw.id_chuc_vu),
+    don_vi_id: raw.don_vi_id == null || raw.don_vi_id === '' ? null : String(raw.don_vi_id),
   };
 }
 
 /** Bổ sung tên hiển thị từ master (khi FK int8 trùng `id` master sau này). */
+function tenDonViFromMaps(
+  donViId: string | null | undefined,
+  diaBan?: { xaById: Map<string, XaPhuong>; tinhById: Map<string, string> },
+): string | undefined {
+  if (!donViId || !diaBan) return undefined;
+  const xa = diaBan.xaById.get(String(donViId));
+  if (!xa) return undefined;
+  const tinhTen = diaBan.tinhById.get(String(xa.id_tinh_thanh ?? ''))?.trim() ?? '';
+  return tinhTen ? `${xa.ten} · ${tinhTen}` : xa.ten;
+}
+
+type PositionLookupRow = { id: string; ten_chuc_vu: string; cap_quan_ly?: string | null };
+
 async function enrichEmployee(raw: Employee, lookups?: {
   depts?: { id: string; ten_phong_ban: string }[];
-  positions?: { id: string; ten_chuc_vu: string }[];
+  positions?: PositionLookupRow[];
+  diaBan?: { xaById: Map<string, XaPhuong>; tinhById: Map<string, string> };
 }): Promise<Employee> {
   const row = normalizeEmployeeRow(raw);
   const depts = lookups?.depts ?? (await getDepartments()).map((d) => ({ id: d.id, ten_phong_ban: d.ten_phong_ban }));
-  const positions = lookups?.positions ?? (await getPositions()).map((p) => ({ id: p.id, ten_chuc_vu: p.ten_chuc_vu }));
+  const positions: PositionLookupRow[] =
+    lookups?.positions ??
+    (await getPositions()).map((p) => ({
+      id: p.id,
+      ten_chuc_vu: p.ten_chuc_vu,
+      cap_quan_ly: p.cap_quan_ly ?? null,
+    }));
+  const cvId = row.id_chuc_vu == null ? '' : String(row.id_chuc_vu).trim();
+  const pos = cvId ? positions.find((p) => String(p.id).trim() === cvId) : undefined;
+  const ten_don_vi = tenDonViFromMaps(row.don_vi_id, lookups?.diaBan);
+  const cap_quan_ly = normalizeCapQuanLyInput(pos?.cap_quan_ly as string | null | undefined);
   return {
     ...row,
     ten_phong_ban: depts.find((d) => d.id === row.id_phong_ban)?.ten_phong_ban,
     ten_bo_phan: depts.find((d) => d.id === row.id_bo_phan)?.ten_phong_ban,
-    ten_chuc_vu: positions.find((p) => p.id === row.id_chuc_vu)?.ten_chuc_vu,
+    ten_chuc_vu: pos?.ten_chuc_vu,
+    cap_quan_ly: cap_quan_ly ?? null,
+    ...(ten_don_vi ? { ten_don_vi } : {}),
   };
 }
 
@@ -109,24 +139,45 @@ export const getEmployees = async (params: GetEmployeesParams = {}): Promise<Emp
     list = await repo.getAll({ limit, offset, orderBy, ascending });
   }
   if (list.length === 0) return list;
-  const [depts, positions] = await Promise.all([getDepartments(), getPositions()]);
+  const [depts, positions, xaAll, tinhAll] = await Promise.all([
+    getDepartments(),
+    getPositions(),
+    getXaPhuongAll(),
+    getTinhThanhList(),
+  ]);
+  const xaById = new Map(xaAll.map((x) => [x.id, x]));
+  const tinhById = new Map(tinhAll.map((t) => [t.id, t.ten]));
   const lookups = {
     depts: depts.map((d) => ({ id: d.id, ten_phong_ban: d.ten_phong_ban })),
-    positions: positions.map((p) => ({ id: p.id, ten_chuc_vu: p.ten_chuc_vu })),
+    positions: positions.map((p) => ({
+      id: p.id,
+      ten_chuc_vu: p.ten_chuc_vu,
+      cap_quan_ly: p.cap_quan_ly ?? null,
+    })),
+    diaBan: { xaById, tinhById },
   };
   return Promise.all(list.map((row) => enrichEmployee(row, lookups)));
 };
 
 export const getEmployeeById = async (id: string): Promise<Employee | undefined> => {
-  const [row, depts, positions] = await Promise.all([
+  const [row, depts, positions, xaAll, tinhAll] = await Promise.all([
     repo.getById(id),
     getDepartments(),
     getPositions(),
+    getXaPhuongAll(),
+    getTinhThanhList(),
   ]);
   if (!row) return undefined;
+  const xaById = new Map(xaAll.map((x) => [x.id, x]));
+  const tinhById = new Map(tinhAll.map((t) => [t.id, t.ten]));
   const lookups = {
     depts: depts.map((d) => ({ id: d.id, ten_phong_ban: d.ten_phong_ban })),
-    positions: positions.map((p) => ({ id: p.id, ten_chuc_vu: p.ten_chuc_vu })),
+    positions: positions.map((p) => ({
+      id: p.id,
+      ten_chuc_vu: p.ten_chuc_vu,
+      cap_quan_ly: p.cap_quan_ly ?? null,
+    })),
+    diaBan: { xaById, tinhById },
   };
   return enrichEmployee(row, lookups);
 };
@@ -147,15 +198,28 @@ function toRowPayload(data: EmployeeFormValues) {
     id_phong_ban: normInt8Fk(data.id_phong_ban),
     id_bo_phan: normInt8Fk(data.id_bo_phan),
     id_chuc_vu: normInt8Fk(data.id_chuc_vu),
+    don_vi_id: normInt8Fk(data.don_vi_id),
     trang_thai: data.trang_thai as TrangThaiNhanVien,
   };
 }
 
 async function fetchLookups() {
-  const [depts, positions] = await Promise.all([getDepartments(), getPositions()]);
+  const [depts, positions, xaAll, tinhAll] = await Promise.all([
+    getDepartments(),
+    getPositions(),
+    getXaPhuongAll(),
+    getTinhThanhList(),
+  ]);
+  const xaById = new Map(xaAll.map((x) => [x.id, x]));
+  const tinhById = new Map(tinhAll.map((t) => [t.id, t.ten]));
   return {
     depts: depts.map((d) => ({ id: d.id, ten_phong_ban: d.ten_phong_ban })),
-    positions: positions.map((p) => ({ id: p.id, ten_chuc_vu: p.ten_chuc_vu })),
+    positions: positions.map((p) => ({
+      id: p.id,
+      ten_chuc_vu: p.ten_chuc_vu,
+      cap_quan_ly: p.cap_quan_ly ?? null,
+    })),
+    diaBan: { xaById, tinhById },
   };
 }
 

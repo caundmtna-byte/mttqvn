@@ -31,7 +31,7 @@ const QuanLyVietBaiDashboard: React.FC = () => {
             color: 'bg-violet-500',
           },
           {
-            path: '/quan-ly-viet-bai/hoa-hong-viet-bai',
+            path: '/quan-ly-viet-bai/nhuan-but-viet-bai',
             title: txt('page.articleDashboard.commission'),
             description: txt('page.articleDashboard.commissionDesc'),
             icon: Coins,

@@ -25,16 +25,20 @@ export type AppResource =
   | 'articleCommission'
   | 'matTranThietLapCaiDat'
   | 'matTranOfficerList'
+  | 'matTranOfficerStats'
   | 'matTranRewardList'
   | 'matTranTrainingList'
   | 'matTranTerm'
   | 'matTranSession'
   | 'matTranCommitteeMembers'
+  | 'matTranCommitteeMemberStats'
   | 'annualPrograms'
   | 'tasks'
   | 'taskReports'
   | 'otherInfoMttqNews'
   | 'otherInfoZaloOa'
+  | 'otherInfoMatTranSo'
+  | 'otherInfoQuanLyVanBan'
   | 'profile'
   | 'notifications'
   | '*';
@@ -53,19 +57,23 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   articleSettings: 'quan-ly-viet-bai/thiet-lap-bai-viet',
   articles: 'quan-ly-viet-bai/bai-viet',
   articleStats: 'quan-ly-viet-bai/bc-thong-ke-bai-viet',
-  articleCommission: 'quan-ly-viet-bai/hoa-hong-viet-bai',
+  articleCommission: 'quan-ly-viet-bai/nhuan-but-viet-bai',
   matTranThietLapCaiDat: 'mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat',
   matTranOfficerList: 'mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo',
+  matTranOfficerStats: 'mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo',
   matTranRewardList: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong',
   matTranTrainingList: 'mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan',
   matTranTerm: 'mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky',
   matTranSession: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop',
   matTranCommitteeMembers: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
+  matTranCommitteeMemberStats: 'mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien',
   annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam',
   tasks: 'quan-ly-giao-viec/cong-viec',
   taskReports: 'quan-ly-giao-viec/bao-cao-cong-viec',
   otherInfoMttqNews: 'trang-thong-tin-khac/tin-tuc-mttq',
   otherInfoZaloOa: 'trang-thong-tin-khac/zalo-oa',
+  otherInfoMatTranSo: 'trang-thong-tin-khac/mat-tran-so',
+  otherInfoQuanLyVanBan: 'trang-thong-tin-khac/quan-ly-van-ban',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */
@@ -93,6 +101,16 @@ function grantsAllow(allowed: readonly string[], need: ReturnType<typeof mapAppA
   return allowed.includes(need);
 }
 
+/**
+ * `var_chuc_vu.cap_bac === 1` sau khi hydrate — dùng `Number` vì giá trị có thể là bigint/string từ API.
+ * Dùng chung `can()` bypass và UI nhúng (vd. detail cán bộ).
+ */
+export function isChucVuCapBacOne(cap: number | null | undefined): boolean {
+  if (cap == null) return false;
+  const n = Number(cap);
+  return Number.isFinite(n) && n === 1;
+}
+
 /** Luật OR Phòng ban: `cap_bac === 1` (chức vụ hydrate) hoặc ma trận `admin`/`all` hoặc đúng token matrix. */
 function canDepartmentsWithCapBac(
   user: User,
@@ -103,12 +121,15 @@ function canDepartmentsWithCapBac(
   void user;
   const moduleId = APP_RESOURCE_TO_MODULE.departments;
   if (!moduleId) return false;
-  const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete'];
-  if (chucVuCapBac === 1 && capBypassActions.includes(action)) {
+  const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete', 'export', 'import'];
+  if (isChucVuCapBacOne(chucVuCapBac) && capBypassActions.includes(action)) {
     return true;
   }
   const need = mapAppActionToActionType(action);
   const allowed = grantsByModule[moduleId] ?? [];
+  if ((action === 'export' || action === 'import') && grantsAllow(allowed, 'view')) {
+    return true;
+  }
   return grantsAllow(allowed, need);
 }
 
@@ -161,10 +182,10 @@ export function can(
 
   const { matrixActive, grantsByModule, chucVuCapBac } = usePermissionGrantStore.getState();
   if (matrixActive) {
-    // cap_bac=1: bypass toàn bộ view/create/edit/delete cho mọi module có trong APP_RESOURCE_TO_MODULE
-    const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete'];
+    // cap_bac=1: bypass đủ thao tác UI (kể cả xuất/nhập) cho mọi module có trong APP_RESOURCE_TO_MODULE
+    const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete', 'export', 'import'];
     if (
-      chucVuCapBac === 1 &&
+      isChucVuCapBacOne(chucVuCapBac) &&
       APP_RESOURCE_TO_MODULE[resource] !== undefined &&
       capBypassActions.includes(action)
     ) {
@@ -173,6 +194,14 @@ export function can(
 
     if (resource === 'departments') {
       return canDepartmentsWithCapBac(user, action, grantsByModule, chucVuCapBac);
+    }
+    // Có quyền xem module ⇒ được xuất/nhập (client-side; RLS/API vẫn là chuẩn bảo vệ dữ liệu).
+    if (
+      (action === 'export' || action === 'import') &&
+      APP_RESOURCE_TO_MODULE[resource] !== undefined &&
+      matrixCan(user, 'view', resource)
+    ) {
+      return true;
     }
     return matrixCan(user, action, resource);
   }

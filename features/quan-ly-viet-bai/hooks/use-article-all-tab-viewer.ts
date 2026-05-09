@@ -16,10 +16,10 @@ function grantsHaveAdminOrAll(allowed: readonly string[]): boolean {
 }
 
 /**
- * Phạm vi dữ liệu tab "Tất cả" — danh sách bài viết & hoa hồng (cùng rule).
+ * Phạm vi dữ liệu tab "Tất cả" — danh sách bài viết & nhuận bút (cùng rule).
  *
  * - `role === 'admin'`, `!matrixActive`, `chucVuCapBac` ∈ {1,2}: xem hết.
- * - Token `admin` / `all` (quan_tri) trên module bài viết hoặc hoa hồng: xem hết.
+ * - Token `admin` / `all` (quan_tri) trên module bài viết hoặc nhuận bút: xem hết.
  * - Còn lại: chỉ bài do NV cùng phòng ban với user.
  */
 export function useArticleAllTabViewer(): ArticleAllTabViewer {

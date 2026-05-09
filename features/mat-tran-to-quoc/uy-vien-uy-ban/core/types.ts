@@ -4,8 +4,13 @@ export interface MttqUyVienUyBanFilters {
   don_vi_filter: string[];
 }
 
+/**
+ * Ủy viên ủy ban: FK `can_bo_id` + cột riêng UB.
+ * Họ tên, sinh, giới, dân tộc, tôn giáo, Đảng, SĐT, chức vụ, trình độ… lấy từ `mttq_can_bo` (flatten) — giữ tên field cũ để UI/search ít đổi.
+ */
 export interface MttqUyVienUyBan {
   id: string;
+  can_bo_id: string;
   ma_uv: string | null;
   nhiem_ky_id: string;
   ten_nhiem_ky: string;
@@ -16,6 +21,9 @@ export interface MttqUyVienUyBan {
   ngay_sinh: string | null;
   gioi_tinh: string | null;
   trang_thai_tham_gia: string | null;
+  /** Trạng thái công tác (thiết lập) — từ `mttq_can_bo`. */
+  ten_trang_thai_can_bo: string | null;
+  /** Ngày nhập trạng thái hồ sơ cán bộ — từ `mttq_can_bo`. */
   ngay_nhap_trang_thai: string | null;
   van_hoa: string | null;
   trinh_do_cm: string | null;
@@ -35,6 +43,11 @@ export interface MttqUyVienUyBan {
   ten_tai_khoan_nguoi_tao?: string | null;
   /** `var_nhan_vien.id_phong_ban` của người tạo — phục vụ gating phân quyền xem. */
   id_phong_ban_nguoi_tao?: string | null;
+  /** Hiển thị (từ cán bộ). */
+  ten_to_chuc?: string | null;
+  ten_phong_ban_hien_thi?: string | null;
+  ten_don_vi_can_bo?: string | null;
+  dia_chi_can_bo?: string | null;
 }
 
 /** Một dòng list ủy viên — thêm tổng hợp điểm danh theo nhiệm kỳ (view / batch). */

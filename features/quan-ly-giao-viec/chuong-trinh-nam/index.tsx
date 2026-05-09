@@ -24,12 +24,17 @@ import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
+import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import {
   useChuongTrinhNamList,
   useChuongTrinhNamDetail,
   useDeleteChuongTrinhNamMany,
 } from './hooks/use-chuong-trinh-nam';
+import {
+  useChuongTrinhNamViewer,
+  canViewChuongTrinhNamRow,
+} from './hooks/use-chuong-trinh-nam-viewer';
 import { getChuongTrinhNamById } from './services/chuong-trinh-nam-service';
 import { useChuongTrinhNamStore } from './store/useChuongTrinhNamStore';
 import type { ChuongTrinhNam, ChuongTrinhNamListRow } from './core/types';
@@ -38,11 +43,22 @@ import { chuongTrinhNamMatchesColumnSearch } from './utils/column-search';
 import { CHUONG_TRINH_NAM_TRANG_THAI } from './core/constants';
 import ChuongTrinhNamToolbar from './components/chuong-trinh-nam-toolbar';
 import ChuongTrinhNamTable from './components/chuong-trinh-nam-table';
+import ChuongTrinhNamStatsPanel from './components/chuong-trinh-nam-stats-panel';
+
+const PHONG_BAN_NONE = '__none__';
+
+function yearFromNgayBatDau(d: string | null | undefined): string | null {
+  if (!d?.trim()) return null;
+  const y = d.trim().slice(0, 4);
+  return /^\d{4}$/.test(y) ? y : null;
+}
 
 const ChuongTrinhNamForm = lazy(() => import('./components/chuong-trinh-nam-form'));
 const ChuongTrinhNamDetail = lazy(() => import('./components/chuong-trinh-nam-detail'));
 
 type FormOrigin = 'list' | 'detail';
+
+type MainTab = 'list' | 'stats';
 
 const DrawerLazyFallback: React.FC = () => (
   <div
@@ -77,6 +93,7 @@ const ChuongTrinhNamPage: React.FC = () => {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
+  const [mainTab, setMainTab] = useState<MainTab>('list');
 
   const {
     searchTerm,
@@ -92,6 +109,20 @@ const ChuongTrinhNamPage: React.FC = () => {
   const { data: rows = [], isLoading } = useChuongTrinhNamList({ enabled: canView });
   const { data: viewingData } = useChuongTrinhNamDetail(viewingId);
   const deleteMutation = useDeleteChuongTrinhNamMany();
+  const chuongTrinhViewer = useChuongTrinhNamViewer();
+
+  const scopeRows = useMemo(() => {
+    if (chuongTrinhViewer.viewAll) return rows;
+    return rows.filter((r) => canViewChuongTrinhNamRow(chuongTrinhViewer, r));
+  }, [rows, chuongTrinhViewer]);
+
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewChuongTrinhNamRow(chuongTrinhViewer, viewingData)) {
+      toast.error(txt('chuongTrinhNam.service.rowViewDenied'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, chuongTrinhViewer]);
 
   useEffect(() => {
     return () => resetState();
@@ -105,13 +136,21 @@ const ChuongTrinhNamPage: React.FC = () => {
         CHUONG_TRINH_NAM_SEARCHABLE_KEYS,
       );
       if (f.trang_thai?.length && !f.trang_thai.includes(item.trang_thai)) return false;
-      if (!chuongTrinhNamMatchesColumnSearch(item, f.columnSearch)) return false;
+      if (f.id_phong_ban?.length) {
+        const pb = item.id_phong_ban?.trim() ? String(item.id_phong_ban) : PHONG_BAN_NONE;
+        if (!f.id_phong_ban.includes(pb)) return false;
+      }
+      if (f.nam_bat_dau?.length) {
+        const y = yearFromNgayBatDau(item.ngay_bat_dau);
+        if (!y || !f.nam_bat_dau.includes(y)) return false;
+      }
+      if (!chuongTrinhNamMatchesColumnSearch(item, f)) return false;
       return matchesSearch;
     },
     [],
   );
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(scopeRows, searchTerm, filters, filterFn);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -142,7 +181,7 @@ const ChuongTrinhNamPage: React.FC = () => {
     for (const v of CHUONG_TRINH_NAM_TRANG_THAI) {
       map.set(v, { label: v, count: 0 });
     }
-    for (const r of rows) {
+    for (const r of scopeRows) {
       const cur = map.get(r.trang_thai);
       if (cur) cur.count += 1;
     }
@@ -151,7 +190,46 @@ const ChuongTrinhNamPage: React.FC = () => {
       label: value,
       count: map.get(value)?.count ?? 0,
     }));
-  }, [rows]);
+  }, [scopeRows]);
+
+  const phongBanChipOptions = useMemo(() => {
+    const byId = new Map<string, { label: string; count: number }>();
+    let noneCount = 0;
+    for (const r of scopeRows) {
+      const id = r.id_phong_ban?.trim();
+      if (!id) {
+        noneCount += 1;
+        continue;
+      }
+      const label = (r.ten_phong_ban ?? '').trim() || id;
+      const cur = byId.get(id);
+      if (cur) cur.count += 1;
+      else byId.set(id, { label, count: 1 });
+    }
+    const opts = [...byId.entries()]
+      .map(([value, { label, count }]) => ({ value, label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+    if (noneCount > 0) {
+      opts.unshift({
+        value: PHONG_BAN_NONE,
+        label: txt('chuongTrinhNam.filter.noPhongBan'),
+        count: noneCount,
+      });
+    }
+    return opts;
+  }, [scopeRows]);
+
+  const namBatDauChipOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of scopeRows) {
+      const y = yearFromNgayBatDau(r.ngay_bat_dau);
+      if (!y) continue;
+      counts.set(y, (counts.get(y) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([value, count]) => ({ value, label: value, count }))
+      .sort((a, b) => b.value.localeCompare(a.value, getLanguage()));
+  }, [scopeRows]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -202,6 +280,10 @@ const ChuongTrinhNamPage: React.FC = () => {
         toast.error(txt('chuongTrinhNam.service.notFound'));
         return;
       }
+      if (!canViewChuongTrinhNamRow(chuongTrinhViewer, full)) {
+        toast.error(txt('chuongTrinhNam.service.rowViewDenied'));
+        return;
+      }
       startTransition(() => {
         setFormOrigin('list');
         setEditing(full);
@@ -213,6 +295,10 @@ const ChuongTrinhNamPage: React.FC = () => {
   };
 
   const handleEditFromDetail = (d: ChuongTrinhNam) => {
+    if (!canViewChuongTrinhNamRow(chuongTrinhViewer, d)) {
+      toast.error(txt('chuongTrinhNam.service.rowViewDenied'));
+      return;
+    }
     startTransition(() => {
       setFormOrigin('detail');
       setEditing(d);
@@ -261,6 +347,26 @@ const ChuongTrinhNamPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const tabs = useMemo(
+    () => [
+      { id: 'list' as const, label: txt('chuongTrinhNam.tabList') },
+      { id: 'stats' as const, label: txt('chuongTrinhNam.tabStats') },
+    ],
+    [],
+  );
+
+  const tabsSlot = useMemo(
+    () => (
+      <TabGroup
+        tabs={tabs}
+        activeTab={mainTab}
+        onChange={(id) => setMainTab(id as MainTab)}
+        className="shrink-0"
+      />
+    ),
+    [tabs, mainTab],
+  );
+
   const handleCloseForm = () => {
     const wasEditing = editing;
     const origin = formOrigin;
@@ -296,31 +402,45 @@ const ChuongTrinhNamPage: React.FC = () => {
           {txt('chuongTrinhNam.noEmployeeBanner')}
         </div>
       ) : null}
-      <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
-        <ChuongTrinhNamToolbar
-          onPageBack={() => navigate('/quan-ly-giao-viec')}
-          trangThaiOptions={trangThaiChipOptions}
-          onAdd={() => {
-            startTransition(() => {
-              setFormOrigin('list');
-              setEditing(null);
-              setShowForm(true);
-            });
-          }}
-          onExport={handleExport}
-          onDeleteMany={handleDeleteMany}
-        />
-
-        <div className="flex-1 min-h-0">
-          <ChuongTrinhNamTable
-            data={sorted}
+      {mainTab === 'stats' ? (
+        <div className="flex-1 min-h-0 flex flex-col min-w-0">
+          <ChuongTrinhNamStatsPanel
+            tabsSlot={tabsSlot}
+            rows={scopeRows}
             isLoading={isLoading}
-            onEdit={handleEditFromList}
-            onDelete={handleDelete}
-            onView={(item) => setViewingId(item.id)}
+            onOpenDetail={(id) => setViewingId(id)}
           />
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
+          <ChuongTrinhNamToolbar
+            onPageBack={() => navigate('/quan-ly-giao-viec')}
+            tabsSlot={tabsSlot}
+            trangThaiOptions={trangThaiChipOptions}
+            phongBanOptions={phongBanChipOptions}
+            namBatDauOptions={namBatDauChipOptions}
+            onAdd={() => {
+              startTransition(() => {
+                setFormOrigin('list');
+                setEditing(null);
+                setShowForm(true);
+              });
+            }}
+            onExport={handleExport}
+            onDeleteMany={handleDeleteMany}
+          />
+
+          <div className="flex-1 min-h-0">
+            <ChuongTrinhNamTable
+              data={sorted}
+              isLoading={isLoading}
+              onEdit={handleEditFromList}
+              onDelete={handleDelete}
+              onView={(item) => setViewingId(item.id)}
+            />
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {showForm && (
@@ -331,7 +451,10 @@ const ChuongTrinhNamPage: React.FC = () => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {viewingId && viewingData && !showForm && (
+        {viewingId &&
+          viewingData &&
+          !showForm &&
+          canViewChuongTrinhNamRow(chuongTrinhViewer, viewingData) && (
           <Suspense fallback={<DrawerLazyFallback />}>
             <ChuongTrinhNamDetail
               data={viewingData}

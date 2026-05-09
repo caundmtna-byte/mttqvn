@@ -4,7 +4,6 @@ export const MTTQ_THIET_LAP_LOAI = [
   'dan_toc',
   'trinh_do',
   'ly_luan_chinh_tri',
-  'chuc_vu',
   'trang_thai',
 ] as const;
 
@@ -16,7 +15,6 @@ export const MTTQ_LOAI_TAB_LABEL_KEY: Record<MttqThietLapLoai, string> = {
   dan_toc: 'page.matTranThietLap.tabDanToc',
   trinh_do: 'page.matTranThietLap.tabTrinhDo',
   ly_luan_chinh_tri: 'page.matTranThietLap.tabLyLuanChinhTri',
-  chuc_vu: 'page.matTranThietLap.tabChucVu',
   trang_thai: 'page.matTranThietLap.tabTrangThai',
 };
 

@@ -41,6 +41,10 @@ interface DashboardToolbarProps {
   innerWrapperClassName?: string;
   /** true: vùng `filters` desktop một hàng + cuộn ngang (mặc định flex-wrap xuống dòng). */
   filtersSingleRow?: boolean;
+  /** Desktop: `flex-wrap` trên hàng toolbar để ô tìm + bộ lọc có thể xuống dòng (tránh chip chồng). */
+  desktopToolbarWrap?: boolean;
+  /** Class thêm vào wrapper bọc `filters` (vd. `flex-1 min-w-0`). */
+  filtersWrapperClassName?: string;
 }
 
 const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
@@ -60,6 +64,8 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
   className,
   innerWrapperClassName,
   filtersSingleRow = false,
+  desktopToolbarWrap = false,
+  filtersWrapperClassName,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -145,7 +151,12 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
       )}
 
       {/* ===== DESKTOP (>= sm): một hàng — Back + desktopStartSlot + filter chips … flex … actions */}
-      <div className="hidden sm:flex items-center gap-2 min-w-0">
+      <div
+        className={cn(
+          'hidden sm:flex items-center gap-2 min-w-0',
+          desktopToolbarWrap && 'flex-wrap',
+        )}
+      >
         {!hideBack && (
           <button
             onClick={handleBack}
@@ -162,12 +173,13 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
 
         {leadingContent && <div className="flex-1 min-w-0 max-w-[21rem]">{leadingContent}</div>}
 
-        {/* Filter chips */}
+        {/* Filter chips — flex-1 để vùng filter/cuộn ngang rộng tới sát nút actions */}
         {filters && (
           <div
             className={cn(
-              'flex items-center gap-2 min-w-0',
+              'flex min-w-0 flex-1 items-center gap-2',
               filtersSingleRow ? 'flex-nowrap overflow-x-auto' : 'flex-wrap',
+              filtersWrapperClassName,
             )}
           >
             {filters}
@@ -183,11 +195,9 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
           </div>
         )}
 
-        <div className="flex-1 min-w-0 shrink" aria-hidden />
-
-        {/* Actions */}
+        {/* Actions — luôn ml-auto để canh phải; filters flex-1 giữa giãn ra (vùng cuộn ngang rộng) */}
         {actions && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             {actions}
           </div>
         )}

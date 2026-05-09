@@ -44,5 +44,7 @@ export const MTTQ_KHEN_THUONG_MOCK_CHILDREN: Omit<MttqKhenThuongCt, 'ten_can_bo'
     danh_hieu: 'Giấy khen',
     noi_dung_khen: 'Hoàn thành xuất sắc nhiệm vụ',
     ho_so_khen: null,
+    /** Mock `mttq_can_bo.don_vi_id` — gate Xã phường trong unit test / mock mode. */
+    can_bo_don_vi_id: '900001',
   },
 ];

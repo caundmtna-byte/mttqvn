@@ -18,6 +18,8 @@ export interface User {
   id_chuc_vu?: string | string[] | null;
   /** Tên chức vụ (`var_chuc_vu.ten_chuc_vu`), đồng bộ lúc đăng nhập / session. */
   ten_chuc_vu?: string | null;
+  /** FK `var_ssn_xa_phuong.id` — gắn nhân viên với xã/phường (phân quyền xem ủy viên theo đơn vị). */
+  don_vi_id?: string | null;
   /** Trạng thái tài khoản trong `var_nhan_vien` (tiếng Việt có dấu) */
   trang_thai?: 'Hoạt động' | 'Khóa';
 }

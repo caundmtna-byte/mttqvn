@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   useForm,
   Controller,
@@ -9,14 +10,16 @@ import {
 } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  Briefcase,
   Building2,
   CalendarDays,
   Edit,
   FileText,
   GraduationCap,
-  IdCard,
+  Layers,
   ListChecks,
   Plus,
+  MapPin,
   StickyNote,
   Tag,
   Trash2,
@@ -40,26 +43,42 @@ import { useCan } from '@/hooks/use-can';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { useMttqCanBoList } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/hooks/use-mttq-can-bo';
+import { useTinhThanhList } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
+import { queryKeys } from '@/lib/query-keys';
+import { geoDataQueryOptions } from '@/lib/supabase/query-config';
 import {
-  mttqTapHuanSchema,
+  createMttqTapHuanSchema,
   type MttqTapHuanChiTietLineFormValues,
   type MttqTapHuanFormValues,
 } from '../core/schema';
-import { MTTQ_TAP_HUAN_CAP, MTTQ_TAP_HUAN_THUOC_DIEN } from '../core/constants';
+import {
+  MTTQ_TAP_HUAN_CAP,
+  MTTQ_TAP_HUAN_THUOC_DIEN,
+  type MttqTapHuanCap,
+} from '../core/constants';
 import type { MttqLopTapHuan } from '../core/types';
 import { useCreateMttqLopTapHuan, useUpdateMttqLopTapHuan } from '../hooks/use-mttq-tap-huan';
 import MttqTapHuanChiTietLineDrawer, {
   MTTQ_TAP_HUAN_CHI_TIET_EMPTY_LINE,
 } from './mttq-tap-huan-chi-tiet-line-drawer';
 import { getTapHuanThuocDienBadgeConfig } from '../utils/display-format';
+import { tapHuanCanBoThreeColFromCanBo } from '../utils/snapshot-from-can-bo';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
+import { buildTapHuanCanBoOptions } from '../utils/can-bo-options-for-lop';
 
 const DEFAULT_VALUES: MttqTapHuanFormValues = {
   ten_lop_tap_huan: '',
   nam_tap_huan: new Date().getFullYear(),
   cap_tap_huan: 'Cấp tỉnh',
+  don_vi_id: '',
   ghi_chu: undefined,
   chi_tiet: [],
 };
+
+function toFormFk(v: string | null | undefined): string {
+  return v != null && String(v).trim() !== '' ? String(v) : '';
+}
 
 type LineDrawerState = null | { mode: 'add' } | { mode: 'edit'; index: number };
 
@@ -67,12 +86,14 @@ type ChiTietGridRow = MttqTapHuanChiTietLineFormValues & {
   rowIndex: number;
   rowKey: string;
   tenCanBo: string;
+  tenToChuc: string;
+  tenPhongBan: string;
   tenChucVu: string;
-  tenDonVi: string;
-  tenCapQuanLy: string;
+  tenDonViHoSo: string;
+  chucVuCapQuanLy: string | null;
 };
 
-const CHI_TIET_TABLE_CLASS = 'min-w-[64rem]';
+const CHI_TIET_TABLE_CLASS = 'min-w-[76rem]';
 const CELL_NOWRAP = 'whitespace-nowrap align-top';
 
 function chiTietCellClass(extra: string) {
@@ -96,15 +117,9 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
   const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
 
-  const [lineDrawer, setLineDrawer] = useState<LineDrawerState>(null);
+  const validationSchema = useMemo(() => createMttqTapHuanSchema(canBoList), [canBoList]);
 
-  const canBoOptions = useMemo(
-    () =>
-      [...canBoList]
-        .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, 'vi'))
-        .map((c) => ({ label: c.ho_ten, value: String(c.id) })),
-    [canBoList],
-  );
+  const [lineDrawer, setLineDrawer] = useState<LineDrawerState>(null);
 
   const canBoMap = useMemo(() => {
     const m = new Map<string, (typeof canBoList)[number]>();
@@ -113,13 +128,7 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
   }, [canBoList]);
 
   const resolveFromCanBo = useCallback(
-    (canBoId: string) => {
-      const c = canBoMap.get(canBoId.trim());
-      return {
-        chuc_vu: (c?.ten_chuc_vu ?? '').trim(),
-        don_vi_cong_tac: (c?.ten_to_chuc ?? '').trim(),
-      };
-    },
+    (canBoId: string) => tapHuanCanBoThreeColFromCanBo(canBoMap.get(canBoId.trim())),
     [canBoMap],
   );
 
@@ -139,13 +148,61 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<MttqTapHuanFormValues>({
-    resolver: zodResolver(mttqTapHuanSchema) as Resolver<MttqTapHuanFormValues>,
+    resolver: zodResolver(validationSchema) as Resolver<MttqTapHuanFormValues>,
     defaultValues: DEFAULT_VALUES,
   });
 
   const { fields, append, remove, update } = useFieldArray({ control, name: 'chi_tiet' });
   const watchedChiTiet = useWatch({ control, name: 'chi_tiet' }) ?? [];
+  const watchedCap = useWatch({ control, name: 'cap_tap_huan' });
+  const watchedDonVi = useWatch({ control, name: 'don_vi_id' }) ?? '';
+  const isCapXa = watchedCap === 'Cấp xã';
+
+  const canBoOptions = useMemo(
+    () =>
+      buildTapHuanCanBoOptions({
+        cap: (watchedCap ?? 'Cấp tỉnh') as MttqTapHuanCap,
+        donViIdLop: String(watchedDonVi ?? ''),
+        canBoList,
+        ensureCanBoId:
+          lineDrawer?.mode === 'edit'
+            ? (watchedChiTiet[lineDrawer.index]?.can_bo_id ?? undefined)
+            : undefined,
+      }),
+    [watchedCap, watchedDonVi, canBoList, lineDrawer, watchedChiTiet],
+  );
+
+  const { data: tinhList = [] } = useTinhThanhList();
+  const { data: xaPhuongList = [] } = useQuery({
+    queryKey: queryKeys.xaPhuong.listAll,
+    queryFn: getXaPhuongAll,
+    ...geoDataQueryOptions,
+  });
+
+  const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
+
+  const xaPhuongOptions = useMemo(() => {
+    const rows = [...xaPhuongList].sort((a, b) => {
+      const ta = (tinhById.get(a.id_tinh_thanh) ?? '').localeCompare(tinhById.get(b.id_tinh_thanh) ?? '', 'vi');
+      if (ta !== 0) return ta;
+      return a.ten.localeCompare(b.ten, 'vi');
+    });
+    return rows.map((x) => {
+      const tinhTen = tinhById.get(x.id_tinh_thanh) ?? '';
+      return {
+        label: tinhTen ? `${x.ten} (${tinhTen})` : x.ten,
+        value: String(x.id),
+      };
+    });
+  }, [xaPhuongList, tinhById]);
+
+  useEffect(() => {
+    if (watchedCap === 'Cấp tỉnh') {
+      setValue('don_vi_id', '');
+    }
+  }, [watchedCap, setValue]);
 
   const gridRows: ChiTietGridRow[] = useMemo(
     () =>
@@ -153,24 +210,28 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
         const line = watchedChiTiet[i] ?? MTTQ_TAP_HUAN_CHI_TIET_EMPTY_LINE;
         const idStr = (line.can_bo_id ?? '').trim();
         const canBo = canBoMap.get(idStr);
+        const ctFromParent = initialData?.chi_tiet[i];
         const tenCanBo =
           canBo?.ho_ten?.trim() ?? (idStr !== '' ? `#${idStr}` : txt('common.emptyCell'));
-        const tenChucVu =
-          (line.chuc_vu ?? '').trim() || (canBo?.ten_chuc_vu ?? '').trim() || '';
-        const tenDonVi =
-          (line.don_vi_cong_tac ?? '').trim() || (canBo?.ten_to_chuc ?? '').trim() || '';
-        const tenCapQuanLy = canBo?.ten_cap_quan_ly?.trim() ?? '';
+        const three = canBo
+          ? tapHuanCanBoThreeColFromCanBo(canBo)
+          : { ten_to_chuc: '', ten_phong_ban: '', ten_chuc_vu: '' };
+        const chucVuCapQuanLy =
+          canBo?.chuc_vu_cap_quan_ly ?? ctFromParent?.chuc_vu_cap_quan_ly ?? null;
+        const tenDonViHoSo = (canBo?.ten_don_vi ?? ctFromParent?.ten_don_vi_can_bo ?? '').trim();
         return {
           ...line,
           rowIndex: i,
           rowKey: field.id,
           tenCanBo,
-          tenChucVu,
-          tenDonVi,
-          tenCapQuanLy,
+          tenToChuc: three.ten_to_chuc,
+          tenPhongBan: three.ten_phong_ban,
+          tenChucVu: three.ten_chuc_vu,
+          tenDonViHoSo,
+          chucVuCapQuanLy,
         };
       }),
-    [fields, watchedChiTiet, canBoMap],
+    [fields, watchedChiTiet, canBoMap, initialData?.chi_tiet],
   );
 
   useEffect(() => {
@@ -179,14 +240,13 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
         ten_lop_tap_huan: initialData.ten_lop_tap_huan,
         nam_tap_huan: initialData.nam_tap_huan,
         cap_tap_huan: initialData.cap_tap_huan,
+        don_vi_id: toFormFk(initialData.don_vi_id),
         ghi_chu: initialData.ghi_chu ?? undefined,
         chi_tiet:
           initialData.chi_tiet.length > 0
             ? initialData.chi_tiet.map((c) => ({
                 id: c.id,
                 can_bo_id: c.can_bo_id,
-                chuc_vu: c.chuc_vu ?? '',
-                don_vi_cong_tac: c.don_vi_cong_tac ?? '',
                 thuoc_dien: c.thuoc_dien,
               }))
             : [],
@@ -326,6 +386,27 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
                   />
                 )}
               />
+              {isCapXa ? (
+                <Controller
+                  name="don_vi_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Combobox
+                      label={txt('matTranTapHuan.form.donVi')}
+                      icon={<MapPin size={12} />}
+                      options={xaPhuongOptions}
+                      value={field.value}
+                      onChange={(v) => field.onChange(v === '' ? '' : String(v))}
+                      placeholder={txt('common.select')}
+                      hint={txt('matTranTapHuan.form.donViHint')}
+                      error={errors.don_vi_id?.message}
+                      required
+                      searchPlaceholder={txt('employee.form.donViXaPhuongSearch')}
+                      dropdownInPortal
+                    />
+                  )}
+                />
+              ) : null}
               <div className={FORM_GRID_SPAN_FULL}>
                 <Textarea
                   label={txt('matTranTapHuan.form.ghiChu')}
@@ -380,11 +461,37 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
               }}
               columns={[
                 {
-                  id: 'chuc_vu',
+                  id: 'ten_to_chuc',
                   header: (
                     <span className="inline-flex items-center gap-1.5">
-                      <IdCard size={12} className="shrink-0 opacity-90" aria-hidden />
-                      {txt('matTranTapHuan.form.chucVu')}
+                      <Building2 size={12} className="shrink-0 opacity-90" aria-hidden />
+                      {txt('matTranCanBo.form.toChuc')}
+                    </span>
+                  ),
+                  headerClassName: 'min-w-[10rem]',
+                  cellClassName: chiTietCellClass('min-w-[10rem]'),
+                  renderCell: (r) =>
+                    r.tenToChuc?.trim() ? r.tenToChuc : txt('common.emptyCell'),
+                },
+                {
+                  id: 'ten_phong_ban',
+                  header: (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Layers size={12} className="shrink-0 opacity-90" aria-hidden />
+                      {txt('matTranCanBo.form.phongBan')}
+                    </span>
+                  ),
+                  headerClassName: 'min-w-[11rem]',
+                  cellClassName: chiTietCellClass('min-w-[11rem]'),
+                  renderCell: (r) =>
+                    r.tenPhongBan?.trim() ? r.tenPhongBan : txt('common.emptyCell'),
+                },
+                {
+                  id: 'ten_chuc_vu',
+                  header: (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Briefcase size={12} className="shrink-0 opacity-90" aria-hidden />
+                      {txt('matTranCanBo.form.chucVu')}
                     </span>
                   ),
                   headerClassName: 'min-w-[10rem]',
@@ -393,29 +500,28 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
                     r.tenChucVu?.trim() ? r.tenChucVu : txt('common.emptyCell'),
                 },
                 {
-                  id: 'don_vi',
+                  id: 'don_vi_ho_so',
                   header: (
                     <span className="inline-flex items-center gap-1.5">
-                      <Building2 size={12} className="shrink-0 opacity-90" aria-hidden />
-                      {txt('matTranTapHuan.form.donViCongTac')}
+                      <MapPin size={12} className="shrink-0 opacity-90" aria-hidden />
+                      {txt('matTranCanBo.store.donViCol')}
                     </span>
                   ),
-                  headerClassName: 'min-w-[14rem]',
-                  cellClassName: chiTietCellClass('min-w-[14rem]'),
-                  renderCell: (r) => (r.tenDonVi?.trim() ? r.tenDonVi : txt('common.emptyCell')),
-                },
-                {
-                  id: 'cap_quan_ly',
-                  header: (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Tag size={12} className="shrink-0 opacity-90" aria-hidden />
-                      {txt('matTranTapHuan.form.capQuanLy')}
-                    </span>
-                  ),
-                  headerClassName: 'min-w-[10rem]',
-                  cellClassName: chiTietCellClass('min-w-[10rem]'),
-                  renderCell: (r) =>
-                    r.tenCapQuanLy?.trim() ? r.tenCapQuanLy : txt('common.emptyCell'),
+                  headerClassName: 'min-w-[12rem]',
+                  cellClassName: chiTietCellClass('min-w-[12rem]'),
+                  renderCell: (r) => {
+                    const ec = txt('common.emptyCell');
+                    const d = formatTenDonViCongTacDisplay(r.chucVuCapQuanLy, r.tenDonViHoSo);
+                    if (r.chucVuCapQuanLy === 'Tỉnh') {
+                      return (
+                        <span className="text-body-sm text-muted-foreground tabular-nums">{d}</span>
+                      );
+                    }
+                    if (d === ec) {
+                      return <span className="text-body-sm text-muted-foreground italic">{ec}</span>;
+                    }
+                    return d;
+                  },
                 },
                 {
                   id: 'thuoc_dien',

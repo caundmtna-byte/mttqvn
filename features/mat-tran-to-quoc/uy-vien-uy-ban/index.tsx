@@ -225,13 +225,11 @@ const UyVienUyBanPage: React.FC = () => {
     () => [
       { key: 'ten_nhiem_ky', label: txt('matTranUyVienUyBan.store.tenNhiemKyCol'), required: true },
       { key: 'ten_don_vi', label: txt('matTranUyVienUyBan.store.donViCol') },
-      { key: 'ho_va_ten', label: txt('matTranUyVienUyBan.store.hoVaTenCol'), required: true },
-      { key: 'ma_uv', label: txt('matTranUyVienUyBan.store.maUvCol') },
-      { key: 'chuc_vu_don_vi', label: txt('matTranUyVienUyBan.store.chucVuDonViCol') },
+      { key: 'can_bo_id', label: txt('matTranUyVienUyBan.store.canBoIdCol') },
+      { key: 'ho_va_ten', label: txt('matTranUyVienUyBan.store.importHoTenMapCol') },
       { key: 'ngay_sinh', label: txt('matTranUyVienUyBan.form.ngaySinh') },
-      { key: 'gioi_tinh', label: txt('matTranUyVienUyBan.form.gioiTinh') },
+      { key: 'ma_uv', label: txt('matTranUyVienUyBan.store.maUvCol') },
       { key: 'trang_thai_tham_gia', label: txt('matTranUyVienUyBan.store.trangThamGiaCol') },
-      { key: 'dang_vien', label: txt('matTranUyVienUyBan.form.dangVien') },
     ],
     [],
   );

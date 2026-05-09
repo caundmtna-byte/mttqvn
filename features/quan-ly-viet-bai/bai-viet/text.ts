@@ -17,6 +17,8 @@ export const articleList = {
     tenBai: 'Tên bài',
     theLoai: 'Thể loại',
     donGia: 'Đơn giá (VNĐ)',
+    donGiaLockedHint:
+      'Đơn giá lấy theo thể loại. Chỉ cấp lãnh đạo (cấp bậc 1) hoặc quản trị module mới chỉnh tay được.',
     ngayDang: 'Ngày đăng',
     nguonDang: 'Nguồn đăng',
     trangDang: 'Trang đăng',

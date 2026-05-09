@@ -19,16 +19,26 @@ import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
 import ExportDialog from '@/components/shared/ExportDialog';
-import { useMttqCanBoList, useDeleteMttqCanBoMany } from './hooks/use-mttq-can-bo';
+import ImportDialog, { type ImportTemplateSheet } from '@/components/shared/ImportDialog';
+import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
+import { usePositions } from '@/features/he-thong/chuc-vu/hooks/use-chuc-vu';
+import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
+import { useTinhThanhList } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
+import { queryKeys } from '@/lib/query-keys';
+import { geoDataQueryOptions } from '@/lib/supabase/query-config';
+import { useMttqCanBoList, useDeleteMttqCanBoMany, useImportMttqCanBo } from './hooks/use-mttq-can-bo';
 import { useMttqCanBoStore } from './store/useMttqCanBoStore';
 import type { MttqCanBoRow } from './core/types';
 import { MTTQ_CAN_BO_SEARCHABLE_KEYS } from './utils/search-keys';
 import { mttqCanBoMatchesColumnSearch } from './utils/column-search';
 import { computeAgeFromBirthDate } from './utils/age';
 import { formatCanBoPhoneDisplay } from './utils/display-format';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import { CHIP_TRANG_THAI_NULL } from './core/constants';
 import { useMttqCanBoFilterCounts } from './hooks/use-mttq-can-bo-filter-counts';
 import MttqCanBoToolbar from './components/mttq-can-bo-toolbar';
@@ -57,6 +67,10 @@ const DanhSachCanBoPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranOfficerList');
+  const canImport = useCan('import', 'matTranOfficerList');
+  const canViewPositions = useCan('view', 'positions');
+  const canCreateCanBo = useCan('create', 'matTranOfficerList');
+  const canEditCanBo = useCan('edit', 'matTranOfficerList');
   const didRedirect = useRef(false);
 
   useEffect(() => {
@@ -71,12 +85,28 @@ const DanhSachCanBoPage: React.FC = () => {
   const [viewing, setViewing] = useState<MttqCanBoRow | null>(null);
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const { searchTerm, filters, sort, resetState, clearSelection, selectedIds, pagination, columns } =
     useMttqCanBoStore();
 
   const { data: rows = [], isLoading } = useMttqCanBoList({ enabled: canView });
   const deleteMutation = useDeleteMttqCanBoMany();
+  const importQueriesEnabled = canView && showImport && canImport;
+  const { data: thietLapAll = [] } = useMttqThietLapAll({ enabled: importQueriesEnabled });
+  const { data: positions = [] } = usePositions({
+    enabled:
+      importQueriesEnabled && (canViewPositions || canCreateCanBo || canEditCanBo || canImport),
+  });
+  const { data: departments = [] } = useDepartments({ enabled: importQueriesEnabled });
+  const { data: tinhList = [] } = useTinhThanhList({ enabled: importQueriesEnabled });
+  const { data: xaList = [] } = useQuery({
+    queryKey: queryKeys.xaPhuong.listAll,
+    queryFn: getXaPhuongAll,
+    enabled: importQueriesEnabled,
+    ...geoDataQueryOptions,
+  });
+  const importMutation = useImportMttqCanBo();
 
   const rowsEnriched = useMemo<MttqCanBoRow[]>(
     () =>
@@ -171,8 +201,10 @@ const DanhSachCanBoPage: React.FC = () => {
       { key: 'tuoi', label: txt('matTranCanBo.store.tuoiCol') },
       { key: 'gioi_tinh', label: txt('matTranCanBo.store.gioiTinhCol') },
       { key: 'ten_trang_thai', label: txt('matTranCanBo.store.trangThaiCol') },
-      { key: 'ten_chuc_vu', label: txt('matTranCanBo.store.chucVuCol') },
       { key: 'ten_to_chuc', label: txt('matTranCanBo.store.toChucCol') },
+      { key: 'ten_phong_ban', label: txt('matTranCanBo.store.phongBanCol') },
+      { key: 'ten_chuc_vu', label: txt('matTranCanBo.store.chucVuCol') },
+      { key: 'ten_don_vi', label: txt('matTranCanBo.store.donViCol') },
       { key: 'dien_thoai', label: txt('matTranCanBo.store.dienThoaiCol') },
       { key: 'dang_vien', label: txt('matTranCanBo.store.dangVienCol') },
     ],
@@ -186,8 +218,10 @@ const DanhSachCanBoPage: React.FC = () => {
       tuoi: item.tuoi != null ? txt('matTranCanBo.display.ageYears', { years: String(item.tuoi) }) : '',
       gioi_tinh: item.gioi_tinh,
       ten_trang_thai: item.ten_trang_thai ?? '',
-      ten_chuc_vu: item.ten_chuc_vu ?? '',
       ten_to_chuc: item.ten_to_chuc ?? '',
+      ten_phong_ban: item.ten_phong_ban ?? '',
+      ten_chuc_vu: item.ten_chuc_vu ?? '',
+      ten_don_vi: formatTenDonViCongTacDisplay(item.chuc_vu_cap_quan_ly, item.ten_don_vi),
       dien_thoai: formatCanBoPhoneDisplay(item.dien_thoai) || (item.dien_thoai ?? ''),
       dang_vien: item.dang_vien ? txt('matTranCanBo.detail.dangVienYes') : txt('matTranCanBo.detail.dangVienNo'),
     }),
@@ -202,6 +236,127 @@ const DanhSachCanBoPage: React.FC = () => {
     selectedIds,
     keyExtractor: (r) => r.id,
   });
+
+  const IMPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'id_phong_ban', label: txt('matTranCanBo.import.colPhongBan'), required: true },
+      { key: 'to_chuc_id', label: txt('matTranCanBo.import.colToChuc'), required: true },
+      { key: 'ho_ten', label: txt('matTranCanBo.import.colHoTen'), required: true },
+      { key: 'ngay_sinh', label: txt('matTranCanBo.import.colNgaySinh'), required: true },
+      { key: 'gioi_tinh', label: txt('matTranCanBo.import.colGioiTinh'), required: true },
+      { key: 'dan_toc_id', label: txt('matTranCanBo.import.colDanToc'), required: true },
+      { key: 'ton_giao', label: txt('matTranCanBo.import.colTonGiao'), required: true },
+      { key: 'dia_chi', label: txt('matTranCanBo.import.colDiaChi'), required: true },
+      { key: 'dang_vien', label: txt('matTranCanBo.import.colDangVien'), required: true },
+      { key: 'trinh_do_id', label: txt('matTranCanBo.import.colTrinhDo'), required: true },
+      { key: 'ly_luan_chinh_tri_id', label: txt('matTranCanBo.import.colLyLuan'), required: true },
+      { key: 'dien_thoai', label: txt('matTranCanBo.import.colDienThoai'), required: true },
+      { key: 'chuc_vu_id', label: txt('matTranCanBo.import.colChucVu'), required: true },
+      { key: 'don_vi_id', label: txt('matTranCanBo.import.colDonVi'), required: false },
+      { key: 'ngay_tham_gia_to_chuc', label: txt('matTranCanBo.import.colNgayThamGia'), required: true },
+      { key: 'trang_thai_id', label: txt('matTranCanBo.import.colTrangThai'), required: true },
+      { key: 'ngay_nhap_trang_thai', label: txt('matTranCanBo.import.colNgayNhapTT'), required: true },
+      { key: 'van_hoa', label: txt('matTranCanBo.import.colVanHoa'), required: false },
+      { key: 'ngay_vao_dang', label: txt('matTranCanBo.import.colNgayVaoDang'), required: false },
+      { key: 'que_quan', label: txt('matTranCanBo.import.colQueQuan'), required: false },
+      { key: 'noi_o_hien_nay', label: txt('matTranCanBo.import.colNoiOHienNay'), required: false },
+    ],
+    [],
+  );
+
+  const templateSheets = useMemo((): ImportTemplateSheet[] => {
+    if (!showImport) return [];
+    const lang = getLanguage();
+    const huongDan: ImportTemplateSheet = {
+      name: txt('matTranCanBo.import.sheetHuongDan'),
+      headers: [txt('matTranCanBo.import.huongDanColKey'), txt('matTranCanBo.import.huongDanColVal')],
+      rows: [
+        [txt('matTranCanBo.import.huongR1k'), txt('matTranCanBo.import.huongR1v')],
+        [txt('matTranCanBo.import.huongR2k'), txt('matTranCanBo.import.huongR2v')],
+        [txt('matTranCanBo.import.huongR3k'), txt('matTranCanBo.import.huongR3v')],
+        [txt('matTranCanBo.import.huongR4k'), txt('matTranCanBo.import.huongR4v')],
+        [txt('matTranCanBo.import.huongR5k'), txt('matTranCanBo.import.huongR5v')],
+      ],
+    };
+
+    const refSheet = (name: string, loai: 'to_chuc' | 'dan_toc' | 'trinh_do' | 'ly_luan_chinh_tri' | 'trang_thai'): ImportTemplateSheet => ({
+      name,
+      headers: [txt('matTranCanBo.import.refColId'), txt('matTranCanBo.import.refColTen')],
+      rows: [...thietLapAll.filter((x) => x.loai === loai)]
+        .sort((a, b) => a.ten.localeCompare(b.ten, lang))
+        .map((x) => [x.id, x.ten]),
+    });
+
+    const deptRows = [...departments].sort((a, b) =>
+      a.ten_phong_ban.localeCompare(b.ten_phong_ban, lang),
+    );
+    const phongBan: ImportTemplateSheet = {
+      name: txt('matTranCanBo.import.sheetPhongBan'),
+      headers: [
+        txt('matTranCanBo.import.refColId'),
+        txt('matTranCanBo.import.refColTenPhongBan'),
+        txt('matTranCanBo.import.refColChaId'),
+        txt('matTranCanBo.import.refColTenPhongCha'),
+        txt('matTranCanBo.import.refColTrangThai'),
+      ],
+      rows: deptRows.map((d) => {
+        const chaTen =
+          d.cha_id != null && String(d.cha_id) !== ''
+            ? departments.find((p) => String(p.id) === String(d.cha_id))?.ten_phong_ban ?? ''
+            : '';
+        return [d.id, d.ten_phong_ban, d.cha_id ?? '', chaTen, d.trang_thai];
+      }),
+    };
+
+    const posRows = [...positions].sort((a, b) => a.ten_chuc_vu.localeCompare(b.ten_chuc_vu, lang));
+    const chucVu: ImportTemplateSheet = {
+      name: txt('matTranCanBo.import.sheetChucVu'),
+      headers: [
+        txt('matTranCanBo.import.refColId'),
+        txt('matTranCanBo.import.refColTen'),
+        txt('matTranCanBo.import.refColCapQuanLy'),
+        txt('matTranCanBo.import.refColPhongBanId'),
+        txt('matTranCanBo.import.refColTenPhongBan'),
+      ],
+      rows: posRows.map((p) => [
+        p.id,
+        p.ten_chuc_vu,
+        p.cap_quan_ly ?? '',
+        p.phong_ban_id ?? '',
+        p.ten_phong_ban ?? '',
+      ]),
+    };
+
+    const tinhMap = new Map(tinhList.map((t) => [String(t.id), t.ten]));
+    const xaRows = [...xaList].sort((a, b) => {
+      const ta = tinhMap.get(String(a.id_tinh_thanh)) ?? '';
+      const tb = tinhMap.get(String(b.id_tinh_thanh)) ?? '';
+      const c = ta.localeCompare(tb, lang);
+      return c !== 0 ? c : a.ten.localeCompare(b.ten, lang);
+    });
+    const xaPhuong: ImportTemplateSheet = {
+      name: txt('matTranCanBo.import.sheetXaPhuong'),
+      headers: [
+        txt('matTranCanBo.import.refColId'),
+        txt('matTranCanBo.import.refColTen'),
+        txt('matTranCanBo.import.refColIdTinh'),
+        txt('matTranCanBo.import.refColTenTinh'),
+      ],
+      rows: xaRows.map((x) => [x.id, x.ten, x.id_tinh_thanh, tinhMap.get(String(x.id_tinh_thanh)) ?? '']),
+    };
+
+    return [
+      huongDan,
+      refSheet(txt('matTranCanBo.import.sheetToChuc'), 'to_chuc'),
+      refSheet(txt('matTranCanBo.import.sheetDanToc'), 'dan_toc'),
+      refSheet(txt('matTranCanBo.import.sheetTrinhDo'), 'trinh_do'),
+      refSheet(txt('matTranCanBo.import.sheetLyLuan'), 'ly_luan_chinh_tri'),
+      refSheet(txt('matTranCanBo.import.sheetTrangThai'), 'trang_thai'),
+      phongBan,
+      chucVu,
+      xaPhuong,
+    ];
+  }, [showImport, thietLapAll, positions, departments, tinhList, xaList]);
 
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
@@ -254,6 +409,18 @@ const DanhSachCanBoPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const canImportWithProfile = canImport && Boolean(nhanVienId);
+
+  const handleImportData = useCallback(
+    async (data: Record<string, unknown>[]) => {
+      if (!nhanVienId) {
+        throw new Error(txt('matTranCanBo.service.noEmployeeProfile'));
+      }
+      await importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
+    },
+    [importMutation, nhanVienId],
+  );
+
   const handleCloseForm = () => {
     const wasEditing = editing;
     const origin = formOrigin;
@@ -303,6 +470,7 @@ const DanhSachCanBoPage: React.FC = () => {
             });
           }}
           onExport={handleExport}
+          onImport={canImportWithProfile ? () => setShowImport(true) : undefined}
           onDeleteMany={handleDeleteMany}
         />
 
@@ -351,6 +519,19 @@ const DanhSachCanBoPage: React.FC = () => {
             selectedData={selectedExportData}
             fileName={txt('matTranCanBo.exportFileName')}
             visibleColumnKeys={visibleColumnKeys}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImport && (
+          <ImportDialog
+            open={showImport}
+            onClose={() => setShowImport(false)}
+            columns={IMPORT_COLUMNS}
+            onImport={handleImportData}
+            templateFileName={txt('matTranCanBo.import.templateFileName')}
+            templateSheets={templateSheets}
           />
         )}
       </AnimatePresence>

@@ -170,6 +170,17 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
           return (
             <EnumBadge value={item.cap_tap_huan} config={capBadgeConfig} truncate shape="pill" />
           );
+        case 'ten_don_vi':
+          return (
+            <span
+              className="text-body-sm text-muted-foreground truncate"
+              title={item.ten_don_vi ?? undefined}
+            >
+              {item.cap_tap_huan === 'Cấp xã'
+                ? (item.ten_don_vi ?? txt('common.emptyCell'))
+                : txt('common.emptyCell')}
+            </span>
+          );
         case 'so_dong':
           return (
             <span className="text-body-sm tabular-nums text-muted-foreground">
@@ -205,7 +216,7 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
           return null;
       }
     },
-    [onEdit, onDelete, rowMenuOpenId, capBadgeConfig],
+    [onEdit, onDelete, rowMenuOpenId, capBadgeConfig, txt],
   );
 
   const handleRowClick = useCallback(
@@ -259,6 +270,11 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
               {item.cap_tap_huan ? (
                 <EnumBadge value={item.cap_tap_huan} config={capBadgeConfig} shape="pill" truncate />
               ) : null}
+              {item.cap_tap_huan === 'Cấp xã' && item.ten_don_vi?.trim() ? (
+                <span className="truncate max-w-[12rem]" title={item.ten_don_vi}>
+                  · {item.ten_don_vi}
+                </span>
+              ) : null}
               {item.so_dong != null ? (
                 <span className="tabular-nums shrink-0">· {item.so_dong} người</span>
               ) : null}
@@ -277,7 +293,7 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
         </div>
       </div>
     ),
-    [handleRowClick, onEdit, onDelete, rowMenuOpenId, toggleSelection, capBadgeConfig],
+    [handleRowClick, onEdit, onDelete, rowMenuOpenId, toggleSelection, capBadgeConfig, txt],
   );
 
   return (

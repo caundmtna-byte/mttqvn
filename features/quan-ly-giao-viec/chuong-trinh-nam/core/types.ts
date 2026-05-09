@@ -3,6 +3,10 @@ import type { ChuongTrinhNamTrangThai } from './constants';
 export interface ChuongTrinhNamFilters {
   columnSearch: Record<string, string>;
   trang_thai: string[];
+  /** id `var_phong_ban` hoặc `__none__` khi chưa gán phòng ban */
+  id_phong_ban: string[];
+  /** Năm calendar từ `ngay_bat_dau` (YYYY) */
+  nam_bat_dau: string[];
 }
 
 /** Danh sách — không gồm `mo_ta` (tách payload list / egress). */
