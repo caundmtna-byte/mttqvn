@@ -19,8 +19,8 @@ export interface Option {
  * Creatable: truyền onCreateOption + createOptionLabel thì khi gõ text không trùng option sẽ hiện "Tạo mới: ...", chọn sẽ gọi onCreateOption(label) và thêm id trả về vào value.
  */
 interface MultiSelectProps {
-  options: Option[];
-  value: string[];
+  options?: Option[] | null;
+  value?: string[] | null;
   onChange: (value: string[]) => void;
   placeholder?: string;
   label?: string;
@@ -73,6 +73,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   suppressSearchAutofocus = false,
   omitFilterSections = false,
 }) => {
+  const selectedValues = value ?? [];
+  const safeOptions = options ?? [];
+
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = openControlled !== undefined ? openControlled : internalOpen;
   const setOpen = useCallback((next: boolean) => {
@@ -180,28 +183,29 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   }, [isOpen]);
 
   const handleSelect = (optionValue: string) => {
-    const isSelected = value.includes(optionValue);
+    const isSelected = selectedValues.includes(optionValue);
     if (isSelected) {
-      onChange(value.filter((item) => item !== optionValue));
+      onChange(selectedValues.filter((item) => item !== optionValue));
     } else {
-      onChange([...value, optionValue]);
+      onChange([...selectedValues, optionValue]);
     }
   };
 
   const handleSelectAll = () => {
-    if (value.length === filteredOptions.length) {
+    if (selectedValues.length === filteredOptions.length) {
       onChange([]);
     } else {
       onChange(filteredOptions.map((opt) => opt.value));
     }
   };
 
-  const filteredOptions = options.filter((option) =>
+  const filteredOptions = safeOptions.filter((option) =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const searchTrim = searchTerm.trim();
-  const hasExactMatch = searchTrim && options.some((o) => o.label.toLowerCase() === searchTrim.toLowerCase());
+  const hasExactMatch =
+    searchTrim && safeOptions.some((o) => o.label.toLowerCase() === searchTrim.toLowerCase());
   const showCreateOption = !!onCreateOption && searchTrim.length > 0 && !hasExactMatch;
 
   const handleCreateOption = async () => {
@@ -209,8 +213,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     setIsCreating(true);
     try {
       const newId = await onCreateOption(searchTrim);
-      if (typeof newId === 'string' && !value.includes(newId)) {
-        onChange([...value, newId]);
+      if (typeof newId === 'string' && !selectedValues.includes(newId)) {
+        onChange([...selectedValues, newId]);
       }
       setSearchTerm('');
     } finally {
@@ -218,9 +222,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     }
   };
 
-  const hasValue = value.length > 0;
-  const firstName = value.length > 0 ? options.find(o => o.value === value[0])?.label : null;
-  const extraCount = value.length - 1;
+  const hasValue = selectedValues.length > 0;
+  const firstName =
+    selectedValues.length > 0 ? safeOptions.find((o) => o.value === selectedValues[0])?.label : null;
+  const extraCount = selectedValues.length - 1;
 
   const heightClass = size === 'sm' ? 'h-7' : 'h-8';
 
@@ -278,12 +283,14 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                   <div
                     className={cn(
                       'w-3.5 h-3.5 rounded border flex items-center justify-center mr-2 transition-colors shrink-0',
-                      value.length === filteredOptions.length && filteredOptions.length > 0
+                      selectedValues.length === filteredOptions.length && filteredOptions.length > 0
                         ? 'bg-primary border-primary text-primary-foreground'
                         : 'border-border bg-card',
                     )}
                   >
-                    {value.length === filteredOptions.length && filteredOptions.length > 0 && <Check size={9} />}
+                    {selectedValues.length === filteredOptions.length && filteredOptions.length > 0 && (
+                      <Check size={9} />
+                    )}
                   </div>
                   <span className="truncate">{txt('common.selectAll')}</span>
                 </button>
@@ -305,7 +312,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             ) : (
               <>
                 {filteredOptions.map((option) => {
-                  const isSelected = value.includes(option.value);
+                  const isSelected = selectedValues.includes(option.value);
                   const hasCount = option.count !== undefined;
                   const isZeroCount = hasCount && option.count === 0 && !isSelected;
                   return (
@@ -384,7 +391,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
           {hasValue && (
             <div className="px-2 py-1.5 bg-muted/30 border-t border-border flex justify-between items-center text-xs text-muted-foreground">
               <span className="tabular-nums">
-                {value.length} / {options.length} đã chọn
+                {selectedValues.length} / {safeOptions.length} đã chọn
               </span>
               <button type="button" onClick={() => setOpen(false)} className="text-primary font-medium hover:underline text-xs">
                 Xong
@@ -427,7 +434,13 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             <div className="flex items-center gap-1 min-w-0">
               <span className="truncate text-xs font-medium">{firstName}</span>
               {extraCount > 0 && (
-                <span className="shrink-0 bg-primary/10 text-primary text-xs font-bold px-1.5 py-0.5 rounded-full tabular-nums" title={value.map(v => options.find(o => o.value === v)?.label).filter(Boolean).join(', ')}>
+                <span
+                  className="shrink-0 bg-primary/10 text-primary text-xs font-bold px-1.5 py-0.5 rounded-full tabular-nums"
+                  title={selectedValues
+                    .map((v) => safeOptions.find((o) => o.value === v)?.label)
+                    .filter(Boolean)
+                    .join(', ')}
+                >
                   +{extraCount}
                 </span>
               )}

@@ -19,20 +19,22 @@ export function ColumnHeaderFilter({
   sort,
   setSort,
 }: {
-  options: Option[];
-  value: string[];
+  options?: Option[] | null;
+  value?: string[] | null;
   onChange: (v: string[]) => void;
   ariaLabel: string;
   sortColumnId: string;
   sort: SortState;
   setSort: (column: string | null, direction: 'asc' | 'desc' | null) => void;
 }) {
-  const visible = filterOptionsWithCount(options, value);
+  const safeOptions = options ?? [];
+  const selectedValues = value ?? [];
+  const visible = filterOptionsWithCount(safeOptions, selectedValues);
 
   const isAscActive = sort.column === sortColumnId && sort.direction === 'asc';
   const isDescActive = sort.column === sortColumnId && sort.direction === 'desc';
   const sortActive = isAscActive || isDescActive;
-  const hasFilter = value.length > 0;
+  const hasFilter = selectedValues.length > 0;
   const triggerActive = hasFilter || sortActive;
 
   return (
@@ -41,7 +43,7 @@ export function ColumnHeaderFilter({
       suppressSearchAutofocus
       className="z-[60]"
       options={visible}
-      value={value}
+      value={selectedValues}
       onChange={onChange}
       placeholder={ariaLabel}
       dropdownTopContent={({ close }) => (

@@ -1,22 +1,22 @@
 import type { MttqCanBoFilters } from '../core/types';
+import { normalizeMttqCanBoFilters } from './mttq-can-bo-filters-normalize';
 
-export function countMttqCanBoColumnSearchActive(
-  columnSearch: Record<string, string>,
-  f: MttqCanBoFilters,
-): number {
+export function countMttqCanBoColumnSearchActive(f: MttqCanBoFilters): number {
+  const F = normalizeMttqCanBoFilters(f);
+  const cs = F.columnSearch;
   let n = 0;
-  const skipTt = f.trang_thai_id.length > 0;
-  const skipGt = f.gioi_tinh.length > 0;
-  const skipTo = f.to_chuc_id.length > 0;
-  const skipPb = f.phong_ban_id.length > 0;
-  const skipCv = f.chuc_vu_id.length > 0;
-  const skipCap = f.chuc_vu_cap_quan_ly.length > 0;
-  const skipDv = f.don_vi_id.length > 0;
-  const skipDt = f.dan_toc_id.length > 0;
-  const skipDvy = f.dang_vien.length > 0;
-  const skipTd = f.trinh_do_id.length > 0;
-  const skipLl = f.ly_luan_chinh_tri_id.length > 0;
-  for (const [colId, v] of Object.entries(columnSearch)) {
+  const skipTt = F.trang_thai_id.length > 0;
+  const skipGt = F.gioi_tinh.length > 0;
+  const skipTo = F.to_chuc_id.length > 0;
+  const skipPb = F.phong_ban_id.length > 0;
+  const skipCv = F.chuc_vu_id.length > 0;
+  const skipCap = F.chuc_vu_cap_quan_ly.length > 0;
+  const skipDv = F.don_vi_id.length > 0;
+  const skipDt = F.dan_toc_id.length > 0;
+  const skipDvy = F.dang_vien.length > 0;
+  const skipTd = F.trinh_do_id.length > 0;
+  const skipLl = F.ly_luan_chinh_tri_id.length > 0;
+  for (const [colId, v] of Object.entries(cs)) {
     if (!(v ?? '').trim()) continue;
     if (skipTt && colId === 'ten_trang_thai') continue;
     if (skipGt && colId === 'gioi_tinh') continue;

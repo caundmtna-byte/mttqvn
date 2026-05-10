@@ -11,7 +11,7 @@ export interface FilterGroup {
   label: string;
   icon: React.ElementType;
   options: { label: string; value: string; count?: number }[];
-  value: string[];
+  value?: string[] | null;
   onChange: (val: string[]) => void;
 }
 
@@ -32,28 +32,29 @@ const FilterSection: React.FC<{
   const [expanded, setExpanded] = useState(defaultOpen);
   const [search, setSearch] = useState('');
   const Icon = group.icon;
+  const selectedValues = group.value ?? [];
 
   const filteredBySearch = (group.options ?? []).filter((o) =>
     o.label.toLowerCase().includes(search.toLowerCase()),
   );
-  const filtered = filterOptionsWithCount(filteredBySearch, group.value);
+  const filtered = filterOptionsWithCount(filteredBySearch, selectedValues);
 
-  const allSelected = filtered.length > 0 && filtered.every((o) => group.value.includes(o.value));
+  const allSelected = filtered.length > 0 && filtered.every((o) => selectedValues.includes(o.value));
 
   const toggle = (val: string) => {
-    if (group.value.includes(val)) {
-      group.onChange(group.value.filter((v) => v !== val));
+    if (selectedValues.includes(val)) {
+      group.onChange(selectedValues.filter((v) => v !== val));
     } else {
-      group.onChange([...group.value, val]);
+      group.onChange([...selectedValues, val]);
     }
   };
 
   const toggleAll = () => {
     if (allSelected) {
       const filteredValues = new Set(filtered.map((o) => o.value));
-      group.onChange(group.value.filter((v) => !filteredValues.has(v)));
+      group.onChange(selectedValues.filter((v) => !filteredValues.has(v)));
     } else {
-      const merged = new Set([...group.value, ...filtered.map((o) => o.value)]);
+      const merged = new Set([...selectedValues, ...filtered.map((o) => o.value)]);
       group.onChange(Array.from(merged));
     }
   };
@@ -67,11 +68,11 @@ const FilterSection: React.FC<{
         className="w-full flex items-center justify-between px-4 py-3 active:bg-muted/40 transition-colors"
       >
         <div className="flex items-center gap-2.5">
-          <Icon size={16} className={cn(group.value.length > 0 ? 'text-primary' : 'text-muted-foreground')} />
+          <Icon size={16} className={cn(selectedValues.length > 0 ? 'text-primary' : 'text-muted-foreground')} />
           <span className="text-sm font-semibold text-foreground">{group.label}</span>
-          {group.value.length > 0 && (
+          {selectedValues.length > 0 && (
             <span className="bg-primary/15 text-primary text-caption font-bold px-1.5 py-0.5 rounded-full tabular-nums">
-              {group.value.length}
+              {selectedValues.length}
             </span>
           )}
         </div>
@@ -142,7 +143,7 @@ const FilterSection: React.FC<{
                   <div className="py-3 text-center text-sm text-muted-foreground">{txt('shared.mobileFilter.notFound')}</div>
                 ) : (
                   filtered.map((option) => {
-                    const selected = group.value.includes(option.value);
+                    const selected = selectedValues.includes(option.value);
                     const hasCount = option.count !== undefined;
                     const isZeroCount = hasCount && option.count === 0 && !selected;
                     return (
@@ -199,7 +200,7 @@ const MobileFilterSheet: React.FC<MobileFilterSheetProps> = ({ open, onClose, gr
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Tổng số filter đang active
-  const totalActive = groups.reduce((sum, g) => sum + g.value.length, 0);
+  const totalActive = groups.reduce((sum, g) => sum + (g.value ?? []).length, 0);
 
   // Body scroll lock
   useEffect(() => {
@@ -278,7 +279,7 @@ const MobileFilterSheet: React.FC<MobileFilterSheetProps> = ({ open, onClose, gr
             {/* Body – cuộn được */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {groups.map((group) => (
-                <FilterSection key={group.key} group={group} defaultOpen={group.value.length > 0} />
+                <FilterSection key={group.key} group={group} defaultOpen={(group.value ?? []).length > 0} />
               ))}
             </div>
 

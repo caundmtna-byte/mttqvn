@@ -24,6 +24,7 @@ import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { useMttqCanBoStore } from '../store/useMttqCanBoStore';
 import { countMttqCanBoColumnSearchActive } from '../utils/column-search-count';
+import { normalizeMttqCanBoFilters } from '../utils/mttq-can-bo-filters-normalize';
 
 interface ChipOption {
   label: string;
@@ -83,20 +84,21 @@ const MttqCanBoToolbar: React.FC<Props> = ({
   const selectedCount = selectedIds.size;
 
   const activeFilterCount = useMemo(() => {
+    const F = normalizeMttqCanBoFilters(filters);
     const chipN =
-      (filters.trang_thai_id.length > 0 ? 1 : 0) +
-      (filters.gioi_tinh.length > 0 ? 1 : 0) +
-      (filters.to_chuc_id.length > 0 ? 1 : 0) +
-      (filters.phong_ban_id.length > 0 ? 1 : 0) +
-      (filters.chuc_vu_id.length > 0 ? 1 : 0) +
-      (filters.chuc_vu_cap_quan_ly.length > 0 ? 1 : 0) +
-      (filters.don_vi_id.length > 0 ? 1 : 0) +
-      (filters.dan_toc_id.length > 0 ? 1 : 0) +
-      (filters.trinh_do_id.length > 0 ? 1 : 0) +
-      (filters.ly_luan_chinh_tri_id.length > 0 ? 1 : 0) +
-      (filters.dang_vien.length > 0 ? 1 : 0);
+      (F.trang_thai_id.length > 0 ? 1 : 0) +
+      (F.gioi_tinh.length > 0 ? 1 : 0) +
+      (F.to_chuc_id.length > 0 ? 1 : 0) +
+      (F.phong_ban_id.length > 0 ? 1 : 0) +
+      (F.chuc_vu_id.length > 0 ? 1 : 0) +
+      (F.chuc_vu_cap_quan_ly.length > 0 ? 1 : 0) +
+      (F.don_vi_id.length > 0 ? 1 : 0) +
+      (F.dan_toc_id.length > 0 ? 1 : 0) +
+      (F.trinh_do_id.length > 0 ? 1 : 0) +
+      (F.ly_luan_chinh_tri_id.length > 0 ? 1 : 0) +
+      (F.dang_vien.length > 0 ? 1 : 0);
     return (
-      (searchTerm ? 1 : 0) + countMttqCanBoColumnSearchActive(filters.columnSearch, filters) + chipN
+      (searchTerm ? 1 : 0) + countMttqCanBoColumnSearchActive(F) + chipN
     );
   }, [searchTerm, filters]);
 

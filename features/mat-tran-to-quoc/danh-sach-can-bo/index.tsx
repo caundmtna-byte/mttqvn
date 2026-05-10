@@ -63,6 +63,11 @@ const DrawerLazyFallback: React.FC = () => (
   </div>
 );
 
+/** `useMttqCanBoFilterCounts` luôn trả map; phòng HMR / partial object. */
+function mttqCanBoChipCount(map: Record<string, number> | undefined | null, key: string): number {
+  return (map ?? {})[key] ?? 0;
+}
+
 type FormOrigin = 'list' | 'detail';
 
 const DanhSachCanBoPage: React.FC = () => {
@@ -181,7 +186,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: trangThaiCounts[value] ?? 0,
+        count: mttqCanBoChipCount(trangThaiCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, trangThaiCounts]);
@@ -192,7 +197,7 @@ const DanhSachCanBoPage: React.FC = () => {
     return values.map((value) => ({
       value,
       label: value,
-      count: gioiTinhCounts[value] ?? 0,
+      count: mttqCanBoChipCount(gioiTinhCounts, value),
     }));
   }, [rowsEnriched, gioiTinhCounts]);
 
@@ -207,7 +212,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: toChucCounts[value] ?? 0,
+        count: mttqCanBoChipCount(toChucCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, toChucCounts]);
@@ -226,7 +231,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: phongBanCounts[value] ?? 0,
+        count: mttqCanBoChipCount(phongBanCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, phongBanCounts]);
@@ -242,7 +247,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: chucVuCounts[value] ?? 0,
+        count: mttqCanBoChipCount(chucVuCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, chucVuCounts]);
@@ -255,7 +260,7 @@ const DanhSachCanBoPage: React.FC = () => {
           value === CHIP_FILTER_NULL
             ? txt('matTranOfficerStats.capQuanLyChuaGan')
             : (value as 'Tỉnh' | 'Xã phường'),
-        count: capQuanLyCounts[value] ?? 0,
+        count: mttqCanBoChipCount(capQuanLyCounts, value),
       })),
     [capQuanLyCounts],
   );
@@ -272,7 +277,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: donViCounts[value] ?? 0,
+        count: mttqCanBoChipCount(donViCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, donViCounts]);
@@ -288,7 +293,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: danTocCounts[value] ?? 0,
+        count: mttqCanBoChipCount(danTocCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, danTocCounts]);
@@ -304,7 +309,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: trinhDoCounts[value] ?? 0,
+        count: mttqCanBoChipCount(trinhDoCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, trinhDoCounts]);
@@ -320,7 +325,7 @@ const DanhSachCanBoPage: React.FC = () => {
       .map(([value, label]) => ({
         value,
         label,
-        count: lyLuanCounts[value] ?? 0,
+        count: mttqCanBoChipCount(lyLuanCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [rowsEnriched, lyLuanCounts]);
@@ -330,12 +335,12 @@ const DanhSachCanBoPage: React.FC = () => {
       {
         value: CHIP_DANG_VIEN_YES,
         label: txt('matTranCanBo.detail.dangVienYes'),
-        count: dangVienCounts[CHIP_DANG_VIEN_YES] ?? 0,
+        count: mttqCanBoChipCount(dangVienCounts, CHIP_DANG_VIEN_YES),
       },
       {
         value: CHIP_DANG_VIEN_NO,
         label: txt('matTranCanBo.detail.dangVienNo'),
-        count: dangVienCounts[CHIP_DANG_VIEN_NO] ?? 0,
+        count: mttqCanBoChipCount(dangVienCounts, CHIP_DANG_VIEN_NO),
       },
     ],
     [dangVienCounts],

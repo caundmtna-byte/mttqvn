@@ -1,4 +1,5 @@
 import type { MttqCanBoFilters, MttqCanBoRow } from '../core/types';
+import { normalizeMttqCanBoFilters } from './mttq-can-bo-filters-normalize';
 
 export function mttqCanBoMatchesColumnSearch(
   item: MttqCanBoRow,
@@ -17,7 +18,7 @@ export function mttqCanBoMatchesColumnSearch(
     dang_vien,
     trinh_do_id,
     ly_luan_chinh_tri_id,
-  } = f;
+  } = normalizeMttqCanBoFilters(f);
   for (const [colId, term] of Object.entries(columnSearch)) {
     const t = term.trim();
     if (!t) continue;

@@ -9,11 +9,12 @@ import type { MttqCanBoFilters, MttqCanBoRow } from '../core/types';
 import { MTTQ_CAN_BO_SEARCHABLE_KEYS } from './search-keys';
 import { mttqCanBoMatchesColumnSearch } from './column-search';
 import { mttqCanBoCapQuanLyChipKeyFromRow } from './cap-quan-ly-chip-key';
+import { normalizeMttqCanBoFilters } from './mttq-can-bo-filters-normalize';
 
 export type MttqCanBoChipFilterKey = Exclude<keyof MttqCanBoFilters, 'columnSearch'>;
 
 export function omitChipFilter(f: MttqCanBoFilters, key: MttqCanBoChipFilterKey): MttqCanBoFilters {
-  return { ...f, [key]: [] };
+  return { ...normalizeMttqCanBoFilters(f), [key]: [] };
 }
 
 /** Khớp ô tìm tổng + columnSearch + toàn bộ chip (dùng cho list và đếm exclude-self). */
@@ -27,40 +28,41 @@ export function mttqCanBoMatchesAllFilters(
   ) {
     return false;
   }
-  if (!mttqCanBoMatchesColumnSearch(item, f)) return false;
+  const F = normalizeMttqCanBoFilters(f);
+  if (!mttqCanBoMatchesColumnSearch(item, F)) return false;
 
   const ttKey = item.trang_thai_id ?? CHIP_TRANG_THAI_NULL;
-  if (f.trang_thai_id.length > 0 && !f.trang_thai_id.includes(ttKey)) return false;
+  if (F.trang_thai_id.length > 0 && !F.trang_thai_id.includes(ttKey)) return false;
 
-  if (f.gioi_tinh.length > 0 && !f.gioi_tinh.includes(item.gioi_tinh)) return false;
+  if (F.gioi_tinh.length > 0 && !F.gioi_tinh.includes(item.gioi_tinh)) return false;
 
   const toKey = item.to_chuc_id ?? CHIP_FILTER_NULL;
-  if (f.to_chuc_id.length > 0 && !f.to_chuc_id.includes(toKey)) return false;
+  if (F.to_chuc_id.length > 0 && !F.to_chuc_id.includes(toKey)) return false;
 
   const pbKey = item.phong_ban_id ?? CHIP_FILTER_NULL;
-  if (f.phong_ban_id.length > 0 && !f.phong_ban_id.includes(pbKey)) return false;
+  if (F.phong_ban_id.length > 0 && !F.phong_ban_id.includes(pbKey)) return false;
 
   const cvKey = item.chuc_vu_id ?? CHIP_FILTER_NULL;
-  if (f.chuc_vu_id.length > 0 && !f.chuc_vu_id.includes(cvKey)) return false;
+  if (F.chuc_vu_id.length > 0 && !F.chuc_vu_id.includes(cvKey)) return false;
 
   const capKey = mttqCanBoCapQuanLyChipKeyFromRow(item);
-  if (f.chuc_vu_cap_quan_ly.length > 0 && !f.chuc_vu_cap_quan_ly.includes(capKey)) return false;
+  if (F.chuc_vu_cap_quan_ly.length > 0 && !F.chuc_vu_cap_quan_ly.includes(capKey)) return false;
 
   const xaKey = item.don_vi_id ?? CHIP_FILTER_NULL;
-  if (f.don_vi_id.length > 0 && !f.don_vi_id.includes(xaKey)) return false;
+  if (F.don_vi_id.length > 0 && !F.don_vi_id.includes(xaKey)) return false;
 
   const dtKey = item.dan_toc_id ?? CHIP_FILTER_NULL;
-  if (f.dan_toc_id.length > 0 && !f.dan_toc_id.includes(dtKey)) return false;
+  if (F.dan_toc_id.length > 0 && !F.dan_toc_id.includes(dtKey)) return false;
 
   const tdKey = item.trinh_do_id ?? CHIP_FILTER_NULL;
-  if (f.trinh_do_id.length > 0 && !f.trinh_do_id.includes(tdKey)) return false;
+  if (F.trinh_do_id.length > 0 && !F.trinh_do_id.includes(tdKey)) return false;
 
   const llKey = item.ly_luan_chinh_tri_id ?? CHIP_FILTER_NULL;
-  if (f.ly_luan_chinh_tri_id.length > 0 && !f.ly_luan_chinh_tri_id.includes(llKey)) return false;
+  if (F.ly_luan_chinh_tri_id.length > 0 && !F.ly_luan_chinh_tri_id.includes(llKey)) return false;
 
-  if (f.dang_vien.length > 0) {
-    const wantYes = f.dang_vien.includes(CHIP_DANG_VIEN_YES);
-    const wantNo = f.dang_vien.includes(CHIP_DANG_VIEN_NO);
+  if (F.dang_vien.length > 0) {
+    const wantYes = F.dang_vien.includes(CHIP_DANG_VIEN_YES);
+    const wantNo = F.dang_vien.includes(CHIP_DANG_VIEN_NO);
     if (wantYes !== wantNo) {
       if (wantYes && !item.dang_vien) return false;
       if (wantNo && item.dang_vien) return false;

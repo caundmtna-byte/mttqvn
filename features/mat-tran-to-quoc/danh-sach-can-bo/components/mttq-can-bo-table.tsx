@@ -22,6 +22,7 @@ import {
   ColumnHeaderSearch,
 } from '@/components/shared/column-header';
 import type { MttqCanBoToolbarChipOptions } from './mttq-can-bo-toolbar';
+import { normalizeMttqCanBoFilters } from '../utils/mttq-can-bo-filters-normalize';
 
 interface Props {
   data: MttqCanBoRow[];
@@ -64,7 +65,8 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
 
   const renderColumnHeaderAccessory = useCallback(
     (col: ColumnConfig) => {
-      const cs = filters.columnSearch;
+      const f = normalizeMttqCanBoFilters(filters);
+      const cs = f.columnSearch;
       const colSearchActive = Boolean(cs[col.id]?.trim());
       const columnSearchEl = (
         <ColumnHeaderSearch
@@ -85,7 +87,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.trangThai}
-              value={filters.trang_thai_id}
+              value={f.trang_thai_id}
               onChange={(v) => setFilter('trang_thai_id', v)}
               ariaLabel={txt('matTranCanBo.store.trangThaiCol')}
               sortColumnId="ten_trang_thai"
@@ -97,7 +99,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.gioiTinh}
-              value={filters.gioi_tinh}
+              value={f.gioi_tinh}
               onChange={(v) => setFilter('gioi_tinh', v)}
               ariaLabel={txt('matTranCanBo.store.gioiTinhCol')}
               sortColumnId="gioi_tinh"
@@ -109,7 +111,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.toChuc}
-              value={filters.to_chuc_id}
+              value={f.to_chuc_id}
               onChange={(v) => setFilter('to_chuc_id', v)}
               ariaLabel={txt('matTranCanBo.store.toChucCol')}
               sortColumnId="ten_to_chuc"
@@ -121,7 +123,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.phongBan}
-              value={filters.phong_ban_id}
+              value={f.phong_ban_id}
               onChange={(v) => setFilter('phong_ban_id', v)}
               ariaLabel={txt('matTranCanBo.store.phongBanCol')}
               sortColumnId="ten_phong_ban"
@@ -133,7 +135,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.chucVu}
-              value={filters.chuc_vu_id}
+              value={f.chuc_vu_id}
               onChange={(v) => setFilter('chuc_vu_id', v)}
               ariaLabel={txt('matTranCanBo.store.chucVuCol')}
               sortColumnId="ten_chuc_vu"
@@ -145,7 +147,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.capQuanLy}
-              value={filters.chuc_vu_cap_quan_ly}
+              value={f.chuc_vu_cap_quan_ly}
               onChange={(v) => setFilter('chuc_vu_cap_quan_ly', v)}
               ariaLabel={txt('matTranCanBo.store.capQuanLyCol')}
               sortColumnId="chuc_vu_cap_quan_ly"
@@ -157,7 +159,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.donVi}
-              value={filters.don_vi_id}
+              value={f.don_vi_id}
               onChange={(v) => setFilter('don_vi_id', v)}
               ariaLabel={txt('matTranCanBo.store.donViCol')}
               sortColumnId="ten_don_vi"
@@ -169,7 +171,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.danToc}
-              value={filters.dan_toc_id}
+              value={f.dan_toc_id}
               onChange={(v) => setFilter('dan_toc_id', v)}
               ariaLabel={txt('matTranCanBo.form.danToc')}
               sortColumnId="ten_dan_toc"
@@ -181,7 +183,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.trinhDo}
-              value={filters.trinh_do_id}
+              value={f.trinh_do_id}
               onChange={(v) => setFilter('trinh_do_id', v)}
               ariaLabel={txt('matTranCanBo.form.trinhDo')}
               sortColumnId="ten_trinh_do"
@@ -193,7 +195,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.lyLuan}
-              value={filters.ly_luan_chinh_tri_id}
+              value={f.ly_luan_chinh_tri_id}
               onChange={(v) => setFilter('ly_luan_chinh_tri_id', v)}
               ariaLabel={txt('matTranCanBo.form.lyLuanChinhTri')}
               sortColumnId="ten_ly_luan_chinh_tri"
@@ -205,7 +207,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return (
             <ColumnHeaderFilter
               options={chipOptions.dangVien}
-              value={filters.dang_vien}
+              value={f.dang_vien}
               onChange={(v) => setFilter('dang_vien', v)}
               ariaLabel={txt('matTranCanBo.store.dangVienCol')}
               sortColumnId="dang_vien"
