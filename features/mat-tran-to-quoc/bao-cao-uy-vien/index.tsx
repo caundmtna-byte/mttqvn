@@ -148,7 +148,7 @@ const BaoCaoUyVienPage: React.FC = () => {
     () =>
       rowsInScope.map((r) => ({
         ...r,
-        tuoi: computeAgeFromBirthDate(r.ngay_sinh),
+        tuoi: computeAgeFromBirthDate(r.ngay_sinh) ?? undefined,
       })),
     [rowsInScope],
   );

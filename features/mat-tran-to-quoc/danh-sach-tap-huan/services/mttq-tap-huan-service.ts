@@ -299,14 +299,22 @@ function normalizeFull(x: MttqLopTapHuan): MttqLopTapHuan {
 
 function headerPayload(data: MttqTapHuanFormValues) {
   const cap = String(data.cap_tap_huan ?? '').trim() as MttqTapHuanCap;
-  const donViFk =
-    cap === 'Cấp xã' && data.don_vi_id.trim() !== '' ? Number(data.don_vi_id.trim()) : null;
+  const donViId =
+    cap === 'Cấp xã' && data.don_vi_id.trim() !== '' ? data.don_vi_id.trim() : null;
   return {
     ten_lop_tap_huan: data.ten_lop_tap_huan.trim(),
     nam_tap_huan: data.nam_tap_huan,
     cap_tap_huan: cap,
-    don_vi_id: donViFk,
+    don_vi_id: donViId,
     ghi_chu: data.ghi_chu?.trim() ?? null,
+  };
+}
+
+function headerPayloadForDb(data: MttqTapHuanFormValues): Record<string, unknown> {
+  const h = headerPayload(data);
+  return {
+    ...h,
+    don_vi_id: h.don_vi_id != null ? Number(h.don_vi_id) : null,
   };
 }
 
@@ -494,6 +502,7 @@ export async function getMttqLopTapHuanById(id: string): Promise<MttqLopTapHuan 
       });
     return normalizeFull({
       ...p,
+      don_vi_id: p.don_vi_id ?? null,
       chi_tiet: chi,
     });
   }
@@ -539,7 +548,7 @@ export async function createMttqLopTapHuan(
   // Narrow returning — `getById` ngay sau đó nạp full row, không cần payload rộng.
   const inserted = await repo.insert(
     {
-      ...headerPayload(data),
+      ...headerPayloadForDb(data),
       id_nguoi_tao: trimmed,
     } as unknown as Omit<ParentRepoRow, 'id'>,
     { returningSelect: 'id,tg_cap_nhat' },
@@ -569,7 +578,7 @@ export async function updateMttqLopTapHuan(
     return full;
   }
 
-  await repo.update(id, headerPayload(data) as unknown as Partial<ParentRepoRow>, {
+  await repo.update(id, headerPayloadForDb(data) as unknown as Partial<ParentRepoRow>, {
     returningSelect: 'id,tg_cap_nhat',
   });
   await syncChildrenSupabase(id, data.chi_tiet);

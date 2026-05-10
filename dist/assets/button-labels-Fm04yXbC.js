@@ -1,0 +1,1 @@
+import{t as o}from"./index-BsVEzqzA.js";const m=()=>o("common.cancel"),s=()=>o("common.close"),n=()=>o("common.save"),t=()=>o("common.create"),e=()=>o("common.edit"),a=()=>o("common.delete"),E=()=>o("common.add"),T=()=>o("common.delete"),N=()=>o("common.deleteAll"),_=()=>o("common.confirm");export{E as B,N as C,T as a,_ as b,m as c,n as d,t as e,s as f,e as g,a as h};

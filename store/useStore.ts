@@ -111,7 +111,7 @@ export interface CompanyInfo {
 /** Mặc định MTTQVN — đồng bộ với index.html / PWA; chỉnh trong Hệ thống → Thông tin tổ chức. */
 export const DEFAULT_COMPANY_INFO: CompanyInfo = {
   appName: 'MTTQVN',
-  appDescription: 'Trang thông tin điện tử',
+  appDescription: 'Hệ thống nền tảng số',
   appLogo: 'https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png',
   companyName: 'Mặt trận Tổ quốc Việt Nam',
   address: 'Khối 7, đường Hùng Vương, TP. Vinh, tỉnh Nghệ An',

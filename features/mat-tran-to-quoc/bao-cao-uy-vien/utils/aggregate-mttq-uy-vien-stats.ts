@@ -235,7 +235,9 @@ export function buildUyVienGioiTinhBarData(filtered: MttqUyVienUyBan[]): { label
   const map = new Map<string, number>();
   for (const g of order) map.set(g, 0);
   for (const r of filtered) {
-    const g = order.includes(r.gioi_tinh as (typeof order)[number]) ? r.gioi_tinh : 'Khác';
+    const raw = r.gioi_tinh;
+    const g: (typeof order)[number] =
+      raw != null && order.includes(raw as (typeof order)[number]) ? (raw as (typeof order)[number]) : 'Khác';
     map.set(g, (map.get(g) ?? 0) + 1);
   }
   return order.map((label) => ({ label, count: map.get(label) ?? 0 }));

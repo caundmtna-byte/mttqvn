@@ -1,6 +1,6 @@
 {
   "name": "MTTQVN",
-  "description": "Trang thông tin điện tử",
+  "description": "Hệ thống nền tảng số",
   "requestFramePermissions": [
     "microphone"
   ]

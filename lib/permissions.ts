@@ -32,6 +32,12 @@ export type AppResource =
   | 'matTranSession'
   | 'matTranCommitteeMembers'
   | 'matTranCommitteeMemberStats'
+  | 'matTranReliefCampaign'
+  | 'matTranReliefGoods'
+  | 'matTranReliefStockTransactions'
+  | 'matTranReliefInventory'
+  | 'matTranReliefWarehouseList'
+  | 'matTranReliefSupportUnits'
   | 'annualPrograms'
   | 'tasks'
   | 'taskReports'
@@ -67,6 +73,12 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranSession: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop',
   matTranCommitteeMembers: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
   matTranCommitteeMemberStats: 'mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien',
+  matTranReliefCampaign: 'mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro',
+  matTranReliefGoods: 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa',
+  matTranReliefStockTransactions: 'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho',
+  matTranReliefInventory: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho',
+  matTranReliefWarehouseList: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho',
+  matTranReliefSupportUnits: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro',
   annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam',
   tasks: 'quan-ly-giao-viec/cong-viec',
   taskReports: 'quan-ly-giao-viec/bao-cao-cong-viec',

@@ -54,7 +54,7 @@ export default defineConfig(() => {
           manifest: {
             name: 'MTTQVN',
             short_name: 'MTTQVN',
-            description: 'Trang thông tin điện tử',
+            description: 'Hệ thống nền tảng số',
             theme_color: '#ffffff',
             background_color: '#ffffff',
             display: 'standalone',

@@ -15,6 +15,7 @@ const NotificationPage = lazy(() => import('./pages/NotificationPage'));
 const SystemDashboard = lazy(() => import('./pages/dashboards/SystemDashboard'));
 const QuanLyVietBaiDashboard = lazy(() => import('./pages/dashboards/QuanLyVietBaiDashboard'));
 const TrangThongTinKhacDashboard = lazy(() => import('./pages/dashboards/TrangThongTinKhacDashboard'));
+const MatTranToQuocModulePlaceholder = lazy(() => import('./pages/mat-tran-to-quoc/MatTranToQuocModulePlaceholder'));
 const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet-lap-bai-viet/index'));
 const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
 const HoaHongVietBaiPage = lazy(() => import('./features/quan-ly-viet-bai/hoa-hong-viet-bai/index'));
@@ -96,6 +97,12 @@ const App = () => {
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<KyHopPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<UyVienUyBanPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien" element={<BaoCaoUyVienPage />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/ton-kho" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro" element={<MatTranToQuocModulePlaceholder />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo" element={<BaoCaoCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />

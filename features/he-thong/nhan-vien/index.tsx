@@ -17,7 +17,7 @@ import { useAuthStore } from '../../../store/useStore';
 import { useCan } from '../../../hooks/use-can';
 
 import ToggleSwitch from '../../../components/ui/ToggleSwitch';
-import { queryKeys } from '@/lib/query-keys';
+import { EMPLOYEES_LIST_QUERY_PARAMS, queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { getDepartments } from '../phong-ban/services/phong-ban-service';
 import { getPositions } from '../chuc-vu/services/chuc-vu-service';
@@ -79,6 +79,13 @@ const DrawerLazyFallback: React.FC = () => (
 );
 
 type FormOrigin = 'list' | 'detail';
+
+const employeesListQueryKey = queryKeys.employees.list({
+  limit: EMPLOYEES_LIST_QUERY_PARAMS.limit,
+  offset: EMPLOYEES_LIST_QUERY_PARAMS.offset,
+  orderBy: EMPLOYEES_LIST_QUERY_PARAMS.orderBy,
+  ascending: EMPLOYEES_LIST_QUERY_PARAMS.ascending,
+});
 
 const NHAN_VIEN_SEARCHABLE_KEYS: string[] = [
   'ten_tai_khoan',
@@ -157,12 +164,17 @@ const EmployeePage: React.FC = () => {
     return () => resetState();
   }, [resetState]);
 
-  // Đồng bộ viewing với list sau refetch (action từ detail hoặc nơi khác)
+  // Đồng bộ viewing với dữ liệu server (full list); đóng drawer nếu bản ghi không còn (vd. đã xóa ngoài app).
   useEffect(() => {
     if (!viewingEmp) return;
-    const fresh = employeesDisplay.find((e) => e.id === viewingEmp.id);
-    if (fresh && fresh !== viewingEmp) queueMicrotask(() => setViewingEmp(fresh));
-  }, [employeesDisplay, viewingEmp]);
+    const row = employees.find((e) => e.id === viewingEmp.id);
+    if (!row) {
+      queueMicrotask(() => setViewingEmp(null));
+      return;
+    }
+    const merged = mergeEmployeeChucVuFromPositions(row, positions);
+    if (merged !== viewingEmp) queueMicrotask(() => setViewingEmp(merged));
+  }, [employees, positions, viewingEmp]);
 
   const filterFn = useCallback(
     (emp: Employee, term: string, f: typeof filters) => {
@@ -216,9 +228,17 @@ const EmployeePage: React.FC = () => {
             queryFn: () => getEmployeeById(item.id),
             ...defaultServerQueryOptions,
           });
+          if (full == null) {
+            queryClient.removeQueries({ queryKey: queryKeys.employees.detail(item.id) });
+            queryClient.setQueryData<Employee[]>(employeesListQueryKey, (old) =>
+              old?.filter((e) => e.id !== item.id),
+            );
+            toast.error(txt('employee.service.notFound'));
+            return;
+          }
           startTransition(() => {
             setFormOrigin(origin);
-            setEditingEmp(mergeEmployeeChucVuFromPositions((full ?? item) as Employee, positions));
+            setEditingEmp(mergeEmployeeChucVuFromPositions(full, positions));
             setShowForm(true);
           });
         } catch {
@@ -233,18 +253,31 @@ const EmployeePage: React.FC = () => {
     [queryClient, positions],
   );
 
-  /** Detail drawer: prefetch full row (có `hinh_anh`) qua cache để tránh ship lặp lại trong list. */
+  /** Detail drawer: luôn refetch full row (có `hinh_anh`) khi mở — invalidate trước để không dùng cache còn “fresh” nhưng đã lệch DB. */
   const handleView = useCallback(
     (item: Employee) => {
       void (async () => {
         try {
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.employees.detail(item.id),
+            exact: true,
+            refetchType: 'none',
+          });
           const full = await queryClient.fetchQuery({
             queryKey: queryKeys.employees.detail(item.id),
             queryFn: () => getEmployeeById(item.id),
             ...defaultServerQueryOptions,
           });
+          if (full == null) {
+            queryClient.removeQueries({ queryKey: queryKeys.employees.detail(item.id) });
+            queryClient.setQueryData<Employee[]>(employeesListQueryKey, (old) =>
+              old?.filter((e) => e.id !== item.id),
+            );
+            toast.error(txt('employee.service.notFound'));
+            return;
+          }
           startTransition(() =>
-            setViewingEmp(mergeEmployeeChucVuFromPositions((full ?? item) as Employee, positions)),
+            setViewingEmp(mergeEmployeeChucVuFromPositions(full, positions)),
           );
         } catch {
           startTransition(() => setViewingEmp(mergeEmployeeChucVuFromPositions(item, positions)));

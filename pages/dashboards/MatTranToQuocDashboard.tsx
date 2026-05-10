@@ -11,6 +11,12 @@ import {
   BarChart3,
   Settings,
   PieChart,
+  HandHeart,
+  Package,
+  ArrowLeftRight,
+  Warehouse,
+  PackageCheck,
+  Building2,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -105,6 +111,53 @@ const MatTranToQuocDashboard: React.FC = () => {
             description: txt('page.matTranDashboard.setupSettingsDesc'),
             icon: Settings,
             color: 'bg-emerald-600',
+          },
+        ],
+      },
+      {
+        groupTitle: txt('page.matTranDashboard.groupReliefWarehouse'),
+        items: [
+          {
+            path: '/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro',
+            title: txt('page.matTranDashboard.reliefCampaign'),
+            description: txt('page.matTranDashboard.reliefCampaignDesc'),
+            icon: HandHeart,
+            color: 'bg-rose-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/kho-cuu-tro/hang-hoa',
+            title: txt('page.matTranDashboard.reliefGoods'),
+            description: txt('page.matTranDashboard.reliefGoodsDesc'),
+            icon: Package,
+            color: 'bg-orange-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho',
+            title: txt('page.matTranDashboard.reliefStockTransactions'),
+            description: txt('page.matTranDashboard.reliefStockTransactionsDesc'),
+            icon: ArrowLeftRight,
+            color: 'bg-blue-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/kho-cuu-tro/ton-kho',
+            title: txt('page.matTranDashboard.reliefInventory'),
+            description: txt('page.matTranDashboard.reliefInventoryDesc'),
+            icon: PackageCheck,
+            color: 'bg-emerald-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho',
+            title: txt('page.matTranDashboard.reliefWarehouseList'),
+            description: txt('page.matTranDashboard.reliefWarehouseListDesc'),
+            icon: Warehouse,
+            color: 'bg-slate-500',
+          },
+          {
+            path: '/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro',
+            title: txt('page.matTranDashboard.reliefSupportUnits'),
+            description: txt('page.matTranDashboard.reliefSupportUnitsDesc'),
+            icon: Building2,
+            color: 'bg-indigo-500',
           },
         ],
       },

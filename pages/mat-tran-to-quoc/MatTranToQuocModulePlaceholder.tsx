@@ -10,6 +10,12 @@ const PATH_TO_TITLE_KEY: Record<string, string> = {
   '/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky': 'page.matTranDashboard.term',
   '/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop': 'page.matTranDashboard.session',
   '/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien': 'page.matTranDashboard.committeeMembers',
+  '/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro': 'page.matTranDashboard.reliefCampaign',
+  '/mat-tran-to-quoc/kho-cuu-tro/hang-hoa': 'page.matTranDashboard.reliefGoods',
+  '/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho': 'page.matTranDashboard.reliefStockTransactions',
+  '/mat-tran-to-quoc/kho-cuu-tro/ton-kho': 'page.matTranDashboard.reliefInventory',
+  '/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho': 'page.matTranDashboard.reliefWarehouseList',
+  '/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro': 'page.matTranDashboard.reliefSupportUnits',
 };
 
 const MatTranToQuocModulePlaceholder: React.FC = () => {

@@ -13,7 +13,7 @@ export const company = {
   appNamePlaceholder: 'Ví dụ: MTTQVN',
   appNameHint: 'Hiển thị trên thanh bên và tiêu đề trình duyệt.',
   appDescription: 'Mô tả ngắn',
-  appDescPlaceholder: 'Ví dụ: Trang thông tin điện tử',
+  appDescPlaceholder: 'Ví dụ: Hệ thống nền tảng số',
   appDescHint: 'Hiển thị dưới tên ứng dụng trên thanh bên (tối đa 30 ký tự).',
   legalSection: 'Định danh tổ chức & liên hệ',
   companyName: 'Tên tổ chức',

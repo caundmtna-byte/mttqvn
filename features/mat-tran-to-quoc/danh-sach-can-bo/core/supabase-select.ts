@@ -85,13 +85,11 @@ const STATS_COLS = [
   'tg_tao',
 ].join(',');
 
-const EMBED_STATS = [
-  MTTQ_CAN_BO_EMBED_LIST,
-  'dan_toc:mttq_thiet_lap!mttq_can_bo_dan_toc_id_fkey(ten,loai)',
-  'trinh_do:mttq_thiet_lap!mttq_can_bo_trinh_do_id_fkey(ten,loai)',
-  'ly_luan_chinh_tri:mttq_thiet_lap!mttq_can_bo_ly_luan_chinh_tri_id_fkey(ten,loai)',
-].join(',');
-
-export const MTTQ_CAN_BO_SELECT_STATS = `${STATS_COLS},${EMBED_STATS}`;
+/**
+ * Báo cáo dùng đủ embed của LIST (đã gồm dan_toc / trinh_do / ly_luan_chinh_tri qua FK).
+ * KHÔNG khai báo lại 3 embed này — duplicate cùng FK + cùng alias khiến PostgREST
+ * sinh JOIN lặp, Postgres throw `table name "mttq_can_bo_dan_toc_1" specified more than once`.
+ */
+export const MTTQ_CAN_BO_SELECT_STATS = `${STATS_COLS},${MTTQ_CAN_BO_EMBED_LIST}`;
 export const MTTQ_CAN_BO_SELECT_FULL = `${BASE_COLS},${MTTQ_CAN_BO_EMBED_FULL}`;
 export const MTTQ_CAN_BO_RETURNING_FULL = MTTQ_CAN_BO_SELECT_FULL;

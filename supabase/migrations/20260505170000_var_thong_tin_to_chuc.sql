@@ -47,7 +47,7 @@ INSERT INTO public.var_thong_tin_to_chuc (
 VALUES (
   1,
   'MTTQVN',
-  'Trang thông tin điện tử',
+  'Hệ thống nền tảng số',
   'https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png',
   'Mặt trận Tổ quốc Việt Nam',
   'Khối 7, đường Hùng Vương, TP. Vinh, tỉnh Nghệ An',

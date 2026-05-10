@@ -4,7 +4,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import './index.css';
 import App from './App';
-import { QueryCache, QueryClient } from '@tanstack/react-query';
+import { QueryCache, QueryClient, defaultShouldDehydrateQuery } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { toast } from 'sonner';
@@ -65,6 +65,8 @@ const queryClient = new QueryClient({
  * buster is incremented whenever the cache schema changes to avoid stale shapes.
  * v2: invalidate persisted RQ sau khi thêm cột / shape danh sách chức vụ (vd. cap_quan_ly).
  * v3: danh sách nhân viên thêm `don_vi_id` / `ten_don_vi`.
+ * v4: không persist `['employees','list',…]` và `['employee', id]` — tránh danh sách/chi tiết
+ *     cũ sau khi bản ghi đã xóa khỏi DB (reload vẫn thấy nhân viên “ảo”).
  */
 const localStoragePersister = createSyncStoragePersister({
   storage: window.localStorage,
@@ -86,7 +88,16 @@ root.render(
           persistOptions={{
             persister: localStoragePersister,
             maxAge: SERVER_GC_TIME_MS,
-            buster: '3',
+            buster: '4',
+            dehydrateOptions: {
+              shouldDehydrateQuery: (query) => {
+                const k = query.queryKey;
+                if (!Array.isArray(k)) return defaultShouldDehydrateQuery(query);
+                if (k[0] === 'employees' && k[1] === 'list') return false;
+                if (k[0] === 'employee') return false;
+                return defaultShouldDehydrateQuery(query);
+              },
+            },
           }}
         >
           <App />

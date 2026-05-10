@@ -17,6 +17,8 @@ interface ComboboxProps {
   onChange: (value: string | number | '') => void;
   label?: string;
   placeholder?: string;
+  /** Gợi ý ngắn dưới trigger (màu muted), tương tự helper text form. */
+  hint?: string;
   error?: string;
   required?: boolean;
   className?: string;
@@ -47,6 +49,7 @@ const Combobox: React.FC<ComboboxProps> = ({
   label,
   placeholder = "Chọn một mục...",
   searchPlaceholder = "Tìm kiếm...",
+  hint,
   error,
   required,
   className,
@@ -210,6 +213,7 @@ const Combobox: React.FC<ComboboxProps> = ({
         </div>
       </button>
 
+      {hint ? <p className="text-xs text-muted-foreground mt-1.5 ml-1">{hint}</p> : null}
       {error && <p className="text-xs font-medium text-destructive mt-1.5 ml-1">{error}</p>}
 
       {dropdownInPortal && isOpen && dropdownRect && typeof document !== 'undefined' ? (

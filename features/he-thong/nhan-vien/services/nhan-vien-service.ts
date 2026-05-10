@@ -159,7 +159,8 @@ export const getEmployees = async (params: GetEmployeesParams = {}): Promise<Emp
   return Promise.all(list.map((row) => enrichEmployee(row, lookups)));
 };
 
-export const getEmployeeById = async (id: string): Promise<Employee | undefined> => {
+/** `null` khi không có bản ghi — TanStack Query v5 cấm `queryFn` trả về `undefined`. */
+export const getEmployeeById = async (id: string): Promise<Employee | null> => {
   const [row, depts, positions, xaAll, tinhAll] = await Promise.all([
     repo.getById(id),
     getDepartments(),
@@ -167,7 +168,7 @@ export const getEmployeeById = async (id: string): Promise<Employee | undefined>
     getXaPhuongAll(),
     getTinhThanhList(),
   ]);
-  if (!row) return undefined;
+  if (!row) return null;
   const xaById = new Map(xaAll.map((x) => [x.id, x]));
   const tinhById = new Map(tinhAll.map((t) => [t.id, t.ten]));
   const lookups = {

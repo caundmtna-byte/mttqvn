@@ -57,6 +57,17 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat', nameKey: 'page.matTranDashboard.setupSettings' },
         ],
       },
+      {
+        groupTitleKey: 'page.matTranDashboard.groupReliefWarehouse',
+        modules: [
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro', nameKey: 'page.matTranDashboard.reliefCampaign' },
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods' },
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho', nameKey: 'page.matTranDashboard.reliefStockTransactions' },
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory' },
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList' },
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
+        ],
+      },
     ],
   },
   {
