@@ -13,7 +13,6 @@ import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { formatDate, getLanguage } from '@/lib/utils';
-import { matchesSearchTerm } from '@/lib/searchUtils';
 import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
@@ -26,6 +25,7 @@ import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog, { type ImportTemplateSheet } from '@/components/shared/ImportDialog';
 import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
 import { usePositions } from '@/features/he-thong/chuc-vu/hooks/use-chuc-vu';
+import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
 import { useTinhThanhList } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
@@ -34,12 +34,16 @@ import { geoDataQueryOptions } from '@/lib/supabase/query-config';
 import { useMttqCanBoList, useDeleteMttqCanBoMany, useImportMttqCanBo } from './hooks/use-mttq-can-bo';
 import { useMttqCanBoStore } from './store/useMttqCanBoStore';
 import type { MttqCanBoRow } from './core/types';
-import { MTTQ_CAN_BO_SEARCHABLE_KEYS } from './utils/search-keys';
-import { mttqCanBoMatchesColumnSearch } from './utils/column-search';
+import { mttqCanBoMatchesAllFilters } from './utils/mttq-can-bo-filter-match';
 import { computeAgeFromBirthDate } from './utils/age';
 import { formatCanBoPhoneDisplay } from './utils/display-format';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
-import { CHIP_TRANG_THAI_NULL } from './core/constants';
+import {
+  CHIP_DANG_VIEN_NO,
+  CHIP_DANG_VIEN_YES,
+  CHIP_FILTER_NULL,
+  CHIP_TRANG_THAI_NULL,
+} from './core/constants';
 import { useMttqCanBoFilterCounts } from './hooks/use-mttq-can-bo-filter-counts';
 import MttqCanBoToolbar from './components/mttq-can-bo-toolbar';
 import MttqCanBoTable from './components/mttq-can-bo-table';
@@ -127,27 +131,25 @@ const DanhSachCanBoPage: React.FC = () => {
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [rowsEnriched, viewing]);
 
-  const filterFn = useCallback(
-    (item: MttqCanBoRow, term: string, f: typeof filters) => {
-      const matchesSearch = matchesSearchTerm(
-        item as unknown as Record<string, unknown>,
-        term,
-        MTTQ_CAN_BO_SEARCHABLE_KEYS,
-      );
-      if (f.trang_thai_id?.length) {
-        const key = item.trang_thai_id ?? CHIP_TRANG_THAI_NULL;
-        if (!f.trang_thai_id.includes(key)) return false;
-      }
-      if (f.gioi_tinh?.length && !f.gioi_tinh.includes(item.gioi_tinh)) return false;
-      const matchesCol = mttqCanBoMatchesColumnSearch(item, f);
-      return matchesSearch && matchesCol;
-    },
-    [],
-  );
+  const filterFn = useCallback((item: MttqCanBoRow, term: string, f: typeof filters) => {
+    return mttqCanBoMatchesAllFilters(item, term, f);
+  }, []);
 
   const filtered = useListWithFilter(rowsEnriched, searchTerm, filters, filterFn);
 
-  const { trangThaiCounts, gioiTinhCounts } = useMttqCanBoFilterCounts(rowsEnriched, searchTerm, filters);
+  const {
+    trangThaiCounts,
+    gioiTinhCounts,
+    toChucCounts,
+    phongBanCounts,
+    chucVuCounts,
+    capQuanLyCounts,
+    donViCounts,
+    danTocCounts,
+    trinhDoCounts,
+    lyLuanCounts,
+    dangVienCounts,
+  } = useMttqCanBoFilterCounts(rowsEnriched, searchTerm, filters);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -194,6 +196,180 @@ const DanhSachCanBoPage: React.FC = () => {
     }));
   }, [rowsEnriched, gioiTinhCounts]);
 
+  const toChucChipOptions = useMemo(() => {
+    const labelByValue = new Map<string, string>();
+    for (const r of rowsEnriched) {
+      const value = r.to_chuc_id ?? CHIP_FILTER_NULL;
+      const label = (r.ten_to_chuc ?? '').trim() || txt('common.emptyCell');
+      if (!labelByValue.has(value)) labelByValue.set(value, label);
+    }
+    return [...labelByValue.entries()]
+      .map(([value, label]) => ({
+        value,
+        label,
+        count: toChucCounts[value] ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [rowsEnriched, toChucCounts]);
+
+  const phongBanChipOptions = useMemo(() => {
+    const labelByValue = new Map<string, string>();
+    const ec = txt('common.emptyCell');
+    for (const r of rowsEnriched) {
+      const value = r.phong_ban_id ?? CHIP_FILTER_NULL;
+      const parent = (r.ten_phong_ban ?? '').trim();
+      const sub = (r.ten_bo_phan ?? '').trim();
+      const label = sub && parent ? `${parent} · ${sub}` : sub || parent || ec;
+      if (!labelByValue.has(value)) labelByValue.set(value, label);
+    }
+    return [...labelByValue.entries()]
+      .map(([value, label]) => ({
+        value,
+        label,
+        count: phongBanCounts[value] ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [rowsEnriched, phongBanCounts]);
+
+  const chucVuChipOptions = useMemo(() => {
+    const labelByValue = new Map<string, string>();
+    for (const r of rowsEnriched) {
+      const value = r.chuc_vu_id ?? CHIP_FILTER_NULL;
+      const label = (r.ten_chuc_vu ?? '').trim() || txt('common.emptyCell');
+      if (!labelByValue.has(value)) labelByValue.set(value, label);
+    }
+    return [...labelByValue.entries()]
+      .map(([value, label]) => ({
+        value,
+        label,
+        count: chucVuCounts[value] ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [rowsEnriched, chucVuCounts]);
+
+  const capQuanLyChipOptions = useMemo(
+    () =>
+      [CHIP_FILTER_NULL, 'Tỉnh', 'Xã phường'].map((value) => ({
+        value,
+        label:
+          value === CHIP_FILTER_NULL
+            ? txt('matTranOfficerStats.capQuanLyChuaGan')
+            : (value as 'Tỉnh' | 'Xã phường'),
+        count: capQuanLyCounts[value] ?? 0,
+      })),
+    [capQuanLyCounts],
+  );
+
+  const donViChipOptions = useMemo(() => {
+    const labelByValue = new Map<string, string>();
+    for (const r of rowsEnriched) {
+      const value = r.don_vi_id ?? CHIP_FILTER_NULL;
+      const label =
+        formatTenDonViCongTacDisplay(r.chuc_vu_cap_quan_ly, r.ten_don_vi).trim() || txt('common.emptyCell');
+      if (!labelByValue.has(value)) labelByValue.set(value, label);
+    }
+    return [...labelByValue.entries()]
+      .map(([value, label]) => ({
+        value,
+        label,
+        count: donViCounts[value] ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [rowsEnriched, donViCounts]);
+
+  const danTocChipOptions = useMemo(() => {
+    const labelByValue = new Map<string, string>();
+    for (const r of rowsEnriched) {
+      const value = r.dan_toc_id ?? CHIP_FILTER_NULL;
+      const label = (r.ten_dan_toc ?? '').trim() || txt('common.emptyCell');
+      if (!labelByValue.has(value)) labelByValue.set(value, label);
+    }
+    return [...labelByValue.entries()]
+      .map(([value, label]) => ({
+        value,
+        label,
+        count: danTocCounts[value] ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [rowsEnriched, danTocCounts]);
+
+  const trinhDoChipOptions = useMemo(() => {
+    const labelByValue = new Map<string, string>();
+    for (const r of rowsEnriched) {
+      const value = r.trinh_do_id ?? CHIP_FILTER_NULL;
+      const label = (r.ten_trinh_do ?? '').trim() || txt('common.emptyCell');
+      if (!labelByValue.has(value)) labelByValue.set(value, label);
+    }
+    return [...labelByValue.entries()]
+      .map(([value, label]) => ({
+        value,
+        label,
+        count: trinhDoCounts[value] ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [rowsEnriched, trinhDoCounts]);
+
+  const lyLuanChipOptions = useMemo(() => {
+    const labelByValue = new Map<string, string>();
+    for (const r of rowsEnriched) {
+      const value = r.ly_luan_chinh_tri_id ?? CHIP_FILTER_NULL;
+      const label = (r.ten_ly_luan_chinh_tri ?? '').trim() || txt('common.emptyCell');
+      if (!labelByValue.has(value)) labelByValue.set(value, label);
+    }
+    return [...labelByValue.entries()]
+      .map(([value, label]) => ({
+        value,
+        label,
+        count: lyLuanCounts[value] ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [rowsEnriched, lyLuanCounts]);
+
+  const dangVienChipOptions = useMemo(
+    () => [
+      {
+        value: CHIP_DANG_VIEN_YES,
+        label: txt('matTranCanBo.detail.dangVienYes'),
+        count: dangVienCounts[CHIP_DANG_VIEN_YES] ?? 0,
+      },
+      {
+        value: CHIP_DANG_VIEN_NO,
+        label: txt('matTranCanBo.detail.dangVienNo'),
+        count: dangVienCounts[CHIP_DANG_VIEN_NO] ?? 0,
+      },
+    ],
+    [dangVienCounts],
+  );
+
+  const toolbarChipOptions = useMemo(
+    () => ({
+      trangThai: trangThaiChipOptions,
+      gioiTinh: gioiTinhChipOptions,
+      toChuc: toChucChipOptions,
+      phongBan: phongBanChipOptions,
+      chucVu: chucVuChipOptions,
+      capQuanLy: capQuanLyChipOptions,
+      donVi: donViChipOptions,
+      danToc: danTocChipOptions,
+      trinhDo: trinhDoChipOptions,
+      lyLuan: lyLuanChipOptions,
+      dangVien: dangVienChipOptions,
+    }),
+    [
+      trangThaiChipOptions,
+      gioiTinhChipOptions,
+      toChucChipOptions,
+      phongBanChipOptions,
+      chucVuChipOptions,
+      capQuanLyChipOptions,
+      donViChipOptions,
+      danTocChipOptions,
+      trinhDoChipOptions,
+      lyLuanChipOptions,
+      dangVienChipOptions,
+    ],
+  );
+
   const EXPORT_COLUMNS = useMemo(
     () => [
       { key: 'ho_ten', label: txt('matTranCanBo.store.hoTenCol') },
@@ -204,6 +380,7 @@ const DanhSachCanBoPage: React.FC = () => {
       { key: 'ten_to_chuc', label: txt('matTranCanBo.store.toChucCol') },
       { key: 'ten_phong_ban', label: txt('matTranCanBo.store.phongBanCol') },
       { key: 'ten_chuc_vu', label: txt('matTranCanBo.store.chucVuCol') },
+      { key: 'chuc_vu_cap_quan_ly', label: txt('matTranCanBo.store.capQuanLyCol') },
       { key: 'ten_don_vi', label: txt('matTranCanBo.store.donViCol') },
       { key: 'dien_thoai', label: txt('matTranCanBo.store.dienThoaiCol') },
       { key: 'dang_vien', label: txt('matTranCanBo.store.dangVienCol') },
@@ -221,6 +398,7 @@ const DanhSachCanBoPage: React.FC = () => {
       ten_to_chuc: item.ten_to_chuc ?? '',
       ten_phong_ban: item.ten_phong_ban ?? '',
       ten_chuc_vu: item.ten_chuc_vu ?? '',
+      chuc_vu_cap_quan_ly: normalizeCapQuanLyInput(item.chuc_vu_cap_quan_ly) ?? '',
       ten_don_vi: formatTenDonViCongTacDisplay(item.chuc_vu_cap_quan_ly, item.ten_don_vi),
       dien_thoai: formatCanBoPhoneDisplay(item.dien_thoai) || (item.dien_thoai ?? ''),
       dang_vien: item.dang_vien ? txt('matTranCanBo.detail.dangVienYes') : txt('matTranCanBo.detail.dangVienNo'),
@@ -460,8 +638,7 @@ const DanhSachCanBoPage: React.FC = () => {
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <MttqCanBoToolbar
           onPageBack={() => navigate('/mat-tran-to-quoc')}
-          trangThaiOptions={trangThaiChipOptions}
-          gioiTinhOptions={gioiTinhChipOptions}
+          chipOptions={toolbarChipOptions}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');
@@ -481,8 +658,7 @@ const DanhSachCanBoPage: React.FC = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={setViewing}
-            trangThaiFilterOptions={trangThaiChipOptions}
-            gioiTinhFilterOptions={gioiTinhChipOptions}
+            chipOptions={toolbarChipOptions}
           />
         </div>
       </div>

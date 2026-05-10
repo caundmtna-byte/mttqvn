@@ -32,12 +32,20 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 2,
   },
   {
+    id: 'tien_do',
+    label: txt('chuongTrinhNam.store.tienDoCol'),
+    visible: true,
+    minWidth: 130,
+    maxWidth: 200,
+    order: 3,
+  },
+  {
     id: 'trang_thai',
     label: txt('chuongTrinhNam.store.trangThaiCol'),
     visible: true,
     minWidth: 110,
     maxWidth: 140,
-    order: 3,
+    order: 4,
   },
   {
     id: 'ten_phong_ban',
@@ -45,7 +53,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 140,
     maxWidth: 220,
-    order: 4,
+    order: 5,
   },
   {
     id: 'ho_va_ten_nguoi_tao',
@@ -53,14 +61,14 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 180,
-    order: 5,
+    order: 6,
   },
   {
     id: 'tg_cap_nhat',
     label: txt('chuongTrinhNam.store.tgCapNhatCol'),
     visible: false,
     ...P.datetime,
-    order: 6,
+    order: 7,
   },
   {
     id: 'actions',
@@ -68,7 +76,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 96,
     maxWidth: 120,
-    order: 7,
+    order: 8,
   },
 ];
 
@@ -77,6 +85,7 @@ const initialFilters: ChuongTrinhNamFilters = {
   trang_thai: [],
   id_phong_ban: [],
   nam_bat_dau: [],
+  tien_do: [],
 };
 
 export const useChuongTrinhNamStore = createGenericStore<ChuongTrinhNamFilters>(

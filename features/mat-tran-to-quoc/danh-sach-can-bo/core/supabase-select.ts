@@ -21,6 +21,9 @@ export const MTTQ_CAN_BO_EMBED_FULL = [
 /** Chỉ join phục vụ cột bảng mặc định + filter chip — giảm egress so với FULL. Export để embed từ bảng cha (vd. ủy viên ủy ban). */
 export const MTTQ_CAN_BO_EMBED_LIST = [
   'to_chuc_ref:mttq_thiet_lap!mttq_can_bo_to_chuc_id_fkey(ten,loai)',
+  'dan_toc:mttq_thiet_lap!mttq_can_bo_dan_toc_id_fkey(ten,loai)',
+  'trinh_do:mttq_thiet_lap!mttq_can_bo_trinh_do_id_fkey(ten,loai)',
+  'ly_luan_chinh_tri:mttq_thiet_lap!mttq_can_bo_ly_luan_chinh_tri_id_fkey(ten,loai)',
   'chuc_vu:var_chuc_vu!mttq_can_bo_chuc_vu_id_fkey(ten_chuc_vu,cap_quan_ly)',
   'don_vi:var_ssn_xa_phuong!mttq_can_bo_don_vi_id_fkey(ten,var_ssn_tinh_thanh(ten))',
   MTTQ_CAN_BO_EMBED_PHONG_BAN,
@@ -67,6 +70,7 @@ const STATS_COLS = [
   'dan_toc_id',
   'dang_vien',
   'trinh_do_id',
+  'ly_luan_chinh_tri_id',
   'dien_thoai',
   'chuc_vu_id',
   'phong_ban_id',
@@ -85,6 +89,7 @@ const EMBED_STATS = [
   MTTQ_CAN_BO_EMBED_LIST,
   'dan_toc:mttq_thiet_lap!mttq_can_bo_dan_toc_id_fkey(ten,loai)',
   'trinh_do:mttq_thiet_lap!mttq_can_bo_trinh_do_id_fkey(ten,loai)',
+  'ly_luan_chinh_tri:mttq_thiet_lap!mttq_can_bo_ly_luan_chinh_tri_id_fkey(ten,loai)',
 ].join(',');
 
 export const MTTQ_CAN_BO_SELECT_STATS = `${STATS_COLS},${EMBED_STATS}`;

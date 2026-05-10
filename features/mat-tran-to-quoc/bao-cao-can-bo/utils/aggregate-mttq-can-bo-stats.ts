@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import type { MttqCanBoRow } from '../../danh-sach-can-bo/core/types';
-import { CHIP_TRANG_THAI_NULL } from '../../danh-sach-can-bo/core/constants';
+import { CHIP_FILTER_NULL, CHIP_TRANG_THAI_NULL } from '../../danh-sach-can-bo/core/constants';
+import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 
 dayjs.extend(isoWeek);
 
@@ -9,10 +10,13 @@ export interface OfficerStatsDimensionFilters {
   trang_thai_id: string[];
   gioi_tinh: string[];
   chuc_vu_id: string[];
+  /** Giá trị `var_chuc_vu.cap_quan_ly` (Tỉnh / Xã phường) — rỗng = `__null__` */
+  cap_quan_ly: string[];
   phong_ban_id: string[];
   don_vi_id: string[];
   dan_toc_id: string[];
   trinh_do_id: string[];
+  ly_luan_chinh_tri_id: string[];
   to_chuc_id: string[];
   /** `'true'` | `'false'` — đa chọn = OR trong nhóm */
   dang_vien: string[];
@@ -21,9 +25,12 @@ export interface OfficerStatsDimensionFilters {
 export interface ResolvedDateRange {
   start: string;
   end: string;
+  /** Preset «Tất cả» — không lọc theo ngày tạo (`tg_tao`). */
+  allTime?: boolean;
 }
 
 export const OFFICER_STATS_PRESET_IDS = [
+  'all',
   'thisWeek',
   'thisMonth',
   'thisQuarter',
@@ -41,6 +48,8 @@ export function resolveOfficerStatsDateRange(
   const end = d.format('YYYY-MM-DD');
 
   switch (preset) {
+    case 'all':
+      return { start: '', end: '', allTime: true };
     case 'thisWeek': {
       const start = d.startOf('isoWeek').format('YYYY-MM-DD');
       return { start, end };
@@ -102,21 +111,52 @@ function matchesDangVien(row: MttqCanBoRow, selected: string[]): boolean {
   return selected.includes(v);
 }
 
+/** Khoảng ngày vẽ biểu đồ xu hướng (preset «Tất cả» → min–max `tg_tao` trên tập đã lọc). */
+export function resolveOfficerStatsTrendChartRange(
+  range: ResolvedDateRange,
+  filtered: MttqCanBoRow[],
+): ResolvedDateRange {
+  if (!range.allTime) {
+    return { start: range.start, end: range.end };
+  }
+  let min = '';
+  let max = '';
+  for (const item of filtered) {
+    const d = getOfficerStatsDateFromCreatedAt(item);
+    if (!d) continue;
+    const day = d.slice(0, 10);
+    if (!min || day < min) min = day;
+    if (!max || day > max) max = day;
+  }
+  const today = dayjs().format('YYYY-MM-DD');
+  if (!min || !max) {
+    return { start: today, end: today };
+  }
+  return { start: min, end: max };
+}
+
 export function filterRowsForOfficerStats(
   items: MttqCanBoRow[],
   range: ResolvedDateRange,
   dims: OfficerStatsDimensionFilters,
 ): MttqCanBoRow[] {
   return items.filter((row) => {
-    const d = getOfficerStatsDateFromCreatedAt(row);
-    if (!isDateInRange(d, range.start, range.end)) return false;
+    if (!range.allTime) {
+      const d = getOfficerStatsDateFromCreatedAt(row);
+      if (!isDateInRange(d, range.start, range.end)) return false;
+    }
     if (!matchesTrangThai(row, dims.trang_thai_id)) return false;
     if (dims.gioi_tinh.length > 0 && !dims.gioi_tinh.includes(String(row.gioi_tinh))) return false;
     if (!matchesNullableFk(row.chuc_vu_id, dims.chuc_vu_id)) return false;
+    if (dims.cap_quan_ly.length > 0) {
+      const capKey = normalizeCapQuanLyInput(row.chuc_vu_cap_quan_ly) ?? CHIP_FILTER_NULL;
+      if (!dims.cap_quan_ly.includes(capKey)) return false;
+    }
     if (!matchesNullableFk(row.phong_ban_id, dims.phong_ban_id)) return false;
     if (!matchesNullableFk(row.don_vi_id, dims.don_vi_id)) return false;
     if (!matchesNullableFk(row.dan_toc_id, dims.dan_toc_id)) return false;
     if (!matchesNullableFk(row.trinh_do_id, dims.trinh_do_id)) return false;
+    if (!matchesNullableFk(row.ly_luan_chinh_tri_id, dims.ly_luan_chinh_tri_id)) return false;
     if (!matchesNullableFk(row.to_chuc_id, dims.to_chuc_id)) return false;
     if (!matchesDangVien(row, dims.dang_vien)) return false;
     return true;
@@ -261,6 +301,7 @@ export type OfficerLookupSortKey =
   | 'ho_ten'
   | 'ten_don_vi'
   | 'ten_chuc_vu'
+  | 'chuc_vu_cap_quan_ly'
   | 'ten_trang_thai'
   | 'dien_thoai'
   | 'tuoi'
@@ -286,6 +327,12 @@ export function sortOfficerLookupRows(
       case 'ten_chuc_vu':
         cmp = String(a.ten_chuc_vu ?? '').localeCompare(String(b.ten_chuc_vu ?? ''), getLanguage());
         break;
+      case 'chuc_vu_cap_quan_ly': {
+        const ka = normalizeCapQuanLyInput(a.chuc_vu_cap_quan_ly) ?? '';
+        const kb = normalizeCapQuanLyInput(b.chuc_vu_cap_quan_ly) ?? '';
+        cmp = ka.localeCompare(kb, getLanguage());
+        break;
+      }
       case 'ten_trang_thai':
         cmp = String(a.ten_trang_thai ?? '').localeCompare(String(b.ten_trang_thai ?? ''), getLanguage());
         break;

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Tag, Building2, CalendarRange } from 'lucide-react';
+import { Plus, Download, Tag, Building2, CalendarRange, Gauge } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -23,6 +23,7 @@ interface Props {
   trangThaiOptions: ChipOption[];
   phongBanOptions: ChipOption[];
   namBatDauOptions: ChipOption[];
+  tienDoOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
@@ -34,6 +35,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
   trangThaiOptions,
   phongBanOptions,
   namBatDauOptions,
+  tienDoOptions,
   onAdd,
   onExport,
   onDeleteMany,
@@ -58,13 +60,15 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
   const activeFilterCount = useMemo(() => {
     return (
       (searchTerm ? 1 : 0) +
-      countChuongTrinhNamColumnSearchActive(filters.columnSearch, {
+      countChuongTrinhNamColumnSearchActive(filters.columnSearch ?? {}, {
         id_phong_ban: filters.id_phong_ban,
         nam_bat_dau: filters.nam_bat_dau,
+        tien_do: filters.tien_do ?? [],
       }) +
-      (filters.trang_thai.length > 0 ? 1 : 0) +
-      (filters.id_phong_ban.length > 0 ? 1 : 0) +
-      (filters.nam_bat_dau.length > 0 ? 1 : 0)
+      ((filters.trang_thai?.length ?? 0) > 0 ? 1 : 0) +
+      ((filters.id_phong_ban?.length ?? 0) > 0 ? 1 : 0) +
+      ((filters.nam_bat_dau?.length ?? 0) > 0 ? 1 : 0) +
+      ((filters.tien_do?.length ?? 0) > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -75,6 +79,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
     st.setFilter('trang_thai', []);
     st.setFilter('id_phong_ban', []);
     st.setFilter('nam_bat_dau', []);
+    st.setFilter('tien_do', []);
   };
 
   const filtersSlot = useMemo(
@@ -82,7 +87,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
       <div className="flex flex-wrap items-center gap-2 min-w-0">
         <FilterChipMultiSelect
           options={trangThaiOptions}
-          value={filters.trang_thai}
+          value={filters.trang_thai ?? []}
           onChange={(val) => setFilter('trang_thai', val)}
           placeholder={txt('chuongTrinhNam.store.trangThaiCol')}
           icon={Tag}
@@ -90,7 +95,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
         />
         <FilterChipMultiSelect
           options={phongBanOptions}
-          value={filters.id_phong_ban}
+          value={filters.id_phong_ban ?? []}
           onChange={(val) => setFilter('id_phong_ban', val)}
           placeholder={txt('chuongTrinhNam.store.phongBanCol')}
           icon={Building2}
@@ -98,11 +103,19 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
         />
         <FilterChipMultiSelect
           options={namBatDauOptions}
-          value={filters.nam_bat_dau}
+          value={filters.nam_bat_dau ?? []}
           onChange={(val) => setFilter('nam_bat_dau', val)}
           placeholder={txt('chuongTrinhNam.filter.namBatDauChip')}
           icon={CalendarRange}
           className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
+        />
+        <FilterChipMultiSelect
+          options={tienDoOptions}
+          value={filters.tien_do ?? []}
+          onChange={(val) => setFilter('tien_do', val)}
+          placeholder={txt('chuongTrinhNam.filter.tienDoChip')}
+          icon={Gauge}
+          className="shrink-0 w-full min-w-0 sm:w-[min(180px,26vw)] sm:max-w-[240px]"
         />
       </div>
     ),
@@ -110,9 +123,11 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
       trangThaiOptions,
       phongBanOptions,
       namBatDauOptions,
+      tienDoOptions,
       filters.trang_thai,
       filters.id_phong_ban,
       filters.nam_bat_dau,
+      filters.tien_do,
       setFilter,
     ],
   );
@@ -124,7 +139,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
         label: txt('chuongTrinhNam.store.trangThaiCol'),
         icon: Tag,
         options: trangThaiOptions,
-        value: filters.trang_thai,
+        value: filters.trang_thai ?? [],
         onChange: (val: string[]) => setFilter('trang_thai', val),
       },
       {
@@ -132,7 +147,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
         label: txt('chuongTrinhNam.store.phongBanCol'),
         icon: Building2,
         options: phongBanOptions,
-        value: filters.id_phong_ban,
+        value: filters.id_phong_ban ?? [],
         onChange: (val: string[]) => setFilter('id_phong_ban', val),
       },
       {
@@ -140,17 +155,27 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
         label: txt('chuongTrinhNam.filter.namBatDauChip'),
         icon: CalendarRange,
         options: namBatDauOptions,
-        value: filters.nam_bat_dau,
+        value: filters.nam_bat_dau ?? [],
         onChange: (val: string[]) => setFilter('nam_bat_dau', val),
+      },
+      {
+        key: 'tien_do',
+        label: txt('chuongTrinhNam.filter.tienDoChip'),
+        icon: Gauge,
+        options: tienDoOptions,
+        value: filters.tien_do ?? [],
+        onChange: (val: string[]) => setFilter('tien_do', val),
       },
     ],
     [
       trangThaiOptions,
       phongBanOptions,
       namBatDauOptions,
+      tienDoOptions,
       filters.trang_thai,
       filters.id_phong_ban,
       filters.nam_bat_dau,
+      filters.tien_do,
       setFilter,
     ],
   );

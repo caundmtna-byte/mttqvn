@@ -1,5 +1,20 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, Tag, Users } from 'lucide-react';
+import {
+  Plus,
+  Download,
+  Upload,
+  Tag,
+  Users,
+  Landmark,
+  Building2,
+  Briefcase,
+  MapPinned,
+  UserCircle,
+  GraduationCap,
+  BookOpen,
+  BadgeCheck,
+  Binary,
+} from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -16,20 +31,35 @@ interface ChipOption {
   count?: number;
 }
 
+export interface MttqCanBoToolbarChipOptions {
+  trangThai: ChipOption[];
+  gioiTinh: ChipOption[];
+  toChuc: ChipOption[];
+  phongBan: ChipOption[];
+  chucVu: ChipOption[];
+  capQuanLy: ChipOption[];
+  donVi: ChipOption[];
+  danToc: ChipOption[];
+  trinhDo: ChipOption[];
+  lyLuan: ChipOption[];
+  dangVien: ChipOption[];
+}
+
 interface Props {
   onPageBack: () => void;
-  trangThaiOptions: ChipOption[];
-  gioiTinhOptions: ChipOption[];
+  chipOptions: MttqCanBoToolbarChipOptions;
   onAdd: () => void;
   onExport: () => void;
   onImport?: () => void;
   onDeleteMany: (ids: string[]) => void;
 }
 
+/** Chip cố định chiều rộng + `shrink-0` — cùng pattern báo cáo cán bộ (cuộn ngang trên wrapper). */
+const chip = (w: string) => `${w} shrink-0`;
+
 const MttqCanBoToolbar: React.FC<Props> = ({
   onPageBack,
-  trangThaiOptions,
-  gioiTinhOptions,
+  chipOptions,
   onAdd,
   onExport,
   onImport,
@@ -53,11 +83,20 @@ const MttqCanBoToolbar: React.FC<Props> = ({
   const selectedCount = selectedIds.size;
 
   const activeFilterCount = useMemo(() => {
-    return (
-      (searchTerm ? 1 : 0) +
-      countMttqCanBoColumnSearchActive(filters.columnSearch, filters.trang_thai_id, filters.gioi_tinh) +
+    const chipN =
       (filters.trang_thai_id.length > 0 ? 1 : 0) +
-      (filters.gioi_tinh.length > 0 ? 1 : 0)
+      (filters.gioi_tinh.length > 0 ? 1 : 0) +
+      (filters.to_chuc_id.length > 0 ? 1 : 0) +
+      (filters.phong_ban_id.length > 0 ? 1 : 0) +
+      (filters.chuc_vu_id.length > 0 ? 1 : 0) +
+      (filters.chuc_vu_cap_quan_ly.length > 0 ? 1 : 0) +
+      (filters.don_vi_id.length > 0 ? 1 : 0) +
+      (filters.dan_toc_id.length > 0 ? 1 : 0) +
+      (filters.trinh_do_id.length > 0 ? 1 : 0) +
+      (filters.ly_luan_chinh_tri_id.length > 0 ? 1 : 0) +
+      (filters.dang_vien.length > 0 ? 1 : 0);
+    return (
+      (searchTerm ? 1 : 0) + countMttqCanBoColumnSearchActive(filters.columnSearch, filters) + chipN
     );
   }, [searchTerm, filters]);
 
@@ -67,30 +106,111 @@ const MttqCanBoToolbar: React.FC<Props> = ({
     st.setFilter('columnSearch', {});
     st.setFilter('trang_thai_id', []);
     st.setFilter('gioi_tinh', []);
+    st.setFilter('to_chuc_id', []);
+    st.setFilter('phong_ban_id', []);
+    st.setFilter('chuc_vu_id', []);
+    st.setFilter('chuc_vu_cap_quan_ly', []);
+    st.setFilter('don_vi_id', []);
+    st.setFilter('dan_toc_id', []);
+    st.setFilter('trinh_do_id', []);
+    st.setFilter('ly_luan_chinh_tri_id', []);
+    st.setFilter('dang_vien', []);
   };
 
   const filtersSlot = useMemo(
     () => (
-      <div className="flex flex-wrap items-center gap-2 min-w-0">
+      <div className="flex w-max max-w-none flex-nowrap items-center gap-2">
         <FilterChipMultiSelect
-          options={trangThaiOptions}
+          options={chipOptions.trangThai}
           value={filters.trang_thai_id}
           onChange={(val) => setFilter('trang_thai_id', val)}
           placeholder={txt('matTranCanBo.store.trangThaiCol')}
           icon={Tag}
-          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+          className={chip('w-[10.5rem]')}
         />
         <FilterChipMultiSelect
-          options={gioiTinhOptions}
+          options={chipOptions.gioiTinh}
           value={filters.gioi_tinh}
           onChange={(val) => setFilter('gioi_tinh', val)}
           placeholder={txt('matTranCanBo.store.gioiTinhCol')}
           icon={Users}
-          className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
+          className={chip('w-[9rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.toChuc}
+          value={filters.to_chuc_id}
+          onChange={(val) => setFilter('to_chuc_id', val)}
+          placeholder={txt('matTranCanBo.store.toChucCol')}
+          icon={Landmark}
+          className={chip('w-[10rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.phongBan}
+          value={filters.phong_ban_id}
+          onChange={(val) => setFilter('phong_ban_id', val)}
+          placeholder={txt('matTranCanBo.store.phongBanCol')}
+          icon={Building2}
+          className={chip('w-[10.5rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.chucVu}
+          value={filters.chuc_vu_id}
+          onChange={(val) => setFilter('chuc_vu_id', val)}
+          placeholder={txt('matTranCanBo.store.chucVuCol')}
+          icon={Briefcase}
+          className={chip('w-[10.5rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.capQuanLy}
+          value={filters.chuc_vu_cap_quan_ly}
+          onChange={(val) => setFilter('chuc_vu_cap_quan_ly', val)}
+          placeholder={txt('matTranCanBo.store.capQuanLyCol')}
+          icon={Binary}
+          className={chip('w-[10.5rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.donVi}
+          value={filters.don_vi_id}
+          onChange={(val) => setFilter('don_vi_id', val)}
+          placeholder={txt('matTranCanBo.store.donViCol')}
+          icon={MapPinned}
+          className={chip('w-[10.5rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.danToc}
+          value={filters.dan_toc_id}
+          onChange={(val) => setFilter('dan_toc_id', val)}
+          placeholder={txt('matTranCanBo.form.danToc')}
+          icon={UserCircle}
+          className={chip('w-[9.5rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.trinhDo}
+          value={filters.trinh_do_id}
+          onChange={(val) => setFilter('trinh_do_id', val)}
+          placeholder={txt('matTranCanBo.form.trinhDo')}
+          icon={GraduationCap}
+          className={chip('w-[9.5rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.lyLuan}
+          value={filters.ly_luan_chinh_tri_id}
+          onChange={(val) => setFilter('ly_luan_chinh_tri_id', val)}
+          placeholder={txt('matTranCanBo.form.lyLuanChinhTri')}
+          icon={BookOpen}
+          className={chip('w-[11rem]')}
+        />
+        <FilterChipMultiSelect
+          options={chipOptions.dangVien}
+          value={filters.dang_vien}
+          onChange={(val) => setFilter('dang_vien', val)}
+          placeholder={txt('matTranCanBo.store.dangVienCol')}
+          icon={BadgeCheck}
+          className={chip('w-[9rem]')}
         />
       </div>
     ),
-    [trangThaiOptions, gioiTinhOptions, filters.trang_thai_id, filters.gioi_tinh, setFilter],
+    [chipOptions, filters, setFilter],
   );
 
   const filterGroups = useMemo(
@@ -99,7 +219,7 @@ const MttqCanBoToolbar: React.FC<Props> = ({
         key: 'trang_thai_id',
         label: txt('matTranCanBo.store.trangThaiCol'),
         icon: Tag,
-        options: trangThaiOptions,
+        options: chipOptions.trangThai,
         value: filters.trang_thai_id,
         onChange: (val: string[]) => setFilter('trang_thai_id', val),
       },
@@ -107,12 +227,84 @@ const MttqCanBoToolbar: React.FC<Props> = ({
         key: 'gioi_tinh',
         label: txt('matTranCanBo.store.gioiTinhCol'),
         icon: Users,
-        options: gioiTinhOptions,
+        options: chipOptions.gioiTinh,
         value: filters.gioi_tinh,
         onChange: (val: string[]) => setFilter('gioi_tinh', val),
       },
+      {
+        key: 'to_chuc_id',
+        label: txt('matTranCanBo.store.toChucCol'),
+        icon: Landmark,
+        options: chipOptions.toChuc,
+        value: filters.to_chuc_id,
+        onChange: (val: string[]) => setFilter('to_chuc_id', val),
+      },
+      {
+        key: 'phong_ban_id',
+        label: txt('matTranCanBo.store.phongBanCol'),
+        icon: Building2,
+        options: chipOptions.phongBan,
+        value: filters.phong_ban_id,
+        onChange: (val: string[]) => setFilter('phong_ban_id', val),
+      },
+      {
+        key: 'chuc_vu_id',
+        label: txt('matTranCanBo.store.chucVuCol'),
+        icon: Briefcase,
+        options: chipOptions.chucVu,
+        value: filters.chuc_vu_id,
+        onChange: (val: string[]) => setFilter('chuc_vu_id', val),
+      },
+      {
+        key: 'chuc_vu_cap_quan_ly',
+        label: txt('matTranCanBo.store.capQuanLyCol'),
+        icon: Binary,
+        options: chipOptions.capQuanLy,
+        value: filters.chuc_vu_cap_quan_ly,
+        onChange: (val: string[]) => setFilter('chuc_vu_cap_quan_ly', val),
+      },
+      {
+        key: 'don_vi_id',
+        label: txt('matTranCanBo.store.donViCol'),
+        icon: MapPinned,
+        options: chipOptions.donVi,
+        value: filters.don_vi_id,
+        onChange: (val: string[]) => setFilter('don_vi_id', val),
+      },
+      {
+        key: 'dan_toc_id',
+        label: txt('matTranCanBo.form.danToc'),
+        icon: UserCircle,
+        options: chipOptions.danToc,
+        value: filters.dan_toc_id,
+        onChange: (val: string[]) => setFilter('dan_toc_id', val),
+      },
+      {
+        key: 'trinh_do_id',
+        label: txt('matTranCanBo.form.trinhDo'),
+        icon: GraduationCap,
+        options: chipOptions.trinhDo,
+        value: filters.trinh_do_id,
+        onChange: (val: string[]) => setFilter('trinh_do_id', val),
+      },
+      {
+        key: 'ly_luan_chinh_tri_id',
+        label: txt('matTranCanBo.form.lyLuanChinhTri'),
+        icon: BookOpen,
+        options: chipOptions.lyLuan,
+        value: filters.ly_luan_chinh_tri_id,
+        onChange: (val: string[]) => setFilter('ly_luan_chinh_tri_id', val),
+      },
+      {
+        key: 'dang_vien',
+        label: txt('matTranCanBo.store.dangVienCol'),
+        icon: BadgeCheck,
+        options: chipOptions.dangVien,
+        value: filters.dang_vien,
+        onChange: (val: string[]) => setFilter('dang_vien', val),
+      },
     ],
-    [trangThaiOptions, gioiTinhOptions, filters.trang_thai_id, filters.gioi_tinh, setFilter],
+    [chipOptions, filters, setFilter],
   );
 
   const mobileActions = useMemo<ActionItem[]>(
@@ -191,6 +383,8 @@ const MttqCanBoToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
+      filtersDesktopSeparateScroll
+      filtersMobileBelowSearchScroll
     />
   );
 };

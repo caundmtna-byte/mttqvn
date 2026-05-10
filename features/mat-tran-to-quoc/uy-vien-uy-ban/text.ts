@@ -56,7 +56,11 @@ export const matTranUyVienUyBan = {
   form: {
     canBo: 'Cán bộ',
     sectionCanBo: 'Hồ sơ cán bộ (Danh sách cán bộ)',
-    snapshotHint: 'Các trường dưới đây lấy từ hồ sơ cán bộ — chỉnh trong module Danh sách cán bộ.',
+    snapshotHint:
+      'Các trường dưới đây chỉ xem — bạn không có quyền sửa hồ sơ cán bộ hoặc chưa chọn cán bộ.',
+    snapshotEditableHint:
+      'Chỉnh sửa trực tiếp tại đây. Khi bấm Lưu, hệ thống cập nhật bảng Danh sách cán bộ trước, sau đó lưu thông tin ủy viên.',
+    canBoProfileLoading: 'Đang tải hồ sơ cán bộ…',
     diaChiCanBo: 'Địa chỉ (hồ sơ cán bộ)',
     sectionMain: 'Thông tin chính',
     sectionCaNhan: 'Nhân thân & tham gia',

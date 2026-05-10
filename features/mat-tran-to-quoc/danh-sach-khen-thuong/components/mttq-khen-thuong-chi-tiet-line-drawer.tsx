@@ -12,6 +12,7 @@ import {
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
 import Combobox from '@/components/ui/Combobox';
+import CanBoCombobox from '@/features/mat-tran-to-quoc/danh-sach-can-bo/components/can-bo-combobox';
 import GenericDrawer from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
@@ -121,7 +122,8 @@ const MttqKhenThuongChiTietLineDrawer: React.FC<Props> = ({
               name="can_bo_id"
               control={control}
               render={({ field }) => (
-                <Combobox
+                <CanBoCombobox
+                  createFormStackLevel={stackLevel + 1}
                   label={txt('matTranKhenThuong.form.canBo')}
                   options={canBoOptions}
                   value={field.value}

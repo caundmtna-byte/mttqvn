@@ -48,6 +48,9 @@ const initialFilters: MttqKhenThuongFilters = {
   trang_thai: [],
   nam_khen_thuong: [],
   don_vi_de_xuat: [],
+  hinh_thuc_khen: [],
+  danh_hieu: [],
+  id_phong_ban_nguoi_tao: [],
 };
 
 export const useMttqKhenThuongStore = createGenericStore<MttqKhenThuongFilters>(initialFilters, DEFAULT_COLUMNS);

@@ -32,6 +32,8 @@ interface Props {
   trangThaiHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
   namKhenThuongHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
   donViDeXuatHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
+  hinhThucHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
+  danhHieuHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
   onViewQd: (idKhenThuong: string) => void;
   onEdit: (item: MttqKhenThuongChiTietFlatRow) => void;
   onDelete: (item: MttqKhenThuongChiTietFlatRow) => void;
@@ -43,6 +45,8 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
   trangThaiHeaderOptions,
   namKhenThuongHeaderOptions,
   donViDeXuatHeaderOptions,
+  hinhThucHeaderOptions,
+  danhHieuHeaderOptions,
   onViewQd,
   onEdit,
   onDelete,
@@ -95,6 +99,26 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
         count: o.count,
       })),
     [donViDeXuatHeaderOptions],
+  );
+
+  const hinhThucMultiOptions: Option[] = useMemo(
+    () =>
+      hinhThucHeaderOptions.map((o) => ({
+        label: o.label,
+        value: o.value,
+        count: o.count,
+      })),
+    [hinhThucHeaderOptions],
+  );
+
+  const danhHieuMultiOptions: Option[] = useMemo(
+    () =>
+      danhHieuHeaderOptions.map((o) => ({
+        label: o.label,
+        value: o.value,
+        count: o.count,
+      })),
+    [danhHieuHeaderOptions],
   );
 
   const renderColumnHeaderAccessory = useCallback(
@@ -151,6 +175,30 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
               setSort={setSort}
             />
           );
+        case 'hinh_thuc_khen':
+          return (
+            <ColumnHeaderFilter
+              options={hinhThucMultiOptions}
+              value={filters.hinh_thuc_khen}
+              onChange={(v) => setFilter('hinh_thuc_khen', v)}
+              ariaLabel={col.label}
+              sortColumnId="hinh_thuc_khen"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'danh_hieu':
+          return (
+            <ColumnHeaderFilter
+              options={danhHieuMultiOptions}
+              value={filters.danh_hieu}
+              onChange={(v) => setFilter('danh_hieu', v)}
+              ariaLabel={col.label}
+              sortColumnId="danh_hieu"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
         case 'actions':
           return null;
         default:
@@ -171,12 +219,16 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
       filters.trang_thai,
       filters.nam_khen_thuong,
       filters.don_vi_de_xuat,
+      filters.hinh_thuc_khen,
+      filters.danh_hieu,
       setFilter,
       setSort,
       sort,
       trangThaiMultiOptions,
       namMultiOptions,
       donViMultiOptions,
+      hinhThucMultiOptions,
+      danhHieuMultiOptions,
     ],
   );
 

@@ -1,5 +1,7 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { Users } from 'lucide-react';
+import EnumBadge from '@/components/ui/EnumBadge';
+import { capQuanLyBadgeConfig, normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';
 import type { MttqCanBoRow } from '../core/types';
@@ -19,7 +21,7 @@ import {
   ColumnHeaderSortMenu,
   ColumnHeaderSearch,
 } from '@/components/shared/column-header';
-import type { Option } from '@/components/ui/MultiSelect';
+import type { MttqCanBoToolbarChipOptions } from './mttq-can-bo-toolbar';
 
 interface Props {
   data: MttqCanBoRow[];
@@ -27,10 +29,8 @@ interface Props {
   onEdit: (item: MttqCanBoRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: MttqCanBoRow) => void;
-  /** Options lọc cột Trạng thái (đồng bộ toolbar / mobile sheet). */
-  trangThaiFilterOptions: Option[];
-  /** Options lọc cột Giới tính. */
-  gioiTinhFilterOptions: Option[];
+  /** Đồng bộ chip toolbar + header cột. */
+  chipOptions: MttqCanBoToolbarChipOptions;
 }
 
 const MttqCanBoTable = memo(function MttqCanBoTable({
@@ -39,8 +39,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
   onEdit,
   onDelete,
   onView,
-  trangThaiFilterOptions,
-  gioiTinhFilterOptions,
+  chipOptions,
 }: Props) {
   const {
     columns,
@@ -57,6 +56,11 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
     setFilter,
   } = useMttqCanBoStore();
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null);
+
+  const capQuanLyBadgeCfg = useMemo(
+    () => capQuanLyBadgeConfig('Tỉnh', 'Xã phường'),
+    [],
+  );
 
   const renderColumnHeaderAccessory = useCallback(
     (col: ColumnConfig) => {
@@ -80,7 +84,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
         case 'ten_trang_thai':
           return (
             <ColumnHeaderFilter
-              options={trangThaiFilterOptions}
+              options={chipOptions.trangThai}
               value={filters.trang_thai_id}
               onChange={(v) => setFilter('trang_thai_id', v)}
               ariaLabel={txt('matTranCanBo.store.trangThaiCol')}
@@ -92,11 +96,119 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
         case 'gioi_tinh':
           return (
             <ColumnHeaderFilter
-              options={gioiTinhFilterOptions}
+              options={chipOptions.gioiTinh}
               value={filters.gioi_tinh}
               onChange={(v) => setFilter('gioi_tinh', v)}
               ariaLabel={txt('matTranCanBo.store.gioiTinhCol')}
               sortColumnId="gioi_tinh"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'ten_to_chuc':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.toChuc}
+              value={filters.to_chuc_id}
+              onChange={(v) => setFilter('to_chuc_id', v)}
+              ariaLabel={txt('matTranCanBo.store.toChucCol')}
+              sortColumnId="ten_to_chuc"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'ten_phong_ban':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.phongBan}
+              value={filters.phong_ban_id}
+              onChange={(v) => setFilter('phong_ban_id', v)}
+              ariaLabel={txt('matTranCanBo.store.phongBanCol')}
+              sortColumnId="ten_phong_ban"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'ten_chuc_vu':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.chucVu}
+              value={filters.chuc_vu_id}
+              onChange={(v) => setFilter('chuc_vu_id', v)}
+              ariaLabel={txt('matTranCanBo.store.chucVuCol')}
+              sortColumnId="ten_chuc_vu"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'chuc_vu_cap_quan_ly':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.capQuanLy}
+              value={filters.chuc_vu_cap_quan_ly}
+              onChange={(v) => setFilter('chuc_vu_cap_quan_ly', v)}
+              ariaLabel={txt('matTranCanBo.store.capQuanLyCol')}
+              sortColumnId="chuc_vu_cap_quan_ly"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'ten_don_vi':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.donVi}
+              value={filters.don_vi_id}
+              onChange={(v) => setFilter('don_vi_id', v)}
+              ariaLabel={txt('matTranCanBo.store.donViCol')}
+              sortColumnId="ten_don_vi"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'ten_dan_toc':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.danToc}
+              value={filters.dan_toc_id}
+              onChange={(v) => setFilter('dan_toc_id', v)}
+              ariaLabel={txt('matTranCanBo.form.danToc')}
+              sortColumnId="ten_dan_toc"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'ten_trinh_do':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.trinhDo}
+              value={filters.trinh_do_id}
+              onChange={(v) => setFilter('trinh_do_id', v)}
+              ariaLabel={txt('matTranCanBo.form.trinhDo')}
+              sortColumnId="ten_trinh_do"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'ten_ly_luan_chinh_tri':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.lyLuan}
+              value={filters.ly_luan_chinh_tri_id}
+              onChange={(v) => setFilter('ly_luan_chinh_tri_id', v)}
+              ariaLabel={txt('matTranCanBo.form.lyLuanChinhTri')}
+              sortColumnId="ten_ly_luan_chinh_tri"
+              sort={sort}
+              setSort={setSort}
+            />
+          );
+        case 'dang_vien':
+          return (
+            <ColumnHeaderFilter
+              options={chipOptions.dangVien}
+              value={filters.dang_vien}
+              onChange={(v) => setFilter('dang_vien', v)}
+              ariaLabel={txt('matTranCanBo.store.dangVienCol')}
+              sortColumnId="dang_vien"
               sort={sort}
               setSort={setSort}
             />
@@ -114,7 +226,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           );
       }
     },
-    [filters, setFilter, sort, setSort, trangThaiFilterOptions, gioiTinhFilterOptions],
+    [filters, setFilter, sort, setSort, chipOptions],
   );
 
   const renderCell = useCallback(
@@ -170,10 +282,35 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
               {item.ten_to_chuc ?? ec}
             </span>
           );
-        case 'ten_phong_ban':
+        case 'ten_phong_ban': {
+          const sub = (item.ten_bo_phan ?? '').trim();
+          const parent = (item.ten_phong_ban ?? '').trim();
+          const label = sub && parent ? `${parent} · ${sub}` : parent || sub || ec;
           return (
-            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_phong_ban ?? undefined}>
-              {item.ten_phong_ban ?? ec}
+            <span className="text-body-sm text-muted-foreground truncate" title={label}>
+              {label}
+            </span>
+          );
+        }
+        case 'ten_dan_toc':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_dan_toc ?? undefined}>
+              {(item.ten_dan_toc ?? '').trim() || ec}
+            </span>
+          );
+        case 'ten_trinh_do':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_trinh_do ?? undefined}>
+              {(item.ten_trinh_do ?? '').trim() || ec}
+            </span>
+          );
+        case 'ten_ly_luan_chinh_tri':
+          return (
+            <span
+              className="text-body-sm text-muted-foreground truncate"
+              title={item.ten_ly_luan_chinh_tri ?? undefined}
+            >
+              {(item.ten_ly_luan_chinh_tri ?? '').trim() || ec}
             </span>
           );
         case 'ten_chuc_vu':
@@ -182,6 +319,17 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
               {item.ten_chuc_vu ?? ec}
             </span>
           );
+        case 'chuc_vu_cap_quan_ly': {
+          const cap = normalizeCapQuanLyInput(item.chuc_vu_cap_quan_ly);
+          if (!cap) {
+            return (
+              <span className="text-body-sm text-muted-foreground italic" title={item.chuc_vu_cap_quan_ly ?? undefined}>
+                {ec}
+              </span>
+            );
+          }
+          return <EnumBadge value={cap} config={capQuanLyBadgeCfg} shape="pill" truncate />;
+        }
         case 'dien_thoai': {
           const p = formatCanBoPhoneDisplay(item.dien_thoai);
           return (
@@ -240,7 +388,7 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
           return null;
       }
     },
-    [onEdit, onDelete, rowMenuOpenId],
+    [onEdit, onDelete, rowMenuOpenId, capQuanLyBadgeCfg],
   );
 
   const handleRowClick = useCallback(

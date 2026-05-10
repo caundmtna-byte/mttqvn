@@ -1,12 +1,8 @@
 import type { MttqCanBoRow } from '../core/types';
 
 /**
- * Key cho ô tìm tổng + `useMttqCanBoFilterCounts` — **chỉ** field có trong payload
- * `MTTQ_CAN_BO_SELECT_LIST` sau `flattenMttqCanBoRow` (cùng query với danh sách).
- *
- * Không gồm `ten_dan_toc` / `ten_trinh_do` / `ten_ly_luan_chinh_tri` / người tạo:
- * các join đó chỉ có ở `MTTQ_CAN_BO_SELECT_FULL` (detail). Tìm theo các trường đó
- * trên list sẽ lệch (trước đây là rủi ro “có dữ liệu nhưng không ra” khi tối ưu egress).
+ * Key cho ô tìm tổng + `useMttqCanBoFilterCounts` — field có trong payload
+ * `MTTQ_CAN_BO_SELECT_LIST` sau `flattenMttqCanBoRow`.
  */
 export const MTTQ_CAN_BO_SEARCHABLE_KEYS: (keyof MttqCanBoRow)[] = [
   'ho_ten',
@@ -19,6 +15,10 @@ export const MTTQ_CAN_BO_SEARCHABLE_KEYS: (keyof MttqCanBoRow)[] = [
   'ten_bo_phan',
   'ten_to_chuc',
   'ten_chuc_vu',
+  'chuc_vu_cap_quan_ly',
   'ten_trang_thai',
+  'ten_dan_toc',
+  'ten_trinh_do',
+  'ten_ly_luan_chinh_tri',
   'tuoi',
 ];

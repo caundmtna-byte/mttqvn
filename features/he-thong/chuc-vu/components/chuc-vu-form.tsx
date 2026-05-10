@@ -221,10 +221,9 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
                         </span>
                       )}
                       renderOption={(opt) => (
-                        <div className="flex min-w-0 flex-col">
-                          <span className="font-semibold tabular-nums text-foreground">{String(opt.value)}</span>
-                          <span className="truncate text-xs font-normal text-muted-foreground">{opt.label}</span>
-                        </div>
+                        <span className="text-body-sm font-semibold tabular-nums text-foreground">
+                          {String(opt.value)}
+                        </span>
                       )}
                       clearable={false}
                     />

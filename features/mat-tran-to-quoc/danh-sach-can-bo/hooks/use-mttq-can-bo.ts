@@ -43,7 +43,7 @@ export const useMttqCanBoDetail = (id: string | null) =>
     ...listQueryOptions,
   });
 
-export const useCreateMttqCanBo = (onSuccess?: () => void) => {
+export const useCreateMttqCanBo = (onSuccess?: (created: MttqCanBo) => void) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ data, idNguoiTao }: { data: MttqCanBoFormValues; idNguoiTao: string }) =>
@@ -52,7 +52,7 @@ export const useCreateMttqCanBo = (onSuccess?: () => void) => {
       queryClient.setQueryData<MttqCanBo[]>(listKey, (old) => [...(old ?? []), created]);
       queryClient.invalidateQueries({ queryKey: statsListKey });
       toast.success(txt('matTranCanBo.toast.create'));
-      onSuccess?.();
+      onSuccess?.(created);
     },
     onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });

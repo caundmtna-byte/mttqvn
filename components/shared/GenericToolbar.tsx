@@ -71,6 +71,14 @@ interface GenericToolbarProps {
 
     /** Sau nút Back (desktop + mobile): vd. TabGroup — luôn đứng bên phải nút Back. */
     desktopStartSlot?: React.ReactNode;
+
+    /**
+     * Desktop: tách vùng chip (`filters`) khỏi ô tìm — chip trong hàng `overflow-x-auto flex-nowrap`;
+     * nhóm ô tìm + cột + actions sau vách dọc, có `overflow-x-auto` khi chật.
+     */
+    filtersDesktopSeparateScroll?: boolean;
+    /** Mobile (<sm): hàng 2 full width — chip cuộn ngang, tách hàng ô tìm phía trên. */
+    filtersMobileBelowSearchScroll?: boolean;
 }
 
 const GenericToolbar: React.FC<GenericToolbarProps> = ({
@@ -90,6 +98,8 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
     onAdd,
     searchTrailing,
     desktopStartSlot,
+    filtersDesktopSeparateScroll = false,
+    filtersMobileBelowSearchScroll = false,
 }) => {
     const resolvedSearchPlaceholder = searchPlaceholder ?? txt('common.searchPlaceholder');
     const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -176,6 +186,8 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
     /** Mobile sheet chỉ cần `filterGroups`; desktop chips dùng `filters` riêng. */
     const hasMobileFilterSheet = !!(filterGroups && filterGroups.length > 0);
     const hasMobileActions = mobileActions && mobileActions.length > 0;
+    const useSeparateDesktopFilterScroll =
+        filtersDesktopSeparateScroll && Boolean(filters) && !hideSearch;
 
     return (
         <div className="sticky top-0 z-30 bg-card border-b border-border/40 px-3 sm:px-4 py-2 space-y-2 shrink-0 [touch-action:manipulation]">
@@ -342,8 +354,27 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                 </AnimatePresence>
             </div>
 
+            {/* Mobile: chip dưới ô tìm — cuộn ngang */}
+            {filtersMobileBelowSearchScroll && filters && !hasSelection && (
+                <div className="sm:hidden -mx-1 touch-pan-x overflow-x-auto overscroll-x-contain px-1 pb-0.5 pt-1.5 border-t border-border/50 [scrollbar-width:thin]">
+                    <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
+                        {filters}
+                        {activeFilterCount > 0 && onClearAllFilters && (
+                            <button
+                                type="button"
+                                onClick={onClearAllFilters}
+                                className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 active:scale-95"
+                            >
+                                <X size={11} className="stroke-[2.5px]" />
+                                {txt('common.clearFilters', { count: activeFilterCount })}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* MOBILE ROW 2: Nút xóa bộ lọc */}
-            {!hasSelection && activeFilterCount > 0 && onClearAllFilters && (
+            {!hasSelection && activeFilterCount > 0 && onClearAllFilters && !filtersMobileBelowSearchScroll && (
                 <div className="sm:hidden pt-1">
                     <button
                         onClick={onClearAllFilters}
@@ -358,7 +389,12 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
             {/* ======================================================== */}
             {/* DESKTOP (>= sm): trái Back + desktopStartSlot + filters; phải search sát cột + actions */}
             {/* ======================================================== */}
-            <div className="hidden sm:flex items-center gap-3">
+            <div
+                className={cn(
+                    'hidden sm:flex items-center gap-3 min-w-0',
+                    useSeparateDesktopFilterScroll && !hasSelection && 'w-full gap-2',
+                )}
+            >
                 <AnimatePresence mode="wait">
                     {hasSelection ? (
                         <motion.div
@@ -381,6 +417,121 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                     <X size={15} className="stroke-[2.5px]" />
                                 </button>
                             </Tooltip>
+                        </motion.div>
+                    ) : useSeparateDesktopFilterScroll ? (
+                        <motion.div
+                            key="search-bar-filter-scroll"
+                            initial={{ opacity: 0, x: -15 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -15 }}
+                            className="flex w-full min-w-0 flex-1 flex-nowrap items-center gap-2"
+                        >
+                            {showBack && (
+                                <button
+                                    onClick={handleBack}
+                                    className="shrink-0 h-8 px-2 -ml-1 flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:scale-95"
+                                >
+                                    <ArrowLeft size={14} strokeWidth={2.25} />
+                                    <span className="text-xs font-medium">{txt('common.back')}</span>
+                                </button>
+                            )}
+
+                            {desktopStartSlot}
+
+                            {(filters || (activeFilterCount > 0 && onClearAllFilters)) && (
+                                <div
+                                    className={cn(
+                                        'flex min-w-0 flex-1 touch-pan-x items-center gap-2 overflow-x-auto overscroll-x-contain flex-nowrap py-0.5 [scrollbar-width:thin]',
+                                        (showBack || desktopStartSlot) && 'border-l border-border pl-3 ml-0.5',
+                                    )}
+                                >
+                                    {filters}
+                                    {activeFilterCount > 0 && onClearAllFilters && (
+                                        <button
+                                            onClick={onClearAllFilters}
+                                            className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95"
+                                        >
+                                            <X size={11} className="stroke-[2.5px]" />
+                                            {txt('common.clearFilters', { count: activeFilterCount })}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {filters && !hideSearch ? (
+                                <div className="h-7 w-px shrink-0 bg-border self-center" aria-hidden />
+                            ) : null}
+
+                            {/* Không giới hạn max-width chung — tránh ép ô tìm + actions vào vùng quá hẹp (mất nút Thêm). */}
+                            <div className="flex shrink-0 flex-nowrap items-center gap-2 py-0.5">
+                                {!hideSearch && (
+                                    <div className="relative w-72 min-w-[11rem] max-w-[22rem] shrink-0 group">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
+                                        <input
+                                            ref={searchInputRef}
+                                            type="search"
+                                            value={localSearch}
+                                            onChange={(e) => setLocalSearch(e.target.value)}
+                                            placeholder={resolvedSearchPlaceholder}
+                                            inputMode="search"
+                                            enterKeyHint="search"
+                                            autoComplete="off"
+                                            autoCorrect="off"
+                                            spellCheck={false}
+                                            className="w-full h-8 pl-10 pr-8 bg-muted/40 hover:bg-muted/60 border border-border/60 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 focus:bg-background transition-all"
+                                        />
+                                        {localSearch && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setLocalSearch('')}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full hover:bg-muted transition-all"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {searchTrailing}
+
+                                {hasColumnManager && (
+                                    <div className="relative shrink-0" ref={columnMenuRef}>
+                                        <Tooltip content={txt('common.columnOptions')} placement="bottom" disabled={showColumnMenu}>
+                                            <button
+                                                onClick={() => setShowColumnMenu(!showColumnMenu)}
+                                                className={cn(
+                                                    "min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-8 w-8 flex items-center justify-center border rounded-lg transition-all",
+                                                    showColumnMenu
+                                                        ? 'bg-primary text-white border-primary shadow-sm'
+                                                        : 'bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                )}
+                                            >
+                                                <LayoutTemplate size={15} />
+                                            </button>
+                                        </Tooltip>
+
+                                        <AnimatePresence>
+                                            {showColumnMenu && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                    className="absolute right-0 top-full mt-2 bg-card backdrop-blur-xl rounded-xl shadow-xl border border-border z-[41] overflow-hidden"
+                                                >
+                                                    <ColumnManager
+                                                        columns={columns!}
+                                                        onToggleColumn={onToggleColumn!}
+                                                        onReorderColumns={onReorderColumns || (() => {})}
+                                                        onResetColumns={onResetColumns || (() => {})}
+                                                    />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
+
+                                {actions}
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.div
@@ -438,7 +589,8 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                     )}
                 </AnimatePresence>
 
-                {/* Desktop Right Side */}
+                {/* Desktop Right Side — ẩn khi chip + search gộp một hàng */}
+                {(!useSeparateDesktopFilterScroll || hasSelection) && (
                 <div className="flex items-center gap-1.5 shrink-0">
                     <AnimatePresence mode="wait">
                         {hasSelection ? (
@@ -558,6 +710,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                         )}
                     </AnimatePresence>
                 </div>
+                )}
             </div>
 
             {/* ===== Mobile Bottom Sheets (portal) ===== */}

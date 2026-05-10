@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   BadgeCheck,
+  Binary,
   BookOpen,
   Briefcase,
   Building2,
@@ -27,6 +28,8 @@ import {
   trimmedDisplay,
 } from '../utils/display-format';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
+import EnumBadge from '@/components/ui/EnumBadge';
+import { capQuanLyBadgeConfig, normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
@@ -50,7 +53,13 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
   const tuoi = data.tuoi ?? computeAgeFromBirthDate(data.ngay_sinh);
   const phoneDisplay = formatCanBoPhoneDisplay(data.dien_thoai);
   const phoneHref = canBoPhoneTelHref(data.dien_thoai);
-  const summarySubtitleParts = [trimmedDisplay(data.ten_chuc_vu), trimmedDisplay(data.ten_to_chuc)].filter(Boolean);
+  const capNorm = normalizeCapQuanLyInput(data.chuc_vu_cap_quan_ly);
+  const capBadgeCfg = capQuanLyBadgeConfig('Tỉnh', 'Xã phường');
+  const summarySubtitleParts = [
+    trimmedDisplay(data.ten_chuc_vu),
+    capNorm ? capNorm : null,
+    trimmedDisplay(data.ten_to_chuc),
+  ].filter(Boolean);
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -181,6 +190,17 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
               label={txt('matTranCanBo.form.chucVu')}
               icon={<Briefcase size={12} />}
               value={trimmedDisplay(data.ten_chuc_vu) ?? undefined}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.capQuanLy')}
+              icon={<Binary size={12} />}
+              value={
+                capNorm ? (
+                  <EnumBadge value={capNorm} config={capBadgeCfg} shape="pill" truncate />
+                ) : (
+                  trimmedDisplay(data.chuc_vu_cap_quan_ly) ?? txt('matTranCanBo.form.capQuanLyChuaGan')
+                )
+              }
             />
             <DetailField
               label={txt('matTranCanBo.form.donVi')}

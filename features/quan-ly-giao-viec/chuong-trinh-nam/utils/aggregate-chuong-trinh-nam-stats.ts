@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import type { ChuongTrinhNamListRow } from '../core/types';
 import { CHUONG_TRINH_NAM_TRANG_THAI } from '../core/constants';
+import { chuongTrinhNamTienDoSortKey, getChuongTrinhNamTienDoFilterId } from './ngay-ket-thuc-tien-do';
 
 dayjs.extend(isoWeek);
 
@@ -12,6 +13,7 @@ export interface ChuongTrinhNamStatsDimensionFilters {
   trang_thai: string[];
   id_phong_ban: string[];
   nam_bat_dau: string[];
+  tien_do: string[];
 }
 
 export interface ResolvedDateRange {
@@ -95,6 +97,10 @@ export function filterRowsForChuongTrinhNamStats(
       const y = yearFromNgayBatDau(row.ngay_bat_dau);
       if (!y || !dims.nam_bat_dau.includes(y)) return false;
     }
+    if (dims.tien_do.length > 0) {
+      const td = getChuongTrinhNamTienDoFilterId(row);
+      if (!dims.tien_do.includes(td)) return false;
+    }
     return true;
   });
 }
@@ -116,6 +122,28 @@ export function computeChuongTrinhNamStatsKpis(filtered: ChuongTrinhNamListRow[]
     else if (r.trang_thai === 'Kết thúc') ketThuc += 1;
   }
   return { total: filtered.length, hoatDong, tamDung, ketThuc };
+}
+
+export interface ChuongTrinhNamTienDoKpis {
+  quaHan: number;
+  sapDenHan: number;
+  conHan: number;
+  ketThuc: number;
+}
+
+export function computeChuongTrinhNamTienDoKpis(filtered: ChuongTrinhNamListRow[]): ChuongTrinhNamTienDoKpis {
+  let quaHan = 0;
+  let sapDenHan = 0;
+  let conHan = 0;
+  let ketThuc = 0;
+  for (const r of filtered) {
+    const c = getChuongTrinhNamTienDoFilterId(r);
+    if (c === 'qua_han') quaHan += 1;
+    else if (c === 'sap_den_han') sapDenHan += 1;
+    else if (c === 'con_han') conHan += 1;
+    else ketThuc += 1;
+  }
+  return { quaHan, sapDenHan, conHan, ketThuc };
 }
 
 export type ChuongTrinhTrendBucket = 'day' | 'month';
@@ -226,6 +254,7 @@ export type ChuongTrinhLookupSortKey =
   | 'trang_thai'
   | 'ngay_bat_dau'
   | 'ngay_ket_thuc'
+  | 'tien_do'
   | 'nguoi_tao';
 
 export function sortChuongTrinhLookupRows(
@@ -252,6 +281,9 @@ export function sortChuongTrinhLookupRows(
         break;
       case 'ngay_ket_thuc':
         cmp = String(a.ngay_ket_thuc ?? '').localeCompare(String(b.ngay_ket_thuc ?? ''), getLanguage());
+        break;
+      case 'tien_do':
+        cmp = chuongTrinhNamTienDoSortKey(a) - chuongTrinhNamTienDoSortKey(b);
         break;
       case 'nguoi_tao':
         cmp = nguoi(a).localeCompare(nguoi(b), getLanguage());

@@ -41,6 +41,12 @@ import type { ChuongTrinhNam, ChuongTrinhNamListRow } from './core/types';
 import { CHUONG_TRINH_NAM_SEARCHABLE_KEYS } from './utils/search-keys';
 import { chuongTrinhNamMatchesColumnSearch } from './utils/column-search';
 import { CHUONG_TRINH_NAM_TRANG_THAI } from './core/constants';
+import {
+  CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS,
+  formatChuongTrinhNamTienDo,
+  getChuongTrinhNamTienDoFilterId,
+  chuongTrinhNamTienDoSortKey,
+} from './utils/ngay-ket-thuc-tien-do';
 import ChuongTrinhNamToolbar from './components/chuong-trinh-nam-toolbar';
 import ChuongTrinhNamTable from './components/chuong-trinh-nam-table';
 import ChuongTrinhNamStatsPanel from './components/chuong-trinh-nam-stats-panel';
@@ -128,6 +134,14 @@ const ChuongTrinhNamPage: React.FC = () => {
     return () => resetState();
   }, [resetState]);
 
+  /** State Zustand cũ (HMR / bản lưu) có thể thiếu `tien_do` sau khi thêm field. */
+  useEffect(() => {
+    const { filters: f, setFilter } = useChuongTrinhNamStore.getState();
+    if (!Array.isArray(f.tien_do)) {
+      setFilter('tien_do', []);
+    }
+  }, []);
+
   const filterFn = useCallback(
     (item: ChuongTrinhNamListRow, term: string, f: typeof filters) => {
       const matchesSearch = matchesSearchTerm(
@@ -144,6 +158,10 @@ const ChuongTrinhNamPage: React.FC = () => {
         const y = yearFromNgayBatDau(item.ngay_bat_dau);
         if (!y || !f.nam_bat_dau.includes(y)) return false;
       }
+      if (f.tien_do?.length) {
+        const td = getChuongTrinhNamTienDoFilterId(item);
+        if (!f.tien_do.includes(td)) return false;
+      }
       if (!chuongTrinhNamMatchesColumnSearch(item, f)) return false;
       return matchesSearch;
     },
@@ -155,16 +173,21 @@ const ChuongTrinhNamPage: React.FC = () => {
   const sorted = useMemo(() => {
     const list = [...filtered];
     if (sort.column && sort.direction) {
-      list.sort((a, b) => {
-        const key = sort.column as keyof ChuongTrinhNamListRow;
-        const aVal = a[key];
-        const bVal = b[key];
-        const cmp =
-          typeof aVal === 'number' && typeof bVal === 'number' && aVal != null && bVal != null
-            ? aVal - bVal
-            : String(aVal ?? '').localeCompare(String(bVal ?? ''), getLanguage());
-        return sort.direction === 'desc' ? -cmp : cmp;
-      });
+      if (sort.column === 'tien_do') {
+        const dir = sort.direction === 'desc' ? -1 : 1;
+        list.sort((a, b) => (chuongTrinhNamTienDoSortKey(a) - chuongTrinhNamTienDoSortKey(b)) * dir);
+      } else {
+        list.sort((a, b) => {
+          const key = sort.column as keyof ChuongTrinhNamListRow;
+          const aVal = a[key];
+          const bVal = b[key];
+          const cmp =
+            typeof aVal === 'number' && typeof bVal === 'number' && aVal != null && bVal != null
+              ? aVal - bVal
+              : String(aVal ?? '').localeCompare(String(bVal ?? ''), getLanguage());
+          return sort.direction === 'desc' ? -cmp : cmp;
+        });
+      }
     } else {
       list.sort((a, b) => {
         const da = a.ngay_bat_dau ?? '';
@@ -231,11 +254,42 @@ const ChuongTrinhNamPage: React.FC = () => {
       .sort((a, b) => b.value.localeCompare(a.value, getLanguage()));
   }, [scopeRows]);
 
+  const tienDoChipOptions = useMemo(() => {
+    const labelOf = (id: (typeof CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS)[number]) => {
+      switch (id) {
+        case 'qua_han':
+          return txt('chuongTrinhNam.filter.tienDoQuaHan');
+        case 'sap_den_han':
+          return txt('chuongTrinhNam.filter.tienDoSapDenHan');
+        case 'con_han':
+          return txt('chuongTrinhNam.filter.tienDoConHan');
+        case 'ket_thuc':
+          return txt('chuongTrinhNam.filter.tienDoKetThuc');
+        default:
+          return id;
+      }
+    };
+    const counts = new Map<string, number>();
+    for (const id of CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS) {
+      counts.set(id, 0);
+    }
+    for (const r of scopeRows) {
+      const k = getChuongTrinhNamTienDoFilterId(r);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS.map((value) => ({
+      value,
+      label: labelOf(value),
+      count: counts.get(value) ?? 0,
+    }));
+  }, [scopeRows]);
+
   const EXPORT_COLUMNS = useMemo(
     () => [
       { key: 'ten_chuong_trinh', label: txt('chuongTrinhNam.store.tenCol') },
       { key: 'ngay_bat_dau', label: txt('chuongTrinhNam.store.ngayBatDauCol') },
       { key: 'ngay_ket_thuc', label: txt('chuongTrinhNam.store.ngayKetThucCol') },
+      { key: 'tien_do', label: txt('chuongTrinhNam.store.tienDoCol') },
       { key: 'trang_thai', label: txt('chuongTrinhNam.store.trangThaiCol') },
       { key: 'ten_phong_ban', label: txt('chuongTrinhNam.store.phongBanCol') },
       { key: 'ho_va_ten_nguoi_tao', label: txt('chuongTrinhNam.store.nguoiTaoCol') },
@@ -248,6 +302,7 @@ const ChuongTrinhNamPage: React.FC = () => {
       ten_chuong_trinh: item.ten_chuong_trinh,
       ngay_bat_dau: item.ngay_bat_dau ?? '',
       ngay_ket_thuc: item.ngay_ket_thuc ?? '',
+      tien_do: formatChuongTrinhNamTienDo(item),
       trang_thai: item.trang_thai,
       ten_phong_ban: item.ten_phong_ban ?? '',
       ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? item.ten_tai_khoan_nguoi_tao ?? '',
@@ -419,6 +474,7 @@ const ChuongTrinhNamPage: React.FC = () => {
             trangThaiOptions={trangThaiChipOptions}
             phongBanOptions={phongBanChipOptions}
             namBatDauOptions={namBatDauChipOptions}
+            tienDoOptions={tienDoChipOptions}
             onAdd={() => {
               startTransition(() => {
                 setFormOrigin('list');

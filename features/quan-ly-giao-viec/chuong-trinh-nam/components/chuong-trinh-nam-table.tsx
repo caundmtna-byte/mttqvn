@@ -8,6 +8,8 @@ import GenericTable from '@/components/shared/GenericTable';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
 import { getChuongTrinhNamTrangThaiBadgeConfig } from '../core/constants';
+import { congViecDeadlineChipClass } from '@/features/quan-ly-giao-viec/cong-viec/core/display-badges';
+import { formatChuongTrinhNamTienDo, chuongTrinhNamTienDoChipTone } from '../utils/ngay-ket-thuc-tien-do';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import { ChuongTrinhNamTableRowActions } from './chuong-trinh-nam-table-row-actions';
 
@@ -101,6 +103,17 @@ const ChuongTrinhNamTable = memo(function ChuongTrinhNamTable({
               {item.ngay_ket_thuc ? formatDateShort(item.ngay_ket_thuc) : txt('common.emptyCell')}
             </span>
           );
+        case 'tien_do': {
+          const label = formatChuongTrinhNamTienDo(item);
+          return (
+            <span
+              className={congViecDeadlineChipClass(chuongTrinhNamTienDoChipTone(item), 'max-w-[min(220px,40vw)] truncate')}
+              title={label}
+            >
+              {label}
+            </span>
+          );
+        }
         case 'trang_thai':
           return (
             <EnumBadge value={item.trang_thai} config={trangThaiBadgeConfig} truncate shape="pill" />
@@ -191,6 +204,11 @@ const ChuongTrinhNamTable = memo(function ChuongTrinhNamTable({
               <EnumBadge value={item.trang_thai} config={trangThaiBadgeConfig} shape="pill" truncate />
               <span className="tabular-nums shrink-0">
                 {formatDateShort(item.ngay_bat_dau)} → {formatDateShort(item.ngay_ket_thuc)}
+              </span>
+              <span
+                className={congViecDeadlineChipClass(chuongTrinhNamTienDoChipTone(item), 'text-[10px] max-w-full truncate')}
+              >
+                {formatChuongTrinhNamTienDo(item)}
               </span>
             </div>
             <div className="flex justify-end pt-2 border-t border-border">

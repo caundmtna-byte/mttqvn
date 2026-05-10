@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Briefcase, Building2, Layers, ListChecks, UserCircle, Users } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Combobox from '@/components/ui/Combobox';
+import CanBoCombobox from '@/features/mat-tran-to-quoc/danh-sach-can-bo/components/can-bo-combobox';
 import Input from '@/components/ui/Input';
 import GenericDrawer from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
@@ -123,7 +124,8 @@ const MttqTapHuanChiTietLineDrawer: React.FC<Props> = ({
               name="can_bo_id"
               control={control}
               render={({ field }) => (
-                <Combobox
+                <CanBoCombobox
+                  createFormStackLevel={stackLevel + 1}
                   label={txt('matTranTapHuan.form.canBo')}
                   options={canBoOptions}
                   value={field.value}

@@ -7,6 +7,12 @@ export interface MttqKhenThuongFilters {
   nam_khen_thuong: string[];
   /** Giá trị trim `don_vi_de_xuat` hoặc `__none__` */
   don_vi_de_xuat: string[];
+  /** Hình thức khen — tab Chi tiết: từng dòng; tab Danh sách / Thống kê: QĐ có ít nhất một dòng khớp */
+  hinh_thuc_khen: string[];
+  /** Danh hiệu — cùng quy tắc `hinh_thuc_khen` */
+  danh_hieu: string[];
+  /** `var_nhan_vien.id_phong_ban` người tạo QĐ, hoặc `__none__` */
+  id_phong_ban_nguoi_tao: string[];
 }
 
 /** Dòng chi tiết (bảng con), id string khi đã lưu DB. */
@@ -45,6 +51,9 @@ export interface MttqKhenThuong {
 export interface MttqKhenThuongListRow extends Omit<MttqKhenThuong, 'chi_tiet'> {
   so_dong: number;
   rewarded_can_bo_don_vi_ids: string[];
+  /** Giá trị `hinh_thuc_khen` xuất hiện trong ít nhất một dòng chi tiết (list API). */
+  hinh_thuc_trong_qd: MttqKhenThuongHinhThuc[];
+  danh_hieu_trong_qd: MttqKhenThuongDanhHieu[];
 }
 
 /**

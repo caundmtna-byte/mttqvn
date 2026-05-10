@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Activity,
   BookOpen,
@@ -23,6 +23,7 @@ import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
+import CanBoCombobox from '@/features/mat-tran-to-quoc/danh-sach-can-bo/components/can-bo-combobox';
 import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
@@ -32,7 +33,10 @@ import { useCan } from '@/hooks/use-can';
 import { useMttqNhiemKyList } from '@/features/mat-tran-to-quoc/nhiem-ky/hooks/use-mttq-nhiem-ky';
 import { useTinhThanhList } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
-import { useMttqCanBoList } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/hooks/use-mttq-can-bo';
+import MttqCanBoInlineEditor, {
+  type MttqCanBoInlineEditorHandle,
+} from '@/features/mat-tran-to-quoc/danh-sach-can-bo/components/mttq-can-bo-inline-editor';
+import { useMttqCanBoDetail, useMttqCanBoList, useUpdateMttqCanBo } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/hooks/use-mttq-can-bo';
 import type { MttqCanBo } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/core/types';
 import {
   mttqUyVienUyBanSchema,
@@ -158,6 +162,7 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
   const idNguoiTao = String(user?.nhan_vien_id ?? '').trim();
   const canViewNhiemKy = useCan('view', 'matTranTerm');
   const canViewCanBo = useCan('view', 'matTranOfficerList');
+  const canEditCanBo = useCan('edit', 'matTranOfficerList');
   const { data: nhiemKyList = [] } = useMttqNhiemKyList({ enabled: canViewNhiemKy });
   const { data: tinhList = [] } = useTinhThanhList();
   const { data: xaList = [] } = useXaPhuongForTab(true, '');
@@ -165,6 +170,8 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
 
   const createMutation = useCreateMttqUyVienUyBan(onClose);
   const updateMutation = useUpdateMttqUyVienUyBan(onClose);
+  const updateCanBoMutation = useUpdateMttqCanBo();
+  const canBoEditorRef = useRef<MttqCanBoInlineEditorHandle | null>(null);
 
   const tinhMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -257,6 +264,15 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     return snap;
   }, [watchedCanBoId, snap, canBoMap, isEdit, initialData]);
 
+  const canBoIdTrim = String(watchedCanBoId ?? '').trim();
+  const fetchCanBoDetailId =
+    canEditCanBo && canBoIdTrim && !canBoMap.has(canBoIdTrim) ? canBoIdTrim : null;
+  const { data: canBoDetail, isPending: canBoDetailPending } = useMttqCanBoDetail(fetchCanBoDetailId);
+  const canBoRowForEditor = useMemo((): MttqCanBo | null => {
+    if (!canBoIdTrim || !canEditCanBo) return null;
+    return canBoMap.get(canBoIdTrim) ?? canBoDetail ?? null;
+  }, [canBoIdTrim, canEditCanBo, canBoMap, canBoDetail]);
+
   useEffect(() => {
     const base = mttqUyVienUyBanToFormInput(initialData ?? null);
     if (!initialData && defaultNhiemKyId?.trim()) {
@@ -266,7 +282,25 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     }
   }, [initialData, defaultNhiemKyId, reset]);
 
-  const onSubmit: SubmitHandler<MttqUyVienUyBanFormValues> = (data) => {
+  const persistCanBoIfNeeded = useCallback(
+    async (canBoId: string) => {
+      const editor = canBoEditorRef.current;
+      if (!editor) return true;
+      const canBoForm = await editor.validateAndGet();
+      if (canBoForm == null) return false;
+      await updateCanBoMutation.mutateAsync({ id: canBoId, data: canBoForm });
+      return true;
+    },
+    [updateCanBoMutation],
+  );
+
+  const onSubmit: SubmitHandler<MttqUyVienUyBanFormValues> = async (data) => {
+    const cbId = String(data.can_bo_id).trim();
+    if (canEditCanBo && canBoRowForEditor && cbId) {
+      const ok = await persistCanBoIfNeeded(cbId);
+      if (!ok) return;
+    }
+
     if (!isEdit) {
       if (!idNguoiTao) {
         toast.error(txt('matTranUyVienUyBan.service.noEmployeeProfile'));
@@ -279,7 +313,12 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     updateMutation.mutate({ id: initialData.id, data });
   };
 
-  const pending = isSubmitting || createMutation.isPending || updateMutation.isPending;
+  const pending =
+    isSubmitting ||
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    updateCanBoMutation.isPending ||
+    (Boolean(fetchCanBoDetailId) && canBoDetailPending);
 
   return (
     <GenericDrawer
@@ -311,7 +350,8 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
               name="can_bo_id"
               control={control}
               render={({ field }) => (
-                <Combobox
+                <CanBoCombobox
+                  createFormStackLevel={1}
                   options={canBoOptions}
                   value={field.value === '' ? null : field.value}
                   onChange={(v) => field.onChange(v === '' || v == null ? '' : String(v))}
@@ -388,177 +428,191 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
         <FormSection title={txt('matTranUyVienUyBan.form.sectionCanBo')} icon={<User size={14} />} variant="primary">
           <FormGrid>
             <p className={`${FORM_GRID_SPAN_FULL} text-xs text-muted-foreground m-0`}>
-              {txt('matTranUyVienUyBan.form.snapshotHint')}
+              {canEditCanBo && canBoRowForEditor
+                ? txt('matTranUyVienUyBan.form.snapshotEditableHint')
+                : txt('matTranUyVienUyBan.form.snapshotHint')}
             </p>
-            <div className={FORM_GRID_SPAN_FULL}>
-              <Input
-                readOnly
-                tabIndex={-1}
-                label={txt('matTranUyVienUyBan.form.hoVaTen')}
-                icon={Users}
-                value={displaySnap.ho_va_ten.trim() ? displaySnap.ho_va_ten : '—'}
-                className="cursor-default"
-              />
-            </div>
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.toChuc')}
-              icon={Building2}
-              value={displaySnap.ten_to_chuc.trim() ? displaySnap.ten_to_chuc : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.phongBan')}
-              icon={Layers}
-              value={displaySnap.ten_phong_ban.trim() ? displaySnap.ten_phong_ban : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.chucVu')}
-              icon={Briefcase}
-              value={displaySnap.ten_chuc_vu.trim() ? displaySnap.ten_chuc_vu : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.diaChiCanBo')}
-              icon={<MapPin size={12} />}
-              value={displaySnap.dia_chi.trim() ? displaySnap.dia_chi : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.donVi')}
-              icon={<MapPin size={12} />}
-              value={displaySnap.ten_don_vi.trim() ? displaySnap.ten_don_vi : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.ngaySinh')}
-              type="date"
-              icon={<Calendar size={12} />}
-              value={displaySnap.ngay_sinh}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.gioiTinh')}
-              icon={<User size={12} />}
-              value={displaySnap.gioi_tinh.trim() ? displaySnap.gioi_tinh : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.danToc')}
-              icon={<Flag size={12} />}
-              value={displaySnap.dan_toc.trim() ? displaySnap.dan_toc : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.tonGiao')}
-              icon={<Landmark size={12} />}
-              value={displaySnap.ton_giao.trim() ? displaySnap.ton_giao : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.trinhDoCm')}
-              icon={<BookOpen size={12} />}
-              value={displaySnap.ten_trinh_do.trim() ? displaySnap.ten_trinh_do : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.trinhDoLlct')}
-              icon={<BookOpen size={12} />}
-              value={displaySnap.ten_llct.trim() ? displaySnap.ten_llct : '—'}
-              className="cursor-default"
-            />
-            <div className="flex items-center gap-2 pt-6">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-default">
-                <input
-                  type="checkbox"
-                  className="rounded border-border text-primary accent-primary pointer-events-none"
-                  checked={displaySnap.dang_vien}
+            {canEditCanBo && fetchCanBoDetailId && canBoDetailPending ? (
+              <p className={`${FORM_GRID_SPAN_FULL} text-sm text-muted-foreground m-0`}>
+                {txt('matTranUyVienUyBan.form.canBoProfileLoading')}
+              </p>
+            ) : canEditCanBo && canBoRowForEditor ? (
+              <div className={FORM_GRID_SPAN_FULL}>
+                <MttqCanBoInlineEditor ref={canBoEditorRef} key={canBoRowForEditor.id} row={canBoRowForEditor} />
+              </div>
+            ) : (
+              <>
+                <div className={FORM_GRID_SPAN_FULL}>
+                  <Input
+                    readOnly
+                    tabIndex={-1}
+                    label={txt('matTranUyVienUyBan.form.hoVaTen')}
+                    icon={Users}
+                    value={displaySnap.ho_va_ten.trim() ? displaySnap.ho_va_ten : '—'}
+                    className="cursor-default"
+                  />
+                </div>
+                <Input
                   readOnly
                   tabIndex={-1}
+                  label={txt('matTranCanBo.form.toChuc')}
+                  icon={Building2}
+                  value={displaySnap.ten_to_chuc.trim() ? displaySnap.ten_to_chuc : '—'}
+                  className="cursor-default"
                 />
-                {txt('matTranUyVienUyBan.form.dangVien')}
-              </label>
-            </div>
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.trangThai')}
-              icon={<Activity size={12} />}
-              value={displaySnap.ten_trang_thai.trim() ? displaySnap.ten_trang_thai : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.ngayNhapTrangThai')}
-              type="date"
-              icon={<Calendar size={12} />}
-              value={displaySnap.ngay_nhap_trang_thai}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.vanHoa')}
-              icon={<BookOpen size={12} />}
-              value={displaySnap.van_hoa.trim() ? displaySnap.van_hoa : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.ngayVaoDang')}
-              type="date"
-              icon={<Calendar size={12} />}
-              value={displaySnap.ngay_vao_dang}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.queQuan')}
-              icon={<MapPin size={12} />}
-              value={displaySnap.que_quan.trim() ? displaySnap.que_quan : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.noiOHienNay')}
-              icon={<Home size={12} />}
-              value={displaySnap.noi_o_hien_nay.trim() ? displaySnap.noi_o_hien_nay : '—'}
-              className="cursor-default"
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranUyVienUyBan.form.soDienThoai')}
-              icon={<Phone size={12} />}
-              value={displaySnap.dien_thoai.trim() ? displaySnap.dien_thoai : '—'}
-              className="cursor-default"
-            />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.phongBan')}
+                  icon={Layers}
+                  value={displaySnap.ten_phong_ban.trim() ? displaySnap.ten_phong_ban : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.chucVu')}
+                  icon={Briefcase}
+                  value={displaySnap.ten_chuc_vu.trim() ? displaySnap.ten_chuc_vu : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.diaChiCanBo')}
+                  icon={<MapPin size={12} />}
+                  value={displaySnap.dia_chi.trim() ? displaySnap.dia_chi : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.donVi')}
+                  icon={<MapPin size={12} />}
+                  value={displaySnap.ten_don_vi.trim() ? displaySnap.ten_don_vi : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.ngaySinh')}
+                  type="date"
+                  icon={<Calendar size={12} />}
+                  value={displaySnap.ngay_sinh}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.gioiTinh')}
+                  icon={<User size={12} />}
+                  value={displaySnap.gioi_tinh.trim() ? displaySnap.gioi_tinh : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.danToc')}
+                  icon={<Flag size={12} />}
+                  value={displaySnap.dan_toc.trim() ? displaySnap.dan_toc : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.tonGiao')}
+                  icon={<Landmark size={12} />}
+                  value={displaySnap.ton_giao.trim() ? displaySnap.ton_giao : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.trinhDoCm')}
+                  icon={<BookOpen size={12} />}
+                  value={displaySnap.ten_trinh_do.trim() ? displaySnap.ten_trinh_do : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.trinhDoLlct')}
+                  icon={<BookOpen size={12} />}
+                  value={displaySnap.ten_llct.trim() ? displaySnap.ten_llct : '—'}
+                  className="cursor-default"
+                />
+                <div className="flex items-center gap-2 pt-6">
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-default">
+                    <input
+                      type="checkbox"
+                      className="rounded border-border text-primary accent-primary pointer-events-none"
+                      checked={displaySnap.dang_vien}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                    {txt('matTranUyVienUyBan.form.dangVien')}
+                  </label>
+                </div>
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.trangThai')}
+                  icon={<Activity size={12} />}
+                  value={displaySnap.ten_trang_thai.trim() ? displaySnap.ten_trang_thai : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.ngayNhapTrangThai')}
+                  type="date"
+                  icon={<Calendar size={12} />}
+                  value={displaySnap.ngay_nhap_trang_thai}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.vanHoa')}
+                  icon={<BookOpen size={12} />}
+                  value={displaySnap.van_hoa.trim() ? displaySnap.van_hoa : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.ngayVaoDang')}
+                  type="date"
+                  icon={<Calendar size={12} />}
+                  value={displaySnap.ngay_vao_dang}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.queQuan')}
+                  icon={<MapPin size={12} />}
+                  value={displaySnap.que_quan.trim() ? displaySnap.que_quan : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranCanBo.form.noiOHienNay')}
+                  icon={<Home size={12} />}
+                  value={displaySnap.noi_o_hien_nay.trim() ? displaySnap.noi_o_hien_nay : '—'}
+                  className="cursor-default"
+                />
+                <Input
+                  readOnly
+                  tabIndex={-1}
+                  label={txt('matTranUyVienUyBan.form.soDienThoai')}
+                  icon={<Phone size={12} />}
+                  value={displaySnap.dien_thoai.trim() ? displaySnap.dien_thoai : '—'}
+                  className="cursor-default"
+                />
+              </>
+            )}
           </FormGrid>
         </FormSection>
 

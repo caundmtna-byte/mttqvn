@@ -24,6 +24,7 @@ import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
+import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
 import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import {
@@ -97,6 +98,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranRewardList');
   const didRedirect = useRef(false);
+  const { data: departments = [] } = useDepartments({ enabled: canView });
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -213,6 +215,18 @@ const DanhSachKhenThuongPage: React.FC = () => {
         const dv = (item.don_vi_de_xuat ?? '').trim() || DON_VI_NONE;
         if (!f.don_vi_de_xuat.includes(dv)) return false;
       }
+      if (f.hinh_thuc_khen?.length) {
+        const sel = f.hinh_thuc_khen;
+        if (!item.hinh_thuc_trong_qd.some((x) => sel.includes(x))) return false;
+      }
+      if (f.danh_hieu?.length) {
+        const sel = f.danh_hieu;
+        if (!item.danh_hieu_trong_qd.some((x) => sel.includes(x))) return false;
+      }
+      if (f.id_phong_ban_nguoi_tao?.length) {
+        const pb = (item.id_phong_ban_nguoi_tao ?? '').trim() || DON_VI_NONE;
+        if (!f.id_phong_ban_nguoi_tao.includes(pb)) return false;
+      }
       if (!mttqKhenThuongMatchesColumnSearch(item, f.columnSearch, f)) return false;
       return matchesSearch;
     },
@@ -234,6 +248,12 @@ const DanhSachKhenThuongPage: React.FC = () => {
       if (f.don_vi_de_xuat?.length) {
         const dv = (item.don_vi_de_xuat ?? '').trim() || DON_VI_NONE;
         if (!f.don_vi_de_xuat.includes(dv)) return false;
+      }
+      if (f.hinh_thuc_khen?.length && !f.hinh_thuc_khen.includes(item.hinh_thuc_khen)) return false;
+      if (f.danh_hieu?.length && !f.danh_hieu.includes(item.danh_hieu)) return false;
+      if (f.id_phong_ban_nguoi_tao?.length) {
+        const pb = (item.id_phong_ban_nguoi_tao ?? '').trim() || DON_VI_NONE;
+        if (!f.id_phong_ban_nguoi_tao.includes(pb)) return false;
       }
       if (!mttqKhenThuongChiTietFlatMatchesColumnSearch(item, f.columnSearch, f)) return false;
       return matchesSearch;
@@ -390,6 +410,96 @@ const DanhSachKhenThuongPage: React.FC = () => {
     }
     return opts;
   }, [viewableChiTietFlatRows]);
+
+  const hinhThucChipOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of viewableRows) {
+      for (const v of r.hinh_thuc_trong_qd) {
+        counts.set(v, (counts.get(v) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .map(([value, count]) => ({ value, label: value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [viewableRows]);
+
+  const danhHieuChipOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of viewableRows) {
+      for (const v of r.danh_hieu_trong_qd) {
+        counts.set(v, (counts.get(v) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .map(([value, count]) => ({ value, label: value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [viewableRows]);
+
+  const phongBanNguoiTaoChipOptions = useMemo(() => {
+    const byId = new Map(departments.map((d) => [d.id, d.ten_phong_ban]));
+    const counts = new Map<string, number>();
+    let empty = 0;
+    for (const r of viewableRows) {
+      const raw = (r.id_phong_ban_nguoi_tao ?? '').trim();
+      if (!raw) empty += 1;
+      else counts.set(raw, (counts.get(raw) ?? 0) + 1);
+    }
+    const opts = [...counts.entries()]
+      .map(([value, count]) => ({ value, label: byId.get(value) ?? value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+    if (empty > 0) {
+      opts.unshift({
+        value: DON_VI_NONE,
+        label: txt('matTranKhenThuong.filter.phongBanNone'),
+        count: empty,
+      });
+    }
+    return opts;
+  }, [viewableRows, departments]);
+
+  const hinhThucChipOptionsChiTiet = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of viewableChiTietFlatRows) {
+      const v = r.hinh_thuc_khen;
+      counts.set(v, (counts.get(v) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([value, count]) => ({ value, label: value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [viewableChiTietFlatRows]);
+
+  const danhHieuChipOptionsChiTiet = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of viewableChiTietFlatRows) {
+      const v = r.danh_hieu;
+      counts.set(v, (counts.get(v) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([value, count]) => ({ value, label: value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [viewableChiTietFlatRows]);
+
+  const phongBanNguoiTaoChipOptionsChiTiet = useMemo(() => {
+    const byId = new Map(departments.map((d) => [d.id, d.ten_phong_ban]));
+    const counts = new Map<string, number>();
+    let empty = 0;
+    for (const r of viewableChiTietFlatRows) {
+      const raw = (r.id_phong_ban_nguoi_tao ?? '').trim();
+      if (!raw) empty += 1;
+      else counts.set(raw, (counts.get(raw) ?? 0) + 1);
+    }
+    const opts = [...counts.entries()]
+      .map(([value, count]) => ({ value, label: byId.get(value) ?? value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+    if (empty > 0) {
+      opts.unshift({
+        value: DON_VI_NONE,
+        label: txt('matTranKhenThuong.filter.phongBanNone'),
+        count: empty,
+      });
+    }
+    return opts;
+  }, [viewableChiTietFlatRows, departments]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -593,6 +703,9 @@ const DanhSachKhenThuongPage: React.FC = () => {
               trangThaiOptions={trangThaiChipOptions}
               namKhenThuongOptions={namKhenThuongChipOptions}
               donViDeXuatOptions={donViDeXuatChipOptions}
+              hinhThucOptions={hinhThucChipOptions}
+              danhHieuOptions={danhHieuChipOptions}
+              phongBanNguoiTaoOptions={phongBanNguoiTaoChipOptions}
               onAdd={() => {
                 startTransition(() => {
                   setEditing(null);
@@ -621,6 +734,9 @@ const DanhSachKhenThuongPage: React.FC = () => {
               trangThaiOptions={trangThaiChipOptionsChiTiet}
               namKhenThuongOptions={namKhenThuongChipOptionsChiTiet}
               donViDeXuatOptions={donViDeXuatChipOptionsChiTiet}
+              hinhThucOptions={hinhThucChipOptionsChiTiet}
+              danhHieuOptions={danhHieuChipOptionsChiTiet}
+              phongBanNguoiTaoOptions={phongBanNguoiTaoChipOptionsChiTiet}
             />
             <div className="flex-1 min-h-0">
               <MttqKhenThuongChiTietTable
@@ -629,6 +745,8 @@ const DanhSachKhenThuongPage: React.FC = () => {
                 trangThaiHeaderOptions={trangThaiChipOptionsChiTiet}
                 namKhenThuongHeaderOptions={namKhenThuongChipOptionsChiTiet}
                 donViDeXuatHeaderOptions={donViDeXuatChipOptionsChiTiet}
+                hinhThucHeaderOptions={hinhThucChipOptionsChiTiet}
+                danhHieuHeaderOptions={danhHieuChipOptionsChiTiet}
                 onViewQd={(id) => setViewingId(id)}
                 onEdit={handleEditFromChiTietFlatRow}
                 onDelete={handleDeleteChiTietLine}
@@ -644,6 +762,9 @@ const DanhSachKhenThuongPage: React.FC = () => {
               trangThaiOptions={trangThaiChipOptions}
               namKhenThuongOptions={namKhenThuongChipOptions}
               donViDeXuatOptions={donViDeXuatChipOptions}
+              hinhThucOptions={hinhThucChipOptions}
+              danhHieuOptions={danhHieuChipOptions}
+              phongBanNguoiTaoOptions={phongBanNguoiTaoChipOptions}
               onAdd={() => {
                 startTransition(() => {
                   setEditing(null);

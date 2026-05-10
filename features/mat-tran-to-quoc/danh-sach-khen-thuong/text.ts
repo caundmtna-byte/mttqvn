@@ -28,6 +28,8 @@ export const matTranKhenThuong = {
   filter: {
     namChip: 'Năm khen thưởng',
     donViNone: '— Trống —',
+    phongBanNone: '— Chưa gán phòng ban —',
+    phongBanNguoiTaoChip: 'Phòng ban người tạo',
   },
   store: {
     soQdCol: 'Số QĐ',

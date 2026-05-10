@@ -7,6 +7,8 @@ export interface ChuongTrinhNamFilters {
   id_phong_ban: string[];
   /** Năm calendar từ `ngay_bat_dau` (YYYY) */
   nam_bat_dau: string[];
+  /** `qua_han` | `sap_den_han` | `con_han` | `ket_thuc` — theo `ngay_ket_thuc` + trạng thái */
+  tien_do: string[];
 }
 
 /** Danh sách — không gồm `mo_ta` (tách payload list / egress). */

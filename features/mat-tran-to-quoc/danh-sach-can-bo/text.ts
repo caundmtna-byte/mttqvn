@@ -7,6 +7,7 @@ export const matTranCanBo = {
     gioiTinhCol: 'Giới tính',
     trangThaiCol: 'Trạng thái',
     chucVuCol: 'Chức vụ',
+    capQuanLyCol: 'Cấp quản lý',
     toChucCol: 'Tổ chức',
     phongBanCol: 'Phòng ban',
     dienThoaiCol: 'Điện thoại',
@@ -29,6 +30,9 @@ export const matTranCanBo = {
     toChuc: 'Tổ chức',
     phongBan: 'Phòng ban',
     chucVu: 'Chức vụ',
+    capQuanLy: 'Cấp quản lý (theo chức vụ)',
+    capQuanLyHint: 'Tự điền từ chức vụ đã chọn (Tỉnh / Xã phường).',
+    capQuanLyChuaGan: 'Chưa gán / không áp dụng',
     donVi: 'Đơn vị (xã/phường)',
     donViHint: 'Bắt buộc khi chức vụ có cấp quản lý « Xã phường ».',
     ngayThamGiaToChuc: 'Ngày tham gia tổ chức',
@@ -117,6 +121,8 @@ export const matTranCanBo = {
   emptyTitle: 'Chưa có cán bộ',
   emptyHint: 'Thêm hồ sơ mới hoặc điều chỉnh bộ lọc.',
   noViewPermission: 'Bạn không có quyền xem module Danh sách cán bộ.',
+  /** Nút đầu dropdown chọn cán bộ ở module khác (khen thưởng, tập huấn, …). */
+  comboboxAddNew: 'Thêm cán bộ mới',
   searchPlaceholder: 'Tìm theo họ tên, tổ chức, chức vụ, trạng thái…',
   noEmployeeBanner:
     'Tài khoản chưa gắn hồ sơ nhân viên: không thể tạo mới cán bộ cho đến khi được gán nhân viên. Liên hệ quản trị.',

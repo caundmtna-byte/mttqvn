@@ -23,6 +23,10 @@ import {
   Download,
   Layers,
   FileText,
+  Gauge,
+  AlertTriangle,
+  Timer,
+  CalendarClock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -41,11 +45,19 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { ChuongTrinhNamListRow } from '../core/types';
 import { CHUONG_TRINH_NAM_TRANG_THAI } from '../core/constants';
 import {
+  CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS,
+  formatChuongTrinhNamTienDo,
+  chuongTrinhNamTienDoChipTone,
+  getChuongTrinhNamTienDoFilterId,
+} from '../utils/ngay-ket-thuc-tien-do';
+import { congViecDeadlineChipClass } from '@/features/quan-ly-giao-viec/cong-viec/core/display-badges';
+import {
   CHUONG_TRINH_STATS_PHONG_BAN_NONE,
   type ChuongTrinhNamStatsDimensionFilters,
   resolveChuongTrinhNamStatsDateRange,
   filterRowsForChuongTrinhNamStats,
   computeChuongTrinhNamStatsKpis,
+  computeChuongTrinhNamTienDoKpis,
   pickChuongTrinhTrendBucket,
   buildChuongTrinhTrendSeries,
   aggregateChuongTrinhTopPhongBan,
@@ -67,6 +79,7 @@ const initialDims: ChuongTrinhNamStatsDimensionFilters = {
   trang_thai: [],
   id_phong_ban: [],
   nam_bat_dau: [],
+  tien_do: [],
 };
 
 const EXPORT_PAGINATION = { page: 1, pageSize: 100_000 };
@@ -117,6 +130,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
   );
 
   const kpis = useMemo(() => computeChuongTrinhNamStatsKpis(filtered), [filtered]);
+  const tienDoKpis = useMemo(() => computeChuongTrinhNamTienDoKpis(filtered), [filtered]);
 
   const bucket = useMemo(() => pickChuongTrinhTrendBucket(resolvedRange.start, resolvedRange.end), [resolvedRange]);
   const trendSeries = useMemo(
@@ -190,6 +204,36 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
       .sort((a, b) => b.value.localeCompare(a.value, getLanguage()));
   }, [rows]);
 
+  const tienDoOptions = useMemo(() => {
+    const labelOf = (id: (typeof CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS)[number]) => {
+      switch (id) {
+        case 'qua_han':
+          return txt('chuongTrinhNam.filter.tienDoQuaHan');
+        case 'sap_den_han':
+          return txt('chuongTrinhNam.filter.tienDoSapDenHan');
+        case 'con_han':
+          return txt('chuongTrinhNam.filter.tienDoConHan');
+        case 'ket_thuc':
+          return txt('chuongTrinhNam.filter.tienDoKetThuc');
+        default:
+          return id;
+      }
+    };
+    const counts = new Map<string, number>();
+    for (const id of CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS) {
+      counts.set(id, 0);
+    }
+    for (const r of rows) {
+      const k = getChuongTrinhNamTienDoFilterId(r);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS.map((value) => ({
+      value,
+      label: labelOf(value),
+      count: counts.get(value) ?? 0,
+    }));
+  }, [rows]);
+
   const filterGroups = useMemo<FilterGroup[]>(
     () => [
       {
@@ -216,8 +260,25 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
         value: dims.nam_bat_dau,
         onChange: (v) => setDims((d) => ({ ...d, nam_bat_dau: v })),
       },
+      {
+        key: 'tien_do',
+        label: txt('chuongTrinhNam.stats.filterTienDo'),
+        icon: Gauge,
+        options: tienDoOptions.map((o) => ({ label: o.label, value: o.value, count: o.count })),
+        value: dims.tien_do,
+        onChange: (v) => setDims((d) => ({ ...d, tien_do: v })),
+      },
     ],
-    [trangThaiOptions, phongBanOptions, namBatDauOptions, dims.trang_thai, dims.id_phong_ban, dims.nam_bat_dau],
+    [
+      trangThaiOptions,
+      phongBanOptions,
+      namBatDauOptions,
+      tienDoOptions,
+      dims.trang_thai,
+      dims.id_phong_ban,
+      dims.nam_bat_dau,
+      dims.tien_do,
+    ],
   );
 
   const isNonDefaultDateRange = useMemo(() => {
@@ -233,6 +294,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
     if (dims.trang_thai.length) n += 1;
     if (dims.id_phong_ban.length) n += 1;
     if (dims.nam_bat_dau.length) n += 1;
+    if (dims.tien_do.length) n += 1;
     return n;
   }, [dims, isNonDefaultDateRange]);
 
@@ -248,6 +310,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
       { key: 'trang_thai', label: txt('chuongTrinhNam.stats.tableColTrangThai') },
       { key: 'ngay_bat_dau', label: txt('chuongTrinhNam.stats.tableColNgayBatDau') },
       { key: 'ngay_ket_thuc', label: txt('chuongTrinhNam.stats.tableColNgayKetThuc') },
+      { key: 'tien_do', label: txt('chuongTrinhNam.stats.tableColTienDo') },
       { key: 'nguoi_tao', label: txt('chuongTrinhNam.stats.tableColNguoiTao') },
       { key: 'tg_tao', label: txt('chuongTrinhNam.detail.fieldTgTao') },
       { key: 'range_start', label: txt('chuongTrinhNam.stats.exportRangeFrom') },
@@ -263,6 +326,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
       trang_thai: item.trang_thai,
       ngay_bat_dau: item.ngay_bat_dau ?? '',
       ngay_ket_thuc: item.ngay_ket_thuc ?? '',
+      tien_do: formatChuongTrinhNamTienDo(item),
       nguoi_tao: (item.ho_va_ten_nguoi_tao ?? item.ten_tai_khoan_nguoi_tao ?? '').trim(),
       tg_tao: item.tg_tao,
       range_start: resolvedRange.start,
@@ -322,6 +386,48 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
     [kpis],
   );
 
+  const tienDoKpiItems = useMemo(
+    () => [
+      {
+        id: 'td_qua_han',
+        label: txt('chuongTrinhNam.stats.kpiTienDoQuaHan'),
+        value: tienDoKpis.quaHan,
+        icon: AlertTriangle,
+        bg: 'bg-rose-500/10',
+        color: 'text-rose-600 dark:text-rose-400',
+        delta: null,
+      },
+      {
+        id: 'td_sap',
+        label: txt('chuongTrinhNam.stats.kpiTienDoSapDenHan'),
+        value: tienDoKpis.sapDenHan,
+        icon: Timer,
+        bg: 'bg-amber-500/10',
+        color: 'text-amber-600 dark:text-amber-400',
+        delta: null,
+      },
+      {
+        id: 'td_con',
+        label: txt('chuongTrinhNam.stats.kpiTienDoConHan'),
+        value: tienDoKpis.conHan,
+        icon: CalendarClock,
+        bg: 'bg-emerald-500/10',
+        color: 'text-emerald-600 dark:text-emerald-400',
+        delta: null,
+      },
+      {
+        id: 'td_ket_thuc',
+        label: txt('chuongTrinhNam.stats.kpiTienDoDaKetThuc'),
+        value: tienDoKpis.ketThuc,
+        icon: CircleDot,
+        bg: 'bg-slate-500/10',
+        color: 'text-slate-600 dark:text-slate-400',
+        delta: null,
+      },
+    ],
+    [tienDoKpis],
+  );
+
   const handleExport = () => {
     if (sortedLookupBase.length === 0) {
       toast.warning(txt('chuongTrinhNam.stats.noExportData'));
@@ -334,7 +440,9 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else {
       setSortKey(key);
-      setSortDir(key === 'ngay_bat_dau' || key === 'ngay_ket_thuc' ? 'desc' : 'asc');
+      setSortDir(
+        key === 'ngay_bat_dau' || key === 'ngay_ket_thuc' || key === 'tien_do' ? 'desc' : 'asc',
+      );
     }
   };
 
@@ -378,6 +486,14 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
         onChange={(v) => setDims((d) => ({ ...d, nam_bat_dau: v }))}
         placeholder={txt('chuongTrinhNam.stats.filterNamBatDau')}
         className="w-[9.5rem] shrink-0"
+      />
+      <FilterChipMultiSelect
+        icon={Gauge}
+        options={tienDoOptions}
+        value={dims.tien_do}
+        onChange={(v) => setDims((d) => ({ ...d, tien_do: v }))}
+        placeholder={txt('chuongTrinhNam.stats.filterTienDo')}
+        className="w-[10.5rem] shrink-0"
       />
     </>
   );
@@ -429,6 +545,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
         ) : (
           <>
             <StatsKpiGrid items={kpiItems} columns={4} />
+            <StatsKpiGrid items={tienDoKpiItems} columns={4} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StatsCard title={txt('chuongTrinhNam.stats.chartTrendCount')} icon={FileText} spanTwo={false}>
@@ -495,7 +612,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
 
             <StatsCard title={txt('chuongTrinhNam.stats.tableLookupTitle')} icon={Layers}>
               <div className="overflow-x-auto max-h-[min(480px,50vh)] overflow-y-auto -m-4">
-                <table className="w-full text-sm min-w-[720px]">
+                <table className="w-full text-sm min-w-[880px]">
                   <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                     <tr className="text-left text-muted-foreground">
                       {(
@@ -505,6 +622,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
                           ['trang_thai', txt('chuongTrinhNam.stats.tableColTrangThai')],
                           ['ngay_bat_dau', txt('chuongTrinhNam.stats.tableColNgayBatDau')],
                           ['ngay_ket_thuc', txt('chuongTrinhNam.stats.tableColNgayKetThuc')],
+                          ['tien_do', txt('chuongTrinhNam.stats.tableColTienDo')],
                           ['nguoi_tao', txt('chuongTrinhNam.stats.tableColNguoiTao')],
                         ] as const
                       ).map(([key, label]) => (
@@ -536,6 +654,16 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
                         <td className="py-2 pr-3">{row.trang_thai}</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">{row.ngay_bat_dau ?? '—'}</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">{row.ngay_ket_thuc ?? '—'}</td>
+                        <td className="py-2 pr-3 max-w-[200px]">
+                          <span
+                            className={congViecDeadlineChipClass(
+                              chuongTrinhNamTienDoChipTone(row),
+                              'text-xs max-w-full truncate',
+                            )}
+                          >
+                            {formatChuongTrinhNamTienDo(row)}
+                          </span>
+                        </td>
                         <td className="py-2 pr-3 max-w-[160px] truncate">
                           {(row.ho_va_ten_nguoi_tao ?? row.ten_tai_khoan_nguoi_tao ?? '').trim() || '—'}
                         </td>

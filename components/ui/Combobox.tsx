@@ -36,6 +36,8 @@ interface ComboboxProps {
   dropdownInPortal?: boolean;
   /** Khi false, ẩn nút xóa lựa chọn (vd. trường bắt buộc luôn có giá trị) */
   clearable?: boolean;
+  /** Ngay dưới ô tìm (nếu có), trên danh sách option — vd. nút « Thêm mới ». `close` đóng dropdown + xóa tìm. */
+  dropdownListTop?: (ctx: { close: () => void }) => React.ReactNode;
 }
 
 const Combobox: React.FC<ComboboxProps> = ({
@@ -56,6 +58,7 @@ const Combobox: React.FC<ComboboxProps> = ({
   triggerClassName,
   dropdownInPortal = false,
   clearable = true,
+  dropdownListTop,
 }) => {
   const labelIcon =
     icon != null ? renderInputIcon(icon as NonNullable<InputProps['icon']>) : null;
@@ -143,6 +146,11 @@ const Combobox: React.FC<ComboboxProps> = ({
     setIsOpen(false);
     setSearchTerm('');
   };
+
+  const closeDropdown = useCallback(() => {
+    setIsOpen(false);
+    setSearchTerm('');
+  }, []);
 
   const clearSelection = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -239,6 +247,9 @@ const Combobox: React.FC<ComboboxProps> = ({
                   </div>
                 </div>
               )}
+              {dropdownListTop ? (
+                <div className="border-b border-border bg-card px-1.5 py-1.5">{dropdownListTop({ close: closeDropdown })}</div>
+              ) : null}
               <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-1.5 space-y-1">
                 {filteredOptions.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground flex flex-col items-center">
@@ -315,6 +326,9 @@ const Combobox: React.FC<ComboboxProps> = ({
                   </div>
                 </div>
               )}
+              {dropdownListTop ? (
+                <div className="border-b border-border bg-card px-1.5 py-1.5">{dropdownListTop({ close: closeDropdown })}</div>
+              ) : null}
               <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-1.5 space-y-1">
                 {filteredOptions.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground flex flex-col items-center">

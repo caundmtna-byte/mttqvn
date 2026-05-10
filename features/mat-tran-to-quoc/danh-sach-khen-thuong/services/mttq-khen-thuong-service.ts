@@ -98,6 +98,8 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
   const lines = row.mttq_khen_thuong_ct;
   let soDong = 0;
   const rewardedDonViIds: string[] = [];
+  const hinhSet = new Set<MttqKhenThuongHinhThuc>();
+  const danhSet = new Set<MttqKhenThuongDanhHieu>();
   if (Array.isArray(lines)) {
     const onlyAggregateCount =
       lines.length === 1 &&
@@ -121,6 +123,10 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
         soDong += 1;
         const dv = donViIdFromCanBoEmbed(lo.can_bo);
         if (dv) rewardedDonViIds.push(dv);
+        const ht = lo.hinh_thuc_khen;
+        if (typeof ht === 'string' && ht.trim()) hinhSet.add(ht as MttqKhenThuongHinhThuc);
+        const dh = lo.danh_hieu;
+        if (typeof dh === 'string' && dh.trim()) danhSet.add(dh as MttqKhenThuongDanhHieu);
       }
     }
   }
@@ -145,6 +151,8 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
     id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
     so_dong: soDong,
     rewarded_can_bo_don_vi_ids: rewardedDonViIds,
+    hinh_thuc_trong_qd: [...hinhSet].sort((a, b) => a.localeCompare(b)),
+    danh_hieu_trong_qd: [...danhSet].sort((a, b) => a.localeCompare(b)),
   };
 }
 
@@ -310,9 +318,13 @@ export async function getMttqKhenThuongList(): Promise<MttqKhenThuongListRow[]> 
     return mockParents.map((p) => {
       const kids = mockChildren.filter((c) => c.id_khen_thuong === p.id);
       const rewarded_can_bo_don_vi_ids: string[] = [];
+      const hinhSet = new Set<MttqKhenThuongHinhThuc>();
+      const danhSet = new Set<MttqKhenThuongDanhHieu>();
       for (const c of kids) {
         const dv = c.can_bo_don_vi_id?.toString().trim();
         if (dv) rewarded_can_bo_don_vi_ids.push(dv);
+        hinhSet.add(c.hinh_thuc_khen);
+        danhSet.add(c.danh_hieu);
       }
       return {
         id: p.id,
@@ -329,6 +341,8 @@ export async function getMttqKhenThuongList(): Promise<MttqKhenThuongListRow[]> 
         id_phong_ban_nguoi_tao: p.id_phong_ban_nguoi_tao ?? null,
         so_dong: kids.length,
         rewarded_can_bo_don_vi_ids,
+        hinh_thuc_trong_qd: [...hinhSet].sort((a, b) => a.localeCompare(b)),
+        danh_hieu_trong_qd: [...danhSet].sort((a, b) => a.localeCompare(b)),
       };
     });
   }

@@ -3,6 +3,18 @@ export interface MttqCanBoFilters {
   /** Giá trị `trang_thai_id` hoặc `__null__` khi chưa gán. */
   trang_thai_id: string[];
   gioi_tinh: string[];
+  /** `to_chuc_id` hoặc chip null. */
+  to_chuc_id: string[];
+  phong_ban_id: string[];
+  chuc_vu_id: string[];
+  /** `Tỉnh` | `Xã phường` | `__null__` — theo `chuc_vu_cap_quan_ly` sau chuẩn hoá. */
+  chuc_vu_cap_quan_ly: string[];
+  don_vi_id: string[];
+  dan_toc_id: string[];
+  /** `CHIP_DANG_VIEN_YES` / `CHIP_DANG_VIEN_NO`. */
+  dang_vien: string[];
+  trinh_do_id: string[];
+  ly_luan_chinh_tri_id: string[];
 }
 
 /** Danh sách / chi tiết — id và FK dạng string (bigint JSON từ Supabase). */

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Tag, CalendarRange, Landmark } from 'lucide-react';
+import { Tag, CalendarRange, Landmark, Layers, Medal, Building2 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -17,6 +17,9 @@ interface Props {
   trangThaiOptions: ChipOption[];
   namKhenThuongOptions: ChipOption[];
   donViDeXuatOptions: ChipOption[];
+  hinhThucOptions: ChipOption[];
+  danhHieuOptions: ChipOption[];
+  phongBanNguoiTaoOptions: ChipOption[];
   desktopStartSlot?: React.ReactNode;
 }
 
@@ -25,6 +28,9 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
   trangThaiOptions,
   namKhenThuongOptions,
   donViDeXuatOptions,
+  hinhThucOptions,
+  danhHieuOptions,
+  phongBanNguoiTaoOptions,
   desktopStartSlot,
 }) => {
   const {
@@ -47,13 +53,18 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
     const columnSearchN = countKhenThuongColumnSearchActive(filters.columnSearch, {
       don_vi_de_xuat: filters.don_vi_de_xuat,
       nam_khen_thuong: filters.nam_khen_thuong,
+      hinh_thuc_khen: filters.hinh_thuc_khen,
+      danh_hieu: filters.danh_hieu,
     });
     return (
       (searchTerm ? 1 : 0) +
       columnSearchN +
       (filters.trang_thai.length > 0 ? 1 : 0) +
       (filters.nam_khen_thuong.length > 0 ? 1 : 0) +
-      (filters.don_vi_de_xuat.length > 0 ? 1 : 0)
+      (filters.don_vi_de_xuat.length > 0 ? 1 : 0) +
+      (filters.hinh_thuc_khen.length > 0 ? 1 : 0) +
+      (filters.danh_hieu.length > 0 ? 1 : 0) +
+      (filters.id_phong_ban_nguoi_tao.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -63,6 +74,9 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
     setFilter('trang_thai', []);
     setFilter('nam_khen_thuong', []);
     setFilter('don_vi_de_xuat', []);
+    setFilter('hinh_thuc_khen', []);
+    setFilter('danh_hieu', []);
+    setFilter('id_phong_ban_nguoi_tao', []);
     setSort(null, null);
   };
 
@@ -93,15 +107,45 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
           icon={Landmark}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[280px]"
         />
+        <FilterChipMultiSelect
+          options={hinhThucOptions}
+          value={filters.hinh_thuc_khen}
+          onChange={(val) => setFilter('hinh_thuc_khen', val)}
+          placeholder={txt('matTranKhenThuong.form.hinhThuc')}
+          icon={Layers}
+          className="shrink-0 w-full min-w-0 sm:w-[min(180px,24vw)] sm:max-w-[220px]"
+        />
+        <FilterChipMultiSelect
+          options={danhHieuOptions}
+          value={filters.danh_hieu}
+          onChange={(val) => setFilter('danh_hieu', val)}
+          placeholder={txt('matTranKhenThuong.form.danhHieu')}
+          icon={Medal}
+          className="shrink-0 w-full min-w-0 sm:w-[min(180px,24vw)] sm:max-w-[220px]"
+        />
+        <FilterChipMultiSelect
+          options={phongBanNguoiTaoOptions}
+          value={filters.id_phong_ban_nguoi_tao}
+          onChange={(val) => setFilter('id_phong_ban_nguoi_tao', val)}
+          placeholder={txt('matTranKhenThuong.filter.phongBanNguoiTaoChip')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[280px]"
+        />
       </div>
     ),
     [
       trangThaiOptions,
       namKhenThuongOptions,
       donViDeXuatOptions,
+      hinhThucOptions,
+      danhHieuOptions,
+      phongBanNguoiTaoOptions,
       filters.trang_thai,
       filters.nam_khen_thuong,
       filters.don_vi_de_xuat,
+      filters.hinh_thuc_khen,
+      filters.danh_hieu,
+      filters.id_phong_ban_nguoi_tao,
       setFilter,
     ],
   );
@@ -132,14 +176,44 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
         value: filters.don_vi_de_xuat,
         onChange: (val: string[]) => setFilter('don_vi_de_xuat', val),
       },
+      {
+        key: 'hinh_thuc_khen',
+        label: txt('matTranKhenThuong.form.hinhThuc'),
+        icon: Layers,
+        options: hinhThucOptions,
+        value: filters.hinh_thuc_khen,
+        onChange: (val: string[]) => setFilter('hinh_thuc_khen', val),
+      },
+      {
+        key: 'danh_hieu',
+        label: txt('matTranKhenThuong.form.danhHieu'),
+        icon: Medal,
+        options: danhHieuOptions,
+        value: filters.danh_hieu,
+        onChange: (val: string[]) => setFilter('danh_hieu', val),
+      },
+      {
+        key: 'id_phong_ban_nguoi_tao',
+        label: txt('matTranKhenThuong.filter.phongBanNguoiTaoChip'),
+        icon: Building2,
+        options: phongBanNguoiTaoOptions,
+        value: filters.id_phong_ban_nguoi_tao,
+        onChange: (val: string[]) => setFilter('id_phong_ban_nguoi_tao', val),
+      },
     ],
     [
       trangThaiOptions,
       namKhenThuongOptions,
       donViDeXuatOptions,
+      hinhThucOptions,
+      danhHieuOptions,
+      phongBanNguoiTaoOptions,
       filters.trang_thai,
       filters.nam_khen_thuong,
       filters.don_vi_de_xuat,
+      filters.hinh_thuc_khen,
+      filters.danh_hieu,
+      filters.id_phong_ban_nguoi_tao,
       setFilter,
     ],
   );

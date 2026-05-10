@@ -8,20 +8,29 @@ import type { MttqKhenThuongChiTietFlatRow, MttqKhenThuongFilters, MttqKhenThuon
 export const MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT = ['trang_thai'] as const;
 
 /** Số ô columnSearch đang có nội dung (bỏ cột đã có MultiSelect trong header). */
+type KhenThuongChipOverlap = Pick<
+  MttqKhenThuongFilters,
+  'don_vi_de_xuat' | 'nam_khen_thuong' | 'hinh_thuc_khen' | 'danh_hieu'
+>;
+
 export function countKhenThuongColumnSearchActive(
   columnSearch: Record<string, string> | undefined,
-  chip?: Pick<MttqKhenThuongFilters, 'don_vi_de_xuat' | 'nam_khen_thuong'>,
+  chip?: KhenThuongChipOverlap,
 ): number {
   if (!columnSearch) return 0;
   const skip = MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
   const skipDonVi = (chip?.don_vi_de_xuat?.length ?? 0) > 0;
   const skipNam = (chip?.nam_khen_thuong?.length ?? 0) > 0;
+  const skipHinh = (chip?.hinh_thuc_khen?.length ?? 0) > 0;
+  const skipDanh = (chip?.danh_hieu?.length ?? 0) > 0;
   let n = 0;
   for (const [colId, q] of Object.entries(columnSearch)) {
     if (!q.trim()) continue;
     if (skip.includes(colId)) continue;
     if (skipDonVi && colId === 'don_vi_de_xuat') continue;
     if (skipNam && colId === 'ngay_khen_thuong') continue;
+    if (skipHinh && colId === 'hinh_thuc_khen') continue;
+    if (skipDanh && colId === 'danh_hieu') continue;
     n += 1;
   }
   return n;
@@ -34,17 +43,21 @@ export function countKhenThuongColumnSearchActive(
 export function mttqKhenThuongMatchesColumnSearch(
   row: MttqKhenThuongListRow,
   columnSearch: Record<string, string> | undefined,
-  chip?: Pick<MttqKhenThuongFilters, 'don_vi_de_xuat' | 'nam_khen_thuong'>,
+  chip?: KhenThuongChipOverlap,
 ): boolean {
   if (!columnSearch) return true;
   const skip = MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
   const skipDonVi = (chip?.don_vi_de_xuat?.length ?? 0) > 0;
   const skipNam = (chip?.nam_khen_thuong?.length ?? 0) > 0;
+  const skipHinh = (chip?.hinh_thuc_khen?.length ?? 0) > 0;
+  const skipDanh = (chip?.danh_hieu?.length ?? 0) > 0;
 
   for (const [colId, q] of Object.entries(columnSearch)) {
     if (skip.includes(colId)) continue;
     if (skipDonVi && colId === 'don_vi_de_xuat') continue;
     if (skipNam && colId === 'ngay_khen_thuong') continue;
+    if (skipHinh && colId === 'hinh_thuc_khen') continue;
+    if (skipDanh && colId === 'danh_hieu') continue;
     const trimmed = q.trim();
     if (!trimmed) continue;
 
@@ -80,17 +93,21 @@ export function mttqKhenThuongMatchesColumnSearch(
 export function mttqKhenThuongChiTietFlatMatchesColumnSearch(
   row: MttqKhenThuongChiTietFlatRow,
   columnSearch: Record<string, string> | undefined,
-  chip?: Pick<MttqKhenThuongFilters, 'don_vi_de_xuat' | 'nam_khen_thuong'>,
+  chip?: KhenThuongChipOverlap,
 ): boolean {
   if (!columnSearch) return true;
   const skip = MTTQ_KHEN_THUONG_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
   const skipDonVi = (chip?.don_vi_de_xuat?.length ?? 0) > 0;
   const skipNam = (chip?.nam_khen_thuong?.length ?? 0) > 0;
+  const skipHinh = (chip?.hinh_thuc_khen?.length ?? 0) > 0;
+  const skipDanh = (chip?.danh_hieu?.length ?? 0) > 0;
 
   for (const [colId, q] of Object.entries(columnSearch)) {
     if (skip.includes(colId)) continue;
     if (skipDonVi && colId === 'don_vi_de_xuat') continue;
     if (skipNam && colId === 'ngay_khen_thuong') continue;
+    if (skipHinh && colId === 'hinh_thuc_khen') continue;
+    if (skipDanh && colId === 'danh_hieu') continue;
     const trimmed = q.trim();
     if (!trimmed) continue;
 

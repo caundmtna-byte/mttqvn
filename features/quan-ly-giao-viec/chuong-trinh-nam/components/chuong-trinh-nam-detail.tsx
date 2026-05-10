@@ -8,6 +8,7 @@ import {
   Clock,
   Edit,
   FileText,
+  Gauge,
   ListTodo,
   Plus,
   StickyNote,
@@ -34,6 +35,7 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { useEmployees } from '@/features/he-thong/nhan-vien/hooks/use-nhan-vien';
 import type { ChuongTrinhNam } from '../core/types';
 import { getChuongTrinhNamTrangThaiBadgeConfig } from '../core/constants';
+import { formatChuongTrinhNamTienDo, chuongTrinhNamTienDoChipTone } from '../utils/ngay-ket-thuc-tien-do';
 import { CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT } from '@/features/quan-ly-giao-viec/cong-viec/services/cong-viec-danh-sach-service';
 import {
   CONG_VIEC_MUC_DO_BADGE_CONFIG,
@@ -75,6 +77,7 @@ const ChuongTrinhNamDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
     useResourcePermissions('tasks');
   const confirm = useConfirmStore((s) => s.confirm);
   const trangThaiBadgeConfig = useMemo(() => getChuongTrinhNamTrangThaiBadgeConfig(), []);
+  const tienDoLabel = formatChuongTrinhNamTienDo(data);
 
   const [changeStatusOpen, setChangeStatusOpen] = useState(false);
   const [cvFormOpen, setCvFormOpen] = useState(false);
@@ -239,6 +242,13 @@ const ChuongTrinhNamDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                 label={txt('chuongTrinhNam.store.ngayKetThucCol')}
                 icon={<Calendar size={12} />}
                 value={data.ngay_ket_thuc ? formatDateShort(data.ngay_ket_thuc) : undefined}
+              />
+              <DetailField
+                label={txt('chuongTrinhNam.detail.fieldTienDo')}
+                icon={<Gauge size={12} />}
+                value={
+                  <span className={congViecDeadlineChipClass(chuongTrinhNamTienDoChipTone(data))}>{tienDoLabel}</span>
+                }
               />
               <DetailField
                 label={txt('chuongTrinhNam.store.phongBanCol')}

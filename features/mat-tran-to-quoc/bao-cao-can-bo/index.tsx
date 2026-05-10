@@ -21,7 +21,9 @@ import {
   FileText,
   Heart,
   GraduationCap,
+  BookOpen,
   Landmark,
+  Binary,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -46,10 +48,12 @@ import type { MttqCanBoRow } from '../danh-sach-can-bo/core/types';
 import { computeAgeFromBirthDate } from '../danh-sach-can-bo/utils/age';
 import { formatCanBoPhoneDisplay } from '../danh-sach-can-bo/utils/display-format';
 import { CHIP_TRANG_THAI_NULL } from '../danh-sach-can-bo/core/constants';
+import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import {
   type OfficerStatsDimensionFilters,
   resolveOfficerStatsDateRange,
+  resolveOfficerStatsTrendChartRange,
   filterRowsForOfficerStats,
   computeOfficerStatsKpis,
   pickTrendBucket,
@@ -65,7 +69,7 @@ const MttqCanBoDetail = lazy(() => import('../danh-sach-can-bo/components/mttq-c
 const CUSTOM_PRESET = 'custom';
 
 const initialDateRange: DateRangeValue = {
-  preset: 'thisMonth',
+  preset: 'all',
   customStart: '',
   customEnd: '',
 };
@@ -74,10 +78,12 @@ const initialDims: OfficerStatsDimensionFilters = {
   trang_thai_id: [],
   gioi_tinh: [],
   chuc_vu_id: [],
+  cap_quan_ly: [],
   phong_ban_id: [],
   don_vi_id: [],
   dan_toc_id: [],
   trinh_do_id: [],
+  ly_luan_chinh_tri_id: [],
   to_chuc_id: [],
   dang_vien: [],
 };
@@ -155,6 +161,7 @@ const BaoCaoCanBoPage: React.FC = () => {
 
   const presets = useMemo(
     () => [
+      { id: 'all', label: txt('matTranOfficerStats.preset.all') },
       { id: 'thisWeek', label: txt('matTranOfficerStats.preset.thisWeek') },
       { id: 'thisMonth', label: txt('matTranOfficerStats.preset.thisMonth') },
       { id: 'thisQuarter', label: txt('matTranOfficerStats.preset.thisQuarter') },
@@ -174,12 +181,17 @@ const BaoCaoCanBoPage: React.FC = () => {
     [rowsEnriched, resolvedRange, dims],
   );
 
+  const chartRange = useMemo(
+    () => resolveOfficerStatsTrendChartRange(resolvedRange, filtered),
+    [resolvedRange, filtered],
+  );
+
   const kpis = useMemo(() => computeOfficerStatsKpis(filtered), [filtered]);
 
-  const bucket = useMemo(() => pickTrendBucket(resolvedRange.start, resolvedRange.end), [resolvedRange]);
+  const bucket = useMemo(() => pickTrendBucket(chartRange.start, chartRange.end), [chartRange]);
   const trendSeries = useMemo(
-    () => buildOfficerTrendSeries(filtered, resolvedRange, bucket),
-    [filtered, resolvedRange, bucket],
+    () => buildOfficerTrendSeries(filtered, chartRange, bucket),
+    [filtered, chartRange, bucket],
   );
 
   const topPhongBan = useMemo(() => {
@@ -228,6 +240,18 @@ const BaoCaoCanBoPage: React.FC = () => {
     [rowsEnriched],
   );
 
+  const capQuanLyOptions = useMemo(
+    () =>
+      buildDimOptions(rowsEnriched, (r) => {
+        const norm = normalizeCapQuanLyInput(r.chuc_vu_cap_quan_ly);
+        return {
+          id: norm ?? CHIP_TRANG_THAI_NULL,
+          label: norm ?? txt('matTranOfficerStats.capQuanLyChuaGan'),
+        };
+      }),
+    [rowsEnriched],
+  );
+
   const phongBanOptions = useMemo(
     () =>
       buildDimOptions(rowsEnriched, (r) => ({
@@ -262,6 +286,15 @@ const BaoCaoCanBoPage: React.FC = () => {
       buildDimOptions(rowsEnriched, (r) => ({
         id: r.trinh_do_id?.trim() ? String(r.trinh_do_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_trinh_do?.trim() || '—',
+      })),
+    [rowsEnriched],
+  );
+
+  const lyLuanChinhTriOptions = useMemo(
+    () =>
+      buildDimOptions(rowsEnriched, (r) => ({
+        id: r.ly_luan_chinh_tri_id?.trim() ? String(r.ly_luan_chinh_tri_id) : CHIP_TRANG_THAI_NULL,
+        label: r.ten_ly_luan_chinh_tri?.trim() || '—',
       })),
     [rowsEnriched],
   );
@@ -310,6 +343,14 @@ const BaoCaoCanBoPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, chuc_vu_id: v })),
       },
       {
+        key: 'cap_quan_ly',
+        label: txt('matTranOfficerStats.filterCapQuanLy'),
+        icon: Binary,
+        options: capQuanLyOptions.map((o) => ({ label: o.label, value: o.value, count: o.count })),
+        value: dims.cap_quan_ly,
+        onChange: (v) => setDims((d) => ({ ...d, cap_quan_ly: v })),
+      },
+      {
         key: 'phong_ban',
         label: txt('matTranOfficerStats.filterPhongBan'),
         icon: Building2,
@@ -342,6 +383,14 @@ const BaoCaoCanBoPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, trinh_do_id: v })),
       },
       {
+        key: 'ly_luan_chinh_tri',
+        label: txt('matTranOfficerStats.filterLyLuanChinhTri'),
+        icon: BookOpen,
+        options: lyLuanChinhTriOptions.map((o) => ({ label: o.label, value: o.value, count: o.count })),
+        value: dims.ly_luan_chinh_tri_id,
+        onChange: (v) => setDims((d) => ({ ...d, ly_luan_chinh_tri_id: v })),
+      },
+      {
         key: 'to_chuc',
         label: txt('matTranOfficerStats.filterToChuc'),
         icon: Landmark,
@@ -362,10 +411,12 @@ const BaoCaoCanBoPage: React.FC = () => {
       trangThaiOptions,
       gioiTinhOptions,
       chucVuOptions,
+      capQuanLyOptions,
       phongBanOptions,
       donViOptions,
       danTocOptions,
       trinhDoOptions,
+      lyLuanChinhTriOptions,
       toChucOptions,
       dangVienOptions,
       dims,
@@ -376,7 +427,7 @@ const BaoCaoCanBoPage: React.FC = () => {
     if (dateRange.preset === 'custom') {
       return Boolean(dateRange.customStart && dateRange.customEnd);
     }
-    return dateRange.preset !== 'thisMonth';
+    return dateRange.preset !== 'all';
   }, [dateRange]);
 
   const activeFilterCount = useMemo(() => {
@@ -385,10 +436,12 @@ const BaoCaoCanBoPage: React.FC = () => {
     if (dims.trang_thai_id.length) n += 1;
     if (dims.gioi_tinh.length) n += 1;
     if (dims.chuc_vu_id.length) n += 1;
+    if (dims.cap_quan_ly.length) n += 1;
     if (dims.phong_ban_id.length) n += 1;
     if (dims.don_vi_id.length) n += 1;
     if (dims.dan_toc_id.length) n += 1;
     if (dims.trinh_do_id.length) n += 1;
+    if (dims.ly_luan_chinh_tri_id.length) n += 1;
     if (dims.to_chuc_id.length) n += 1;
     if (dims.dang_vien.length) n += 1;
     return n;
@@ -404,6 +457,7 @@ const BaoCaoCanBoPage: React.FC = () => {
       { key: 'ho_ten', label: txt('matTranOfficerStats.tableColHoTen') },
       { key: 'ten_don_vi', label: txt('matTranOfficerStats.tableColDonVi') },
       { key: 'ten_chuc_vu', label: txt('matTranOfficerStats.tableColChucVu') },
+      { key: 'chuc_vu_cap_quan_ly', label: txt('matTranOfficerStats.tableColCapQuanLy') },
       { key: 'gioi_tinh', label: txt('matTranOfficerStats.tableColGioiTinh') },
       { key: 'ten_trang_thai', label: txt('matTranOfficerStats.tableColTrangThai') },
       { key: 'dien_thoai', label: txt('matTranOfficerStats.tableColDienThoai') },
@@ -420,15 +474,19 @@ const BaoCaoCanBoPage: React.FC = () => {
       ho_ten: item.ho_ten,
       ten_don_vi: item.ten_don_vi ?? '',
       ten_chuc_vu: item.ten_chuc_vu ?? '',
+      chuc_vu_cap_quan_ly:
+        normalizeCapQuanLyInput(item.chuc_vu_cap_quan_ly) ?? txt('matTranOfficerStats.capQuanLyChuaGan'),
       gioi_tinh: item.gioi_tinh,
       ten_trang_thai: item.ten_trang_thai ?? '',
       dien_thoai: item.dien_thoai ?? '',
       tuoi: item.tuoi != null ? String(item.tuoi) : '',
       tg_tao: item.tg_tao,
-      range_start: resolvedRange.start,
-      range_end: resolvedRange.end,
+      range_start: resolvedRange.allTime
+        ? txt('matTranOfficerStats.exportRangeAll')
+        : resolvedRange.start,
+      range_end: resolvedRange.allTime ? txt('matTranOfficerStats.exportRangeAll') : resolvedRange.end,
     }),
-    [resolvedRange.start, resolvedRange.end],
+    [resolvedRange],
   );
 
   const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
@@ -543,6 +601,14 @@ const BaoCaoCanBoPage: React.FC = () => {
         className="w-[10.5rem] shrink-0"
       />
       <FilterChipMultiSelect
+        icon={Binary}
+        options={capQuanLyOptions}
+        value={dims.cap_quan_ly}
+        onChange={(v) => setDims((d) => ({ ...d, cap_quan_ly: v }))}
+        placeholder={txt('matTranOfficerStats.filterCapQuanLy')}
+        className="w-[10.5rem] shrink-0"
+      />
+      <FilterChipMultiSelect
         icon={Building2}
         options={phongBanOptions}
         value={dims.phong_ban_id}
@@ -573,6 +639,14 @@ const BaoCaoCanBoPage: React.FC = () => {
         onChange={(v) => setDims((d) => ({ ...d, trinh_do_id: v }))}
         placeholder={txt('matTranOfficerStats.filterTrinhDo')}
         className="w-[9.5rem] shrink-0"
+      />
+      <FilterChipMultiSelect
+        icon={BookOpen}
+        options={lyLuanChinhTriOptions}
+        value={dims.ly_luan_chinh_tri_id}
+        onChange={(v) => setDims((d) => ({ ...d, ly_luan_chinh_tri_id: v }))}
+        placeholder={txt('matTranOfficerStats.filterLyLuanChinhTri')}
+        className="w-[11rem] shrink-0"
       />
       <FilterChipMultiSelect
         icon={Landmark}
@@ -715,7 +789,7 @@ const BaoCaoCanBoPage: React.FC = () => {
 
             <StatsCard title={txt('matTranOfficerStats.tableLookupTitle')} icon={Layers}>
               <div className="overflow-x-auto max-h-[min(480px,50vh)] overflow-y-auto -m-4">
-                <table className="w-full text-sm min-w-[720px]">
+                <table className="w-full text-sm min-w-[820px]">
                   <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                     <tr className="text-left text-muted-foreground">
                       {(
@@ -723,6 +797,7 @@ const BaoCaoCanBoPage: React.FC = () => {
                           ['ho_ten', txt('matTranOfficerStats.tableColHoTen')],
                           ['ten_don_vi', txt('matTranOfficerStats.tableColDonVi')],
                           ['ten_chuc_vu', txt('matTranOfficerStats.tableColChucVu')],
+                          ['chuc_vu_cap_quan_ly', txt('matTranOfficerStats.tableColCapQuanLy')],
                           ['ten_trang_thai', txt('matTranOfficerStats.tableColTrangThai')],
                           ['dien_thoai', txt('matTranOfficerStats.tableColDienThoai')],
                           ['tuoi', txt('matTranOfficerStats.tableColTuoi')],
@@ -760,6 +835,9 @@ const BaoCaoCanBoPage: React.FC = () => {
                         <td className="py-2 pr-3 max-w-[200px] truncate font-medium">{row.ho_ten}</td>
                         <td className="py-2 pr-3 max-w-[180px] truncate">{row.ten_don_vi ?? '—'}</td>
                         <td className="py-2 pr-3 max-w-[140px] truncate">{row.ten_chuc_vu ?? '—'}</td>
+                        <td className="py-2 pr-3 max-w-[100px] whitespace-nowrap">
+                          {normalizeCapQuanLyInput(row.chuc_vu_cap_quan_ly) ?? txt('matTranOfficerStats.capQuanLyChuaGan')}
+                        </td>
                         <td className="py-2 pr-3">{row.ten_trang_thai ?? '—'}</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">{formatCanBoPhoneDisplay(row.dien_thoai)}</td>
                         <td className="py-2 pr-3 tabular-nums">{row.tuoi != null ? row.tuoi : '—'}</td>

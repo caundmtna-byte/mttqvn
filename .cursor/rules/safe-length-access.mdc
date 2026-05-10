@@ -1,0 +1,13 @@
+---
+description: Tránh lỗi runtime "Cannot read properties of undefined (reading 'length')" khi dùng mảng / .length
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# An toàn khi dùng `.length` và mảng
+
+- Không gọi `x.length` hoặc `x.map` / `x.filter` khi `x` có thể `undefined`/`null` (dữ liệu API, Supabase, props optional, state trước khi load).
+- Chuẩn hóa: `const list = x ?? []` rồi dùng `list`; hoặc `x?.length ?? 0` cho số lượng.
+- Prop mảng optional: default `rows = []` trong destructuring hoặc tham số hàm.
+- Dữ liệu không chắc là mảng: `Array.isArray(v) ? v.length : 0`.
+- Object: `Object.keys(o ?? {}).length` thay vì `Object.keys(o).length` khi `o` có thể thiếu.
