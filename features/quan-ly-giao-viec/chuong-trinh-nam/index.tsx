@@ -9,6 +9,7 @@ import React, {
   startTransition,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -99,7 +100,10 @@ const ChuongTrinhNamPage: React.FC = () => {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
-  const [mainTab, setMainTab] = useState<MainTab>('list');
+  const [mainTab, setMainTab] = useTabSearchParam(
+    ['list', 'stats'] as const satisfies readonly MainTab[],
+    'list',
+  );
 
   const {
     searchTerm,

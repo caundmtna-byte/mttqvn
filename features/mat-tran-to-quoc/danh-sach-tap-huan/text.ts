@@ -1,5 +1,5 @@
 export const matTranTapHuan = {
-  noViewPermission: 'Bạn không có quyền xem danh sách tập huấn.',
+  noViewPermission: 'Bạn không có quyền xem tập huấn.',
   noEmployeeBanner:
     'Tài khoản chưa gắn hồ sơ nhân viên — không thể ghi nhận người tạo lớp tập huấn.',
   service: {
@@ -78,7 +78,7 @@ export const matTranTapHuan = {
     tgCapNhatCol: 'Cập nhật',
   },
   toolbar: {
-    title: 'Danh sách tập huấn',
+    title: 'Tập huấn',
   },
   searchPlaceholder: 'Tìm theo tên lớp, cấp, ghi chú…',
   emptyTitle: 'Chưa có lớp tập huấn',

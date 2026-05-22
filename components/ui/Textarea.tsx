@@ -1,12 +1,13 @@
-
 import React, { useId } from 'react';
 import { cn } from '../../lib/utils';
+import { renderInputIcon, type InputProps } from './Input';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   required?: boolean;
-  icon?: React.ReactNode;
+  /** Giống `Input`: `ReactNode` hoặc icon Lucide (`FileText`, …). */
+  icon?: InputProps['icon'];
 }
 
 /**
@@ -22,7 +23,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       <div className="w-full">
         {label && (
           <label htmlFor={textareaId} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 flex items-center gap-1.5 text-foreground">
-            {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
+            {icon != null && (
+              <span className="text-muted-foreground shrink-0">{renderInputIcon(icon as NonNullable<InputProps['icon']>)}</span>
+            )}
             {label}
             {required && (
               <span className="text-red-600 dark:text-red-400 font-semibold" aria-hidden="true">

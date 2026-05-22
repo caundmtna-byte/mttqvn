@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { txt } from '../../lib/text';
 import { useNavigate } from 'react-router-dom';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import type { LucideIcon } from 'lucide-react';
 import { Puzzle } from 'lucide-react';
 import DashboardToolbar from '../shared/DashboardToolbar';
@@ -27,7 +28,14 @@ const ModulePlaceholderWithTabs: React.FC<ModulePlaceholderWithTabsProps> = ({
   icon: Icon = Puzzle,
 }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(tabLabelKeys[0] ?? '');
+  const defaultTabId = tabLabelKeys[0] ?? '';
+  const allowedTabIds = useMemo(
+    () => (tabLabelKeys.length > 0 ? [...tabLabelKeys] : ['']),
+    [tabLabelKeys],
+  );
+  const [activeTab, setActiveTab] = useTabSearchParam(allowedTabIds, defaultTabId, {
+    omitWhenDefault: Boolean(defaultTabId),
+  });
   const tabs = tabLabelKeys.map((key) => ({ id: key, label: txt(key) }));
 
   return (

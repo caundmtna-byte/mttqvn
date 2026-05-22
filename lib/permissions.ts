@@ -38,6 +38,8 @@ export type AppResource =
   | 'matTranReliefInventory'
   | 'matTranReliefWarehouseList'
   | 'matTranReliefSupportUnits'
+  | 'matTranSalaryIncreaseList'
+  | 'matTranSalarySetup'
   | 'annualPrograms'
   | 'tasks'
   | 'taskReports'
@@ -74,11 +76,14 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranCommitteeMembers: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
   matTranCommitteeMemberStats: 'mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien',
   matTranReliefCampaign: 'mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro',
+  /** Hàng hóa cứu trợ — `module_key` DB: `hang-hoa`. Luật `can()`: `cap_bac===1` hoặc `quan_tri`→`admin`/`all` = toàn quyền UI; không thì từng hành động xem/thêm/sửa/xóa theo ma trận. */
   matTranReliefGoods: 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa',
   matTranReliefStockTransactions: 'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho',
   matTranReliefInventory: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho',
   matTranReliefWarehouseList: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho',
-  matTranReliefSupportUnits: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro',
+  matTranReliefSupportUnits: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
+  matTranSalaryIncreaseList: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong',
+  matTranSalarySetup: 'mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong',
   annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam',
   tasks: 'quan-ly-giao-viec/cong-viec',
   taskReports: 'quan-ly-giao-viec/bao-cao-cong-viec',

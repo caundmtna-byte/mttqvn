@@ -161,4 +161,43 @@ export const queryKeys = {
     listAll: ['xa-phuong', 'list-all'] as const,
     byTinh: (idTinhThanh: string) => ['xa-phuong', 'by-tinh', idTinhThanh] as const,
   },
+  khoDanhSachKho: {
+    all: ['kho-danh-sach-kho'] as const,
+    detail: (id: string) => ['kho-danh-sach-kho', 'detail', id] as const,
+  },
+  khoDonViCuuTro: {
+    all: ['kho-don-vi-cuu-tro'] as const,
+    detail: (id: string) => ['kho-don-vi-cuu-tro', 'detail', id] as const,
+  },
+  khoDotCuuTro: {
+    all: ['kho-dot-cuu-tro'] as const,
+    detail: (id: string) => ['kho-dot-cuu-tro', 'detail', id] as const,
+  },
+  khoDanhMucHangHoa: {
+    all: ['kho-danh-muc-hang-hoa'] as const,
+    detail: (id: string) => ['kho-danh-muc-hang-hoa', 'detail', id] as const,
+  },
+  khoDanhSachHangHoa: {
+    all: ['kho-danh-sach-hang-hoa'] as const,
+    detail: (id: string) => ['kho-danh-sach-hang-hoa', 'detail', id] as const,
+  },
+  khoNhapXuatKho: {
+    all: ['kho-nhap-xuat-kho'] as const,
+    detail: (id: string) => ['kho-nhap-xuat-kho', 'detail', id] as const,
+    /** Tab "Chi tiết" — danh sách phẳng dòng `kho_nhap_xuat_kho_ct`. */
+    chiTietFlatList: ['kho-nhap-xuat-kho', 'chi-tiet-flat-list'] as const,
+    /** Tồn kho hiện tại theo kho (dùng trong form xuất / chuyển kho). */
+    tonKhoByKho: (khoId: string) => ['kho-nhap-xuat-kho', 'ton-kho-by-kho', khoId] as const,
+  },
+  luongThietLapNgach: {
+    all: ['luong-thiet-lap-ngach'] as const,
+    detail: (id: string) => ['luong-thiet-lap-ngach', 'detail', id] as const,
+  },
+  luongThietLapBac: {
+    all: ['luong-thiet-lap-bac'] as const,
+    byNgach: (ngachId: string) => ['luong-thiet-lap-bac', 'by-ngach', ngachId] as const,
+  },
+  luongThietLapCauHinh: {
+    singleton: ['luong-thiet-lap-cau-hinh', 'singleton'] as const,
+  },
 } as const;

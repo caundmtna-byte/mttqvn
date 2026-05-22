@@ -1,0 +1,53 @@
+export const matTranKhoDanhSach = {
+  noViewPermission: 'Bạn không có quyền xem danh sách kho.',
+  deleteTitle: 'Xóa kho?',
+  deleteMessage: 'Bản ghi sẽ bị xóa vĩnh viễn.',
+  bulkDeleteTitle: 'Xóa nhiều kho?',
+  bulkDeleteMessage: 'Sẽ xóa {{count}} bản ghi.',
+  noExportData: 'Không có dữ liệu để xuất.',
+  exportFileName: 'danh-sach-kho',
+  toast: {
+    create: 'Đã tạo kho.',
+    update: 'Đã cập nhật kho.',
+    delete: 'Đã xóa {{count}} bản ghi.',
+  },
+  service: {
+    notFound: 'Không tìm thấy bản ghi kho.',
+  },
+  validation: {
+    tenKhoRequired: 'Nhập tên kho.',
+    donViInvalid: 'Đơn vị (xã/phường) không hợp lệ.',
+  },
+  store: {
+    ttCol: 'TT',
+    tenKhoCol: 'Tên kho',
+    donViCol: 'Xã/phường',
+    tinhCol: 'Tỉnh',
+    moTaCol: 'Mô tả',
+    tgTaoCol: 'Ngày tạo',
+    tgCapNhatCol: 'Cập nhật',
+  },
+  toolbar: {
+    title: 'Danh sách kho',
+  },
+  searchPlaceholder: 'Tìm theo tên kho, địa bàn, mô tả…',
+  emptyTitle: 'Chưa có kho',
+  emptyHint: 'Thêm kho mới để bắt đầu.',
+  emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',
+  form: {
+    sectionMain: 'Thông tin kho',
+    tenKho: 'Tên kho',
+    donVi: 'Xã/phường',
+    donViHint: 'Tùy chọn — để trống nếu kho chưa gắn địa bàn xã/phường.',
+    moTa: 'Mô tả',
+    createSubtitle: 'Thêm kho mới',
+    editSubtitle: 'Sửa kho',
+  },
+  detail: {
+    title: 'Chi tiết kho',
+    sectionMain: 'Thông tin',
+    systemInfo: 'Thông tin hệ thống',
+    tgTao: 'Thời điểm tạo',
+    tgCapNhat: 'Cập nhật lần cuối',
+  },
+};

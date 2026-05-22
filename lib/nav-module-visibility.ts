@@ -35,6 +35,8 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'matTranReliefInventory',
       'matTranReliefWarehouseList',
       'matTranReliefSupportUnits',
+      'matTranSalaryIncreaseList',
+      'matTranSalarySetup',
     ];
   }
   if (path === '/quan-ly-viet-bai') {

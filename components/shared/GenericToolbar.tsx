@@ -79,6 +79,12 @@ interface GenericToolbarProps {
     filtersDesktopSeparateScroll?: boolean;
     /** Mobile (<sm): hàng 2 full width — chip cuộn ngang, tách hàng ô tìm phía trên. */
     filtersMobileBelowSearchScroll?: boolean;
+
+    /**
+     * Hàng phụ full-width dưới hàng toolbar chính (desktop + mobile) — vd. cấu hình MLCS gọn.
+     * Hiển thị sau khối mobile và khối desktop, trước bottom sheets.
+     */
+    secondaryRow?: React.ReactNode;
 }
 
 const GenericToolbar: React.FC<GenericToolbarProps> = ({
@@ -100,6 +106,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
     desktopStartSlot,
     filtersDesktopSeparateScroll = false,
     filtersMobileBelowSearchScroll = false,
+    secondaryRow,
 }) => {
     const resolvedSearchPlaceholder = searchPlaceholder ?? txt('common.searchPlaceholder');
     const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -712,6 +719,12 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                 </div>
                 )}
             </div>
+
+            {secondaryRow != null ? (
+                <div className="border-t border-border/50 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 min-w-0">
+                    {secondaryRow}
+                </div>
+            ) : null}
 
             {/* ===== Mobile Bottom Sheets (portal) ===== */}
             {hasMobileFilterSheet && (

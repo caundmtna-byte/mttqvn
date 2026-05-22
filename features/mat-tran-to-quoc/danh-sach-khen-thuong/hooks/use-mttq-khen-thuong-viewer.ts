@@ -16,7 +16,7 @@ export interface MttqKhenThuongViewer {
 }
 
 /**
- * Tổng hợp viewer cho module Danh sách khen thưởng.
+ * Tổng hợp viewer cho module Khen thưởng.
  *
  * `canViewAll`:
  * - `user.role === 'admin'`

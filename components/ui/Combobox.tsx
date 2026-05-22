@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useId, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Check, Search, X } from 'lucide-react';
+import { ChevronDown, Check, Search, X, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { renderInputIcon, type InputProps } from './Input';
@@ -40,6 +40,13 @@ interface ComboboxProps {
   clearable?: boolean;
   /** Ngay dưới ô tìm (nếu có), trên danh sách option — vd. nút « Thêm mới ». `close` đóng dropdown + xóa tìm. */
   dropdownListTop?: (ctx: { close: () => void }) => React.ReactNode;
+  /**
+   * Cho phép chọn giá trị không có trong `options`: gõ trong ô tìm rồi chọn dòng « Thêm ».
+   * Giá trị đã chọn vẫn hiển thị trên trigger dù chưa có trong danh sách.
+   */
+  creatable?: boolean;
+  /** Nhãn dòng tạo mới — mặc định: `Thêm « … »` */
+  creatableActionLabel?: (trimmedSearch: string) => string;
 }
 
 const Combobox: React.FC<ComboboxProps> = ({
@@ -62,6 +69,8 @@ const Combobox: React.FC<ComboboxProps> = ({
   dropdownInPortal = false,
   clearable = true,
   dropdownListTop,
+  creatable = false,
+  creatableActionLabel = (s) => `Thêm « ${s} »`,
 }) => {
   const labelIcon =
     icon != null ? renderInputIcon(icon as NonNullable<InputProps['icon']>) : null;
@@ -144,6 +153,25 @@ const Combobox: React.FC<ComboboxProps> = ({
   // Get selected option label
   const selectedOption = options.find((opt) => optionValueEquals(opt.value, value));
 
+  const creatableTrim = searchable ? searchTerm.trim() : '';
+  const hasExactOptionMatch =
+    creatableTrim.length > 0 &&
+    options.some(
+      (o) =>
+        o.label.toLowerCase() === creatableTrim.toLowerCase() ||
+        String(o.value).toLowerCase() === creatableTrim.toLowerCase(),
+    );
+  const showCreatable = Boolean(creatable && creatableTrim.length > 0 && !hasExactOptionMatch);
+
+  const displayTrigger =
+    selectedOption != null
+      ? renderValue
+        ? renderValue(selectedOption)
+        : selectedOption.label
+      : value != null && String(value).trim() !== ''
+        ? String(value).trim()
+        : null;
+
   const handleSelect = (optionValue: string | number) => {
     onChange(optionValue);
     setIsOpen(false);
@@ -159,6 +187,90 @@ const Combobox: React.FC<ComboboxProps> = ({
     e.stopPropagation();
     onChange('');
   };
+
+  const emptyNoResults = (
+    <div className="py-8 text-center text-sm text-muted-foreground flex flex-col items-center">
+      <Search size={24} className="mb-2 opacity-20" />
+      Không tìm thấy kết quả
+    </div>
+  );
+
+  const mappedFilteredOptions = filteredOptions.map((option) => (
+    <div
+      key={option.value}
+      role="option"
+      aria-selected={optionValueEquals(value, option.value)}
+      tabIndex={0}
+      className={cn(
+        'flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors',
+        optionValueEquals(value, option.value)
+          ? 'bg-primary/5 text-primary font-medium'
+          : 'text-foreground hover:bg-muted/50',
+      )}
+      onClick={(e) => {
+        e.stopPropagation();
+        handleSelect(option.value);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSelect(option.value);
+        }
+      }}
+    >
+      <div className="flex flex-col min-w-0 flex-1">
+        {renderOption ? (
+          renderOption(option)
+        ) : (
+          <>
+            <span>{option.label}</span>
+            {option.subLabel && (
+              <span className="text-xs text-muted-foreground font-normal">{option.subLabel}</span>
+            )}
+          </>
+        )}
+      </div>
+      {optionValueEquals(value, option.value) && <Check size={16} className="text-primary shrink-0" />}
+    </div>
+  ));
+
+  const creatableRow = showCreatable ? (
+    <div
+      key="__creatable__"
+      role="option"
+      aria-selected={false}
+      tabIndex={0}
+      className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors border border-dashed border-primary/35 bg-primary/[0.06] text-primary hover:bg-primary/10"
+      onClick={(e) => {
+        e.stopPropagation();
+        handleSelect(creatableTrim);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSelect(creatableTrim);
+        }
+      }}
+    >
+      <Plus size={16} className="shrink-0 opacity-90" aria-hidden />
+      <span className="font-medium truncate min-w-0">{creatableActionLabel(creatableTrim)}</span>
+    </div>
+  ) : null;
+
+  const renderOptionsList = (maxHeightClass: string) => (
+    <div className={cn(maxHeightClass, 'overflow-y-auto custom-scrollbar p-1.5 space-y-1')}>
+      {filteredOptions.length === 0 && !showCreatable ? (
+        emptyNoResults
+      ) : (
+        <>
+          {creatableRow}
+          {mappedFilteredOptions}
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className={cn("w-full relative", className)} ref={containerRef}>
@@ -190,12 +302,12 @@ const Combobox: React.FC<ComboboxProps> = ({
         )}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
-        <span className={cn("truncate flex-1 min-w-0", !selectedOption && "text-muted-foreground")}>
-          {selectedOption ? (renderValue ? renderValue(selectedOption) : selectedOption.label) : placeholder}
+        <span className={cn('truncate flex-1 min-w-0', !displayTrigger && 'text-muted-foreground')}>
+          {displayTrigger ?? placeholder}
         </span>
         
         <div className="flex items-center gap-1 shrink-0">
-            {clearable && selectedOption && !disabled && (
+            {clearable && displayTrigger && !disabled && (
                 <div 
                     onClick={(e) => { e.stopPropagation(); clearSelection(e); }}
                     className="p-1 rounded-full hover:bg-muted text-muted-foreground transition-colors"
@@ -254,50 +366,7 @@ const Combobox: React.FC<ComboboxProps> = ({
               {dropdownListTop ? (
                 <div className="border-b border-border bg-card px-1.5 py-1.5">{dropdownListTop({ close: closeDropdown })}</div>
               ) : null}
-              <div className="max-h-[220px] overflow-y-auto custom-scrollbar p-1.5 space-y-1">
-                {filteredOptions.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground flex flex-col items-center">
-                    <Search size={24} className="mb-2 opacity-20" />
-                    Không tìm thấy kết quả
-                  </div>
-                ) : (
-                  filteredOptions.map((option) => (
-                    <div
-                      key={option.value}
-                      role="option"
-                      aria-selected={optionValueEquals(value, option.value)}
-                      tabIndex={0}
-                      className={cn(
-                        "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors",
-                        optionValueEquals(value, option.value)
-                          ? "bg-primary/5 text-primary font-medium"
-                          : "text-foreground hover:bg-muted/50"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelect(option.value);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSelect(option.value);
-                        }
-                      }}
-                    >
-                      <div className="flex flex-col min-w-0 flex-1">
-                        {renderOption ? renderOption(option) : (
-                          <>
-                            <span>{option.label}</span>
-                            {option.subLabel && <span className="text-xs text-muted-foreground font-normal">{option.subLabel}</span>}
-                          </>
-                        )}
-                      </div>
-                      {optionValueEquals(value, option.value) && <Check size={16} className="text-primary shrink-0" />}
-                    </div>
-                  ))
-                )}
-              </div>
+              {renderOptionsList('max-h-[220px]')}
             </motion.div>
           </AnimatePresence>,
           document.body
@@ -333,50 +402,7 @@ const Combobox: React.FC<ComboboxProps> = ({
               {dropdownListTop ? (
                 <div className="border-b border-border bg-card px-1.5 py-1.5">{dropdownListTop({ close: closeDropdown })}</div>
               ) : null}
-              <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-1.5 space-y-1">
-                {filteredOptions.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground flex flex-col items-center">
-                    <Search size={24} className="mb-2 opacity-20" />
-                    Không tìm thấy kết quả
-                  </div>
-                ) : (
-                  filteredOptions.map((option) => (
-                    <div
-                      key={option.value}
-                      role="option"
-                      aria-selected={optionValueEquals(value, option.value)}
-                      tabIndex={0}
-                      className={cn(
-                        "flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors",
-                        optionValueEquals(value, option.value)
-                          ? "bg-primary/5 text-primary font-medium"
-                          : "text-foreground hover:bg-muted/50"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelect(option.value);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSelect(option.value);
-                        }
-                      }}
-                    >
-                      <div className="flex flex-col min-w-0 flex-1">
-                        {renderOption ? renderOption(option) : (
-                          <>
-                            <span>{option.label}</span>
-                            {option.subLabel && <span className="text-xs text-muted-foreground font-normal">{option.subLabel}</span>}
-                          </>
-                        )}
-                      </div>
-                      {optionValueEquals(value, option.value) && <Check size={16} className="text-primary shrink-0" />}
-                    </div>
-                  ))
-                )}
-              </div>
+              {renderOptionsList('max-h-[250px]')}
             </motion.div>
           )}
         </AnimatePresence>

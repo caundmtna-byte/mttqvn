@@ -15,13 +15,13 @@ export interface MttqLopTapHuanViewer {
 }
 
 /**
- * Tổng hợp viewer cho module Danh sách tập huấn (tab lớp + Danh sách CT).
+ * Tổng hợp viewer cho module Tập huấn (tab lớp + Danh sách CT).
  *
  * `canViewAll`:
  * - `user.role === 'admin'`
  * - `!matrixActive` (legacy, không ẩn dữ liệu khi chưa hydrate)
  * - `var_chuc_vu.cap_bac === 1`
- * - Grant `admin` / `all` (map từ `quan_tri`) trên module danh sách tập huấn
+ * - Grant `admin` / `all` (map từ `quan_tri`) trên module tập huấn
  *
  * Không bypass: theo `cap_tap_huan` của lớp và `cap_quan_ly` chức vụ —
  * Cấp tỉnh chỉ Tỉnh; Cấp xã là Tỉnh hoặc Xã phường (có `don_vi_id` NV) khớp `don_vi_id` lớp.

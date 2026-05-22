@@ -33,6 +33,12 @@ const UyVienUyBanPage = lazy(() => import('./features/mat-tran-to-quoc/uy-vien-u
 const BaoCaoUyVienPage = lazy(() => import('./features/mat-tran-to-quoc/bao-cao-uy-vien/index'));
 const KyHopPage = lazy(() => import('./features/mat-tran-to-quoc/ky-hop/index'));
 const DanhSachTapHuanPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tap-huan/index'));
+const KhoDanhSachKhoPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-kho/index'));
+const KhoDonViCuuTroPage = lazy(() => import('./features/mat-tran-to-quoc/don-vi-cuu-tro/index'));
+const KhoDotCuuTroPage = lazy(() => import('./features/mat-tran-to-quoc/dot-cuu-tro/index'));
+const HangHoaPage = lazy(() => import('./features/mat-tran-to-quoc/hang-hoa/index'));
+const NhapXuatKhoPage = lazy(() => import('./features/mat-tran-to-quoc/nhap-xuat-kho/index'));
+const ThietLapLuongPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-luong/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import {
@@ -97,15 +103,21 @@ const App = () => {
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<KyHopPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<UyVienUyBanPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien" element={<BaoCaoUyVienPage />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<MatTranToQuocModulePlaceholder />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<MatTranToQuocModulePlaceholder />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<KhoDotCuuTroPage />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<HangHoaPage />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho" element={<NhapXuatKhoPage />} />
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/ton-kho" element={<MatTranToQuocModulePlaceholder />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho" element={<MatTranToQuocModulePlaceholder />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
+          <Route
+            path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro"
+            element={<Navigate to="/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro" replace />}
+          />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo" element={<BaoCaoCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
+          <Route path="/mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong" element={<MatTranToQuocModulePlaceholder />} />
+          <Route path="/mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong" element={<ThietLapLuongPage />} />
           <Route path="/quan-ly-viet-bai" element={<QuanLyVietBaiDashboard />} />
           <Route path="/quan-ly-viet-bai/bai-viet" element={<BaiVietDanhSachPage />} />
           <Route

@@ -9,6 +9,7 @@ import React, {
   startTransition,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -69,7 +70,10 @@ const BaiVietDanhSachPage: React.FC = () => {
 
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
 
-  const [listScope, setListScope] = useState<BaiVietListScope>(TAB_ALL);
+  const [listScope, setListScope] = useTabSearchParam(
+    [TAB_ALL, TAB_MINE] as const satisfies readonly BaiVietListScope[],
+    TAB_ALL,
+  );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BaiVietDanhSach | null>(null);
   const [viewing, setViewing] = useState<BaiVietDanhSach | null>(null);

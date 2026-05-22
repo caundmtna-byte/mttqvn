@@ -199,6 +199,25 @@ queries: {
 }
 ```
 
+### C5. Mở drawer chi tiết → `getById` / `detail` query thừa
+
+❌ Sai — chỉ `setViewingId(id)` khi list đã có row đủ field cho detail; `useQuery(detail)` chạy **trước** `useEffect` seed cache → một round-trip thừa.
+
+✅ Đúng — trong `onView` (hoặc tương đương):
+
+```ts
+queryClient.setQueryData(queryKeys.<module>.detail(item.id), item);
+setViewingId(item.id);
+```
+
+Hoặc `placeholderData` / `initialData` từ row list trong hook detail. Quy chuẩn đầy đủ: [tanstack-query-list-detail-crud.mdc](mdc:.cursor/rules/tanstack-query-list-detail-crud.mdc).
+
+### C6. `invalidateQueries(detail)` khi đóng form **Hủy**
+
+❌ Sai — `handleCloseForm` luôn invalidate detail sau khi đóng form từ detail; mutation thành công đã `setQueryData` → refetch không cần thiết, tốn egress.
+
+✅ Đúng — bỏ invalidate khi Hủy nếu cache đã khớp list/detail; chỉ invalidate/fetch khi nghiệp vụ cần field chỉ có ở server và chưa có trong cache.
+
 ## D. Vercel bandwidth
 
 ### D1. `vercel.json` thiếu `Cache-Control`
@@ -226,3 +245,5 @@ Khi user thay đổi service/hook/select, kiểm tra:
 5. Mutation onSuccess có invalidate list lớn khi chỉ thay đổi 1 row?
 6. Có dùng cache cho data tĩnh (`getXaPhuongAll`, `lookups`) không?
 7. List đang mount mà mutation invalidate liên tục không? → `refetchType: 'none'`.
+8. Mở detail từ list đã seed `setQueryData(detail, row)` trước `setViewingId` (C5)?
+9. Đóng form Hủy có `invalidateQueries(detail)` thừa không (C6)?

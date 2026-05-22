@@ -67,6 +67,8 @@ const queryClient = new QueryClient({
  * v3: danh sách nhân viên thêm `don_vi_id` / `ten_don_vi`.
  * v4: không persist `['employees','list',…]` và `['employee', id]` — tránh danh sách/chi tiết
  *     cũ sau khi bản ghi đã xóa khỏi DB (reload vẫn thấy nhân viên “ảo”).
+ * v5: không persist query key bắt đầu `kho-` (danh sách/chi tiết kho cứu trợ) — tránh cache localStorage
+ *     lệch với Supabase khi sửa ngoài app / SQL.
  */
 const localStoragePersister = createSyncStoragePersister({
   storage: window.localStorage,
@@ -88,13 +90,14 @@ root.render(
           persistOptions={{
             persister: localStoragePersister,
             maxAge: SERVER_GC_TIME_MS,
-            buster: '4',
+            buster: '5',
             dehydrateOptions: {
               shouldDehydrateQuery: (query) => {
                 const k = query.queryKey;
                 if (!Array.isArray(k)) return defaultShouldDehydrateQuery(query);
                 if (k[0] === 'employees' && k[1] === 'list') return false;
                 if (k[0] === 'employee') return false;
+                if (typeof k[0] === 'string' && k[0].startsWith('kho-')) return false;
                 return defaultShouldDehydrateQuery(query);
               },
             },

@@ -109,10 +109,10 @@ Ngoài `can('view', 'matTranCommitteeMembers')`, danh sách / báo cáo / tab li
 
 Báo cáo ủy viên lọc `rows` theo cùng helper trước khi aggregate. RLS mirror là tùy chọn riêng.
 
-## Danh sách tập huấn — lọc xem theo cấp lớp (client)
+## Tập huấn — lọc xem theo cấp lớp (client)
 
 Ngoài `can('view', 'matTranTrainingList')`, tab **Lớp** và **Danh sách CT** dùng `useMttqLopTapHuanViewer` + `canViewLopTapHuanRow(viewer, row)` (`features/mat-tran-to-quoc/danh-sach-tap-huan/hooks/use-mttq-tap-huan-viewer.ts`). `row` cần `cap_tap_huan` và `don_vi_id` (lớp; tab CT lấy từ embed lớp).
 
-**Xem hết:** `chucVuCapBac === 1`, grant **admin/all** trên module danh sách tập huấn, `user.role === 'admin'`, hoặc ma trận tắt.
+**Xem hết:** `chucVuCapBac === 1`, grant **admin/all** trên module tập huấn, `user.role === 'admin'`, hoặc ma trận tắt.
 
 **Chỉ xem:** lớp **Cấp tỉnh** chỉ khi `cap_quan_ly` chức vụ là **Tỉnh**. Lớp **Cấp xã:** **Tỉnh** xem hết; **Xã phường** chỉ khi `user.don_vi_id` khớp `mttq_lop_tap_huan.don_vi_id` (string-safe); không có `don_vi_id` nhân viên → không thấy lớp cấp xã. `cap_quan_ly` null → không thấy cấp tỉnh; cấp xã không khớp đơn vị → không.

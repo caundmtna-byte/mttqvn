@@ -1,0 +1,21 @@
+---
+description: Form drawer và detail drawer — mỗi nhãn trường phải có icon (Input, Textarea, Combobox, DetailField).
+globs: features/**/**-form.tsx, features/**/**-detail.tsx, components/shared/DetailField.tsx, components/ui/Textarea.tsx, components/ui/Input.tsx
+---
+
+# Icon cạnh nhãn trường (form + detail)
+
+## Form (drawer)
+
+- Với **`Input`**, **`Textarea`**, **`Combobox`** (và control có `label` tương đương): luôn set prop **`icon`**.
+- Có thể truyền **Lucide component**: `icon={FileText}` (khuyến nghị, dùng `renderInputIcon` → `h-4 w-4`) hoặc element `<FileText size={12} />` — khớp module xung quanh trong cùng feature.
+- **`Textarea`** dùng chung `renderInputIcon` với `Input` (`components/ui/Textarea.tsx`).
+
+## Detail (drawer)
+
+- Mỗi **`DetailField`**: truyền **`icon={<IconName size={12} />}`** bên cạnh `label` và `value`.
+- Tham chiếu nhanh: `features/he-thong/chuc-vu/components/chuc-vu-detail.tsx`, `features/mat-tran-to-quoc/dot-cuu-tro/components/kho-dot-cuu-tro-detail.tsx`.
+
+## Checklist dự án
+
+- Cập nhật đủ mục **8.4b** và **9.1b** trong [docs/checklist-module.md](mdc:docs/checklist-module.md) khi thêm/sửa module CRUD.

@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { toast } from 'sonner';
 import { FolderOpen, Coins, FileText, Users, TrendingUp, Download } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -62,9 +63,17 @@ const HoaHongVietBaiPage: React.FC = () => {
     navigate('/quan-ly-viet-bai', { replace: true });
   }, [user, canOpenPage, navigate]);
 
-  const [scopeRaw, setScope] = useState<CommissionScope>(TAB_MINE);
-  /** Khi không có quyền xem phạm vi rộng, luôn coi như tab "Của tôi" (không gọi setState trong effect). */
+  const [scopeRaw, setScopeRaw] = useTabSearchParam(
+    [TAB_MINE, TAB_ALL] as const satisfies readonly CommissionScope[],
+    TAB_MINE,
+  );
+  /** Khi không có quyền xem phạm vi rộng, luôn coi như tab "Của tôi". */
   const scope = !canOpenPage && scopeRaw === TAB_ALL ? TAB_MINE : scopeRaw;
+
+  useEffect(() => {
+    if (canOpenPage || scopeRaw !== TAB_ALL) return;
+    setScopeRaw(TAB_MINE);
+  }, [canOpenPage, scopeRaw, setScopeRaw]);
 
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
   const [theLoaiIds, setTheLoaiIds] = useState<string[]>([]);
@@ -346,7 +355,7 @@ const HoaHongVietBaiPage: React.FC = () => {
       onChange={(id) => {
         const next = id as CommissionScope;
         if (next === TAB_ALL && !canOpenPage) return;
-        setScope(next);
+        setScopeRaw(next);
         setAuthorIds([]);
       }}
       className="shrink-0"

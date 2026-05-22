@@ -1,4 +1,4 @@
-/** Các key dùng cho ô tìm kiếm tổng trên danh sách khen thưởng. */
+/** Các key dùng cho ô tìm kiếm tổng trên module khen thưởng. */
 export const MTTQ_KHEN_THUONG_SEARCHABLE_KEYS: string[] = [
   'so_qd',
   'don_vi_de_xuat',

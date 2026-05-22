@@ -17,6 +17,8 @@ import {
   Warehouse,
   PackageCheck,
   Building2,
+  CircleDollarSign,
+  SlidersHorizontal,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -153,11 +155,30 @@ const MatTranToQuocDashboard: React.FC = () => {
             color: 'bg-slate-500',
           },
           {
-            path: '/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro',
+            path: '/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
             title: txt('page.matTranDashboard.reliefSupportUnits'),
             description: txt('page.matTranDashboard.reliefSupportUnitsDesc'),
             icon: Building2,
             color: 'bg-indigo-500',
+          },
+        ],
+      },
+      {
+        groupTitle: txt('page.matTranDashboard.groupSalaryManagement'),
+        items: [
+          {
+            path: '/mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong',
+            title: txt('page.matTranDashboard.salaryIncreaseList'),
+            description: txt('page.matTranDashboard.salaryIncreaseListDesc'),
+            icon: CircleDollarSign,
+            color: 'bg-amber-600',
+          },
+          {
+            path: '/mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong',
+            title: txt('page.matTranDashboard.salarySetup'),
+            description: txt('page.matTranDashboard.salarySetupDesc'),
+            icon: SlidersHorizontal,
+            color: 'bg-sky-600',
           },
         ],
       },

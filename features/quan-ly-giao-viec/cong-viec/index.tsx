@@ -9,6 +9,7 @@ import React, {
   startTransition,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -69,7 +70,10 @@ const CongViecPage: React.FC = () => {
     navigate('/quan-ly-giao-viec', { replace: true });
   }, [user, canView, navigate]);
 
-  const [listScope, setListScope] = useState<CongViecListScope>(TAB_DO);
+  const [listScope, setListScope] = useTabSearchParam(
+    [TAB_DO, TAB_RELATED, TAB_ASSIGN] as const satisfies readonly CongViecListScope[],
+    TAB_DO,
+  );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<CongViecDanhSachRow | null>(null);
   const [viewing, setViewing] = useState<CongViecDanhSachRow | null>(null);

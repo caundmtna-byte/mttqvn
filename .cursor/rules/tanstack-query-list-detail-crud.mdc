@@ -1,0 +1,54 @@
+---
+description: Chuẩn TanStack Query cho trang module CRUD (list + detail drawer + form) — cache, mở chi tiết, lỗi list, đóng form
+globs: "features/**/hooks/use-*.ts,features/**/index.tsx"
+alwaysApply: false
+---
+
+# TanStack Query — list / detail / form (module CRUD)
+
+Áp dụng khi thêm hoặc sửa hook `use-*` và trang `index.tsx` của module có **danh sách + drawer chi tiết + form**.
+
+Tham chiếu triển khai: [`features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro.ts`](mdc:features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro.ts), [`features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx`](mdc:features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx).
+
+## Query keys & cấu hình
+
+- Khai báo nhánh trong [`lib/query-keys.ts`](mdc:lib/query-keys.ts): tối thiểu `all` (danh sách) và `detail(id)`.
+- **List + detail** lấy từ Supabase / CRUD có thể đổi ngoài phiên: spread **`transactionalCrudListQueryOptions`** từ [`lib/supabase/query-config.ts`](mdc:lib/supabase/query-config.ts) vào `useQuery` (stale ngắn, `refetchOnMount: true` cho từng query đó).
+- Master data / lookup ít đổi: dùng **`masterDataQueryOptions`**, không dùng transactional list cho nhầm mục đích.
+
+## Mutation → cache
+
+- Ưu tiên **`setQueryData`** patch list và detail sau create/update; xóa nhiều: **`removeQueries`** theo `detail(id)` từng bản ghi đã xóa.
+- Tránh **`invalidateQueries(listKey)`** sau mỗi sửa một dòng nếu đã patch được cache (xem [egress-checklist C2](mdc:.cursor/rules/egress-checklist.mdc)).
+- Tùy chọn nâng cao: sau `setQueryData`, `invalidateQueries({ queryKey, refetchType: 'none' })` để đánh dấu stale cho observer chưa mount — chỉ khi cần đồng bộ đa tab.
+
+## Trang list (`index.tsx`)
+
+### Mở drawer chi tiết (`onView`)
+
+- Nếu **row list đủ field** cho chi tiết (kiểu `DetailRow === ListRow` hoặc embed đủ): trong handler xem, gọi  
+  `queryClient.setQueryData(queryKeys.<module>.detail(item.id), item)` **rồi mới** `setViewingId(item.id)`  
+  để tránh race: `useQuery(detail)` bật trước khi `useEffect` seed cache chạy → **một request `getById` thừa**.
+- Nếu form/detail cần **field chỉ có từ server** (không có trên list): dùng **`queryClient.fetchQuery`** với đúng `queryKey` + `queryFn` (xem egress **C3**), không gọi service thẳng ngoài cache.
+
+### Lỗi tải danh sách
+
+- Destructure `isError`, `refetch` (và khi cần `isFetching`) từ `useXxxList`.
+- Khi query **enabled** và **`isError`**: hiển thị [`ErrorState`](mdc:components/shared/ErrorState.tsx) với `onRetry={() => void refetch()}`; thêm message trong **`features/<module>/text.ts`** (vd `listLoadErrorHint`). Không chỉ dựa toast toàn cục từ `QueryCache`.
+
+### Đóng form (`handleCloseForm`)
+
+- **Không** `invalidateQueries(detail)` khi người dùng **Hủy** nếu mutation thành công đã `setQueryData` detail/list và không có lý do buộc refetch server.
+- Vẫn giữ logic UX: đóng form → mở lại detail theo state (`formOrigin` / `openedFormFromDetailId`) tùy module.
+
+### Đồng bộ list → detail
+
+- `useEffect` khi `rows` + `viewingId` đổi: nếu row còn trong list, `setQueryData(detail(id), freshRow)` để detail khớp list sau refetch/mutation (pattern đơn vị cứu trợ).
+
+## Gating query theo quyền
+
+- Nếu có ma trận phân quyền / hydrate: `enabled` list (và detail phụ thuộc list) tránh request bị hủy khi `matrixActive` chưa sẵn sàng — xem comment trong `don-vi-cuu-tro/index.tsx` (`listQueryEnabled`, `waitingMatrixHydrate`).
+
+## Persist
+
+- Query key prefix `kho-*` và các CRUD nhạy: tuân [`index.tsx`](mdc:index.tsx) `shouldDehydrateQuery` — không persist cache localStorage lệch DB.

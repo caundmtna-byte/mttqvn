@@ -166,4 +166,31 @@ describe('can', () => {
     );
     expect(can(member, 'edit', 'annualPrograms')).toBe(true);
   });
+
+  it('matrix: matTranReliefGoods — view on hang-hoa module only', () => {
+    usePermissionGrantStore.getState().setMatrixGrants(
+      { 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa': ['view'] },
+      2
+    );
+    expect(can(member, 'view', 'matTranReliefGoods')).toBe(true);
+    expect(can(member, 'export', 'matTranReliefGoods')).toBe(true);
+    expect(can(member, 'create', 'matTranReliefGoods')).toBe(false);
+    expect(can(member, 'edit', 'matTranReliefGoods')).toBe(false);
+    expect(can(member, 'delete', 'matTranReliefGoods')).toBe(false);
+  });
+
+  it('matrix: matTranReliefGoods — quan_tri (admin token) grants full CRUD', () => {
+    usePermissionGrantStore.getState().setMatrixGrants(
+      { 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa': ['admin'] },
+      4
+    );
+    expect(can(member, 'create', 'matTranReliefGoods')).toBe(true);
+    expect(can(member, 'delete', 'matTranReliefGoods')).toBe(true);
+  });
+
+  it('matrix: matTranReliefGoods — cap_bac=1 bypasses matrix', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({}, 1);
+    expect(can(member, 'delete', 'matTranReliefGoods')).toBe(true);
+    expect(can(member, 'import', 'matTranReliefGoods')).toBe(true);
+  });
 });

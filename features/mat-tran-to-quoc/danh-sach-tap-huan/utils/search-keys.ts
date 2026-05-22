@@ -1,4 +1,4 @@
-/** Các key dùng cho ô tìm kiếm tổng trên danh sách tập huấn. */
+/** Các key dùng cho ô tìm kiếm tổng trên module tập huấn. */
 export const MTTQ_TAP_HUAN_SEARCHABLE_KEYS: string[] = [
   'ten_lop_tap_huan',
   'cap_tap_huan',

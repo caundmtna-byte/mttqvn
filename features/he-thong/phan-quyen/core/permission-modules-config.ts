@@ -65,7 +65,14 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho', nameKey: 'page.matTranDashboard.reliefStockTransactions' },
           { id: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory' },
           { id: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList' },
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
+        ],
+      },
+      {
+        groupTitleKey: 'page.matTranDashboard.groupSalaryManagement',
+        modules: [
+          { id: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong', nameKey: 'page.matTranDashboard.salaryIncreaseList' },
+          { id: 'mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong', nameKey: 'page.matTranDashboard.salarySetup' },
         ],
       },
     ],

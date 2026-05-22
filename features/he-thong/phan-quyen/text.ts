@@ -89,15 +89,17 @@ export const permission = {
     "articleStatsReport": "BC thống kê bài viết",
     "taskList": "Danh sách công việc",
     "taskReport": "Báo cáo công việc",
-    "matTranTrainingList": "Danh sách tập huấn",
-    "matTranRewardList": "Danh sách khen thưởng",
+    "matTranTrainingList": "Tập huấn",
+    "matTranRewardList": "Khen thưởng",
     "matTranTerm": "Nhiệm kỳ",
     "matTranSession": "Kỳ họp",
     "matTranCommitteeMembers": "Ủy viên ủy ban",
     "matTranCommitteeMemberStatsReport": "Báo cáo ủy viên",
     "matTranOfficerList": "Danh sách cán bộ",
     "matTranOfficerStatsReport": "Báo cáo cán bộ",
-    "matTranSetupSettings": "Thiết lập cài đặt"
+    "matTranSetupSettings": "Thiết lập cài đặt",
+    "matTranSalaryIncreaseList": "Danh sách tăng lương",
+    "matTranSalarySetup": "Thiết lập lương"
   },
   "validation": {
     "codeMin": "Mã vai trò tối thiểu 2 ký tự",

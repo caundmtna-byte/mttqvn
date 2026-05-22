@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -9,6 +9,7 @@ import { MTTQ_THIET_LAP_LOAI, MTTQ_LOAI_TAB_LABEL_KEY, type MttqThietLapLoai } f
 import { useMttqThietLapListStore } from './store/useMttqThietLapListStore';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 
 const ThietLapCaiDatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const ThietLapCaiDatPage: React.FC = () => {
     navigate('/mat-tran-to-quoc', { replace: true });
   }, [user, canView, navigate]);
 
-  const [activeLoai, setActiveLoai] = useState<MttqThietLapLoai>('cap_quan_ly');
+  const [activeLoai, setActiveLoai] = useTabSearchParam(MTTQ_THIET_LAP_LOAI, 'cap_quan_ly');
   const { data: allRowsRaw, isLoading } = useMttqThietLapAll({ enabled: canView });
   const store = useMttqThietLapListStore();
 

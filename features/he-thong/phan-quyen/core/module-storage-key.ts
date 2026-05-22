@@ -4,6 +4,8 @@ import { PERMISSION_FUNCTIONS } from './permission-modules-config';
 const LEGACY_MODULE_STORAGE_KEY_TO_ID: Record<string, string> = {
   'hoa-hong-viet-bai': 'quan-ly-viet-bai/nhuan-but-viet-bai',
   'quan-ly-viet-bai/hoa-hong-viet-bai': 'quan-ly-viet-bai/nhuan-but-viet-bai',
+  'don-vi-ho-tro': 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
+  'mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro': 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
 };
 
 function lastPathSegment(moduleId: string): string {

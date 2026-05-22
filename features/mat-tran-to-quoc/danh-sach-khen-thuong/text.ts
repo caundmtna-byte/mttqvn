@@ -1,5 +1,5 @@
 export const matTranKhenThuong = {
-  noViewPermission: 'Bạn không có quyền xem danh sách khen thưởng.',
+  noViewPermission: 'Bạn không có quyền xem khen thưởng.',
   noEmployeeBanner: 'Tài khoản chưa gắn hồ sơ nhân viên — không thể ghi nhận người tạo quyết định khen thưởng.',
   service: {
     noEmployeeProfile: 'Không xác định được nhân viên đăng nhập để ghi người tạo.',
@@ -41,7 +41,7 @@ export const matTranKhenThuong = {
     tgCapNhatCol: 'Cập nhật',
   },
   toolbar: {
-    title: 'Danh sách khen thưởng',
+    title: 'Khen thưởng',
   },
   tabs: {
     danhSach: 'Danh sách',

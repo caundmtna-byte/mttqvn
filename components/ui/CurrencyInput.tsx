@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { cn, getLocale } from '../../lib/utils';
+import { renderInputIcon } from './Input';
 
 export interface CurrencyInputProps {
   label?: string;
@@ -9,7 +11,8 @@ export interface CurrencyInputProps {
   disabled?: boolean;
   placeholder?: string;
   suffix?: string;
-  icon?: React.ReactNode;
+  /** Giống `Input`: element hoặc Lucide (`Banknote`, …). */
+  icon?: React.ReactNode | LucideIcon;
   className?: string;
   /** Giá trị số thực (không format) */
   value?: number | string;
@@ -67,15 +70,15 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       <div className="w-full">
         {label && (
           <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 flex items-center gap-1.5 text-foreground">
-            {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
+            {icon != null && <span className="text-muted-foreground shrink-0">{renderInputIcon(icon)}</span>}
             {label}
             {required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
         )}
         <div className="relative">
-          {icon && !label && (
+          {icon != null && !label && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-              {icon}
+              {renderInputIcon(icon)}
             </div>
           )}
           <input
@@ -91,7 +94,7 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
               'flex h-10 w-full rounded-lg border border-border bg-background py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
               'disabled:cursor-not-allowed disabled:opacity-50',
-              icon && !label ? 'pl-10' : 'pl-3',
+              icon != null && !label ? 'pl-10' : 'pl-3',
               suffix ? 'pr-14' : 'pr-3',
               error ? 'border-destructive focus-visible:ring-destructive' : '',
               className

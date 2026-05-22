@@ -43,9 +43,11 @@ Dùng checklist này khi tạo một module mới để tránh sót bước và 
 
 ## 4. Hooks (React Query)
 
-- [ ] **hooks/use-xxx.ts**: Query list, detail by id, create, update, delete (và import nếu có).
-- [ ] **Invalidate** sau mutation: đúng `queryKeys` (xem mục 14) — tránh refetch sai cache.
-- [ ] **useImportXxx(onSuccess?)** (nếu có): invalidate, toast tổng hợp lỗi từng dòng nếu API trả về.
+- [ ] **hooks/use-xxx.ts**: `useQuery` list, `useQuery` detail theo `id`, `useMutation` create / update / delete (và import nếu có).
+- [ ] **queryKeys**: dùng `lib/query-keys.ts` — `all`, `detail(id)` (và nhánh có tham số nếu có) — đồng bộ với mutations (`setQueryData` / `removeQueries`), xem mục 14.
+- [ ] **Cấu hình stale**: dữ liệu CRUD Supabase có thể đổi ngoài app → spread **`transactionalCrudListQueryOptions`** từ `lib/supabase/query-config.ts` cho list **và** detail query; master data / lookup ít đổi → **`masterDataQueryOptions`** (không nhầm hai loại).
+- [ ] **Sau mutation**: ưu tiên **`setQueryData`** patch list + detail; xóa: **`removeQueries`** từng `detail(id)` đã xóa. Tránh **`invalidateQueries(listKey)`** sau mỗi sửa một dòng nếu đã patch được cache (xem `.cursor/rules/egress-checklist.mdc` C2).
+- [ ] **useImportXxx(onSuccess?)** (nếu có): invalidate hoặc setQueryData + toast tổng hợp lỗi từng dòng nếu API trả về.
 
 ---
 
@@ -56,6 +58,13 @@ Dùng checklist này khi tạo một module mới để tránh sót bước và 
 - [ ] State: `showForm`, `editingItem`, `detailItem`, (bảng con) `detailChild`, `showChildForm`, `openedFormFromDetailId`.
 - [ ] Form/Detail drawer: **lazy import** + `Suspense` + fallback spinner nếu chunk lớn (giảm bundle trang list).
 
+### 5.1b TanStack Query (list + detail drawer)
+
+- [ ] **`onView` / mở chi tiết**: nếu row list **đủ field** cho chi tiết (detail cùng shape hoặc embed đủ), gọi `queryClient.setQueryData(queryKeys.<module>.detail(item.id), item)` **trước** `setViewingId` / state tương đương — tránh request `getById` thừa (race với `useEffect` seed cache). Nếu form/detail cần field **chỉ từ server**: dùng `queryClient.fetchQuery` đúng `queryKey` + `queryFn` (egress C3), xem `dot-cuu-tro` `handleEditFromList`.
+- [ ] **Lỗi tải danh sách**: khi query list `enabled && isError`, hiển thị **`ErrorState`** + `refetch()` (không chỉ toast toàn cục); thêm key kiểu **`listLoadErrorHint`** trong `text.ts` module.
+- [ ] **`handleCloseForm`**: không **`invalidateQueries(detail)`** khi người dùng **Hủy** nếu mutation đã `setQueryData` và không cần buộc refetch server; vẫn giữ UX **Detail → Sửa → Hủy → mở lại detail** qua state (`formOrigin` / `openedFormFromDetailId`).
+- [ ] **Đồng bộ list → detail** (khuyến nghị): `useEffect` khi `rows` + id đang xem đổi — `setQueryData(detail(id), row)` nếu row còn trong list; nếu không còn → đóng detail.
+
 ### 5.2 Lọc & tìm kiếm
 
 - [ ] **filterFn** (client): **`searchTerm`** luôn kết hợp qua `matchesSearchTerm(item, searchTerm, SEARCHABLE_KEYS)` (`lib/searchUtils`) trừ khi module **không** có ô search tổng (đã ghi nhận). **Pattern B:** **AND** thêm **`columnSearch`** + helpers — không thay thế hoàn toàn ô tìm tổng trừ khi `hideSearch` có chủ đích.
@@ -63,8 +72,8 @@ Dùng checklist này khi tạo một module mới để tránh sót bước và 
 
 ### 5.3 CRUD & chọn nhiều
 
-- [ ] **handleEdit**: Từ detail → set `openedFormFromDetailId` để **Hủy** mở lại detail.
-- [ ] **handleCloseForm**: Nếu có `openedFormFromDetailId` → refresh detail + clear flag.
+- [ ] **handleEdit**: Từ detail → set `openedFormFromDetailId` (hoặc `formOrigin` + id) để **Hủy** mở lại detail.
+- [ ] **handleCloseForm**: mở lại detail theo state UX; **không** bắt buộc `invalidateQueries(detail)` khi Hủy nếu cache đã đúng (xem **5.1b**). Chỉ invalidate/refetch detail khi nghiệp vụ cần dữ liệu server mới và mutation chưa patch đủ.
 - [ ] **handleDeleteMany** onSuccess: Xóa cả bản ghi đang mở trong detail → `detailItem` / `detailChild` = null.
 - [ ] Export: `exportData` useMemo (cột + header đúng ngôn ngữ), `handleExport` → `exportToExcel` (hoặc helper thống nhất).
 - [ ] Import: `showImport`, `IMPORT_COLUMNS` (key/label/required), `ImportDialog`, wire toolbar.
@@ -140,7 +149,7 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 - [ ] **Checkbox**: chọn dòng + chọn tất cả trang; `selectedIds` từ store.
 - [ ] **Sort**: `sort` + `onSort` nếu module hỗ trợ — hoặc sort chỉ qua header phụ (khi `hideSortOnColumnLabel`).
 - [ ] **Phân trang**: `page`, `pageSize`, `onPageChange`, `onPageSizeChange`; footer đếm bản ghi (copy chuẩn từ module mẫu).
-- [ ] **Loading**: `isLoading` → spinner + `loadingText` từ `txt()`.
+- [ ] **Loading**: `isLoading` → spinner + `loadingText` từ `txt()`; lỗi query list: xử lý ở **trang** (`ErrorState` + `refetch`) — xem **5.1b**, không chỉ dựa toast toàn cục.
 - [ ] **Empty**: `emptyTitle`, `emptyDescription`, optional `emptyAction` (vd nút Thêm).
 - [ ] **Sticky**: cột trái (checkbox + cột đầu) / cột phải (actions) theo `stickyLeftCount` và minWidth.
 - [ ] **Virtual scroll**: bật mặc định khi dữ liệu lớn — giữ behavior như module mẫu.
@@ -160,7 +169,7 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 
 - [ ] Bảng hỗ trợ **`renderColumnHeaderAccessory`** trên `GenericTable` (và `hideSortOnColumnLabel` khi sort nằm trong menu header).
 - [ ] **Mỗi cột dữ liệu** (trừ `actions`): nút **sliders** (`ColumnHeaderSortMenu`) → **Sắp xếp A→Z / Z→A** + **ô tìm theo cột** (`ColumnHeaderSearch` trong dropdown). Tham chiếu: `features/he-thong/nhan-vien/components/nhan-vien-table.tsx` + `@/components/shared/column-header`.
-- [ ] Cột **enum / trạng thái** cần tick nhiều giá trị: **`ColumnHeaderFilter`** (sort + MultiSelect + tìm trong dropdown) — cùng `filters.<key>` với **FilterChip** trên toolbar nếu module vẫn dùng chip (vd. **Danh sách khen thưởng**: `mttq-khen-thuong-table.tsx` + `utils/column-search.ts`).
+- [ ] Cột **enum / trạng thái** cần tick nhiều giá trị: **`ColumnHeaderFilter`** (sort + MultiSelect + tìm trong dropdown) — cùng `filters.<key>` với **FilterChip** trên toolbar nếu module vẫn dùng chip (vd. **Khen thưởng**: `mttq-khen-thuong-table.tsx` + `utils/column-search.ts`).
 - [ ] **`columnSearch`**: util `*_matchesColumnSearch` + `count*ColumnSearchActive` — **không** áp text search trùng key với cột đã dùng `ColumnHeaderFilter` (khai báo danh sách skip trong util, xem `nhan-vien/utils/column-search.ts`).
 - [ ] **`filterFn`**: `columnSearch` **AND** chip/toolbar filters; **sort sau filter** trong `index` (hoặc server) — tránh sort full list rồi mới filter.
 - [ ] Toolbar: **`activeFilterCount`** gồm `columnSearch` (theo util đếm); **`onClearAllFilters`**: xóa `searchTerm`, `columnSearch`, các filter chip, và **reset sort** (`setSort(null, null)`) nếu sort client — đồng bộ **Export** với list đã lọc.
@@ -190,6 +199,13 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 - [ ] Hiển thị `errors.<field>.message` dưới control; `aria-invalid`, `aria-describedby` tới dòng lỗi (đã hỗ trợ ở Input).
 - [ ] Nút submit: `disabled` hoặc loading khi đang gửi; tránh double submit.
 
+### 8.4b Icon cạnh nhãn trường (form)
+
+- [ ] Mọi trường có **`label`** hiển thị trong drawer form: truyền **`icon`** cho **`Input`**, **`Textarea`**, **`Combobox`** (và control tương đương nếu component hỗ trợ) — **không** để label “trần”.
+- [ ] **`Textarea`**: dùng cùng quy ước `icon` như `Input` (Lucide component hoặc `ReactNode`; `components/ui/Textarea.tsx` dùng `renderInputIcon`).
+- [ ] Gợi ý icon: tên / tiêu đề → `Type`; mô tả / ghi chú → `FileText`; URL → `Link2`; địa chỉ → `MapPin`; SĐT → `Phone`; email → `Mail`; thứ tự → `ListOrdered`; ngày giờ (chỉ ở detail) → `Calendar`; danh mục / nhóm → `FolderOpen` / `Package` tùy ngữ cảnh.
+- [ ] Tham chiếu: `features/he-thong/chuc-vu/components/chuc-vu-form.tsx`, `features/mat-tran-to-quoc/dot-cuu-tro/components/kho-dot-cuu-tro-form.tsx`.
+
 ### 8.5 Sanitize trước khi gửi
 
 - [ ] Trim chuỗi, chuẩn hóa null/empty FK giống module mẫu (tránh gửi `""` khi DB cần `null`).
@@ -203,6 +219,11 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 - [ ] **Summary card** (trên **DetailToolbar**): **bắt buộc** `DetailSummaryCard` (`components/shared/DetailSummaryCard.tsx`) — **không** copy tay class `bg-card p-4 rounded-xl border…`. **Hàng 1:** `leading` (avatar hoặc **`DetailSummaryIconTile`** + icon ~26px) + **title + badge** (nếu có) cùng hàng; **hàng 2:** `subtitle` (mã, @tài khoản, ngày `tabular-nums`, …); **`children`:** meta thêm nếu có. Tham chiếu trực tiếp trong repo: `nhan-vien-detail`, `chuc-vu-detail`, `phong-ban-detail`, `chuong-trinh-nam-detail`, `cong-viec-detail`, `bai-viet-detail`, địa bản, thiết lập bài viết / MTTQ (kỳ họp, nhiệm kỳ, ủy viên, khen thưởng, tập huấn, thiết lập, cán bộ), v.v.
 - [ ] **DetailToolbar**: hành động “nổi bật” (đổi trạng thái, thêm bản ghi con, …) — chỉ hiện khi `canEdit` / đúng nghiệp vụ. **Đổi / chuyển trạng thái** → popup modal (`GenericDrawer` `variant="modal"`), không dùng drawer trượt — `docs/patterns-detail-status-change.md`.
 - [ ] **DetailSection** + **DetailField**: nhóm “Thông tin chung”, “Liên hệ”, … — mỗi field một label + value.
+
+### 9.1b Icon cạnh nhãn trường (detail)
+
+- [ ] Mỗi **`DetailField`** truyền **`icon={<LucideIcon size={12} />}`** cạnh `label` (đồng bộ với form + các module chuẩn như `chuc-vu-detail`, `phong-ban-detail`).
+- [ ] Không bỏ sót: cả nhóm “Thông tin hệ thống” (`tg_tao`, `tg_cap_nhat` → `Calendar`), STT (`ListOrdered`), v.v.
 
 ### 9.2 Chi tiết hiển thị
 
@@ -228,8 +249,8 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 
 ## 10. Flow chi tiết
 
-- [ ] **Detail → Sửa → Hủy**: Đóng form, mở lại detail (state + `openedFormFromDetailId`).
-- [ ] **Detail → Sửa → Lưu**: Invalidate + cập nhật `detailItem` bản mới.
+- [ ] **Detail → Sửa → Hủy**: Đóng form, mở lại detail (state + `openedFormFromDetailId` / `formOrigin`).
+- [ ] **Detail → Sửa → Lưu**: Cập nhật `detailItem` / cache chi tiết bản mới — ưu tiên **`setQueryData`** trong hook mutation; `invalidateQueries` chỉ khi thật sự cần refetch server.
 - [ ] **Xóa con trong detail**: Đồng bộ đóng drawer con (mục 9.5).
 - [ ] **Xóa nhiều**: Nếu id đang xem ∈ danh sách xóa → clear detail.
 
@@ -238,7 +259,7 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 ## 11. i18n & text
 
 - [ ] Chuỗi UI: ưu tiên **`features/<module>/text.ts`** export object + `txt()` (`lib/text`) — hoặc key trong `locales` tùy chuẩn dự án; thống nhất một kiểu trong module.
-- [ ] Tối thiểu cần key: loading, empty, emptyHint, delete/bulk delete, toast CRUD/import, form title/label/placeholder/save/create, tên cột (export + column manager), detail section, validation messages, toolbar (export/import/filter).
+- [ ] Tối thiểu cần key: loading, empty, emptyHint, delete/bulk delete, toast CRUD/import, form title/label/placeholder/save/create, tên cột (export + column manager), detail section, validation messages, toolbar (export/import/filter), **`listLoadErrorHint`** (hoặc tương đương) nếu trang list dùng `ErrorState` khi `isError`.
 - [ ] Ô tìm kiếm list: dùng `common.searchPlaceholder` nếu không có gợi ý đặc thù.
 
 ---
@@ -262,8 +283,9 @@ Toolbar là **một hàng điều khiển** phía trên list; bắt buộc đủ
 
 ## 14. Query keys & Supabase
 
-- [ ] Thêm nhánh trong **`lib/query-keys.ts`** (`all`, `list` nếu có tham số, `detail(id)`…) — mutation invalidate đúng key.
+- [ ] Thêm nhánh trong **`lib/query-keys.ts`** (`all`, `list` nếu có tham số, `detail(id)`…) — mutations dùng đúng key cho `setQueryData` / `removeQueries` / invalidate có chủ đích.
 - [ ] List query dùng **cùng params** giữa hook và constant (tránh cache trùng tên khác param).
+- [ ] CRUD list/detail từ Supabase: hook `useQuery` spread **`transactionalCrudListQueryOptions`** (`lib/supabase/query-config.ts`) — không copy tay `staleTime`/`refetchOnMount` lệch chuẩn dự án.
 
 ---
 
@@ -293,6 +315,8 @@ Chỉ triển khai khi spec yêu cầu; mỗi mục có thể thành phase sau.
 - [ ] Mobile: mở **filter sheet**, đổi filter — kết quả khớp desktop (cùng store).
 - [ ] Thêm / Sửa / Xóa một / Xóa nhiều; toast đúng; list refresh.
 - [ ] Detail → Sửa → Hủy → detail cũ; Detail → Sửa → Lưu → detail mới.
+- [ ] Lỗi tải list: thấy **`ErrorState`** + thử lại refetch; không chỉ toast.
+- [ ] Mở chi tiết từ list (row đủ field): không có request **`getById` dư** do thiếu seed cache (xem **5.1b**).
 - [ ] Detail có bảng con: xóa dòng đang mở detail → drawer con đóng.
 - [ ] Export: đúng cột, tên file, encoding; Import: cột bắt buộc, báo lỗi từng dòng nếu có.
 - [ ] Form: mọi trường required có `*` đỏ + validation hiển thị khi submit sai.
@@ -302,3 +326,5 @@ Chỉ triển khai khi spec yêu cầu; mỗi mục có thể thành phase sau.
 ---
 
 *File này tham chiếu chuẩn từ các module: Dự án, Phòng ban, Nhân viên, Công việc. Cập nhật khi có quy ước UI/API mới.*
+
+**TanStack Query (list + detail + form):** [`.cursor/rules/tanstack-query-list-detail-crud.mdc`](../.cursor/rules/tanstack-query-list-detail-crud.mdc), skill dự án `.cursor/skills/tanstack-query-crud-list-detail/SKILL.md`, và mục **C5–C6** trong [`.cursor/rules/egress-checklist.mdc`](../.cursor/rules/egress-checklist.mdc).

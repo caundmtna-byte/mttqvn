@@ -24,6 +24,7 @@ import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
 import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
@@ -55,6 +56,8 @@ import { yearFromNgayKhenThuong } from './utils/aggregate-mttq-khen-thuong-stats
 const DON_VI_NONE = '__none__';
 
 type KhenThuongMainTab = 'danh_sach' | 'chi_tiet' | 'thong_ke';
+
+const KHEN_THUONG_MAIN_TABS = ['danh_sach', 'chi_tiet', 'thong_ke'] as const satisfies readonly KhenThuongMainTab[];
 
 function khenThuongToFormValues(d: MttqKhenThuong): MttqKhenThuongFormValues {
   return {
@@ -107,7 +110,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
     navigate('/mat-tran-to-quoc', { replace: true });
   }, [user, canView, navigate]);
 
-  const [mainTab, setMainTab] = useState<KhenThuongMainTab>('danh_sach');
+  const [mainTab, setMainTab] = useTabSearchParam(KHEN_THUONG_MAIN_TABS, 'danh_sach');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqKhenThuong | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);

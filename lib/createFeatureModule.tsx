@@ -16,6 +16,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { useTabSearchParam } from '../hooks/use-tab-search-param';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { List, BarChart3 } from 'lucide-react';
@@ -145,7 +146,11 @@ export function createFeatureModule<T, TFilters>(
   ];
 
   const FeaturePage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<string>('list');
+    const tabIds = useMemo(
+      () => (StatsComponent ? (['list', 'stats'] as const) : (['list'] as const)),
+      [StatsComponent],
+    );
+    const [activeTab, setActiveTab] = useTabSearchParam(tabIds, 'list');
     const [showForm, setShowForm] = useState(false);
     const [editingItem, setEditingItem] = useState<T | null>(null);
     const [viewingItem, setViewingItem] = useState<T | null>(null);

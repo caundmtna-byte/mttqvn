@@ -25,6 +25,12 @@ import { matTranTapHuan } from '../../features/mat-tran-to-quoc/danh-sach-tap-hu
 import { matTranNhiemKy } from '../../features/mat-tran-to-quoc/nhiem-ky/text';
 import { matTranKyHop } from '../../features/mat-tran-to-quoc/ky-hop/text';
 import { matTranUyVienUyBan } from '../../features/mat-tran-to-quoc/uy-vien-uy-ban/text';
+import { matTranKhoDanhSach } from '../../features/mat-tran-to-quoc/danh-sach-kho/text';
+import { matTranDonViCuuTro } from '../../features/mat-tran-to-quoc/don-vi-cuu-tro/text';
+import { matTranDotCuuTro } from '../../features/mat-tran-to-quoc/dot-cuu-tro/text';
+import { matTranHangHoa } from '../../features/mat-tran-to-quoc/hang-hoa/text';
+import { matTranNhapXuatKho } from '../../features/mat-tran-to-quoc/nhap-xuat-kho/text';
+import { matTranThietLapLuong } from '../../features/mat-tran-to-quoc/thiet-lap-luong/text';
 import { diaBan } from '../../features/he-thong/danh-sach-tinh-thanh/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
@@ -66,6 +72,12 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('matTranNhiemKy', matTranNhiemKy),
   ...flatten('matTranKyHop', matTranKyHop),
   ...flatten('matTranUyVienUyBan', matTranUyVienUyBan),
+  ...flatten('matTranKhoDanhSach', matTranKhoDanhSach),
+  ...flatten('matTranDonViCuuTro', matTranDonViCuuTro),
+  ...flatten('matTranDotCuuTro', matTranDotCuuTro),
+  ...flatten('matTranHangHoa', matTranHangHoa),
+  ...flatten('matTranNhapXuatKho', matTranNhapXuatKho),
+  ...flatten('matTranThietLapLuong', matTranThietLapLuong),
   ...flatten('tenure', tenure),
   ...flatten('taiLieu', taiLieu),
   ...flatten('diaBan', diaBan),
@@ -120,6 +132,12 @@ export {
   matTranNhiemKy,
   matTranKyHop,
   matTranUyVienUyBan,
+  matTranKhoDanhSach,
+  matTranDonViCuuTro,
+  matTranDotCuuTro,
+  matTranHangHoa,
+  matTranNhapXuatKho,
+  matTranThietLapLuong,
   diaBan,
 };
 export { fmt };

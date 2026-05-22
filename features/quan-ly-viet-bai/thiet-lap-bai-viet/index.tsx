@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import TabGroup from '@/components/ui/TabGroup';
@@ -27,7 +28,10 @@ const ThietLapBaiVietPage: React.FC = () => {
     navigate('/quan-ly-viet-bai', { replace: true });
   }, [user, canView, navigate]);
 
-  const [activeTab, setActiveTab] = useState(TAB_THE_LOAI);
+  const [activeTab, setActiveTab] = useTabSearchParam(
+    [TAB_THE_LOAI, TAB_KHAC] as const,
+    TAB_THE_LOAI,
+  );
   const { data: khacRows = [], isLoading: khacLoading } = useThietLapKhacAll({ enabled: canView });
 
   const trangDang = useMemo(() => khacRows.filter((r) => r.loai === 'trang_dang'), [khacRows]);

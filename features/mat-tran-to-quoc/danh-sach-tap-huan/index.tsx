@@ -27,6 +27,7 @@ import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import ExportDialog from '@/components/shared/ExportDialog';
 import {
   useMttqLopTapHuanList,
@@ -57,6 +58,8 @@ const MttqLopTapHuanForm = lazy(() => import('./components/mttq-tap-huan-form'))
 const MttqLopTapHuanDetail = lazy(() => import('./components/mttq-tap-huan-detail'));
 
 type TapHuanMainTab = 'lop' | 'chi_tiet' | 'thong_ke';
+
+const TAP_HUAN_MAIN_TABS = ['lop', 'chi_tiet', 'thong_ke'] as const satisfies readonly TapHuanMainTab[];
 
 function lopTapHuanToFormValues(d: MttqLopTapHuan): MttqTapHuanFormValues {
   return {
@@ -102,7 +105,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     navigate('/mat-tran-to-quoc', { replace: true });
   }, [user, canView, navigate]);
 
-  const [mainTab, setMainTab] = useState<TapHuanMainTab>('lop');
+  const [mainTab, setMainTab] = useTabSearchParam(TAP_HUAN_MAIN_TABS, 'lop');
   const [thongKeThuocDien, setThongKeThuocDien] = useState<string[]>([]);
   const [thongKeDonViLop, setThongKeDonViLop] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);

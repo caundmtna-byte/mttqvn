@@ -28,6 +28,19 @@ export const listQueryOptions = {
   gcTime: SERVER_GC_TIME_MS,
 } as const;
 
+/**
+ * Danh sách/chi tiết CRUD trên Supabase (kho cứu trợ, …): có thể đổi ngoài phiên hoặc SQL;
+ * `staleTime` ngắn hơn default + `refetchOnMount: true` (giống hướng dẫn `useEmployees`).
+ * Không persist các query `kho-*` — xem `index.tsx` `shouldDehydrateQuery`.
+ */
+export const TRANSACTIONAL_CRUD_LIST_STALE_TIME_MS = 30 * 1000;
+
+export const transactionalCrudListQueryOptions = {
+  staleTime: TRANSACTIONAL_CRUD_LIST_STALE_TIME_MS,
+  gcTime: SERVER_GC_TIME_MS,
+  refetchOnMount: true,
+} as const;
+
 export const masterDataQueryOptions = {
   staleTime: MASTER_DATA_STALE_TIME_MS,
   gcTime: SERVER_GC_TIME_MS,

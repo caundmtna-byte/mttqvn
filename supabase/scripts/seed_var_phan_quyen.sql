@@ -21,3 +21,11 @@ FROM public.var_chuc_vu cv
 ORDER BY cv.id
 LIMIT 1
 ON CONFLICT (chuc_vu_id, module_key) DO NOTHING;
+
+-- Hàng hóa cứu trợ (`module_id` đầy đủ: mat-tran-to-quoc/kho-cuu-tro/hang-hoa → `module_key` = hang-hoa)
+INSERT INTO public.var_phan_quyen (module_key, chuc_vu_id, quyen)
+SELECT 'hang-hoa', cv.id, 'xem,them,sua,xoa'
+FROM public.var_chuc_vu cv
+ORDER BY cv.id
+LIMIT 1
+ON CONFLICT (chuc_vu_id, module_key) DO NOTHING;
