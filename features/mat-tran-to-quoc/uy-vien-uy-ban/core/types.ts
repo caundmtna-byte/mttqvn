@@ -2,6 +2,7 @@ export interface MttqUyVienUyBanFilters {
   columnSearch: Record<string, string>;
   nhiem_ky_filter: string[];
   don_vi_filter: string[];
+  trang_thai_tham_gia_filter: string[];
 }
 
 /**

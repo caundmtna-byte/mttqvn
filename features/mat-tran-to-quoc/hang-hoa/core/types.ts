@@ -1,6 +1,8 @@
 export interface KhoDanhMucHangHoaFilters {
   columnSearch: Record<string, string>;
   mo_ta_bucket: '' | 'has' | 'empty';
+  /** '' = tất cả trạng thái */
+  trang_thai: string;
 }
 
 export interface KhoDanhMucHangHoaListRow {
@@ -20,6 +22,8 @@ export interface KhoDanhSachHangHoaFilters {
   mo_ta_bucket: '' | 'has' | 'empty';
   /** '' = tất cả */
   id_danh_muc: string;
+  /** '' = tất cả trạng thái */
+  trang_thai: string;
 }
 
 export interface KhoDanhSachHangHoaListRow {

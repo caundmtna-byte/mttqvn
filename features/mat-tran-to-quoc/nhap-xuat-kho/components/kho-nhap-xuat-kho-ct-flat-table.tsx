@@ -10,7 +10,7 @@ import {
 import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';
 import GenericTable from '@/components/shared/GenericTable';
-import { formatCurrency, formatDateShort } from '@/lib/utils';
+import { formatCurrency, formatDateShort, formatDecimal } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import type { NhapXuatKhoCtFlatRow } from '../core/types';
@@ -129,7 +129,7 @@ const NhapXuatKhoCtFlatTable = memo(function NhapXuatKhoCtFlatTable({
         case 'so_luong':
           return (
             <span className="text-sm tabular-nums font-medium text-foreground whitespace-nowrap">
-              {item.so_luong}
+              {formatDecimal(item.so_luong)}
             </span>
           );
         case 'don_gia':
@@ -214,7 +214,7 @@ const NhapXuatKhoCtFlatTable = memo(function NhapXuatKhoCtFlatTable({
               <div className="flex justify-between items-start mb-1 gap-2">
                 <h4 className="font-semibold text-foreground truncate">{item.ten_hang_hoa ?? `#${item.hang_hoa_id}`}</h4>
                 <span className="text-sm tabular-nums font-medium whitespace-nowrap">
-                  {item.so_luong} {item.don_vi_tinh}
+                  {formatDecimal(item.so_luong)} {item.don_vi_tinh}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mb-1">

@@ -89,6 +89,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 
 const initialFilters: KhoDonViCuuTroFilters = {
   columnSearch: {},
+  loai_filter: [],
 };
 
 export const useKhoDonViCuuTroStore = createGenericStore<KhoDonViCuuTroFilters>(initialFilters, DEFAULT_COLUMNS);

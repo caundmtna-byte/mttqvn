@@ -118,6 +118,9 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
         [...LUONG_THIET_LAP_NGACH_SEARCHABLE_KEYS],
       );
       if (!luongThietLapNgachMatchesColumnSearch(item, f.columnSearch)) return false;
+      const mo = (item.mo_ta ?? '').trim();
+      if (f.mo_ta_bucket === 'has' && !mo) return false;
+      if (f.mo_ta_bucket === 'empty' && mo) return false;
       return matchesSearch;
     },
     [],
@@ -166,8 +169,14 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
 
   const hasListFilters = useMemo(() => {
     const cs = filters.columnSearch ?? {};
-    return Boolean(searchTerm?.trim()) || countLuongThietLapNgachColumnSearchActive(cs) > 0 || Boolean(sort.column);
-  }, [searchTerm, filters.columnSearch, sort.column]);
+    return (
+      Boolean(searchTerm?.trim()) ||
+      countLuongThietLapNgachColumnSearchActive(cs) > 0 ||
+      filters.mo_ta_bucket === 'has' ||
+      filters.mo_ta_bucket === 'empty' ||
+      Boolean(sort.column)
+    );
+  }, [searchTerm, filters.columnSearch, filters.mo_ta_bucket, sort.column]);
 
   const emptyTitleResolved = useMemo(
     () =>
@@ -341,6 +350,7 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
+          items={rows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">

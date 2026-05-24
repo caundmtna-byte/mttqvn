@@ -5,6 +5,7 @@ import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { CongViecDanhSach } from '../core/types';
 import type { CongViecDanhSachFormValues } from '../core/schema';
+import { CHIP_CHUONG_TRINH_NULL } from '../core/constants';
 import {
   CONG_VIEC_BY_CHUONG_TRINH_SELECT,
   CONG_VIEC_DANH_SACH_RETURNING_FULL,
@@ -199,6 +200,7 @@ export type CongViecPageQuery = {
   viewerNhanVienId: string | null;
   trangThai: readonly string[];
   mucDo: readonly string[];
+  idChuongTrinh: readonly string[];
 };
 
 export type CongViecPageResult = {
@@ -221,6 +223,7 @@ function filterCongViecMockForPage(
     viewerNhanVienId: string | null;
     trangThai: readonly string[];
     mucDo: readonly string[];
+    idChuongTrinh: readonly string[];
   },
 ): CongViecDanhSach[] {
   let list = [...all];
@@ -237,6 +240,12 @@ function filterCongViecMockForPage(
   }
   if (opts.trangThai.length) list = list.filter((c) => opts.trangThai.includes(c.trang_thai));
   if (opts.mucDo.length) list = list.filter((c) => opts.mucDo.includes(c.muc_do));
+  if (opts.idChuongTrinh.length) {
+    list = list.filter((c) => {
+      const ct = c.id_chuong_trinh?.trim() ? c.id_chuong_trinh : CHIP_CHUONG_TRINH_NULL;
+      return opts.idChuongTrinh.includes(ct);
+    });
+  }
   list.sort((a, b) => String(b.tg_cap_nhat).localeCompare(String(a.tg_cap_nhat)) || a.ten_cong_viec.localeCompare(b.ten_cong_viec));
   return list;
 }
@@ -269,6 +278,13 @@ export async function getCongViecDanhSachPage(q: CongViecPageQuery): Promise<Con
   const viewer = toRpcBigint(q.viewerNhanVienId);
   const trangThai = q.trangThai.length ? [...q.trangThai] : null;
   const mucDo = q.mucDo.length ? [...q.mucDo] : null;
+  const chuongTrinhIncludeNull = q.idChuongTrinh.includes(CHIP_CHUONG_TRINH_NULL);
+  const chuongTrinhIds = q.idChuongTrinh
+    .filter((id) => id !== CHIP_CHUONG_TRINH_NULL)
+    .map((id) => Number(id))
+    .filter((n) => Number.isFinite(n));
+  const pChuongTrinh =
+    chuongTrinhIds.length > 0 || chuongTrinhIncludeNull ? chuongTrinhIds : null;
 
   if (!isSupabase()) {
     const all = await getCongViecDanhSachList();
@@ -278,6 +294,7 @@ export async function getCongViecDanhSachPage(q: CongViecPageQuery): Promise<Con
       viewerNhanVienId: q.viewerNhanVienId,
       trangThai: q.trangThai,
       mucDo: q.mucDo,
+      idChuongTrinh: q.idChuongTrinh,
     });
     const slice = filtered.slice(offset, offset + fetchLimit);
     const hasNextPage = slice.length > pageSize;
@@ -297,6 +314,8 @@ export async function getCongViecDanhSachPage(q: CongViecPageQuery): Promise<Con
     p_viewer_nhan_vien_id: viewer,
     p_trang_thai: trangThai,
     p_muc_do: mucDo,
+    p_id_chuong_trinh: pChuongTrinh,
+    p_chuong_trinh_include_null: chuongTrinhIncludeNull,
   } as never);
   if (error) handleSupabaseError(error);
 

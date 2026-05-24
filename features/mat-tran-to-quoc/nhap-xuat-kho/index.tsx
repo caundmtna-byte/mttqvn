@@ -141,6 +141,9 @@ const NhapXuatKhoPage: React.FC = () => {
   const filterList = useCallback(
     (item: NhapXuatKhoListRow, term: string, f: typeof listFilters) => {
       if (f.loai_phieu && item.loai_phieu !== f.loai_phieu) return false;
+      if (f.kho_id && item.kho_xuat_id !== f.kho_id && item.kho_nhap_id !== f.kho_id) return false;
+      if (f.don_vi_cuu_tro_id && item.don_vi_cuu_tro_id !== f.don_vi_cuu_tro_id) return false;
+      if (f.dot_cuu_tro_id && item.dot_cuu_tro_id !== f.dot_cuu_tro_id) return false;
       const matchesSearch = matchesSearchTerm(
         item as unknown as Record<string, unknown>,
         term,
@@ -157,12 +160,7 @@ const NhapXuatKhoPage: React.FC = () => {
       if (f.loai_phieu && item.loai_phieu !== f.loai_phieu) return false;
       if (f.hang_hoa_id && item.hang_hoa_id !== f.hang_hoa_id) return false;
       if (f.kho_id) {
-        const targetMatches = item.ten_kho_xuat || item.ten_kho_nhap;
-        const matchesKho =
-          (item as unknown as { kho_xuat_id?: string | null }).kho_xuat_id === f.kho_id ||
-          (item as unknown as { kho_nhap_id?: string | null }).kho_nhap_id === f.kho_id;
-        if (!matchesKho && !targetMatches) return false;
-        if (!matchesKho) return false;
+        if (item.kho_xuat_id !== f.kho_id && item.kho_nhap_id !== f.kho_id) return false;
       }
       const matchesSearch = matchesSearchTerm(
         item as unknown as Record<string, unknown>,
@@ -278,10 +276,21 @@ const NhapXuatKhoPage: React.FC = () => {
     return (
       Boolean(listSearch?.trim()) ||
       Boolean(listFilters.loai_phieu) ||
+      Boolean(listFilters.kho_id) ||
+      Boolean(listFilters.don_vi_cuu_tro_id) ||
+      Boolean(listFilters.dot_cuu_tro_id) ||
       countColumnSearchActive(cs) > 0 ||
       Boolean(listSort.column)
     );
-  }, [listSearch, listFilters.columnSearch, listFilters.loai_phieu, listSort.column]);
+  }, [
+    listSearch,
+    listFilters.columnSearch,
+    listFilters.loai_phieu,
+    listFilters.kho_id,
+    listFilters.don_vi_cuu_tro_id,
+    listFilters.dot_cuu_tro_id,
+    listSort.column,
+  ]);
 
   const hasCtFilters = useMemo(() => {
     const cs = ctFilters.columnSearch ?? {};

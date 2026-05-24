@@ -11,8 +11,8 @@ import { formatDateTimeShort } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
-import type { BadgeConfig } from '@/components/ui/EnumBadge';
-import type { KhoDonViCuuTroDetail, KhoDonViCuuTroLoai } from '../core/types';
+import { buildKhoDonViCuuTroLoaiBadgeConfig, isKhoDonViCuuTroCaNhan } from '../core/loai';
+import type { KhoDonViCuuTroDetail } from '../core/types';
 
 interface Props {
   data: KhoDonViCuuTroDetail;
@@ -24,12 +24,7 @@ interface Props {
 const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('matTranReliefSupportUnits');
 
-  const loaiBadge = useMemo((): BadgeConfig<KhoDonViCuuTroLoai> => {
-    return {
-      to_chuc: { label: txt('matTranDonViCuuTro.loai.toChuc'), color: 'indigo' },
-      ca_nhan: { label: txt('matTranDonViCuuTro.loai.caNhan'), color: 'amber' },
-    };
-  }, []);
+  const loaiBadge = useMemo(() => buildKhoDonViCuuTroLoaiBadgeConfig(), []);
 
   const renderFooter = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -75,7 +70,7 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
     </div>
   );
 
-  const SummaryIcon = data.loai === 'ca_nhan' ? User : Building2;
+  const SummaryIcon = isKhoDonViCuuTroCaNhan(data.loai) ? User : Building2;
 
   return (
     <GenericDrawer

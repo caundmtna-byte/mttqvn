@@ -73,6 +73,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 
 const initialFilters: KhoDanhSachKhoFilters = {
   columnSearch: {},
+  don_vi_id: [],
+  ten_tinh: [],
 };
 
 export const useKhoDanhSachKhoStore = createGenericStore<KhoDanhSachKhoFilters>(

@@ -3,12 +3,20 @@ import { txt } from '@/lib/text';
 
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   {
+    id: 'ngach',
+    label: txt('matTranThietLapLuong.bac.colNgach'),
+    visible: true,
+    minWidth: 140,
+    maxWidth: 260,
+    order: 0,
+  },
+  {
     id: 'ma_bac',
     label: txt('matTranThietLapLuong.bac.colBac'),
     visible: true,
     minWidth: 72,
     maxWidth: 100,
-    order: 0,
+    order: 1,
   },
   {
     id: 'thu_tu',
@@ -16,7 +24,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 72,
     maxWidth: 96,
-    order: 1,
+    order: 2,
   },
   {
     id: 'he_so',
@@ -24,7 +32,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 180,
-    order: 2,
+    order: 3,
   },
   {
     id: 'luong',
@@ -32,7 +40,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 140,
     maxWidth: 220,
-    order: 3,
+    order: 4,
   },
   {
     id: 'actions',
@@ -40,7 +48,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 96,
     maxWidth: 120,
-    order: 4,
+    order: 5,
   },
 ];
 

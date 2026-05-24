@@ -40,6 +40,7 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { computeAgeFromBirthDate } from '../utils/age';
 import MttqCanBoTapHuanSection from './mttq-can-bo-tap-huan-section';
 import MttqCanBoKhenThuongSection from './mttq-can-bo-khen-thuong-section';
+import MttqCanBoTangLuongSection from './mttq-can-bo-tang-luong-section';
 
 interface Props {
   data: MttqCanBoRow;
@@ -336,6 +337,7 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
 
         <MttqCanBoTapHuanSection canBoId={data.id} />
         <MttqCanBoKhenThuongSection canBoId={data.id} />
+        <MttqCanBoTangLuongSection canBoId={data.id} />
       </div>
     </GenericDrawer>
   );

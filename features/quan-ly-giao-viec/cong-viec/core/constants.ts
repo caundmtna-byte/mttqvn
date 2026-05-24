@@ -3,3 +3,6 @@ export type CongViecMucDo = (typeof CONG_VIEC_MUC_DO)[number];
 
 export const CONG_VIEC_TRANG_THAI = ['Mới', 'Đang thực hiện', 'Hoàn thành', 'Tạm dừng', 'Hủy'] as const;
 export type CongViecTrangThai = (typeof CONG_VIEC_TRANG_THAI)[number];
+
+/** Chip lọc công việc chưa gắn chương trình năm. */
+export const CHIP_CHUONG_TRINH_NULL = '__null__';

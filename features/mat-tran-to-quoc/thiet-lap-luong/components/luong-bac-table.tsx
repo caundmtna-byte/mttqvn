@@ -80,6 +80,12 @@ const LuongBacTable = memo(function LuongBacTable({
   const renderCell = useCallback(
     (colId: string, item: LuongBacTableRow) => {
       switch (colId) {
+        case 'ngach':
+          return (
+            <span className="text-sm text-foreground truncate block min-w-0" title={item.ngach_label}>
+              {item.ngach_label || '—'}
+            </span>
+          );
         case 'ma_bac':
           return (
             <span className="text-sm font-medium tabular-nums text-foreground whitespace-nowrap" title={item.ma_bac}>
@@ -157,6 +163,9 @@ const LuongBacTable = memo(function LuongBacTable({
             <div className="flex justify-between items-start mb-1 gap-2">
               <div>
                 <h4 className="font-semibold text-foreground tabular-nums m-0">{item.ma_bac}</h4>
+                <p className="text-xs text-muted-foreground m-0 mt-0.5 truncate" title={item.ngach_label}>
+                  {txt('matTranThietLapLuong.bac.colNgach')}: {item.ngach_label || '—'}
+                </p>
                 <p className="text-xs text-muted-foreground m-0 mt-0.5">
                   {txt('matTranThietLapLuong.store.thuTuCol')}: {item.thu_tu}
                 </p>

@@ -66,6 +66,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory' },
           { id: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList' },
           { id: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
+          { id: 'mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportReport' },
         ],
       },
       {

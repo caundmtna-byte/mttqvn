@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { txt } from '@/lib/text';
+import { KHO_DON_VI_CUU_TRO_LOAI } from './loai';
 
-export const khoDonViCuuTroLoaiSchema = z.enum(['to_chuc', 'ca_nhan'], {
+export const khoDonViCuuTroLoaiSchema = z.enum(KHO_DON_VI_CUU_TRO_LOAI, {
   message: txt('matTranDonViCuuTro.validation.loaiRequired'),
 });
 

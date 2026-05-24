@@ -60,12 +60,12 @@ const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ desktopStartSlot, onPageBac
   const khoOptions = useMemo<Option[]>(() => {
     const map = new Map<string, string>();
     for (const r of itemRows) {
-      if (r.ten_kho_xuat) map.set(r.ten_kho_xuat, r.ten_kho_xuat);
-      if (r.ten_kho_nhap) map.set(r.ten_kho_nhap, r.ten_kho_nhap);
+      if (r.kho_xuat_id && r.ten_kho_xuat) map.set(r.kho_xuat_id, r.ten_kho_xuat);
+      if (r.kho_nhap_id && r.ten_kho_nhap) map.set(r.kho_nhap_id, r.ten_kho_nhap);
     }
     return [...map.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0], 'vi'))
-      .map(([label]) => ({ label, value: label }));
+      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
+      .map(([value, label]) => ({ label, value }));
   }, [itemRows]);
 
   const hangHoaOptions = useMemo<Option[]>(() => {
@@ -133,6 +133,48 @@ const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ desktopStartSlot, onPageBac
     [filters.loai_phieu, filters.kho_id, filters.hang_hoa_id, loaiOptions, khoOptions, hangHoaOptions, setFilter],
   );
 
+  const filterGroups = useMemo(
+    () => [
+      {
+        key: 'loai_phieu',
+        label: txt('matTranNhapXuatKho.loaiPhieu.all'),
+        icon: Filter,
+        options: loaiOptions,
+        value: filters.loai_phieu ? [filters.loai_phieu] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter(
+            'loai_phieu',
+            NHAP_XUAT_KHO_LOAI_PHIEU.includes(pick as NhapXuatKhoLoaiPhieu) ? pick : null,
+          );
+        },
+      },
+      {
+        key: 'kho_id',
+        label: txt('matTranNhapXuatKho.toolbar.filterKho'),
+        icon: Warehouse,
+        options: khoOptions,
+        value: filters.kho_id ? [filters.kho_id] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('kho_id', pick && pick.length > 0 ? pick : null);
+        },
+      },
+      {
+        key: 'hang_hoa_id',
+        label: txt('matTranNhapXuatKho.toolbar.filterHangHoa'),
+        icon: Package,
+        options: hangHoaOptions,
+        value: filters.hang_hoa_id ? [filters.hang_hoa_id] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('hang_hoa_id', pick && pick.length > 0 ? pick : null);
+        },
+      },
+    ],
+    [loaiOptions, khoOptions, hangHoaOptions, filters.loai_phieu, filters.kho_id, filters.hang_hoa_id, setFilter],
+  );
+
   const mobileActions = useMemo<ActionItem[]>(
     () =>
       canExport
@@ -167,7 +209,7 @@ const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ desktopStartSlot, onPageBac
       onSearchChange={setSearchTerm}
       onClearSelection={() => undefined}
       actions={renderActions}
-      filterGroups={[]}
+      filterGroups={filterGroups}
       filters={filtersSlot}
       mobileActions={mobileActions}
       searchPlaceholder={txt('matTranNhapXuatKho.searchPlaceholderCt')}

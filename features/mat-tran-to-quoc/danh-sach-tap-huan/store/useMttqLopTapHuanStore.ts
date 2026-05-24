@@ -68,6 +68,7 @@ const initialFilters: MttqLopTapHuanFilters = {
   columnSearch: {},
   cap_tap_huan: [],
   nam_tap_huan: [],
+  don_vi_id: [],
 };
 
 export const useMttqLopTapHuanStore = createGenericStore<MttqLopTapHuanFilters>(

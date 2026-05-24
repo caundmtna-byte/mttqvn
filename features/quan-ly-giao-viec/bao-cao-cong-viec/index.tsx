@@ -632,7 +632,6 @@ const BaoCaoCongViecPage: React.FC = () => {
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangeRow}</div>
         }
         filters={filterRowDesktop}
-        filtersSingleRow
         filterGroups={filterGroups}
         actions={
           <div className="hidden sm:flex items-center gap-2 shrink-0">{renderExportToolbarButton()}</div>

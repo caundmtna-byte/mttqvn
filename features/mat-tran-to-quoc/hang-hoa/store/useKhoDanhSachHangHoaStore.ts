@@ -17,6 +17,6 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'actions', label: txt('common.actions'), visible: true, minWidth: 96, maxWidth: 120, order: 8 },
 ];
 
-const initialFilters: KhoDanhSachHangHoaFilters = { columnSearch: {}, mo_ta_bucket: '', id_danh_muc: '' };
+const initialFilters: KhoDanhSachHangHoaFilters = { columnSearch: {}, mo_ta_bucket: '', id_danh_muc: '', trang_thai: '' };
 
 export const useKhoDanhSachHangHoaStore = createGenericStore<KhoDanhSachHangHoaFilters>(initialFilters, DEFAULT_COLUMNS);

@@ -211,6 +211,10 @@ const DanhSachTapHuanPage: React.FC = () => {
       );
       if (f.cap_tap_huan?.length && !f.cap_tap_huan.includes(item.cap_tap_huan)) return false;
       if (f.nam_tap_huan?.length && !f.nam_tap_huan.includes(String(item.nam_tap_huan))) return false;
+      if (f.don_vi_id?.length) {
+        const dv = item.don_vi_id?.trim() || '__empty__';
+        if (!f.don_vi_id.includes(dv)) return false;
+      }
       if (!mttqTapHuanMatchesColumnSearch(item, f.columnSearch)) return false;
       return matchesSearch;
     },
@@ -226,6 +230,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       );
       if (f.cap_tap_huan?.length && !f.cap_tap_huan.includes(item.cap_tap_huan)) return false;
       if (f.nam_tap_huan?.length && !f.nam_tap_huan.includes(String(item.nam_tap_huan))) return false;
+      if (f.thuoc_dien?.length && !f.thuoc_dien.includes(item.thuoc_dien)) return false;
       if (!mttqTapHuanChiTietFlatMatchesColumnSearch(item, f.columnSearch)) return false;
       return matchesSearch;
     },
@@ -320,6 +325,38 @@ const DanhSachTapHuanPage: React.FC = () => {
     [thongKeThuocDien, thongKeDonViLop, thongKeThuocDienChipOptions, thongKeDonViLopChipOptions],
   );
 
+  const thongKeExtraFilterGroups = useMemo(
+    () => [
+      {
+        key: 'thong_ke_thuoc_dien',
+        label: txt('matTranTapHuan.stats.thuocDienChip'),
+        icon: ListFilter,
+        options: thongKeThuocDienChipOptions,
+        value: thongKeThuocDien,
+        onChange: setThongKeThuocDien,
+      },
+      {
+        key: 'thong_ke_don_vi_lop',
+        label: txt('matTranTapHuan.stats.donViLopChip'),
+        icon: Building2,
+        options: thongKeDonViLopChipOptions,
+        value: thongKeDonViLop,
+        onChange: setThongKeDonViLop,
+      },
+    ],
+    [thongKeThuocDien, thongKeDonViLop, thongKeThuocDienChipOptions, thongKeDonViLopChipOptions],
+  );
+
+  const thuocDienChipOptionsChiTiet = useMemo(
+    () =>
+      MTTQ_TAP_HUAN_THUOC_DIEN.map((td) => ({
+        value: td,
+        label: td,
+        count: viewableChiTietFlatRows.filter((f) => f.thuoc_dien === td).length,
+      })),
+    [viewableChiTietFlatRows],
+  );
+
   const exportSourceRows = mainTab === 'thong_ke' ? rowsForStats : filtered;
 
   const sorted = useMemo(() => {
@@ -371,6 +408,20 @@ const DanhSachTapHuanPage: React.FC = () => {
     for (const r of viewableRows) {
       const value = r.cap_tap_huan;
       const label = value || txt('common.emptyCell');
+      const cur = map.get(value);
+      if (cur) cur.count += 1;
+      else map.set(value, { label, count: 1 });
+    }
+    return [...map.entries()]
+      .map(([value, { label, count }]) => ({ value, label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [viewableRows]);
+
+  const donViChipOptions = useMemo(() => {
+    const map = new Map<string, { label: string; count: number }>();
+    for (const r of viewableRows) {
+      const value = r.don_vi_id?.trim() || '__empty__';
+      const label = r.ten_don_vi?.trim() || txt('matTranTapHuan.stats.donViNone');
       const cur = map.get(value);
       if (cur) cur.count += 1;
       else map.set(value, { label, count: 1 });
@@ -624,6 +675,7 @@ const DanhSachTapHuanPage: React.FC = () => {
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               capOptions={capChipOptions}
               namOptions={namChipOptions}
+              donViOptions={donViChipOptions}
               onAdd={() => {
                 startTransition(() => {
                   setEditing(null);
@@ -652,6 +704,7 @@ const DanhSachTapHuanPage: React.FC = () => {
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               capOptions={capChipOptionsChiTiet}
               namOptions={namChipOptionsChiTiet}
+              thuocDienOptions={thuocDienChipOptionsChiTiet}
             />
             <div className="flex-1 min-h-0">
               <MttqTapHuanChiTietTable
@@ -677,9 +730,11 @@ const DanhSachTapHuanPage: React.FC = () => {
                 setThongKeThuocDien([]);
                 setThongKeDonViLop([]);
               }}
+              extraFilterGroups={thongKeExtraFilterGroups}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               capOptions={capChipOptions}
               namOptions={namChipOptions}
+              donViOptions={donViChipOptions}
               onAdd={() => {
                 startTransition(() => {
                   setEditing(null);

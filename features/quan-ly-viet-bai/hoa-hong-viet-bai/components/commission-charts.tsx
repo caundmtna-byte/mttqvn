@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -15,18 +14,9 @@ import {
 } from 'recharts';
 import { txt } from '@/lib/text';
 import { formatCurrency } from '@/lib/utils';
+import { chartFillByIndex, chartFillByIndexHsl } from '@/lib/constants/chart-colors';
+import { ColoredBar } from '@/components/shared/stats';
 import type { CommissionSeriesPoint } from '../utils/aggregate-commission';
-
-const PIE_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(199 89% 48%)',
-  'hsl(142 71% 45%)',
-  'hsl(38 92% 50%)',
-  'hsl(280 65% 60%)',
-  'hsl(0 72% 51%)',
-  'hsl(210 40% 50%)',
-  'hsl(30 80% 55%)',
-];
 
 function TooltipMoney({
   active,
@@ -129,7 +119,7 @@ export const CommissionByTheLoaiChart: React.FC<{ series: CommissionSeriesPoint[
             label={false}
           >
             {data.map((_, i) => (
-              <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+              <Cell key={i} fill={chartFillByIndexHsl(i)} />
             ))}
           </Pie>
           <Tooltip
@@ -164,7 +154,13 @@ export const CommissionByAuthorChart: React.FC<{ series: CommissionSeriesPoint[]
           <XAxis type="number" tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => String(v)} />
           <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} className="text-muted-foreground" />
           <Tooltip content={<TooltipMoneyCount />} />
-          <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} maxBarSize={22} />
+          <ColoredBar
+            data={data}
+            dataKey="total"
+            radius={[0, 4, 4, 0]}
+            maxBarSize={22}
+            getFill={(_, i) => chartFillByIndex(i)}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>

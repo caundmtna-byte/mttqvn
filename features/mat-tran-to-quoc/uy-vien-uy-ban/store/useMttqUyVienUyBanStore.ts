@@ -108,6 +108,7 @@ const initialFilters: MttqUyVienUyBanFilters = {
   columnSearch: {},
   nhiem_ky_filter: [],
   don_vi_filter: [],
+  trang_thai_tham_gia_filter: [],
 };
 
 export const useMttqUyVienUyBanStore = createGenericStore<MttqUyVienUyBanFilters>(initialFilters, DEFAULT_COLUMNS);

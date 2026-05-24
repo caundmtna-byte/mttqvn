@@ -33,6 +33,7 @@ import { mttqUyVienUyBanMatchesColumnSearch, donViDisplayLabel } from './utils/c
 import { formatUyVienMaUvDisplay } from './utils/display-format';
 import { getMttqUyVienUyBanById } from './services/mttq-uy-vien-uy-ban-service';
 import { canViewUyVienUyBanRow, useMttqUyVienUyBanViewer } from './hooks/use-mttq-uy-vien-uy-ban-viewer';
+import { CHIP_TRANG_THAI_NULL } from '../danh-sach-can-bo/core/constants';
 import MttqUyVienUyBanToolbar from './components/mttq-uy-vien-uy-ban-toolbar';
 import MttqUyVienUyBanTable from './components/mttq-uy-vien-uy-ban-table';
 
@@ -125,6 +126,7 @@ const UyVienUyBanPage: React.FC = () => {
     setFilter('columnSearch', {});
     setFilter('nhiem_ky_filter', []);
     setFilter('don_vi_filter', []);
+    setFilter('trang_thai_tham_gia_filter', []);
     setSort(null, null);
   }, [setSearchTerm, setFilter, setSort]);
 
@@ -140,6 +142,10 @@ const UyVienUyBanPage: React.FC = () => {
       if (f.don_vi_filter.length > 0) {
         const dv = item.don_vi_id ?? DON_VI_FILTER_TINH;
         if (!f.don_vi_filter.includes(dv)) return false;
+      }
+      if (f.trang_thai_tham_gia_filter.length > 0) {
+        const tt = item.trang_thai_tham_gia?.trim() || CHIP_TRANG_THAI_NULL;
+        if (!f.trang_thai_tham_gia_filter.includes(tt)) return false;
       }
       return matchesSearch;
     },
@@ -205,6 +211,20 @@ const UyVienUyBanPage: React.FC = () => {
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
   }, [viewableRows, tinhCapLabel]);
+
+  const trangThaiChipOptions = useMemo(() => {
+    const map = new Map<string, { label: string; count: number }>();
+    for (const r of viewableRows) {
+      const value = r.trang_thai_tham_gia?.trim() || CHIP_TRANG_THAI_NULL;
+      const label = r.trang_thai_tham_gia?.trim() || txt('common.emptyCell');
+      const cur = map.get(value);
+      if (cur) cur.count += 1;
+      else map.set(value, { label, count: 1 });
+    }
+    return [...map.entries()]
+      .map(([value, { label, count }]) => ({ value, label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }, [viewableRows]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -414,6 +434,7 @@ const UyVienUyBanPage: React.FC = () => {
           onDeleteMany={handleDeleteMany}
           nhiemKyOptions={nhiemKyChipOptions}
           donViOptions={donViChipOptions}
+          trangThaiOptions={trangThaiChipOptions}
         />
 
         <div className="flex-1 min-h-0">

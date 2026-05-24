@@ -1,23 +1,38 @@
 import React, { useMemo } from 'react';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, Tag } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
+import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { useKhoDonViCuuTroStore } from '../store/useKhoDonViCuuTroStore';
 import { countKhoDonViCuuTroColumnSearchActive } from '../utils/column-search';
+import {
+  KHO_DON_VI_CUU_TRO_LOAI,
+  khoDonViCuuTroLoaiLabel,
+  KhoDonViCuuTroLoai,
+} from '../core/loai';
+import type { KhoDonViCuuTroListRow } from '../core/types';
 
 interface Props {
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
+  items?: KhoDonViCuuTroListRow[] | null;
 }
 
-const KhoDonViCuuTroToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDeleteMany }) => {
+const KhoDonViCuuTroToolbar: React.FC<Props> = ({
+  onPageBack,
+  onAdd,
+  onExport,
+  onDeleteMany,
+  items,
+}) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranReliefSupportUnits');
+  const itemRows = Array.isArray(items) ? items : [];
 
   const {
     searchTerm,
@@ -35,15 +50,60 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, o
 
   const selectedCount = selectedIds.size;
 
+  const loaiOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of itemRows) counts[r.loai] = (counts[r.loai] ?? 0) + 1;
+    return KHO_DON_VI_CUU_TRO_LOAI.map((value) => ({
+      value,
+      label: khoDonViCuuTroLoaiLabel(value),
+      count: counts[value] ?? 0,
+    }));
+  }, [itemRows]);
+
   const activeFilterCount = useMemo(() => {
-    return (searchTerm ? 1 : 0) + countKhoDonViCuuTroColumnSearchActive(filters.columnSearch ?? {});
-  }, [searchTerm, filters.columnSearch]);
+    return (
+      (searchTerm ? 1 : 0) +
+      countKhoDonViCuuTroColumnSearchActive(filters.columnSearch ?? {}) +
+      (filters.loai_filter.length > 0 ? 1 : 0)
+    );
+  }, [searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     useKhoDonViCuuTroStore.getState().setFilter('columnSearch', {});
+    setFilter('loai_filter', []);
     setSort(null, null);
   };
+
+  const filtersSlot = useMemo(
+    () => (
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipMultiSelect
+          options={loaiOptions}
+          value={filters.loai_filter}
+          onChange={(val) => setFilter('loai_filter', val)}
+          placeholder={txt('matTranDonViCuuTro.store.loaiCol')}
+          icon={Tag}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
+        />
+      </div>
+    ),
+    [filters.loai_filter, loaiOptions, setFilter],
+  );
+
+  const filterGroups = useMemo(
+    () => [
+      {
+        key: 'loai_filter',
+        label: txt('matTranDonViCuuTro.store.loaiCol'),
+        icon: Tag,
+        options: loaiOptions,
+        value: filters.loai_filter,
+        onChange: (val: string[]) => setFilter('loai_filter', val),
+      },
+    ],
+    [loaiOptions, filters.loai_filter, setFilter],
+  );
 
   const mobileActions = useMemo<ActionItem[]>(
     () =>
@@ -97,7 +157,8 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, o
       onSearchChange={setSearchTerm}
       onClearSelection={clearSelection}
       actions={renderActions}
-      filterGroups={[]}
+      filters={filtersSlot}
+      filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
       searchPlaceholder={txt('matTranDonViCuuTro.searchPlaceholder')}

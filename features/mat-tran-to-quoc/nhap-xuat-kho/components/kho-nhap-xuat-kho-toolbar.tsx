@@ -1,5 +1,5 @@
 import React, { useMemo, type ReactNode } from 'react';
-import { Plus, Download, Filter } from 'lucide-react';
+import { Plus, Download, Filter, Warehouse, Building2, CalendarDays } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -7,6 +7,7 @@ import Tooltip from '@/components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipSingleSelect from '@/components/shared/FilterChipSingleSelect';
+import type { Option } from '@/components/ui/MultiSelect';
 import { useNhapXuatKhoStore } from '../store/useNhapXuatKhoStore';
 import { countColumnSearchActive } from '../utils/column-search';
 import type { NhapXuatKhoListRow } from '../core/types';
@@ -66,18 +67,55 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
     [loaiCounts],
   );
 
+  const khoOptions = useMemo<Option[]>(() => {
+    const map = new Map<string, string>();
+    for (const r of itemRows) {
+      if (r.kho_xuat_id && r.ten_kho_xuat) map.set(r.kho_xuat_id, r.ten_kho_xuat);
+      if (r.kho_nhap_id && r.ten_kho_nhap) map.set(r.kho_nhap_id, r.ten_kho_nhap);
+    }
+    return [...map.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
+      .map(([value, label]) => ({ label, value }));
+  }, [itemRows]);
+
+  const donViOptions = useMemo<Option[]>(() => {
+    const map = new Map<string, string>();
+    for (const r of itemRows) {
+      if (r.don_vi_cuu_tro_id && r.ten_don_vi_cuu_tro) map.set(r.don_vi_cuu_tro_id, r.ten_don_vi_cuu_tro);
+    }
+    return [...map.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
+      .map(([value, label]) => ({ label, value }));
+  }, [itemRows]);
+
+  const dotOptions = useMemo<Option[]>(() => {
+    const map = new Map<string, string>();
+    for (const r of itemRows) {
+      if (r.dot_cuu_tro_id && r.ten_dot_cuu_tro) map.set(r.dot_cuu_tro_id, r.ten_dot_cuu_tro);
+    }
+    return [...map.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
+      .map(([value, label]) => ({ label, value }));
+  }, [itemRows]);
+
   const activeFilterCount = useMemo(() => {
     return (
       (searchTerm ? 1 : 0) +
       countColumnSearchActive(filters.columnSearch ?? {}) +
-      (filters.loai_phieu ? 1 : 0)
+      (filters.loai_phieu ? 1 : 0) +
+      (filters.kho_id ? 1 : 0) +
+      (filters.don_vi_cuu_tro_id ? 1 : 0) +
+      (filters.dot_cuu_tro_id ? 1 : 0)
     );
-  }, [searchTerm, filters.columnSearch, filters.loai_phieu]);
+  }, [searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setFilter('columnSearch', {});
     setFilter('loai_phieu', null);
+    setFilter('kho_id', null);
+    setFilter('don_vi_cuu_tro_id', null);
+    setFilter('dot_cuu_tro_id', null);
     setSort(null, null);
   };
 
@@ -94,9 +132,106 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
           icon={Filter}
           className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[260px]"
         />
+        <FilterChipSingleSelect
+          options={khoOptions}
+          value={filters.kho_id}
+          onChange={(v) => setFilter('kho_id', v && v.length > 0 ? v : null)}
+          placeholder={txt('matTranNhapXuatKho.toolbar.filterKho')}
+          icon={Warehouse}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[260px]"
+        />
+        <FilterChipSingleSelect
+          options={donViOptions}
+          value={filters.don_vi_cuu_tro_id}
+          onChange={(v) => setFilter('don_vi_cuu_tro_id', v && v.length > 0 ? v : null)}
+          placeholder={txt('matTranNhapXuatKho.toolbar.filterDonViCuuTro')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[260px]"
+        />
+        <FilterChipSingleSelect
+          options={dotOptions}
+          value={filters.dot_cuu_tro_id}
+          onChange={(v) => setFilter('dot_cuu_tro_id', v && v.length > 0 ? v : null)}
+          placeholder={txt('matTranNhapXuatKho.toolbar.filterDotCuuTro')}
+          icon={CalendarDays}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[260px]"
+        />
       </div>
     ),
-    [filters.loai_phieu, loaiOptions, setFilter],
+    [
+      filters.loai_phieu,
+      filters.kho_id,
+      filters.don_vi_cuu_tro_id,
+      filters.dot_cuu_tro_id,
+      loaiOptions,
+      khoOptions,
+      donViOptions,
+      dotOptions,
+      setFilter,
+    ],
+  );
+
+  const filterGroups = useMemo(
+    () => [
+      {
+        key: 'loai_phieu',
+        label: txt('matTranNhapXuatKho.loaiPhieu.all'),
+        icon: Filter,
+        options: loaiOptions,
+        value: filters.loai_phieu ? [filters.loai_phieu] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter(
+            'loai_phieu',
+            NHAP_XUAT_KHO_LOAI_PHIEU.includes(pick as NhapXuatKhoLoaiPhieu) ? pick : null,
+          );
+        },
+      },
+      {
+        key: 'kho_id',
+        label: txt('matTranNhapXuatKho.toolbar.filterKho'),
+        icon: Warehouse,
+        options: khoOptions,
+        value: filters.kho_id ? [filters.kho_id] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('kho_id', pick && pick.length > 0 ? pick : null);
+        },
+      },
+      {
+        key: 'don_vi_cuu_tro_id',
+        label: txt('matTranNhapXuatKho.toolbar.filterDonViCuuTro'),
+        icon: Building2,
+        options: donViOptions,
+        value: filters.don_vi_cuu_tro_id ? [filters.don_vi_cuu_tro_id] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('don_vi_cuu_tro_id', pick && pick.length > 0 ? pick : null);
+        },
+      },
+      {
+        key: 'dot_cuu_tro_id',
+        label: txt('matTranNhapXuatKho.toolbar.filterDotCuuTro'),
+        icon: CalendarDays,
+        options: dotOptions,
+        value: filters.dot_cuu_tro_id ? [filters.dot_cuu_tro_id] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('dot_cuu_tro_id', pick && pick.length > 0 ? pick : null);
+        },
+      },
+    ],
+    [
+      loaiOptions,
+      khoOptions,
+      donViOptions,
+      dotOptions,
+      filters.loai_phieu,
+      filters.kho_id,
+      filters.don_vi_cuu_tro_id,
+      filters.dot_cuu_tro_id,
+      setFilter,
+    ],
   );
 
   const mobileActions = useMemo<ActionItem[]>(
@@ -143,7 +278,7 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
       onSearchChange={setSearchTerm}
       onClearSelection={clearSelection}
       actions={renderActions}
-      filterGroups={[]}
+      filterGroups={filterGroups}
       filters={filtersSlot}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}

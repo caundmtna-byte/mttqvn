@@ -53,6 +53,16 @@ export function listMissingMaBacForNgach(rows: LuongThietLapBacRow[]): LuongThie
   return LUONG_THIET_LAP_BAC_MA_CODES.filter((c) => !used.has(c));
 }
 
+function sortBacRows(rows: LuongThietLapBacRow[]): LuongThietLapBacRow[] {
+  return [...rows].sort((a, b) =>
+    a.ngach_id !== b.ngach_id
+      ? a.ngach_id.localeCompare(b.ngach_id)
+      : a.thu_tu !== b.thu_tu
+        ? a.thu_tu - b.thu_tu
+        : a.ma_bac.localeCompare(b.ma_bac),
+  );
+}
+
 export async function getLuongThietLapBacByNgach(ngachId: string): Promise<LuongThietLapBacRow[]> {
   if (!ngachId.trim()) return [];
   if (!isSupabase()) {
@@ -67,6 +77,23 @@ export async function getLuongThietLapBacByNgach(ngachId: string): Promise<Luong
     .order('thu_tu', { ascending: true });
   if (error) handleSupabaseError(error);
   return (data ?? []).map((r) => flattenBac(r as unknown as Record<string, unknown>));
+}
+
+/** Toàn bộ bậc (mock: seed theo danh sách ngạch đã biết). */
+export async function getLuongThietLapBacAll(ngachIds: string[] = []): Promise<LuongThietLapBacRow[]> {
+  if (!isSupabase()) {
+    const ids = ngachIds.length > 0 ? ngachIds : Object.keys(mockBacByNgach);
+    return sortBacRows(ids.flatMap((id) => seedMockBacIfUnset(id)));
+  }
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('luong_thiet_lap_bac_luong')
+    .select(LUONG_THIET_LAP_BAC_SELECT)
+    .order('ngach_id', { ascending: true })
+    .order('thu_tu', { ascending: true });
+  if (error) handleSupabaseError(error);
+  return sortBacRows((data ?? []).map((r) => flattenBac(r as unknown as Record<string, unknown>)));
 }
 
 export interface CreateLuongThietLapBacInput {

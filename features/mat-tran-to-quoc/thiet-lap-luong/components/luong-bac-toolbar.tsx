@@ -65,7 +65,11 @@ const LuongBacToolbar: React.FC<Props> = ({
               key: 'ngach',
               label: txt('matTranThietLapLuong.bac.filterNgachSheetGroup'),
               icon: Layers,
-              options: ngachOptions.map((o) => ({ label: o.label, value: o.value })),
+              options: ngachOptions.map((o) => ({
+                label: o.label,
+                value: o.value,
+                count: o.count,
+              })),
               value: selectedNgachId ? [selectedNgachId] : [],
               onChange: (vals: string[]) => {
                 const last = vals.length ? vals[vals.length - 1] : '';
@@ -135,8 +139,6 @@ const LuongBacToolbar: React.FC<Props> = ({
       showBack
       onBack={onPageBack}
       desktopStartSlot={tabsSlot}
-      filtersDesktopSeparateScroll
-      filtersMobileBelowSearchScroll
       onAdd={canCreate && onAdd ? onAdd : undefined}
     />
   );

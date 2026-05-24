@@ -15,6 +15,7 @@ import {
 import { PositionPermission, ActionType } from '../core/types';
 import Button from '../../../../components/ui/Button';
 import LoadingSpinnerWithText from '../../../../components/shared/LoadingSpinnerWithText';
+import FilterChipSingleSelect from '../../../../components/shared/FilterChipSingleSelect';
 import { cn } from '../../../../lib/utils';
 import { useUpdateModulePermissions } from '../hooks/use-phan-quyen';
 import { useCan } from '@/hooks/use-can';
@@ -71,60 +72,6 @@ const syncAll = (actions: ActionType[]): ActionType[] => {
 const getFirstModuleId = (): string =>
   PERMISSION_FUNCTIONS[0]?.groups?.[0]?.modules?.[0]?.id ?? 'he-thong/nhan-vien';
 
-/* ─── Department filter dropdown ─── */
-const DeptFilterDropdown: React.FC<{
-  value: string | null;
-  options: { value: string; label: string; order: number }[];
-  onChange: (value: string | null) => void;
-}> = ({ value, options, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const label = value === null ? txt('permission.matrix.filterByDeptAll') : value;
-
-  return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-left bg-card hover:bg-muted/50 min-w-0 max-w-[180px] sm:max-w-[220px]',
-          open ? 'border-primary ring-2 ring-primary/20' : 'border-border',
-        )}
-      >
-        <Building2 size={14} className="text-muted-foreground shrink-0" />
-        <span className="text-[13px] font-medium text-foreground truncate flex-1">{label}</span>
-        <ChevronDown size={14} className={cn('text-muted-foreground transition-transform shrink-0', open && 'rotate-180')} />
-      </button>
-      {open && (
-        <div className="absolute z-50 right-0 top-full mt-1 min-w-[180px] max-h-[240px] overflow-y-auto bg-card border border-border rounded-lg shadow-xl no-scrollbar py-1">
-          <button type="button" onClick={() => { onChange(null); setOpen(false); }} className={cn('w-full flex items-center gap-2 px-3 py-2 text-left text-[13px]', value === null ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted text-foreground')}>
-            {value === null && <Check size={14} className="shrink-0" />}
-            <span className={value === null ? 'font-semibold' : ''}>{txt('permission.matrix.filterByDeptAll')}</span>
-          </button>
-          <div className="h-px bg-border my-1" />
-          {options.map((opt) => {
-            const isSel = value === opt.value;
-            return (
-              <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false); }} className={cn('w-full flex items-center gap-2 px-3 py-2 text-left text-[13px] truncate', isSel ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted text-foreground')}>
-                {isSel && <Check size={14} className="shrink-0" />}
-                <span className={cn('truncate', isSel && 'font-semibold')}>{opt.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
 
 /* ─── Desktop: Function Dropdown ─── */
 const FunctionDropdown: React.FC<{
@@ -542,6 +489,11 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
     return unique.map((value) => ({ value, label: value, order: deptOrder[value] ?? 9999 }));
   }, [roles]);
 
+  const deptFilterChipOptions = useMemo(
+    () => departmentOptions.map((opt) => ({ label: opt.label, value: opt.value })),
+    [departmentOptions],
+  );
+
   const filteredRoles = useMemo(() => {
     if (selectedDeptFilter === null) return roles;
     return roles.filter((r) => (r.ten_phong_ban || txt('permission.matrix.otherDept')) === selectedDeptFilter);
@@ -724,7 +676,14 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
                 </div>
                 <h1 className="text-sm font-semibold text-foreground truncate">{txt('permission.title')}</h1>
               </div>
-              <DeptFilterDropdown value={selectedDeptFilter} options={departmentOptions} onChange={setSelectedDeptFilter} />
+              <FilterChipSingleSelect
+                options={deptFilterChipOptions}
+                value={selectedDeptFilter}
+                onChange={setSelectedDeptFilter}
+                placeholder={txt('permission.matrix.filterByDeptAll')}
+                icon={Building2}
+                className="shrink-0 w-[min(180px,22vw)] max-w-[220px]"
+              />
               <Button onClick={handleSave} disabled={!canEditMatrix} isLoading={updateMutation.isPending} className="bg-primary text-white shadow-xl h-9 px-5 rounded-lg font-bold text-sm shrink-0">
                 <Save size={14} className="mr-1.5" />
                 {txt('common.saveChanges')}

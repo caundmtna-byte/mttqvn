@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -10,8 +9,10 @@ import {
 } from 'recharts';
 import { BookOpen, Users, BarChart3, ShieldAlert } from 'lucide-react';
 import { txt } from '@/lib/text';
-import { StatsKpiGrid, StatsCard, StatsTableCard } from '@/components/shared/stats';
+import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
 import ChartTooltip from '@/components/ui/ChartTooltip';
+import { chartFillByIndex, chartFillFromBadgeConfig } from '@/lib/constants/chart-colors';
+import { getTapHuanCapBadgeConfig, getTapHuanThuocDienBadgeConfig } from '../utils/display-format';
 import type { MttqLopTapHuanListRow, MttqTapHuanChiTietFlatRow } from '../core/types';
 import type { MttqLopTapHuanViewer } from '../hooks/use-mttq-tap-huan-viewer';
 import {
@@ -24,6 +25,9 @@ import {
 } from '../utils/aggregate-mttq-tap-huan-stats';
 
 const DON_VI_NONE_ID = '__none__';
+
+const capBadgeConfig = getTapHuanCapBadgeConfig();
+const thuocDienBadgeConfig = getTapHuanThuocDienBadgeConfig();
 
 interface Props {
   rows: MttqLopTapHuanListRow[];
@@ -121,11 +125,12 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={56} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar
+                <ColoredBar
+                  data={byCap}
                   dataKey="count"
                   name={txt('matTranTapHuan.stats.colValue')}
-                  fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
+                  getFill={(row) => chartFillFromBadgeConfig(capBadgeConfig, (row as { label: string }).label)}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -140,11 +145,12 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar
+                <ColoredBar
+                  data={byNam}
                   dataKey="count"
                   name={txt('matTranTapHuan.stats.colValue')}
-                  fill="hsl(173 58% 39%)"
                   radius={[4, 4, 0, 0]}
+                  getFill={(_, i) => chartFillByIndex(i)}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -162,11 +168,14 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={52} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                   <RechartsTooltip content={<ChartTooltip />} />
-                  <Bar
+                  <ColoredBar
+                    data={byThuocDien}
                     dataKey="count"
                     name={txt('matTranTapHuan.stats.colValue')}
-                    fill="hsl(262 52% 47%)"
                     radius={[4, 4, 0, 0]}
+                    getFill={(row) =>
+                      chartFillFromBadgeConfig(thuocDienBadgeConfig, (row as { label: string }).label)
+                    }
                   />
                 </BarChart>
               </ResponsiveContainer>

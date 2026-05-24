@@ -7,6 +7,7 @@ import { ArrowLeft, Filter, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import MobileFilterSheet from '../ui/MobileFilterSheet';
 import type { FilterGroup } from '../ui/MobileFilterSheet';
+import FilterChipOverflowRow from './FilterChipOverflowRow';
 
 interface DashboardToolbarProps {
   /** Desktop filter chips (MultiSelect, etc.) */
@@ -39,7 +40,7 @@ interface DashboardToolbarProps {
   className?: string;
   /** Khi set, wrap nội dung toolbar trong div có class này (vd. max-w-5xl mx-auto px-4 sm:px-6) để đồng bộ chiều rộng với layout nội dung */
   innerWrapperClassName?: string;
-  /** true: vùng `filters` desktop một hàng + cuộn ngang (mặc định flex-wrap xuống dòng). */
+  /** @deprecated Không còn tác dụng — overflow chip xử lý bởi FilterChipOverflowRow. */
   filtersSingleRow?: boolean;
   /** Desktop: `flex-wrap` trên hàng toolbar để ô tìm + bộ lọc có thể xuống dòng (tránh chip chồng). */
   desktopToolbarWrap?: boolean;
@@ -63,7 +64,6 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
   hideBack = false,
   className,
   innerWrapperClassName,
-  filtersSingleRow = false,
   desktopToolbarWrap = false,
   filtersWrapperClassName,
 }) => {
@@ -177,12 +177,11 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
         {filters && (
           <div
             className={cn(
-              'flex min-w-0 flex-1 items-center gap-2',
-              filtersSingleRow ? 'flex-nowrap overflow-x-auto' : 'flex-wrap',
+              'flex min-w-0 flex-1 items-center gap-2 flex-wrap',
               filtersWrapperClassName,
             )}
           >
-            {filters}
+            <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
             {activeFilterCount > 0 && onClearFilters && (
               <button
                 onClick={onClearFilters}
@@ -210,7 +209,7 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
           row2ContentMobileOnly ? "sm:hidden" : "hidden sm:block"
         )}>
           <div className="flex flex-wrap items-center gap-2">
-            {row2Content}
+          <FilterChipOverflowRow>{row2Content}</FilterChipOverflowRow>
           </div>
         </div>
       )}

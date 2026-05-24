@@ -35,6 +35,7 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'matTranReliefInventory',
       'matTranReliefWarehouseList',
       'matTranReliefSupportUnits',
+      'matTranReliefSupportReport',
       'matTranSalaryIncreaseList',
       'matTranSalarySetup',
     ];

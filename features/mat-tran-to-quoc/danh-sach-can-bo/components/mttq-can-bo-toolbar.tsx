@@ -121,7 +121,7 @@ const MttqCanBoToolbar: React.FC<Props> = ({
 
   const filtersSlot = useMemo(
     () => (
-      <div className="flex w-max max-w-none flex-nowrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
         <FilterChipMultiSelect
           options={chipOptions.trangThai}
           value={filters.trang_thai_id}
@@ -385,8 +385,6 @@ const MttqCanBoToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
-      filtersDesktopSeparateScroll
-      filtersMobileBelowSearchScroll
     />
   );
 };

@@ -43,4 +43,6 @@ const FilterChipMultiSelect: React.FC<FilterChipMultiSelectProps> = ({
   );
 };
 
+FilterChipMultiSelect.displayName = 'FilterChipMultiSelect';
+
 export default FilterChipMultiSelect;

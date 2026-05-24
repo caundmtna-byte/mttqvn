@@ -159,6 +159,7 @@ const HangHoaPage: React.FC = () => {
       const mo = (item.mo_ta ?? '').trim();
       if (f.mo_ta_bucket === 'has' && !mo) return false;
       if (f.mo_ta_bucket === 'empty' && mo) return false;
+      if (f.trang_thai && item.trang_thai !== f.trang_thai) return false;
       if (!danhMucMatchesColumnSearch(item, f.columnSearch, f.mo_ta_bucket)) return false;
       return matchesSearch;
     },
@@ -176,6 +177,7 @@ const HangHoaPage: React.FC = () => {
       const mo = (item.mo_ta ?? '').trim();
       if (f.mo_ta_bucket === 'has' && !mo) return false;
       if (f.mo_ta_bucket === 'empty' && mo) return false;
+      if (f.trang_thai && item.trang_thai !== f.trang_thai) return false;
       if (!hangHoaMatchesColumnSearch(item, f.columnSearch, f.mo_ta_bucket)) return false;
       return matchesSearch;
     },

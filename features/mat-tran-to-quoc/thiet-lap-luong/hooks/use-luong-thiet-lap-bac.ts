@@ -9,9 +9,20 @@ import type { LuongThietLapBacRow } from '../core/types';
 import {
   createLuongThietLapBac,
   deleteLuongThietLapBac,
+  getLuongThietLapBacAll,
   getLuongThietLapBacByNgach,
   updateLuongThietLapBac,
 } from '../services/luong-thiet-lap-bac-service';
+
+function patchLuongThietLapBacAllQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  updater: (rows: LuongThietLapBacRow[]) => LuongThietLapBacRow[],
+) {
+  queryClient.setQueriesData<LuongThietLapBacRow[]>(
+    { queryKey: queryKeys.luongThietLapBac.all, exact: false },
+    (old) => (old ? updater(old) : old),
+  );
+}
 
 export function useLuongThietLapBacByNgach(ngachId: string | null, options?: { enabled?: boolean }) {
   const id = ngachId?.trim() ?? '';
@@ -19,6 +30,17 @@ export function useLuongThietLapBacByNgach(ngachId: string | null, options?: { e
   return useQuery({
     queryKey: queryKeys.luongThietLapBac.byNgach(id || '__'),
     queryFn: () => getLuongThietLapBacByNgach(id),
+    enabled,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
+export function useLuongThietLapBacList(ngachIds: string[], options?: { enabled?: boolean }) {
+  const enabled = options?.enabled !== false;
+  const ngachKey = ngachIds.length > 0 ? ngachIds.slice().sort().join(',') : '__none__';
+  return useQuery({
+    queryKey: [...queryKeys.luongThietLapBac.all, ngachKey] as const,
+    queryFn: () => getLuongThietLapBacAll(ngachIds),
     enabled,
     ...transactionalCrudListQueryOptions,
   });
@@ -40,10 +62,10 @@ export function useCreateLuongThietLapBac(onSuccess?: () => void) {
       }),
     onSuccess: (created, { ngachId }) => {
       const key = queryKeys.luongThietLapBac.byNgach(ngachId.trim());
-      queryClient.setQueryData<LuongThietLapBacRow[]>(key, (old) => {
-        const base = old ?? [];
-        return sortBacRows([...base.filter((r) => r.id !== created.id), created]);
-      });
+      const nextRows = (old: LuongThietLapBacRow[] | undefined) =>
+        sortBacRows([...(old ?? []).filter((r) => r.id !== created.id), created]);
+      queryClient.setQueryData<LuongThietLapBacRow[]>(key, nextRows);
+      patchLuongThietLapBacAllQueries(queryClient, nextRows);
       toast.success(txt('matTranThietLapLuong.toast.bacCreate'));
       onSuccess?.();
     },
@@ -65,10 +87,12 @@ export function useUpdateLuongThietLapBac(onSuccess?: () => void) {
     }) => updateLuongThietLapBac(id, { he_so: data.he_so, thu_tu: data.thu_tu }),
     onSuccess: (updated, { ngachId }) => {
       const key = queryKeys.luongThietLapBac.byNgach(ngachId.trim());
-      queryClient.setQueryData<LuongThietLapBacRow[]>(key, (old) => {
+      const nextRows = (old: LuongThietLapBacRow[] | undefined) => {
         if (!old) return [updated];
         return sortBacRows(old.map((r) => (r.id === updated.id ? updated : r)));
-      });
+      };
+      queryClient.setQueryData<LuongThietLapBacRow[]>(key, nextRows);
+      patchLuongThietLapBacAllQueries(queryClient, nextRows);
       toast.success(txt('matTranThietLapLuong.toast.bacUpdate'));
       onSuccess?.();
     },
@@ -85,7 +109,9 @@ export function useDeleteLuongThietLapBac() {
     },
     onSuccess: ({ id, ngachId }) => {
       const key = queryKeys.luongThietLapBac.byNgach(ngachId.trim());
-      queryClient.setQueryData<LuongThietLapBacRow[]>(key, (old) => (old ?? []).filter((r) => r.id !== id));
+      const nextRows = (old: LuongThietLapBacRow[] | undefined) => (old ?? []).filter((r) => r.id !== id);
+      queryClient.setQueryData<LuongThietLapBacRow[]>(key, nextRows);
+      patchLuongThietLapBacAllQueries(queryClient, nextRows);
       toast.success(txt('matTranThietLapLuong.toast.bacDelete'));
     },
     onError: (err: unknown) => toast.error(getErrorMessage(err)),

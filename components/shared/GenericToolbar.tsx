@@ -18,6 +18,7 @@ import MobileFilterSheet from '../ui/MobileFilterSheet';
 import MobileActionsSheet from '../ui/MobileActionsSheet';
 import type { FilterGroup } from '../ui/MobileFilterSheet';
 import type { ActionItem } from '../ui/MobileActionsSheet';
+import FilterChipOverflowRow from './FilterChipOverflowRow';
 
 interface GenericToolbarProps {
     selectedCount: number;
@@ -73,11 +74,12 @@ interface GenericToolbarProps {
     desktopStartSlot?: React.ReactNode;
 
     /**
-     * Desktop: tách vùng chip (`filters`) khỏi ô tìm — chip trong hàng `overflow-x-auto flex-nowrap`;
-     * nhóm ô tìm + cột + actions sau vách dọc, có `overflow-x-auto` khi chật.
+     * @deprecated Dùng FilterChipOverflowRow (tích hợp sẵn). Giữ prop để tương thích — không còn tác dụng.
      */
     filtersDesktopSeparateScroll?: boolean;
-    /** Mobile (<sm): hàng 2 full width — chip cuộn ngang, tách hàng ô tìm phía trên. */
+    /**
+     * @deprecated Dùng FilterChipOverflowRow trên hàng chip mobile. Giữ prop để tương thích.
+     */
     filtersMobileBelowSearchScroll?: boolean;
 
     /**
@@ -361,11 +363,11 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                 </AnimatePresence>
             </div>
 
-            {/* Mobile: chip dưới ô tìm — cuộn ngang */}
+            {/* Mobile: chip dưới ô tìm */}
             {filtersMobileBelowSearchScroll && filters && !hasSelection && (
-                <div className="sm:hidden -mx-1 touch-pan-x overflow-x-auto overscroll-x-contain px-1 pb-0.5 pt-1.5 border-t border-border/50 [scrollbar-width:thin]">
-                    <div className="flex w-max min-w-full flex-nowrap items-center gap-2">
-                        {filters}
+                <div className="sm:hidden px-1 pb-0.5 pt-1.5 border-t border-border/50">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
                         {activeFilterCount > 0 && onClearAllFilters && (
                             <button
                                 type="button"
@@ -448,11 +450,11 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                             {(filters || (activeFilterCount > 0 && onClearAllFilters)) && (
                                 <div
                                     className={cn(
-                                        'flex min-w-0 flex-1 touch-pan-x items-center gap-2 overflow-x-auto overscroll-x-contain flex-nowrap py-0.5 [scrollbar-width:thin]',
+                                        'flex min-w-0 flex-1 flex-wrap items-center gap-2 py-0.5',
                                         (showBack || desktopStartSlot) && 'border-l border-border pl-3 ml-0.5',
                                     )}
                                 >
-                                    {filters}
+                                    <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
                                     {activeFilterCount > 0 && onClearAllFilters && (
                                         <button
                                             onClick={onClearAllFilters}
@@ -563,7 +565,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                             {(filters || (activeFilterCount > 0 && onClearAllFilters)) &&
                             (showBack || desktopStartSlot) ? (
                                 <div className="border-l border-border pl-3 ml-1 flex items-center gap-2 flex-wrap min-w-0">
-                                    {filters}
+                                    <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
                                     {activeFilterCount > 0 && onClearAllFilters && (
                                         <button
                                             onClick={onClearAllFilters}
@@ -578,7 +580,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                 <>
                                     {filters && (
                                         <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                            {filters}
+                                            <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
                                         </div>
                                     )}
                                     {activeFilterCount > 0 && onClearAllFilters && (

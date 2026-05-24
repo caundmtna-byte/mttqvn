@@ -7,6 +7,8 @@ export interface CongViecDanhSachFilters {
   /** Lọc theo giá trị enum đúng chuỗi DB (đồng bộ với `trang_thai` / `muc_do`). */
   trang_thai: string[];
   muc_do: string[];
+  /** FK chương trình năm; `CHIP_CHUONG_TRINH_NULL` = chưa gắn. */
+  id_chuong_trinh: string[];
 }
 
 /** Danh sách / chi tiết — id và FK dạng string (bigint JSON từ Supabase). */

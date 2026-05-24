@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, BarChart } from 'recharts';
 import {
   Users,
   User,
@@ -33,7 +33,8 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
-import { StatsKpiGrid, StatsCard, StatsTableCard } from '@/components/shared/stats';
+import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+import { CHART_FILL_FALLBACK, GIOI_TINH_CHART_COLORS } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import ExportDialog from '@/components/shared/ExportDialog';
@@ -571,7 +572,7 @@ const BaoCaoCanBoPage: React.FC = () => {
     </div>
   );
 
-  /** Một hàng: khoảng ngày + chip; cuộn ngang trên wrapper toolbar (`filtersSingleRow`). */
+  /** Một hàng: khoảng ngày + chip; chip thừa gom vào nút … (FilterChipOverflowRow trên toolbar). */
   const filterPanelDesktop = (
     <>
       <div className="flex shrink-0 items-center">{dateRangeRow}</div>
@@ -703,7 +704,6 @@ const BaoCaoCanBoPage: React.FC = () => {
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangeRow}</div>
         }
         filters={filterPanelDesktop}
-        filtersSingleRow
         filterGroups={filterGroups}
         actions={<div className="hidden sm:flex shrink-0">{renderExportToolbarButton()}</div>}
         mobileActions={renderExportToolbarButton()}
@@ -753,7 +753,15 @@ const BaoCaoCanBoPage: React.FC = () => {
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
-                      <Bar dataKey="count" name={txt('matTranOfficerStats.tableTwoColValue')} fill="hsl(346 77% 50%)" radius={[4, 4, 0, 0]} />
+                      <ColoredBar
+                        data={gioiTinhBar}
+                        dataKey="count"
+                        name={txt('matTranOfficerStats.tableTwoColValue')}
+                        radius={[4, 4, 0, 0]}
+                        getFill={(row) =>
+                          GIOI_TINH_CHART_COLORS[(row as { label: string }).label] ?? CHART_FILL_FALLBACK
+                        }
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

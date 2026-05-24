@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   BarChart,
-  Bar,
 } from 'recharts';
 import {
   ListOrdered,
@@ -36,14 +35,15 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
-import { StatsKpiGrid, StatsCard, StatsTableCard } from '@/components/shared/stats';
+import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+import { chartFillFromBadgeConfig } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { ChuongTrinhNamListRow } from '../core/types';
-import { CHUONG_TRINH_NAM_TRANG_THAI } from '../core/constants';
+import { CHUONG_TRINH_NAM_TRANG_THAI, getChuongTrinhNamTrangThaiBadgeConfig } from '../core/constants';
 import {
   CHUONG_TRINH_NAM_TIEN_DO_FILTER_IDS,
   formatChuongTrinhNamTienDo,
@@ -81,6 +81,8 @@ const initialDims: ChuongTrinhNamStatsDimensionFilters = {
   nam_bat_dau: [],
   tien_do: [],
 };
+
+const trangThaiBadgeConfig = getChuongTrinhNamTrangThaiBadgeConfig();
 
 const EXPORT_PAGINATION = { page: 1, pageSize: 100_000 };
 
@@ -526,7 +528,6 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangeRow}</div>
         }
         filters={filterPanelDesktop}
-        filtersSingleRow
         filterGroups={filterGroups}
         actions={<div className="hidden sm:flex shrink-0">{renderExportToolbarButton()}</div>}
         mobileActions={renderExportToolbarButton()}
@@ -577,11 +578,14 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
-                      <Bar
+                      <ColoredBar
+                        data={trangThaiBar}
                         dataKey="count"
                         name={txt('chuongTrinhNam.stats.tableTwoColValue')}
-                        fill="hsl(var(--primary))"
                         radius={[4, 4, 0, 0]}
+                        getFill={(row) =>
+                          chartFillFromBadgeConfig(trangThaiBadgeConfig, (row as { label: string }).label)
+                        }
                       />
                     </BarChart>
                   </ResponsiveContainer>

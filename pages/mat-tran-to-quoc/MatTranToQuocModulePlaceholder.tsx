@@ -13,6 +13,7 @@ const PATH_TO_TITLE_KEY: Record<string, string> = {
   '/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho': 'page.matTranDashboard.reliefWarehouseList',
   '/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho': 'page.matTranDashboard.reliefStockTransactions',
   '/mat-tran-to-quoc/kho-cuu-tro/ton-kho': 'page.matTranDashboard.reliefInventory',
+  '/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro': 'page.matTranDashboard.reliefSupportReport',
   '/mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong': 'page.matTranDashboard.salaryIncreaseList',
   '/mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong': 'page.matTranDashboard.salarySetup',
 };

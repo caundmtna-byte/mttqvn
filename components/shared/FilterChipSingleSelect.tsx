@@ -52,4 +52,6 @@ const FilterChipSingleSelect: React.FC<FilterChipSingleSelectProps> = ({
   );
 };
 
+FilterChipSingleSelect.displayName = 'FilterChipSingleSelect';
+
 export default FilterChipSingleSelect;

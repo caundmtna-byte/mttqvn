@@ -38,6 +38,7 @@ export type AppResource =
   | 'matTranReliefInventory'
   | 'matTranReliefWarehouseList'
   | 'matTranReliefSupportUnits'
+  | 'matTranReliefSupportReport'
   | 'matTranSalaryIncreaseList'
   | 'matTranSalarySetup'
   | 'annualPrograms'
@@ -82,6 +83,7 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranReliefInventory: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho',
   matTranReliefWarehouseList: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho',
   matTranReliefSupportUnits: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
+  matTranReliefSupportReport: 'mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro',
   matTranSalaryIncreaseList: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong',
   matTranSalarySetup: 'mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong',
   annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam',

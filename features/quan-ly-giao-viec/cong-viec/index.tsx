@@ -24,11 +24,12 @@ import { useCan } from '@/hooks/use-can';
 import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useEmployees } from '@/features/he-thong/nhan-vien/hooks/use-nhan-vien';
+import { useChuongTrinhNamList } from '@/features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam';
 import { useCongViecDanhSachPage, useDeleteCongViecDanhSachMany } from './hooks/use-cong-viec-danh-sach';
 import type { CongViecListScopeRpc } from './services/cong-viec-danh-sach-service';
 import { useCongViecDanhSachStore } from './store/useCongViecDanhSachStore';
 import type { CongViecDanhSachRow, CongViecListScope } from './core/types';
-import { CONG_VIEC_MUC_DO, CONG_VIEC_TRANG_THAI } from './core/constants';
+import { CONG_VIEC_MUC_DO, CONG_VIEC_TRANG_THAI, CHIP_CHUONG_TRINH_NULL } from './core/constants';
 import { congViecMatchesColumnSearch } from './utils/column-search';
 import { deadlineProgressSortKey, formatCongViecTienDoTheoHan } from './utils/deadline-progress';
 import CongViecToolbar from './components/cong-viec-toolbar';
@@ -104,6 +105,7 @@ const CongViecPage: React.FC = () => {
       viewerNhanVienId: nhanVienId || null,
       trangThai: filters.trang_thai ?? [],
       mucDo: filters.muc_do ?? [],
+      idChuongTrinh: filters.id_chuong_trinh ?? [],
     }),
     [
       pagination.page,
@@ -113,6 +115,7 @@ const CongViecPage: React.FC = () => {
       nhanVienId,
       filters.trang_thai,
       filters.muc_do,
+      filters.id_chuong_trinh,
     ],
   );
 
@@ -125,6 +128,7 @@ const CongViecPage: React.FC = () => {
   const serverHasNextPage = pageData?.hasNextPage ?? false;
   const serverTotalRecords = pageData?.totalRecords ?? null;
   const { data: employees = [] } = useEmployees({ enabled: canView });
+  const { data: chuongTrinhList = [] } = useChuongTrinhNamList({ enabled: canView });
   const deleteMutation = useDeleteCongViecDanhSachMany();
 
   const employeeMap = useMemo(() => new Map(employees.map((e) => [String(e.id), e])), [employees]);
@@ -148,7 +152,7 @@ const CongViecPage: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [listScope, setPage]);
+  }, [listScope, filters.id_chuong_trinh, filters.muc_do, filters.trang_thai, setPage]);
 
   useEffect(() => {
     if (!viewing) return;
@@ -320,6 +324,14 @@ const CongViecPage: React.FC = () => {
 
   const mucDoChipOptions = useMemo(() => CONG_VIEC_MUC_DO.map((v) => ({ label: v, value: v })), []);
 
+  const chuongTrinhChipOptions = useMemo(() => {
+    const opts = chuongTrinhList.map((ct) => ({
+      label: ct.ten_chuong_trinh,
+      value: ct.id,
+    }));
+    return [{ label: txt('taskList.detail.chuongTrinhEmpty'), value: CHIP_CHUONG_TRINH_NULL }, ...opts];
+  }, [chuongTrinhList]);
+
   if (!canView) {
     return (
       <div
@@ -350,6 +362,7 @@ const CongViecPage: React.FC = () => {
           tabsSlot={tabsSlot}
           trangThaiOptions={trangThaiChipOptions}
           mucDoOptions={mucDoChipOptions}
+          chuongTrinhOptions={chuongTrinhChipOptions}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');

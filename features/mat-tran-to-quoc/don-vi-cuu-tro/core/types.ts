@@ -1,8 +1,11 @@
-export type KhoDonViCuuTroLoai = 'to_chuc' | 'ca_nhan';
+import type { KhoDonViCuuTroLoai } from './loai';
+
+export type { KhoDonViCuuTroLoai };
 
 /** Bộ lọc danh sách — Pattern B (header cột + ô search tổng). */
 export interface KhoDonViCuuTroFilters {
   columnSearch: Record<string, string>;
+  loai_filter: string[];
 }
 
 export interface KhoDonViCuuTroListRow {

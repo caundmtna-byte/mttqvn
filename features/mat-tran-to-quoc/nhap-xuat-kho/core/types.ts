@@ -5,6 +5,10 @@ export interface NhapXuatKhoFilters {
   columnSearch: Record<string, string>;
   /** Bộ lọc loại phiếu (chip dropdown). `null` = tất cả. */
   loai_phieu: NhapXuatKhoLoaiPhieu | null;
+  /** Kho xuất hoặc kho nhập (chip dropdown). */
+  kho_id: string | null;
+  don_vi_cuu_tro_id: string | null;
+  dot_cuu_tro_id: string | null;
 }
 
 /** Pattern B cho tab Chi tiết (flatten lines). */
@@ -63,7 +67,9 @@ export interface NhapXuatKhoCtFlatRow {
   so_phieu: string;
   loai_phieu: NhapXuatKhoLoaiPhieu;
   ngay_phieu: string;
+  kho_xuat_id: string | null;
   ten_kho_xuat: string | null;
+  kho_nhap_id: string | null;
   ten_kho_nhap: string | null;
   ten_don_vi_cuu_tro: string | null;
   ten_dot_cuu_tro: string | null;

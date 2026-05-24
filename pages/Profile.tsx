@@ -23,6 +23,11 @@ import { supabaseEmailToLoginName } from '../lib/auth-email';
 import { useEmployees, useUpdateEmployee } from '../features/he-thong/nhan-vien/hooks/use-nhan-vien';
 import { employeeToFormValues } from '../features/he-thong/nhan-vien/utils/employee-to-form';
 import { STATUS_BADGE_CONFIG } from '../features/he-thong/nhan-vien/core/constants';
+import {
+  changePasswordValidationMessage,
+  changeUserPassword,
+  validateChangePasswordForm,
+} from '../lib/auth/change-password';
 
 const Profile: React.FC = () => {
   const { user, login } = useAuthStore();
@@ -44,6 +49,9 @@ const Profile: React.FC = () => {
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const editable = canEditProfile(user);
   const displayName = currentEmployee?.ho_va_ten ?? user?.full_name ?? '';
@@ -96,9 +104,9 @@ const Profile: React.FC = () => {
   const emptyText = txt('page.profile.emptyField');
 
   const toolbarActions = useMemo(() => {
-    if (!editable) return [];
-    return [
-      {
+    const actions = [];
+    if (editable) {
+      actions.push({
         label: txt('page.profile.changeAvatar'),
         icon: <Camera />,
         onClick: () => {
@@ -106,15 +114,47 @@ const Profile: React.FC = () => {
           setAvatarModalOpen(true);
         },
         variant: 'info' as const,
+      });
+    }
+    actions.push({
+      label: txt('page.profile.changePassword'),
+      icon: <Key />,
+      onClick: () => {
+        setPasswordError(null);
+        setPasswordForm({ current: '', new: '', confirm: '' });
+        setPasswordModalOpen(true);
       },
-      {
-        label: txt('page.profile.changePassword'),
-        icon: <Key />,
-        onClick: () => setPasswordModalOpen(true),
-        variant: 'secondary' as const,
-      },
-    ];
+      variant: 'secondary' as const,
+    });
+    return actions;
   }, [editable, displayAvatar]);
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    const validationError = validateChangePasswordForm({
+      currentPassword: passwordForm.current,
+      newPassword: passwordForm.new,
+      confirmPassword: passwordForm.confirm,
+    });
+    if (validationError) {
+      setPasswordError(changePasswordValidationMessage(validationError));
+      return;
+    }
+    setPasswordSubmitting(true);
+    try {
+      const result = await changeUserPassword(passwordForm.current, passwordForm.new);
+      if (result.error) {
+        setPasswordError(result.error);
+        return;
+      }
+      setPasswordModalOpen(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+      toast.success(txt('nav.changePassword.success'));
+    } finally {
+      setPasswordSubmitting(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -340,20 +380,51 @@ const Profile: React.FC = () => {
                 </button>
               </div>
               <p className="text-sm text-muted-foreground mb-4">{txt('page.profile.changePasswordDesc')}</p>
-              <div className="space-y-4">
-                <Input label={txt('page.profile.currentPassword')} type="password" placeholder={txt('page.profile.passwordPlaceholder')} disabled />
-                <Input label={txt('page.profile.newPassword')} type="password" placeholder={txt('page.profile.passwordPlaceholder')} disabled />
-                <Input label={txt('page.profile.confirmPassword')} type="password" placeholder={txt('page.profile.passwordPlaceholder')} disabled />
-              </div>
-              <div className="mt-4 p-3 rounded-xl bg-muted/50 text-center">
-                <p className="text-xs font-medium text-muted-foreground">{txt('page.profile.comingSoon')}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{txt('page.profile.comingSoonDesc')}</p>
-              </div>
-              <div className="flex justify-end mt-6">
-                <Button variant="outline" className="rounded-xl" onClick={() => setPasswordModalOpen(false)}>
-                  {txt('common.close')}
-                </Button>
-              </div>
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                {passwordError && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {passwordError}
+                  </div>
+                )}
+                <Input
+                  label={txt('page.profile.currentPassword')}
+                  type="password"
+                  value={passwordForm.current}
+                  onChange={(e) => setPasswordForm((f) => ({ ...f, current: e.target.value }))}
+                  placeholder={txt('page.profile.passwordPlaceholder')}
+                  autoComplete="current-password"
+                />
+                <Input
+                  label={txt('page.profile.newPassword')}
+                  type="password"
+                  value={passwordForm.new}
+                  onChange={(e) => setPasswordForm((f) => ({ ...f, new: e.target.value }))}
+                  placeholder={txt('page.profile.passwordPlaceholder')}
+                  autoComplete="new-password"
+                />
+                <Input
+                  label={txt('page.profile.confirmPassword')}
+                  type="password"
+                  value={passwordForm.confirm}
+                  onChange={(e) => setPasswordForm((f) => ({ ...f, confirm: e.target.value }))}
+                  placeholder={txt('page.profile.passwordPlaceholder')}
+                  autoComplete="new-password"
+                />
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 rounded-xl"
+                    onClick={() => setPasswordModalOpen(false)}
+                    disabled={passwordSubmitting}
+                  >
+                    {txt('common.cancel')}
+                  </Button>
+                  <Button type="submit" className="flex-1 rounded-xl" isLoading={passwordSubmitting} disabled={passwordSubmitting}>
+                    {txt('nav.changePassword.submit')}
+                  </Button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

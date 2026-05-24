@@ -22,7 +22,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useLuongThietLapNgachList } from '../hooks/use-luong-thiet-lap-ngach';
-import { useLuongThietLapBacByNgach, useDeleteLuongThietLapBac } from '../hooks/use-luong-thiet-lap-bac';
+import { useLuongThietLapBacList, useDeleteLuongThietLapBac } from '../hooks/use-luong-thiet-lap-bac';
 import { useLuongThietLapCauHinh, useUpdateLuongThietLapCauHinh } from '../hooks/use-luong-thiet-lap-cau-hinh';
 import type { LuongThietLapBacRow } from '../core/types';
 import type { LuongThietLapBacMaCode } from '../core/schema';
@@ -62,12 +62,8 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
   const [viewingId, setViewingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (ngachRows.length === 0) {
+    if (selectedNgachId && !ngachRows.some((r) => r.id === selectedNgachId)) {
       setSelectedNgachId(null);
-      return;
-    }
-    if (!selectedNgachId || !ngachRows.some((r) => r.id === selectedNgachId)) {
-      setSelectedNgachId(ngachRows[0].id);
     }
   }, [ngachRows, selectedNgachId]);
 
@@ -83,9 +79,16 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
 
   const { searchTerm, filters, sort } = useLuongBacTableStore();
 
-  const { data: bacRows = [], isLoading: bacLoading } = useLuongThietLapBacByNgach(selectedNgachId, {
-    enabled: listQueryEnabled && Boolean(selectedNgachId),
+  const ngachIds = useMemo(() => ngachRows.map((r) => r.id), [ngachRows]);
+
+  const { data: allBacRows = [], isLoading: bacLoading } = useLuongThietLapBacList(ngachIds, {
+    enabled: listQueryEnabled && ngachRows.length > 0,
   });
+
+  const bacRows = useMemo(() => {
+    if (!selectedNgachId) return allBacRows;
+    return allBacRows.filter((r) => r.ngach_id === selectedNgachId);
+  }, [allBacRows, selectedNgachId]);
   const { data: cauHinh } = useLuongThietLapCauHinh({ enabled: listQueryEnabled });
   const updateMlcs = useUpdateLuongThietLapCauHinh();
   const deleteBac = useDeleteLuongThietLapBac();
@@ -97,20 +100,33 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
     setMlcsDraft(mlcsNum);
   }, [mlcsNum]);
 
-  const ngachOptions: Option[] = useMemo(
-    () => ngachRows.map((r) => ({ value: r.id, label: r.ma ? `${r.ten} (${r.ma})` : r.ten })),
+  const ngachOptions: Option[] = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of allBacRows) {
+      counts.set(r.ngach_id, (counts.get(r.ngach_id) ?? 0) + 1);
+    }
+    return ngachRows.map((r) => ({
+      value: r.id,
+      label: r.ma ? `${r.ten} (${r.ma})` : r.ten,
+      count: counts.get(r.id) ?? 0,
+    }));
+  }, [allBacRows, ngachRows]);
+
+  const ngachLabelById = useMemo(
+    () => new Map(ngachRows.map((r) => [r.id, r.ma ? `${r.ten} (${r.ma})` : r.ten])),
     [ngachRows],
   );
 
-  const selectedNgachLabel = useMemo(() => {
-    const r = ngachRows.find((x) => x.id === selectedNgachId);
-    return r ? (r.ma ? `${r.ten} (${r.ma})` : r.ten) : undefined;
-  }, [ngachRows, selectedNgachId]);
-
-  const missingCodesForCreate = useMemo(
-    () => listMissingMaBacForNgach(bacRows) as LuongThietLapBacMaCode[],
-    [bacRows],
+  const resolveNgachLabel = useCallback(
+    (ngachId: string | null | undefined) => (ngachId ? ngachLabelById.get(ngachId) : undefined),
+    [ngachLabelById],
   );
+
+  const missingCodesForCreate = useMemo(() => {
+    if (!selectedNgachId) return [] as LuongThietLapBacMaCode[];
+    const rowsForNgach = allBacRows.filter((r) => r.ngach_id === selectedNgachId);
+    return listMissingMaBacForNgach(rowsForNgach) as LuongThietLapBacMaCode[];
+  }, [allBacRows, selectedNgachId]);
 
   const tableRows: LuongBacTableRow[] = useMemo(() => {
     const base = Number.isFinite(mlcsDraft) && mlcsDraft > 0 ? mlcsDraft : 0;
@@ -120,15 +136,18 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
       const heFin = Number.isFinite(he) && he > 0 ? he : 0;
       const luong_preview = base > 0 && heFin > 0 ? Math.round(base * heFin) : 0;
       const luong_search = `${luong_preview} ${formatCurrency(luong_preview)}`;
+      const ngach_label = ngachLabelById.get(r.ngach_id) ?? '';
       return {
         ...r,
         luong_preview,
         he_so_effective: heFin,
         he_so_display: heStr,
         luong_search,
+        ngach_label,
+        ngach_search: ngach_label,
       };
     });
-  }, [bacRows, mlcsDraft]);
+  }, [bacRows, mlcsDraft, ngachLabelById]);
 
   const filterFn = useCallback(
     (item: LuongBacTableRow, term: string, f: typeof filters) => {
@@ -158,14 +177,18 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
   const emptyTitleResolved = useMemo(() => {
     if (ngachRows.length === 0) return txt('matTranThietLapLuong.bac.noNgach');
     if (sorted.length === 0 && tableRows.length > 0 && hasListFilters) return txt('common.noResults');
+    if (tableRows.length === 0 && selectedNgachId) return txt('matTranThietLapLuong.bac.emptyBac');
+    if (tableRows.length === 0) return txt('matTranThietLapLuong.detail.noBac');
     return txt('matTranThietLapLuong.bac.emptyBac');
-  }, [sorted.length, tableRows.length, hasListFilters, ngachRows.length]);
+  }, [sorted.length, tableRows.length, hasListFilters, ngachRows.length, selectedNgachId]);
 
   const emptyDescriptionResolved = useMemo(() => {
     if (ngachRows.length === 0) return txt('matTranThietLapLuong.bac.pickNgachHint');
     if (sorted.length === 0 && tableRows.length > 0 && hasListFilters) return txt('matTranThietLapLuong.emptyFilteredHint');
+    if (tableRows.length === 0 && selectedNgachId) return txt('matTranThietLapLuong.bac.pickNgachHint');
+    if (tableRows.length === 0) return txt('matTranThietLapLuong.emptyHint');
     return txt('matTranThietLapLuong.bac.pickNgachHint');
-  }, [sorted.length, tableRows.length, hasListFilters, ngachRows.length]);
+  }, [sorted.length, tableRows.length, hasListFilters, ngachRows.length, selectedNgachId]);
 
   const handleCloseForm = () => {
     setShowForm(false);
@@ -207,7 +230,8 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
 
   const handleDeleteBac = useCallback(
     (row: LuongThietLapBacRow) => {
-      if (!selectedNgachId) return;
+      const ngachId = row.ngach_id?.trim();
+      if (!ngachId) return;
       confirm({
         title: txt('matTranThietLapLuong.bac.deleteTitle'),
         message: txt('matTranThietLapLuong.bac.deleteMessage', { ma: row.ma_bac }),
@@ -215,7 +239,7 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
         confirmText: CONFIRM_DELETE(),
         onConfirm: async () => {
           deleteBac.mutate(
-            { id: row.id, ngachId: selectedNgachId },
+            { id: row.id, ngachId },
             {
               onSuccess: () => {
                 setViewingId((v) => (v === row.id ? null : v));
@@ -225,7 +249,7 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
         },
       });
     },
-    [confirm, deleteBac, selectedNgachId],
+    [confirm, deleteBac],
   );
 
   const handleSaveMlcs = () => {
@@ -237,9 +261,12 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
   const mlcsDirty = Math.abs(mlcsDraft - mlcsNum) > 1e-6;
 
   const viewingRow = useMemo(
-    () => (viewingId ? bacRows.find((r) => r.id === viewingId) ?? null : null),
-    [bacRows, viewingId],
+    () => (viewingId ? allBacRows.find((r) => r.id === viewingId) ?? null : null),
+    [allBacRows, viewingId],
   );
+
+  const formNgachId = editing?.ngach_id ?? selectedNgachId;
+  const formNgachLabel = resolveNgachLabel(formNgachId);
 
   const mlcsToolbarSlot = (
     <div
@@ -303,11 +330,11 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
       </div>
 
       <AnimatePresence>
-        {showForm && selectedNgachId && (
+        {showForm && formNgachId && (
           <Suspense fallback={<DrawerLazyFallback />}>
             <LuongBacForm
-              ngachId={selectedNgachId}
-              ngachLabel={selectedNgachLabel}
+              ngachId={formNgachId}
+              ngachLabel={formNgachLabel}
               initialData={editing}
               missingCodesForCreate={missingCodesForCreate}
               onClose={handleCloseForm}
@@ -321,7 +348,7 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
           <Suspense fallback={<DrawerLazyFallback />}>
             <LuongBacDetail
               data={viewingRow}
-              ngachLabel={selectedNgachLabel}
+              ngachLabel={resolveNgachLabel(viewingRow.ngach_id)}
               mucLuongCoSoPreview={mlcsDraft}
               onClose={() => setViewingId(null)}
               onEdit={handleEditFromDetail}

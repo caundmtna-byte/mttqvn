@@ -22,6 +22,7 @@ const initialFilters: CongViecDanhSachFilters = {
   columnSearch: {},
   trang_thai: [],
   muc_do: [],
+  id_chuong_trinh: [],
 };
 
 export const useCongViecDanhSachStore = createGenericStore<CongViecDanhSachFilters>(initialFilters, DEFAULT_COLUMNS);

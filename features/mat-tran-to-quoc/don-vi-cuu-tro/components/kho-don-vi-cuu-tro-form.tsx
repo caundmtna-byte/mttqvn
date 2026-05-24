@@ -10,6 +10,11 @@ import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDra
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
+import {
+  KHO_DON_VI_CUU_TRO_LOAI_DEFAULT,
+  isKhoDonViCuuTroCaNhan,
+  khoDonViCuuTroLoaiComboboxOptions,
+} from '../core/loai';
 import { khoDonViCuuTroSchema, type KhoDonViCuuTroFormValues } from '../core/schema';
 import type { KhoDonViCuuTroListRow } from '../core/types';
 import { useCreateKhoDonViCuuTro, useUpdateKhoDonViCuuTro } from '../hooks/use-kho-don-vi-cuu-tro';
@@ -17,7 +22,7 @@ import { useCreateKhoDonViCuuTro, useUpdateKhoDonViCuuTro } from '../hooks/use-k
 const FORM_ID = 'kho-don-vi-cuu-tro-form';
 
 const DEFAULT_VALUES: KhoDonViCuuTroFormValues = {
-  loai: 'to_chuc',
+  loai: KHO_DON_VI_CUU_TRO_LOAI_DEFAULT,
   ten: '',
   dia_chi: '',
   dien_thoai: '',
@@ -49,13 +54,7 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const loai = watch('loai');
 
-  const loaiOptions = useMemo(
-    () => [
-      { label: txt('matTranDonViCuuTro.loai.toChuc'), value: 'to_chuc' },
-      { label: txt('matTranDonViCuuTro.loai.caNhan'), value: 'ca_nhan' },
-    ],
-    [],
-  );
+  const loaiOptions = useMemo(() => khoDonViCuuTroLoaiComboboxOptions(), []);
 
   useEffect(() => {
     if (initialData) {
@@ -87,7 +86,7 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
       onClose={onClose}
       title={isEdit ? txt('common.edit') : txt('common.create')}
       maxWidthClass={DRAWER_WIDTH_FORM}
-      icon={loai === 'ca_nhan' ? <User size={18} /> : <Building2 size={18} />}
+      icon={isKhoDonViCuuTroCaNhan(loai) ? <User size={18} /> : <Building2 size={18} />}
       subtitle={
         isEdit && initialData
           ? `${txt('matTranDonViCuuTro.form.editSubtitle')} · ${initialData.ten}`
@@ -116,7 +115,9 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
                   <Combobox
                     options={loaiOptions}
                     value={field.value}
-                    onChange={(v) => field.onChange(v === '' || v == null ? 'to_chuc' : String(v))}
+                    onChange={(v) =>
+                      field.onChange(v === '' || v == null ? KHO_DON_VI_CUU_TRO_LOAI_DEFAULT : String(v))
+                    }
                     label={txt('matTranDonViCuuTro.form.loai')}
                     placeholder={txt('matTranDonViCuuTro.form.loai')}
                     error={errors.loai?.message}

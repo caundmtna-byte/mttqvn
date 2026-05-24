@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Tag, ListOrdered } from 'lucide-react';
+import { Plus, Download, Tag, ListOrdered, Target } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -21,6 +21,7 @@ interface Props {
   tabsSlot: React.ReactNode;
   trangThaiOptions: ChipOption[];
   mucDoOptions: ChipOption[];
+  chuongTrinhOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
@@ -31,6 +32,7 @@ const CongViecToolbar: React.FC<Props> = ({
   tabsSlot,
   trangThaiOptions,
   mucDoOptions,
+  chuongTrinhOptions,
   onAdd,
   onExport,
   onDeleteMany,
@@ -57,7 +59,8 @@ const CongViecToolbar: React.FC<Props> = ({
       (searchTerm ? 1 : 0) +
       countCongViecColumnSearchActive(filters.columnSearch) +
       (filters.trang_thai.length > 0 ? 1 : 0) +
-      (filters.muc_do.length > 0 ? 1 : 0)
+      (filters.muc_do.length > 0 ? 1 : 0) +
+      (filters.id_chuong_trinh.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -67,6 +70,7 @@ const CongViecToolbar: React.FC<Props> = ({
     st.setFilter('columnSearch', {});
     st.setFilter('trang_thai', []);
     st.setFilter('muc_do', []);
+    st.setFilter('id_chuong_trinh', []);
   };
 
   const filtersSlot = useMemo(
@@ -88,9 +92,17 @@ const CongViecToolbar: React.FC<Props> = ({
           icon={ListOrdered}
           className="shrink-0 w-full min-w-0 sm:w-[min(180px,24vw)] sm:max-w-[220px]"
         />
+        <FilterChipMultiSelect
+          options={chuongTrinhOptions}
+          value={filters.id_chuong_trinh}
+          onChange={(val) => setFilter('id_chuong_trinh', val)}
+          placeholder={txt('taskList.filterChuongTrinh')}
+          icon={Target}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
       </div>
     ),
-    [trangThaiOptions, mucDoOptions, filters.trang_thai, filters.muc_do, setFilter],
+    [chuongTrinhOptions, trangThaiOptions, mucDoOptions, filters.id_chuong_trinh, filters.trang_thai, filters.muc_do, setFilter],
   );
 
   const filterGroups = useMemo(
@@ -111,8 +123,16 @@ const CongViecToolbar: React.FC<Props> = ({
         value: filters.muc_do,
         onChange: (val: string[]) => setFilter('muc_do', val),
       },
+      {
+        key: 'id_chuong_trinh',
+        label: txt('taskList.filterChuongTrinh'),
+        icon: Target,
+        options: chuongTrinhOptions,
+        value: filters.id_chuong_trinh,
+        onChange: (val: string[]) => setFilter('id_chuong_trinh', val),
+      },
     ],
-    [trangThaiOptions, mucDoOptions, filters.trang_thai, filters.muc_do, setFilter],
+    [chuongTrinhOptions, trangThaiOptions, mucDoOptions, filters.id_chuong_trinh, filters.trang_thai, filters.muc_do, setFilter],
   );
 
   const mobileActions = useMemo<ActionItem[]>(

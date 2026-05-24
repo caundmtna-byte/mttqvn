@@ -27,6 +27,11 @@ import { SIDEBAR_MENU } from '../../lib/sidebar-menu';
 import { isSidebarPathVisibleForUser } from '../../lib/nav-module-visibility';
 import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
 import { toast } from 'sonner';
+import {
+  changePasswordValidationMessage,
+  changeUserPassword,
+  validateChangePasswordForm,
+} from '../../lib/auth/change-password';
 
 /** Sidebar width: expanded 240px (gọn), collapsed 64px (4rem, 8px grid) */
 const SIDEBAR_WIDTH_EXPANDED = 240;
@@ -132,24 +137,28 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     e.preventDefault();
     setChangePasswordError(null);
     const { current, new: newPw, confirm } = changePasswordForm;
-    if (!current.trim()) {
-      setChangePasswordError(txt('nav.changePassword.errorCurrentRequired'));
-      return;
-    }
-    if (newPw.length < 6) {
-      setChangePasswordError(txt('nav.changePassword.errorNewMin'));
-      return;
-    }
-    if (newPw !== confirm) {
-      setChangePasswordError(txt('nav.changePassword.errorConfirmMismatch'));
+    const validationError = validateChangePasswordForm({
+      currentPassword: current,
+      newPassword: newPw,
+      confirmPassword: confirm,
+    });
+    if (validationError) {
+      setChangePasswordError(changePasswordValidationMessage(validationError));
       return;
     }
     setChangePasswordSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setChangePasswordSubmitting(false);
-    setShowChangePasswordModal(false);
-    setChangePasswordForm({ current: '', new: '', confirm: '' });
-    toast.success(txt('nav.changePassword.success'));
+    try {
+      const result = await changeUserPassword(current, newPw);
+      if (result.error) {
+        setChangePasswordError(result.error);
+        return;
+      }
+      setShowChangePasswordModal(false);
+      setChangePasswordForm({ current: '', new: '', confirm: '' });
+      toast.success(txt('nav.changePassword.success'));
+    } finally {
+      setChangePasswordSubmitting(false);
+    }
   };
 
   const navItems = useMemo(

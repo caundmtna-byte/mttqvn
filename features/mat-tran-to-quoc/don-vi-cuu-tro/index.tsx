@@ -132,6 +132,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
         [...KHO_DON_VI_CUU_TRO_SEARCHABLE_KEYS],
       );
       if (!khoDonViCuuTroMatchesColumnSearch(item, f.columnSearch)) return false;
+      if (f.loai_filter.length > 0 && !f.loai_filter.includes(item.loai)) return false;
       return matchesSearch;
     },
     [],
@@ -187,8 +188,8 @@ const KhoDonViCuuTroPage: React.FC = () => {
 
   const hasListFilters = useMemo(() => {
     const cs = filters.columnSearch ?? {};
-    return Boolean(searchTerm?.trim()) || countKhoDonViCuuTroColumnSearchActive(cs) > 0 || Boolean(sort.column);
-  }, [searchTerm, filters.columnSearch, sort.column]);
+    return Boolean(searchTerm?.trim()) || countKhoDonViCuuTroColumnSearchActive(cs) > 0 || filters.loai_filter.length > 0 || Boolean(sort.column);
+  }, [searchTerm, filters.columnSearch, filters.loai_filter, sort.column]);
 
   const emptyTitleResolved = useMemo(
     () =>
@@ -313,6 +314,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
+          items={rows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">

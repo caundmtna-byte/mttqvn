@@ -100,6 +100,7 @@ const initialFilters: MttqTapHuanChiTietListFilters = {
   columnSearch: {},
   cap_tap_huan: [],
   nam_tap_huan: [],
+  thuoc_dien: [],
 };
 
 export const useMttqTapHuanChiTietListStore = createGenericStore<MttqTapHuanChiTietListFilters>(

@@ -1,6 +1,8 @@
 /** Bộ lọc danh sách — Pattern B (header cột + ô search tổng). */
 export interface KhoDotCuuTroFilters {
   columnSearch: Record<string, string>;
+  /** '' = tất cả; has/empty theo cột link trên list. */
+  link_bucket: '' | 'has' | 'empty';
 }
 
 /** Hàng list — không gồm `mo_ta` (egress). */

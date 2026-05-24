@@ -24,6 +24,7 @@ export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/mat-tran-to-quoc/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
   { path: '/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
   { path: '/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
+  { path: '/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportReport', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
   { path: '/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo', nameKey: 'page.matTranDashboard.officerList', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
   { path: '/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo', nameKey: 'page.matTranDashboard.officerStatsReport', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
   { path: '/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat', nameKey: 'page.matTranDashboard.setupSettings', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },

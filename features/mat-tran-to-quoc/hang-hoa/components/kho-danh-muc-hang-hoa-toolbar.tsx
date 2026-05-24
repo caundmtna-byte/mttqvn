@@ -1,7 +1,8 @@
 import React, { useMemo, type ReactNode } from 'react';
-import { Plus, Download, AlignLeft } from 'lucide-react';
+import { Plus, Download, AlignLeft, CircleDot } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
+import { TRANG_THAI_HOAT_DONG } from '@/lib/constants/trang-thai';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
@@ -64,22 +65,70 @@ const KhoDanhMucHangHoaToolbar: React.FC<Props> = ({
     [moTaCounts.has, moTaCounts.empty],
   );
 
+  const trangThaiOptions = useMemo(
+    () =>
+      TRANG_THAI_HOAT_DONG.map((value) => ({
+        label: value,
+        value,
+        count: itemRows.filter((r) => r.trang_thai === value).length,
+      })),
+    [itemRows],
+  );
+
   const activeFilterCount = useMemo(() => {
     const colN = countDanhMucColumnSearchActive(filters.columnSearch, filters.mo_ta_bucket);
     const bucketOn = filters.mo_ta_bucket === 'has' || filters.mo_ta_bucket === 'empty' ? 1 : 0;
-    return (searchTerm ? 1 : 0) + colN + bucketOn;
+    const ttOn = filters.trang_thai ? 1 : 0;
+    return (searchTerm ? 1 : 0) + colN + bucketOn + ttOn;
   }, [searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setFilter('columnSearch', {});
     setFilter('mo_ta_bucket', '');
+    setFilter('trang_thai', '');
     setSort(null, null);
   };
+
+  const filterGroups = useMemo(
+    () => [
+      {
+        key: 'trang_thai',
+        label: txt('matTranHangHoa.store.trangThai'),
+        icon: CircleDot,
+        options: trangThaiOptions,
+        value: filters.trang_thai ? [filters.trang_thai] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('trang_thai', pick);
+        },
+      },
+      {
+        key: 'mo_ta_bucket',
+        label: txt('matTranHangHoa.store.moTa'),
+        icon: AlignLeft,
+        options: moTaChipOptions,
+        value: filters.mo_ta_bucket ? [filters.mo_ta_bucket] : [],
+        onChange: (vals: string[]) => {
+          const pick = vals.length ? vals[vals.length - 1] : '';
+          setFilter('mo_ta_bucket', pick === 'has' || pick === 'empty' ? pick : '');
+        },
+      },
+    ],
+    [trangThaiOptions, moTaChipOptions, filters.trang_thai, filters.mo_ta_bucket, setFilter],
+  );
 
   const filtersSlot = useMemo(
     () => (
       <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <FilterChipSingleSelect
+          options={trangThaiOptions}
+          value={filters.trang_thai || null}
+          onChange={(v) => setFilter('trang_thai', v ?? '')}
+          placeholder={txt('matTranHangHoa.filterTrangThaiPlaceholder')}
+          icon={CircleDot}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
         <FilterChipSingleSelect
           options={moTaChipOptions}
           value={filters.mo_ta_bucket || null}
@@ -90,7 +139,7 @@ const KhoDanhMucHangHoaToolbar: React.FC<Props> = ({
         />
       </div>
     ),
-    [filters.mo_ta_bucket, moTaChipOptions, setFilter],
+    [trangThaiOptions, filters.trang_thai, filters.mo_ta_bucket, moTaChipOptions, setFilter],
   );
 
   const mobileActions = useMemo<ActionItem[]>(
@@ -137,7 +186,7 @@ const KhoDanhMucHangHoaToolbar: React.FC<Props> = ({
       onSearchChange={setSearchTerm}
       onClearSelection={clearSelection}
       actions={renderActions}
-      filterGroups={[]}
+      filterGroups={filterGroups}
       filters={filtersSlot}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}

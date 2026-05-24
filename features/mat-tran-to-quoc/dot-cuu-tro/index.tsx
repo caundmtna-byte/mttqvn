@@ -127,6 +127,9 @@ const KhoDotCuuTroPage: React.FC = () => {
         [...KHO_DOT_CUU_TRO_SEARCHABLE_KEYS],
       );
       if (!khoDotCuuTroMatchesColumnSearch(item, f.columnSearch)) return false;
+      const link = (item.link ?? '').trim();
+      if (f.link_bucket === 'has' && !link) return false;
+      if (f.link_bucket === 'empty' && link) return false;
       return matchesSearch;
     },
     [],
@@ -174,8 +177,14 @@ const KhoDotCuuTroPage: React.FC = () => {
 
   const hasListFilters = useMemo(() => {
     const cs = filters.columnSearch ?? {};
-    return Boolean(searchTerm?.trim()) || countKhoDotCuuTroColumnSearchActive(cs) > 0 || Boolean(sort.column);
-  }, [searchTerm, filters.columnSearch, sort.column]);
+    return (
+      Boolean(searchTerm?.trim()) ||
+      countKhoDotCuuTroColumnSearchActive(cs) > 0 ||
+      filters.link_bucket === 'has' ||
+      filters.link_bucket === 'empty' ||
+      Boolean(sort.column)
+    );
+  }, [searchTerm, filters.columnSearch, filters.link_bucket, sort.column]);
 
   const emptyTitleResolved = useMemo(
     () =>
@@ -309,6 +318,7 @@ const KhoDotCuuTroPage: React.FC = () => {
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
+          items={rows}
         />
 
         <div className="flex-1 min-h-0">

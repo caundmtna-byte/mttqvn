@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -10,8 +9,10 @@ import {
 } from 'recharts';
 import { FileText, Users, BarChart3 } from 'lucide-react';
 import { txt } from '@/lib/text';
-import { StatsKpiGrid, StatsCard, StatsTableCard } from '@/components/shared/stats';
+import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
 import ChartTooltip from '@/components/ui/ChartTooltip';
+import { chartFillByIndex, chartFillFromBadgeConfig } from '@/lib/constants/chart-colors';
+import { getKhenThuongTrangThaiBadgeConfig } from '../utils/display-format';
 import type { MttqKhenThuongListRow } from '../core/types';
 import {
   computeKhenThuongKpis,
@@ -21,6 +22,8 @@ import {
 } from '../utils/aggregate-mttq-khen-thuong-stats';
 
 const DON_VI_NONE_ID = '__none__';
+
+const trangThaiBadgeConfig = getKhenThuongTrangThaiBadgeConfig();
 
 interface Props {
   rows: MttqKhenThuongListRow[];
@@ -95,11 +98,14 @@ const MttqKhenThuongThongKePanel: React.FC<Props> = ({ rows, isLoading }) => {
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={56} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar
+                <ColoredBar
+                  data={byTrangThai}
                   dataKey="count"
                   name={txt('matTranKhenThuong.stats.colValue')}
-                  fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
+                  getFill={(row) =>
+                    chartFillFromBadgeConfig(trangThaiBadgeConfig, (row as { label: string }).label)
+                  }
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -114,11 +120,12 @@ const MttqKhenThuongThongKePanel: React.FC<Props> = ({ rows, isLoading }) => {
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                 <RechartsTooltip content={<ChartTooltip />} />
-                <Bar
+                <ColoredBar
+                  data={byNam}
                   dataKey="count"
                   name={txt('matTranKhenThuong.stats.colValue')}
-                  fill="hsl(173 58% 39%)"
                   radius={[4, 4, 0, 0]}
+                  getFill={(_, i) => chartFillByIndex(i)}
                 />
               </BarChart>
             </ResponsiveContainer>

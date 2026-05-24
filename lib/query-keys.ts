@@ -189,6 +189,14 @@ export const queryKeys = {
     /** Tồn kho hiện tại theo kho (dùng trong form xuất / chuyển kho). */
     tonKhoByKho: (khoId: string) => ['kho-nhap-xuat-kho', 'ton-kho-by-kho', khoId] as const,
   },
+  khoTonKho: {
+    all: ['kho-ton-kho'] as const,
+    display: ['kho-ton-kho', 'display'] as const,
+    nxt: (filters: unknown) => ['kho-ton-kho', 'nxt', filters] as const,
+    nxtProductWh: (filters: unknown, hangHoaId: string) =>
+      ['kho-ton-kho', 'nxt-product-wh', filters, hangHoaId] as const,
+    hangNxHistory: (hangHoaId: string) => ['kho-ton-kho', 'hang-nx-history', hangHoaId] as const,
+  },
   luongThietLapNgach: {
     all: ['luong-thiet-lap-ngach'] as const,
     detail: (id: string) => ['luong-thiet-lap-ngach', 'detail', id] as const,
@@ -199,5 +207,10 @@ export const queryKeys = {
   },
   luongThietLapCauHinh: {
     singleton: ['luong-thiet-lap-cau-hinh', 'singleton'] as const,
+  },
+  mttqTangLuong: {
+    all: ['mttq-tang-luong'] as const,
+    detail: (id: string) => ['mttq-tang-luong', 'detail', id] as const,
+    byCanBo: (canBoId: string) => ['mttq-tang-luong', 'by-can-bo', canBoId] as const,
   },
 } as const;

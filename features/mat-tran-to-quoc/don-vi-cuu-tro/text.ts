@@ -1,6 +1,6 @@
 export const matTranDonViCuuTro = {
-  noViewPermission: 'Bạn không có quyền xem danh sách đơn vị cứu trợ.',
-  deleteTitle: 'Xóa đơn vị cứu trợ?',
+  noViewPermission: 'Bạn không có quyền xem danh sách đơn vị hỗ trợ.',
+  deleteTitle: 'Xóa đơn vị hỗ trợ?',
   deleteMessage: 'Bản ghi sẽ bị xóa vĩnh viễn.',
   bulkDeleteTitle: 'Xóa nhiều bản ghi?',
   bulkDeleteMessage: 'Sẽ xóa {{count}} bản ghi.',
@@ -15,8 +15,8 @@ export const matTranDonViCuuTro = {
     notFound: 'Không tìm thấy bản ghi.',
   },
   validation: {
-    loaiRequired: 'Chọn loại: tổ chức hoặc cá nhân.',
-    tenRequired: 'Nhập tên tổ chức hoặc họ tên.',
+    loaiRequired: 'Chọn loại: Chùa, Giáo xứ, Cơ quan, Đơn vị hoặc Cá nhân.',
+    tenRequired: 'Nhập tên đơn vị hoặc họ tên.',
     emailInvalid: 'Email không hợp lệ.',
   },
   store: {
@@ -31,16 +31,19 @@ export const matTranDonViCuuTro = {
     tgCapNhatCol: 'Cập nhật',
   },
   toolbar: {
-    title: 'Đơn vị cứu trợ',
+    title: 'Đơn vị hỗ trợ',
   },
   searchPlaceholder: 'Tìm theo tên, địa chỉ, SĐT, email…',
-  emptyTitle: 'Chưa có đơn vị cứu trợ',
-  emptyHint: 'Thêm tổ chức hoặc cá nhân tham gia quyên góp.',
+  emptyTitle: 'Chưa có đơn vị hỗ trợ',
+  emptyHint: 'Thêm chùa, giáo xứ, cơ quan, đơn vị hoặc cá nhân tham gia quyên góp.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',
   /** Danh sách — lỗi tải (kèm nút thử lại trên trang). */
   listLoadErrorHint: 'Không tải được danh sách. Kiểm tra kết nối rồi thử lại.',
   loai: {
-    toChuc: 'Tổ chức',
+    chua: 'Chùa',
+    giaoXu: 'Giáo xứ',
+    coQuan: 'Cơ quan',
+    donVi: 'Đơn vị',
     caNhan: 'Cá nhân',
   },
   form: {
@@ -51,11 +54,11 @@ export const matTranDonViCuuTro = {
     dienThoai: 'Điện thoại',
     email: 'Email',
     ghiChu: 'Ghi chú',
-    createSubtitle: 'Thêm đơn vị cứu trợ',
+    createSubtitle: 'Thêm đơn vị hỗ trợ',
     editSubtitle: 'Sửa thông tin',
   },
   detail: {
-    title: 'Chi tiết đơn vị cứu trợ',
+    title: 'Chi tiết đơn vị hỗ trợ',
     sectionMain: 'Thông tin',
     systemInfo: 'Thông tin hệ thống',
     tgTao: 'Thời điểm tạo',

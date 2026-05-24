@@ -65,6 +65,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 
 const initialFilters: LuongThietLapNgachFilters = {
   columnSearch: {},
+  mo_ta_bucket: '',
 };
 
 export const useLuongThietLapNgachStore = createGenericStore<LuongThietLapNgachFilters>(initialFilters, DEFAULT_COLUMNS);

@@ -4,6 +4,8 @@ export interface MttqLopTapHuanFilters {
   columnSearch: Record<string, string>;
   cap_tap_huan: string[];
   nam_tap_huan: string[];
+  /** FK xã/phường lớp; `__empty__` = cấp tỉnh / chưa gắn đơn vị. */
+  don_vi_id: string[];
 }
 
 /** Dòng chi tiết (bảng con), id string khi đã lưu DB. */
@@ -80,5 +82,7 @@ export interface MttqTapHuanChiTietFlatRow {
   thuoc_dien: MttqTapHuanThuocDien;
 }
 
-/** Bộ lọc tab chi tiết — cùng shape với danh sách lớp (cấp / năm / columnSearch). */
-export type MttqTapHuanChiTietListFilters = MttqLopTapHuanFilters;
+/** Bộ lọc tab chi tiết — cấp / năm / thuộc diện + columnSearch (không dùng don_vi_id lớp). */
+export interface MttqTapHuanChiTietListFilters extends Omit<MttqLopTapHuanFilters, 'don_vi_id'> {
+  thuoc_dien: string[];
+}

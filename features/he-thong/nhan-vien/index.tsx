@@ -16,7 +16,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store/useStore';
 import { useCan } from '../../../hooks/use-can';
 
-import ToggleSwitch from '../../../components/ui/ToggleSwitch';
 import { EMPLOYEES_LIST_QUERY_PARAMS, queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { getDepartments } from '../phong-ban/services/phong-ban-service';
@@ -114,6 +113,7 @@ const EmployeePage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [viewingEmp, setViewingEmp] = useState<Employee | null>(null);
+  const [statusChangeTarget, setStatusChangeTarget] = useState<Employee | null>(null);
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
 
   const viewingEmpRef = useRef<Employee | null>(null);
@@ -321,32 +321,19 @@ const EmployeePage: React.FC = () => {
     [confirm, deleteWithUndo],
   );
 
-  const handleStatusChange = useCallback(
-    (item: Employee) => {
-      let selectedStatus: TrangThaiNhanVien = item.trang_thai;
-      confirm({
-        title: txt('employee.statusChangeTitle'),
-        message: (
-          <div className="space-y-4 text-left py-2">
-            <p className="text-sm">
-              {txt('employee.statusChangeMessage')} <strong>{item.ho_va_ten}</strong>:
-            </p>
-            <EmployeeStatusSwitchPicker
-              initial={item.trang_thai}
-              onSelectionChange={(s) => {
-                selectedStatus = s;
-              }}
-            />
-          </div>
-        ),
-        variant: 'info',
-        confirmText: CONFIRM_YES(),
-        onConfirm: async () => {
-          await statusMutation.mutateAsync({ ids: [item.id], status: selectedStatus });
-        },
-      });
+  const handleStatusChange = useCallback((item: Employee) => {
+    setStatusChangeTarget(item);
+  }, []);
+
+  const handleStatusSave = useCallback(
+    async (status: TrangThaiNhanVien) => {
+      if (!statusChangeTarget) return;
+      const targetId = statusChangeTarget.id;
+      await statusMutation.mutateAsync({ ids: [targetId], status });
+      setViewingEmp((prev) => (prev?.id === targetId ? { ...prev, trang_thai: status } : prev));
+      setStatusChangeTarget(null);
     },
-    [confirm, statusMutation],
+    [statusChangeTarget, statusMutation],
   );
 
   const handleDeleteMany = (ids: string[]) => {
@@ -434,6 +421,17 @@ const EmployeePage: React.FC = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
+            />
+          </Suspense>
+        )}
+        {statusChangeTarget && (
+          <Suspense fallback={null}>
+            <EmployeeStatusChangeDialog
+              open
+              employee={statusChangeTarget}
+              isSubmitting={statusMutation.isPending}
+              onClose={() => setStatusChangeTarget(null)}
+              onSave={handleStatusSave}
             />
           </Suspense>
         )}

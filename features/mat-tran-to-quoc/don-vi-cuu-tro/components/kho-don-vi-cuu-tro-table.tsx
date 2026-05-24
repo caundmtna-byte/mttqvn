@@ -2,13 +2,13 @@ import React, { useState, useCallback, useMemo, memo } from 'react';
 import { Building2, User } from 'lucide-react';
 import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';
-import type { KhoDonViCuuTroListRow, KhoDonViCuuTroLoai } from '../core/types';
+import { buildKhoDonViCuuTroLoaiBadgeConfig, isKhoDonViCuuTroCaNhan } from '../core/loai';
+import type { KhoDonViCuuTroListRow } from '../core/types';
 import { useKhoDonViCuuTroStore } from '../store/useKhoDonViCuuTroStore';
 import GenericTable from '@/components/shared/GenericTable';
 import { formatDateTimeShort } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge from '@/components/ui/EnumBadge';
-import type { BadgeConfig } from '@/components/ui/EnumBadge';
 import { KhoDonViCuuTroTableRowActions } from './kho-don-vi-cuu-tro-table-row-actions';
 
 interface Props {
@@ -46,12 +46,7 @@ const KhoDonViCuuTroTable = memo(function KhoDonViCuuTroTable({
   } = useKhoDonViCuuTroStore();
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null);
 
-  const loaiBadge = useMemo((): BadgeConfig<KhoDonViCuuTroLoai> => {
-    return {
-      to_chuc: { label: txt('matTranDonViCuuTro.loai.toChuc'), color: 'indigo' },
-      ca_nhan: { label: txt('matTranDonViCuuTro.loai.caNhan'), color: 'amber' },
-    };
-  }, []);
+  const loaiBadge = useMemo(() => buildKhoDonViCuuTroLoaiBadgeConfig(), []);
 
   const renderColumnHeaderAccessory = useCallback(
     (col: ColumnConfig) => {
@@ -99,7 +94,7 @@ const KhoDonViCuuTroTable = memo(function KhoDonViCuuTroTable({
         case 'ten':
           return (
             <div className="flex min-w-0 items-center gap-2">
-              {item.loai === 'ca_nhan' ? (
+              {isKhoDonViCuuTroCaNhan(item.loai) ? (
                 <User size={14} className="shrink-0 text-primary/70" aria-hidden />
               ) : (
                 <Building2 size={14} className="shrink-0 text-primary/70" aria-hidden />
@@ -190,7 +185,7 @@ const KhoDonViCuuTroTable = memo(function KhoDonViCuuTroTable({
       >
         <div className="flex items-start gap-4">
           <div className="p-3 rounded-xl bg-primary/10 text-primary border border-primary/20">
-            {item.loai === 'ca_nhan' ? <User size={20} /> : <Building2 size={20} />}
+            {isKhoDonViCuuTroCaNhan(item.loai) ? <User size={20} /> : <Building2 size={20} />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start mb-1 gap-2">

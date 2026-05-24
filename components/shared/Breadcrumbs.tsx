@@ -25,6 +25,7 @@ const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/mat-tran-to-quoc/kho-cuu-tro/ton-kho': { label: t('breadcrumb.matTranReliefInventory'), parentPath: '/mat-tran-to-quoc' },
   '/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho': { label: t('breadcrumb.matTranReliefWarehouseList'), parentPath: '/mat-tran-to-quoc' },
   '/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro': { label: t('breadcrumb.matTranReliefSupportUnits'), parentPath: '/mat-tran-to-quoc' },
+  '/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro': { label: t('breadcrumb.matTranReliefSupportReport'), parentPath: '/mat-tran-to-quoc' },
   '/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo': { label: t('breadcrumb.matTranOfficerList'), parentPath: '/mat-tran-to-quoc' },
   '/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo': { label: t('breadcrumb.matTranOfficerStats'), parentPath: '/mat-tran-to-quoc' },
   '/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat': { label: t('breadcrumb.matTranSetupSettings'), parentPath: '/mat-tran-to-quoc' },

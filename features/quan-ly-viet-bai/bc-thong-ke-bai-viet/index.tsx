@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   BarChart,
-  Bar,
 } from 'recharts';
 import {
   FileText,
@@ -29,7 +28,8 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
-import { StatsKpiGrid, StatsCard, StatsTableCard } from '@/components/shared/stats';
+import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+import { chartFillByIndex } from '@/lib/constants/chart-colors';
 import type { StatsTableRow } from '@/components/shared/stats/types';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
@@ -475,7 +475,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangeRow}</div>
         }
         filters={filterRowDesktop}
-        filtersSingleRow
         filterGroups={filterGroups}
         actions={renderExportToolbarButton()}
         mobileActions={renderExportToolbarButton()}
@@ -518,7 +517,13 @@ const BcThongKeBaiVietPage: React.FC = () => {
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} width={44} tickFormatter={(v) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : String(v))} />
                       <RechartsTooltip content={<ChartTooltip />} />
-                      <Bar dataKey="amount" name={txt('articleStats.kpiTotalDonGia')} fill="hsl(142 76% 36%)" radius={[4, 4, 0, 0]} />
+                      <ColoredBar
+                        data={chartData}
+                        dataKey="amount"
+                        name={txt('articleStats.kpiTotalDonGia')}
+                        radius={[4, 4, 0, 0]}
+                        getFill={(_, i) => chartFillByIndex(i)}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

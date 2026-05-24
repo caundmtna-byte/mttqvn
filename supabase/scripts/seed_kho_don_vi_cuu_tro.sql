@@ -1,5 +1,5 @@
 -- ============================================================================
--- Seed mẫu: public.kho_don_vi_cuu_tro (đơn vị cứu trợ — tổ chức / cá nhân)
+-- Seed mẫu: public.kho_don_vi_cuu_tro (đơn vị hỗ trợ — Chùa / Giáo xứ / Cơ quan / Đơn vị / Cá nhân)
 -- ============================================================================
 -- Điều kiện: đã chạy migration `20260611170000_kho_don_vi_cuu_tro.sql` (và các migration drop cột nếu có).
 --
@@ -18,7 +18,7 @@ BEGIN
 
   INSERT INTO public.kho_don_vi_cuu_tro (loai, ten, dia_chi, dien_thoai, email, ghi_chu) VALUES
     (
-      'to_chuc',
+      'don_vi',
       'SEED-DVCT|Hội Chữ thập đỏ phường mẫu',
       '12 Nguyễn Huệ, Long Xuyên',
       '02903851111',
@@ -26,12 +26,12 @@ BEGIN
       'Dữ liệu seed — có thể xóa: DELETE ... WHERE ten LIKE ''SEED-DVCT|%'';'
     ),
     (
-      'to_chuc',
-      'SEED-DVCT|Công ty TNHH hỗ trợ cứu trợ',
+      'co_quan',
+      'SEED-DVCT|Cơ quan hành chính hỗ trợ cứu trợ',
       NULL,
       '02838234567',
       NULL,
-      'Tổ chức seed (không địa chỉ).'
+      'Cơ quan seed (không địa chỉ).'
     ),
     (
       'ca_nhan',
@@ -42,5 +42,5 @@ BEGIN
       'Cá nhân tham gia quyên góp (seed).'
     );
 
-  RAISE NOTICE 'seed_kho_don_vi_cuu_tro: đã tạo 3 bản ghi (2 tổ chức + 1 cá nhân).';
+  RAISE NOTICE 'seed_kho_don_vi_cuu_tro: đã tạo 3 bản ghi (2 đơn vị/cơ quan + 1 cá nhân).';
 END $$;

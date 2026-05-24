@@ -161,6 +161,13 @@ const MatTranToQuocDashboard: React.FC = () => {
             icon: Building2,
             color: 'bg-indigo-500',
           },
+          {
+            path: '/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro',
+            title: txt('page.matTranDashboard.reliefSupportReport'),
+            description: txt('page.matTranDashboard.reliefSupportReportDesc'),
+            icon: BarChart3,
+            color: 'bg-teal-600',
+          },
         ],
       },
       {

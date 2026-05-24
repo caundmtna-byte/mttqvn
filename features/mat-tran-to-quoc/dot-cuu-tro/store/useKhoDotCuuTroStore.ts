@@ -57,6 +57,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 
 const initialFilters: KhoDotCuuTroFilters = {
   columnSearch: {},
+  link_bucket: '',
 };
 
 export const useKhoDotCuuTroStore = createGenericStore<KhoDotCuuTroFilters>(initialFilters, DEFAULT_COLUMNS);

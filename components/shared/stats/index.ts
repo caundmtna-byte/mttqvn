@@ -14,6 +14,7 @@ export { default as StatsKpiGrid } from './StatsKpiGrid';
 export { default as StatsCard } from './StatsCard';
 export { default as StatsTableCard } from './StatsTableCard';
 export { default as StatsTrendBadge } from './StatsTrendBadge';
+export { default as ColoredBar } from './ColoredBar';
 export type {
   StatsKpiCardItem,
   StatsTableRow,

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Tag, CalendarDays } from 'lucide-react';
+import { Tag, CalendarDays, ListFilter } from 'lucide-react';
 import { txt } from '@/lib/text';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -16,6 +16,7 @@ interface Props {
   onPageBack: () => void;
   capOptions: ChipOption[];
   namOptions: ChipOption[];
+  thuocDienOptions: ChipOption[];
   desktopStartSlot?: React.ReactNode;
 }
 
@@ -23,6 +24,7 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
   onPageBack,
   capOptions,
   namOptions,
+  thuocDienOptions,
   desktopStartSlot,
 }) => {
   const {
@@ -47,7 +49,8 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
       (searchTerm ? 1 : 0) +
       columnSearchN +
       (filters.cap_tap_huan.length > 0 ? 1 : 0) +
-      (filters.nam_tap_huan.length > 0 ? 1 : 0)
+      (filters.nam_tap_huan.length > 0 ? 1 : 0) +
+      (filters.thuoc_dien.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -56,6 +59,7 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
     setFilter('columnSearch', {});
     setFilter('cap_tap_huan', []);
     setFilter('nam_tap_huan', []);
+    setFilter('thuoc_dien', []);
     setSort(null, null);
   };
 
@@ -78,9 +82,17 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
           icon={CalendarDays}
           className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
         />
+        <FilterChipMultiSelect
+          options={thuocDienOptions}
+          value={filters.thuoc_dien}
+          onChange={(val) => setFilter('thuoc_dien', val)}
+          placeholder={txt('matTranTapHuan.stats.thuocDienChip')}
+          icon={ListFilter}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
       </div>
     ),
-    [capOptions, namOptions, filters.cap_tap_huan, filters.nam_tap_huan, setFilter],
+    [capOptions, namOptions, thuocDienOptions, filters.cap_tap_huan, filters.nam_tap_huan, filters.thuoc_dien, setFilter],
   );
 
   const filterGroups = useMemo(
@@ -101,8 +113,16 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
         value: filters.nam_tap_huan,
         onChange: (val: string[]) => setFilter('nam_tap_huan', val),
       },
+      {
+        key: 'thuoc_dien',
+        label: txt('matTranTapHuan.stats.thuocDienChip'),
+        icon: ListFilter,
+        options: thuocDienOptions,
+        value: filters.thuoc_dien,
+        onChange: (val: string[]) => setFilter('thuoc_dien', val),
+      },
     ],
-    [capOptions, namOptions, filters.cap_tap_huan, filters.nam_tap_huan, setFilter],
+    [capOptions, namOptions, thuocDienOptions, filters.cap_tap_huan, filters.nam_tap_huan, filters.thuoc_dien, setFilter],
   );
 
   return (

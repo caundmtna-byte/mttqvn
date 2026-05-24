@@ -409,7 +409,6 @@ const HoaHongVietBaiPage: React.FC = () => {
           </div>
         }
         filters={filterRowDesktop}
-        filtersSingleRow
         filterGroups={filterGroups}
         activeFilterCount={activeFilterCount}
         onClearFilters={handleClearFilters}

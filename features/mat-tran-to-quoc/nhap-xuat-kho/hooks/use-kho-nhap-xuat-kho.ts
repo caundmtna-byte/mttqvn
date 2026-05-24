@@ -96,6 +96,7 @@ function patchListAfterMutation(
     queryKey: ['kho-nhap-xuat-kho', 'ton-kho-by-kho'],
     refetchType: 'active',
   });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.khoTonKho.all, refetchType: 'active' });
 }
 
 export function useCreateNhapXuatKho(onSuccess?: () => void) {
@@ -153,6 +154,7 @@ export function useDeleteNhapXuatKhoMany() {
         queryKey: ['kho-nhap-xuat-kho', 'ton-kho-by-kho'],
         refetchType: 'active',
       });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.khoTonKho.all, refetchType: 'active' });
       toast.success(txt('matTranNhapXuatKho.toast.delete', { count: ids.length }));
     },
     onError: (err: unknown) => toast.error(getErrorMessage(err)),

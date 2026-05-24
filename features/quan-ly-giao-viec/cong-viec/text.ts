@@ -92,6 +92,7 @@ export const taskList = {
   emptyHint: 'Thêm công việc mới hoặc điều chỉnh bộ lọc / tab.',
   noViewPermission: 'Bạn không có quyền xem module Công việc.',
   searchPlaceholder: 'Tìm theo tên, mức độ, trạng thái, người hỗ trợ…',
+  filterChuongTrinh: 'Chương trình BTT',
   noEmployeeForTabs:
     'Tài khoản chưa gắn hồ sơ nhân viên: các tab (Tôi làm / Tôi hỗ trợ / Tôi giao) tạm thời không lọc theo người — danh sách hiển thị toàn bộ bản ghi bạn được phép xem. Liên hệ quản trị để gán nhân viên cho đúng nghiệp vụ.',
 } as const;

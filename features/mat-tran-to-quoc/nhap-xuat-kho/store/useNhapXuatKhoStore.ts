@@ -86,6 +86,9 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 const initialFilters: NhapXuatKhoFilters = {
   columnSearch: {},
   loai_phieu: null,
+  kho_id: null,
+  don_vi_cuu_tro_id: null,
+  dot_cuu_tro_id: null,
 };
 
 export const useNhapXuatKhoStore = createGenericStore<NhapXuatKhoFilters>(initialFilters, DEFAULT_COLUMNS);

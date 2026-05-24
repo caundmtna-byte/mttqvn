@@ -7,6 +7,7 @@ export const matTranHangHoa = {
   filterMoTaChipPlaceholder: 'Mô tả',
   filterMoTaHas: 'Có mô tả',
   filterMoTaEmpty: 'Không mô tả',
+  filterTrangThaiPlaceholder: 'Trạng thái',
   deleteTitle: 'Xóa danh mục?',
   deleteMessage: 'Bản ghi sẽ bị xóa vĩnh viễn.',
   bulkDeleteTitle: 'Xóa nhiều danh mục?',

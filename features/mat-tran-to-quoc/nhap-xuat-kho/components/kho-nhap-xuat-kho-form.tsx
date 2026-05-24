@@ -42,7 +42,7 @@ import EmbeddedChildDataGrid from '@/components/shared/EmbeddedChildDataGrid';
 import { TableRowIconButton } from '@/components/shared/row-actions';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDecimal } from '@/lib/utils';
 import { useCan } from '@/hooks/use-can';
 import { useKhoDanhSachKhoList } from '@/features/mat-tran-to-quoc/danh-sach-kho/hooks/use-kho-danh-sach-kho';
 import { useKhoDonViCuuTroList } from '@/features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro';
@@ -556,7 +556,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                     const overflow = ton != null && Number.isFinite(sl) && sl > ton;
                     return (
                       <span className={overflow ? 'text-rose-600 font-semibold dark:text-rose-400' : ''}>
-                        {Number.isFinite(sl) ? sl : '—'}
+                        {Number.isFinite(sl) ? formatDecimal(sl) : '—'}
                         {overflow ? (
                           <AlertTriangle size={12} className="inline ml-1 -mt-0.5" aria-hidden />
                         ) : null}

@@ -19,17 +19,27 @@ export type LuongBacTableRow = LuongThietLapBacRow & {
   he_so_effective: number;
   he_so_display: string;
   luong_search: string;
+  ngach_label: string;
+  ngach_search: string;
 };
 
 export function sortLuongBacRows(rows: LuongBacTableRow[], sort: SortState): LuongBacTableRow[] {
   if (!sort.column || !sort.direction) {
-    return [...rows].sort((a, b) => a.thu_tu - b.thu_tu);
+    return [...rows].sort((a, b) =>
+      cmpStr(a.ngach_label, b.ngach_label, 'asc') !== 0
+        ? cmpStr(a.ngach_label, b.ngach_label, 'asc')
+        : a.thu_tu !== b.thu_tu
+          ? a.thu_tu - b.thu_tu
+          : a.ma_bac.localeCompare(b.ma_bac, 'vi'),
+    );
   }
   const dir = sort.direction;
   const col = sort.column;
   const list = [...rows];
   list.sort((a, b) => {
     switch (col) {
+      case 'ngach':
+        return cmpStr(a.ngach_label, b.ngach_label, dir);
       case 'ma_bac':
         return cmpStr(a.ma_bac, b.ma_bac, dir);
       case 'he_so':
@@ -39,7 +49,7 @@ export function sortLuongBacRows(rows: LuongBacTableRow[], sort: SortState): Luo
       case 'thu_tu':
         return cmpNum(a.thu_tu, b.thu_tu, dir);
       default:
-        return a.thu_tu - b.thu_tu;
+        return cmpStr(a.ngach_label, b.ngach_label, 'asc');
     }
   });
   return list;

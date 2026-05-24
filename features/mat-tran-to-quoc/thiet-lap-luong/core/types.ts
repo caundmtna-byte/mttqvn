@@ -1,6 +1,7 @@
 /** Bộ lọc danh sách ngạch — Pattern B (header cột + ô search tổng). */
 export interface LuongThietLapNgachFilters {
   columnSearch: Record<string, string>;
+  mo_ta_bucket: '' | 'has' | 'empty';
 }
 
 export interface LuongThietLapNgachListRow {

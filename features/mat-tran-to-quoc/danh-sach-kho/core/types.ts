@@ -1,6 +1,8 @@
 /** Bộ lọc danh sách kho — Pattern B (header cột + ô search tổng). */
 export interface KhoDanhSachKhoFilters {
   columnSearch: Record<string, string>;
+  don_vi_id: string[];
+  ten_tinh: string[];
 }
 
 export interface KhoDanhSachKhoListRow {

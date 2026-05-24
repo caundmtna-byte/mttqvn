@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Tag, CalendarDays } from 'lucide-react';
+import { Plus, Download, Tag, CalendarDays, MapPin } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -16,10 +16,20 @@ interface ChipOption {
   count?: number;
 }
 
+export interface TapHuanToolbarFilterGroup {
+  key: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  options: ChipOption[];
+  value: string[];
+  onChange: (val: string[]) => void;
+}
+
 interface Props {
   onPageBack: () => void;
   capOptions: ChipOption[];
   namOptions: ChipOption[];
+  donViOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
@@ -35,6 +45,8 @@ interface Props {
   extraActiveFilterCount?: number;
   /** Gọi khi “Xóa bộ lọc” — xóa thêm chip tab Thống kê. */
   onClearExtraFilters?: () => void;
+  /** Nhóm lọc mobile bổ sung (tab Thống kê: thuộc diện / đơn vị lớp). */
+  extraFilterGroups?: TapHuanToolbarFilterGroup[];
 }
 
 const noopSearch = () => {};
@@ -43,6 +55,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
   onPageBack,
   capOptions,
   namOptions,
+  donViOptions,
   onAdd,
   onExport,
   onDeleteMany,
@@ -52,6 +65,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
   extraFiltersSlot,
   extraActiveFilterCount = 0,
   onClearExtraFilters,
+  extraFilterGroups = [],
 }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranTrainingList');
 
@@ -77,6 +91,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
       columnSearchN +
       (filters.cap_tap_huan.length > 0 ? 1 : 0) +
       (filters.nam_tap_huan.length > 0 ? 1 : 0) +
+      (filters.don_vi_id.length > 0 ? 1 : 0) +
       extraActiveFilterCount;
     if (hideListControls) return chipAndCol;
     return (searchTerm ? 1 : 0) + chipAndCol;
@@ -87,6 +102,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
     setFilter('columnSearch', {});
     setFilter('cap_tap_huan', []);
     setFilter('nam_tap_huan', []);
+    setFilter('don_vi_id', []);
     setSort(null, null);
     onClearExtraFilters?.();
   };
@@ -110,10 +126,18 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
           icon={CalendarDays}
           className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
         />
+        <FilterChipMultiSelect
+          options={donViOptions}
+          value={filters.don_vi_id}
+          onChange={(val) => setFilter('don_vi_id', val)}
+          placeholder={txt('matTranTapHuan.store.donViCol')}
+          icon={MapPin}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
         {extraFiltersSlot}
       </div>
     ),
-    [capOptions, namOptions, filters.cap_tap_huan, filters.nam_tap_huan, setFilter, extraFiltersSlot],
+    [capOptions, namOptions, donViOptions, filters.cap_tap_huan, filters.nam_tap_huan, filters.don_vi_id, setFilter, extraFiltersSlot],
   );
 
   const filterGroups = useMemo(
@@ -134,8 +158,26 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
         value: filters.nam_tap_huan,
         onChange: (val: string[]) => setFilter('nam_tap_huan', val),
       },
+      {
+        key: 'don_vi_id',
+        label: txt('matTranTapHuan.store.donViCol'),
+        icon: MapPin,
+        options: donViOptions,
+        value: filters.don_vi_id,
+        onChange: (val: string[]) => setFilter('don_vi_id', val),
+      },
+      ...extraFilterGroups,
     ],
-    [capOptions, namOptions, filters.cap_tap_huan, filters.nam_tap_huan, setFilter],
+    [
+      capOptions,
+      namOptions,
+      donViOptions,
+      extraFilterGroups,
+      filters.cap_tap_huan,
+      filters.nam_tap_huan,
+      filters.don_vi_id,
+      setFilter,
+    ],
   );
 
   const exportAllowed = canExport && (!hideListControls || showExportWhenListHidden);

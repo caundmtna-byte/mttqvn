@@ -224,6 +224,15 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+/** Số thập phân có phân cách hàng nghìn (vi-VN), không ký hiệu tiền tệ. */
+export function formatDecimal(value: number, maximumFractionDigits = 3): string {
+  if (!Number.isFinite(value)) return '';
+  return new Intl.NumberFormat(getLocale(), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits,
+  }).format(value);
+}
+
 export function exportToExcel(data: Record<string, unknown>[], filename: string) {
   if (!data || !data.length) return;
   import('xlsx').then(XLSX => {

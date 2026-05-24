@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, Hash, MapPin } from 'lucide-react';
+import { Plus, Download, Upload, Hash, MapPin, UserCheck } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -19,6 +19,7 @@ interface Props {
   onDeleteMany: (ids: string[]) => void;
   nhiemKyOptions: MttqUyVienUyBanHeaderOption[];
   donViOptions: MttqUyVienUyBanHeaderOption[];
+  trangThaiOptions: MttqUyVienUyBanHeaderOption[];
 }
 
 const MttqUyVienUyBanToolbar: React.FC<Props> = ({
@@ -29,6 +30,7 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
   onDeleteMany,
   nhiemKyOptions,
   donViOptions,
+  trangThaiOptions,
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('matTranCommitteeMembers');
 
@@ -54,7 +56,8 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
       (searchTerm ? 1 : 0) +
       columnSearchN +
       (filters.nhiem_ky_filter.length > 0 ? 1 : 0) +
-      (filters.don_vi_filter.length > 0 ? 1 : 0)
+      (filters.don_vi_filter.length > 0 ? 1 : 0) +
+      (filters.trang_thai_tham_gia_filter.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -63,6 +66,7 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
     setFilter('columnSearch', {});
     setFilter('nhiem_ky_filter', []);
     setFilter('don_vi_filter', []);
+    setFilter('trang_thai_tham_gia_filter', []);
     setSort(null, null);
   };
 
@@ -85,9 +89,17 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
           icon={MapPin}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
         />
+        <FilterChipMultiSelect
+          options={trangThaiOptions}
+          value={filters.trang_thai_tham_gia_filter}
+          onChange={(val) => setFilter('trang_thai_tham_gia_filter', val)}
+          placeholder={txt('matTranUyVienUyBan.store.trangThamGiaCol')}
+          icon={UserCheck}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
       </div>
     ),
-    [nhiemKyOptions, donViOptions, filters.nhiem_ky_filter, filters.don_vi_filter, setFilter],
+    [nhiemKyOptions, donViOptions, trangThaiOptions, filters.nhiem_ky_filter, filters.don_vi_filter, filters.trang_thai_tham_gia_filter, setFilter],
   );
 
   const filterGroups = useMemo(
@@ -108,8 +120,16 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
         value: filters.don_vi_filter,
         onChange: (val: string[]) => setFilter('don_vi_filter', val),
       },
+      {
+        key: 'trang_thai_tham_gia_filter',
+        label: txt('matTranUyVienUyBan.store.trangThamGiaCol'),
+        icon: UserCheck,
+        options: trangThaiOptions,
+        value: filters.trang_thai_tham_gia_filter,
+        onChange: (val: string[]) => setFilter('trang_thai_tham_gia_filter', val),
+      },
     ],
-    [nhiemKyOptions, donViOptions, filters.nhiem_ky_filter, filters.don_vi_filter, setFilter],
+    [nhiemKyOptions, donViOptions, trangThaiOptions, filters.nhiem_ky_filter, filters.don_vi_filter, filters.trang_thai_tham_gia_filter, setFilter],
   );
 
   const mobileActions = useMemo<ActionItem[]>(

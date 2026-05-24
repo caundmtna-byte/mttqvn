@@ -4,13 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, Calculator, Coins, Hash, Package, Ruler, StickyNote } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
+import NumericFormatInput from '@/components/ui/NumericFormatInput';
+import CurrencyInput from '@/components/ui/CurrencyInput';
 import Combobox from '@/components/ui/Combobox';
 import GenericDrawer from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { DRAWER_WIDTH_STACKED } from '@/lib/dialog-sizes';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDecimal } from '@/lib/utils';
 import { nhapXuatKhoCtLineSchema, type NhapXuatKhoCtLineFormValues } from '../core/schema';
 
 export const NHAP_XUAT_KHO_CT_EMPTY_LINE: NhapXuatKhoCtLineFormValues = {
@@ -47,6 +49,7 @@ interface Props {
   getTonInfo?: (hangHoaId: string) => NhapXuatKhoLineTonInfo | null;
   /** Đang tải tồn kho (chưa có data). */
   tonKhoLoading?: boolean;
+  isSubmitting?: boolean;
   onSave: (values: NhapXuatKhoCtLineFormValues) => void;
   stackLevel?: number;
 }
@@ -63,6 +66,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
   getTonInfo,
   tonKhoLoading = false,
   onSave,
+  isSubmitting = false,
   stackLevel = 1,
 }) => {
   const {
@@ -115,7 +119,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
     if (tonKhoLoading) return txt('matTranNhapXuatKho.form.tonKhoLoading');
     if (!watchedHangHoaId?.trim()) return txt('matTranNhapXuatKho.form.tonKhoMissing');
     if (tonInfo == null) return txt('matTranNhapXuatKho.form.tonKhoMissing');
-    return txt('matTranNhapXuatKho.form.tonKhoCurrent', { value: String(tonInfo.available) });
+    return txt('matTranNhapXuatKho.form.tonKhoCurrent', { value: formatDecimal(tonInfo.available) });
   }, [needCheckTonKho, tonKhoLoading, watchedHangHoaId, tonInfo]);
 
   const overflow = useMemo(() => {
@@ -148,7 +152,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
         <FormDrawerFooter
           formId={FORM_ID}
           onCancel={onClose}
-          isLoading={false}
+          isLoading={isSubmitting}
           isEdit={mode === 'edit'}
           compact
           createIcon={<Package className="w-3.5 h-3.5 mr-1.5 shrink-0" />}
@@ -190,33 +194,45 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
               required
             />
             <div>
-              <Input
-                label={txt('matTranNhapXuatKho.form.soLuong')}
-                icon={<Hash size={12} />}
-                type="number"
-                step="0.001"
-                min={0}
-                inputMode="decimal"
-                {...register('so_luong')}
-                error={
-                  errors.so_luong?.message ??
-                  (overflow && tonInfo
-                    ? txt('matTranNhapXuatKho.form.tonKhoNotEnough', { available: String(tonInfo.available) })
-                    : undefined)
-                }
-                required
+              <Controller
+                name="so_luong"
+                control={control}
+                render={({ field }) => (
+                  <NumericFormatInput
+                    label={txt('matTranNhapXuatKho.form.soLuong')}
+                    icon={<Hash size={12} />}
+                    value={field.value === '' ? 0 : Number(field.value)}
+                    onChange={(n) => field.onChange(n === 0 ? '' : String(n))}
+                    onBlur={field.onBlur}
+                    decimalScale={3}
+                    min={0}
+                    required
+                    error={
+                      errors.so_luong?.message ??
+                      (overflow && tonInfo
+                        ? txt('matTranNhapXuatKho.form.tonKhoNotEnough', {
+                            available: formatDecimal(tonInfo.available),
+                          })
+                        : undefined)
+                    }
+                  />
+                )}
               />
               {tonHelper ? <p className="mt-1 text-xs text-muted-foreground tabular-nums">{tonHelper}</p> : null}
             </div>
-            <Input
-              label={txt('matTranNhapXuatKho.form.donGia')}
-              icon={<Coins size={12} />}
-              type="number"
-              step="0.01"
-              min={0}
-              inputMode="decimal"
-              {...register('don_gia')}
-              error={errors.don_gia?.message}
+            <Controller
+              name="don_gia"
+              control={control}
+              render={({ field }) => (
+                <CurrencyInput
+                  label={txt('matTranNhapXuatKho.form.donGia')}
+                  icon={<Coins size={12} />}
+                  suffix=""
+                  value={field.value === '' ? 0 : Number(field.value)}
+                  onChange={(n) => field.onChange(n === 0 ? '' : String(n))}
+                  error={errors.don_gia?.message}
+                />
+              )}
             />
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/40 text-sm">
               <Calculator size={14} className="text-primary/70" aria-hidden />
@@ -237,7 +253,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
               <div className={`${FORM_GRID_SPAN_FULL} flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300`}>
                 <AlertTriangle size={14} className="shrink-0 mt-0.5" aria-hidden />
                 <span>
-                  {txt('matTranNhapXuatKho.form.tonKhoNotEnough', { available: String(tonInfo.available) })}
+                  {txt('matTranNhapXuatKho.form.tonKhoNotEnough', { available: formatDecimal(tonInfo.available) })}
                 </span>
               </div>
             ) : null}

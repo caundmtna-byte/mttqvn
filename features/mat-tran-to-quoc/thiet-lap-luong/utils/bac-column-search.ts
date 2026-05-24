@@ -19,6 +19,9 @@ export function luongBacMatchesColumnSearch(
     if (!trimmed) continue;
     let haystack = '';
     switch (colId) {
+      case 'ngach':
+        haystack = row.ngach_search ?? row.ngach_label ?? '';
+        break;
       case 'ma_bac':
         haystack = row.ma_bac ?? '';
         break;

@@ -101,6 +101,14 @@ const KhoDanhSachKhoPage: React.FC = () => {
         [...KHO_DANH_SACH_KHO_SEARCHABLE_KEYS],
       );
       if (!khoDanhSachKhoMatchesColumnSearch(item, f.columnSearch)) return false;
+      if (f.don_vi_id.length > 0) {
+        const dv = item.don_vi_id?.trim();
+        if (!dv || !f.don_vi_id.includes(dv)) return false;
+      }
+      if (f.ten_tinh.length > 0) {
+        const tinh = (item.ten_tinh ?? '').trim();
+        if (!tinh || !f.ten_tinh.includes(tinh)) return false;
+      }
       return matchesSearch;
     },
     [],
@@ -152,8 +160,14 @@ const KhoDanhSachKhoPage: React.FC = () => {
 
   const hasListFilters = useMemo(() => {
     const cs = filters.columnSearch ?? {};
-    return Boolean(searchTerm?.trim()) || countKhoDanhSachKhoColumnSearchActive(cs) > 0 || Boolean(sort.column);
-  }, [searchTerm, filters.columnSearch, sort.column]);
+    return (
+      Boolean(searchTerm?.trim()) ||
+      countKhoDanhSachKhoColumnSearchActive(cs) > 0 ||
+      filters.don_vi_id.length > 0 ||
+      filters.ten_tinh.length > 0 ||
+      Boolean(sort.column)
+    );
+  }, [searchTerm, filters.columnSearch, filters.don_vi_id, filters.ten_tinh, sort.column]);
 
   const emptyTitleResolved = useMemo(
     () =>
@@ -276,6 +290,7 @@ const KhoDanhSachKhoPage: React.FC = () => {
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
+          items={rows}
         />
 
         <div className="flex-1 min-h-0">

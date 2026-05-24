@@ -54,6 +54,7 @@
   - **Count thực tế:** Khi filter chip hiển thị count (số lượng), danh sách dùng để đếm phải là **danh sách người dùng được phép xem** (sau phân quyền). Toolbar nhận prop danh sách đó (vd. `employees`, `items`) và hook đếm (vd. `useFilterCounts`) đếm trên chính list đó.
   - **Chỉ hiện option có dữ liệu:** Option có `count === 0` (và không đang chọn) được ẩn. Util **`filterOptionsWithCount`** (`lib/filterOptionsWithCount.ts`) và prop **`hideZeroCount`** (mặc định `true`) trên **FilterChipMultiSelect** / **MobileFilterSheet** đảm bảo điều này; toolbar chỉ cần truyền `options` có field `count`, không cần lọc tay.
 - **Ví dụ:** Xem `CapPhatThuHoiToolbar`, `nhan-vien-toolbar` (có count); các `*-toolbar.tsx` khác: `filters` = nhiều `<FilterChipMultiSelect />`, `filterGroups` = mảng `{ key, label, icon, options, value, onChange }` khớp với từng filter.
+- **Desktop — tối đa 5 chip hiển thị:** **GenericToolbar** và **DashboardToolbar** bọc `filters` bằng **FilterChipOverflowRow** (`components/shared/FilterChipOverflowRow.tsx`). Hiển thị tối đa 5 chip; chip còn lại nằm trong dropdown nút **…** (MoreHorizontal). Chip đang có giá trị được ưu tiên giữ trên hàng chính. **DateRangePicker**, divider và node không phải filter chip không tính vào giới hạn 5. Mobile vẫn dùng **MobileFilterSheet** qua `filterGroups`.
 
 ## Tóm tắt
 

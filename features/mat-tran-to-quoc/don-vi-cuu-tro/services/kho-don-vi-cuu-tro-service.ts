@@ -3,7 +3,8 @@ import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import type { KhoDonViCuuTroDetail, KhoDonViCuuTroListRow, KhoDonViCuuTroLoai } from '../core/types';
+import { khoDonViCuuTroLoaiLabel, parseKhoDonViCuuTroLoai } from '../core/loai';
+import type { KhoDonViCuuTroDetail, KhoDonViCuuTroListRow } from '../core/types';
 import type { KhoDonViCuuTroFormValues } from '../core/schema';
 import { KHO_DON_VI_CUU_TRO_RETURNING, KHO_DON_VI_CUU_TRO_SELECT } from '../core/supabase-select';
 import { KHO_DON_VI_CUU_TRO_MOCK } from '../mock-data';
@@ -22,19 +23,14 @@ function nullableStr(v: unknown): string | null {
   return String(v);
 }
 
-function loaiLabel(loai: string): string {
-  return loai === 'ca_nhan' ? txt('matTranDonViCuuTro.loai.caNhan') : txt('matTranDonViCuuTro.loai.toChuc');
-}
-
 export function flattenKhoDonViCuuTroRow(row: Record<string, unknown>): KhoDonViCuuTroListRow {
   const r = row as Record<string, unknown>;
-  const loaiRaw = String(r.loai ?? 'to_chuc');
-  const loai: KhoDonViCuuTroLoai = loaiRaw === 'ca_nhan' ? 'ca_nhan' : 'to_chuc';
+  const loai = parseKhoDonViCuuTroLoai(r.loai);
   return {
     id: String(r.id ?? ''),
     tt: Number(r.tt ?? 0),
     loai,
-    loai_label: loaiLabel(loai),
+    loai_label: khoDonViCuuTroLoaiLabel(loai),
     ten: String(r.ten ?? ''),
     dia_chi: nullableStr(r.dia_chi),
     dien_thoai: nullableStr(r.dien_thoai),
@@ -109,7 +105,7 @@ export async function createKhoDonViCuuTro(data: KhoDonViCuuTroFormValues): Prom
       id: mockNextId(),
       tt: mockNextTt(),
       loai,
-      loai_label: loaiLabel(loai),
+      loai_label: khoDonViCuuTroLoaiLabel(loai),
       ten: String(payload.ten),
       dia_chi: nullableStr(payload.dia_chi),
       dien_thoai: nullableStr(payload.dien_thoai),
@@ -138,7 +134,7 @@ export async function updateKhoDonViCuuTro(id: string, data: KhoDonViCuuTroFormV
     const row: KhoDonViCuuTroListRow = {
       ...prev,
       loai,
-      loai_label: loaiLabel(loai),
+      loai_label: khoDonViCuuTroLoaiLabel(loai),
       ten: String(payload.ten),
       dia_chi: nullableStr(payload.dia_chi),
       dien_thoai: nullableStr(payload.dien_thoai),
