@@ -49,10 +49,8 @@ import { AnimatePresence } from 'framer-motion';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useMttqUyVienUyBanStatsList } from '../uy-vien-uy-ban/hooks/use-mttq-uy-vien-uy-ban';
-import {
-  canViewUyVienUyBanRow,
-  useMttqUyVienUyBanViewer,
-} from '../uy-vien-uy-ban/hooks/use-mttq-uy-vien-uy-ban-viewer';
+import { canViewUyVienUyBanRow } from '../uy-vien-uy-ban/hooks/use-mttq-uy-vien-uy-ban-viewer';
+import { useMttqBaoCaoUyVienViewer } from './hooks/use-mttq-bao-cao-uy-vien-viewer';
 import type { MttqUyVienUyBan } from '../uy-vien-uy-ban/core/types';
 import { computeAgeFromBirthDate } from '../danh-sach-can-bo/utils/age';
 import { formatUyVienPhoneDisplay } from '../uy-vien-uy-ban/utils/display-format';
@@ -138,7 +136,7 @@ const BaoCaoUyVienPage: React.FC = () => {
   }, [user, canView, navigate]);
 
   const { data: rows = [], isLoading } = useMttqUyVienUyBanStatsList({ enabled: canView });
-  const uyVienViewer = useMttqUyVienUyBanViewer();
+  const uyVienViewer = useMttqBaoCaoUyVienViewer();
   const rowsInScope = useMemo(
     () => rows.filter((r) => canViewUyVienUyBanRow(uyVienViewer, r)),
     [rows, uyVienViewer],
@@ -163,6 +161,7 @@ const BaoCaoUyVienPage: React.FC = () => {
   useEffect(() => {
     if (!viewing) return;
     if (!canViewUyVienUyBanRow(uyVienViewer, viewing)) {
+      toast.error(txt('matTranUyVienUyBan.noViewPermission'));
       setViewing(null);
       return;
     }

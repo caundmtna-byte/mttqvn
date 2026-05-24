@@ -33,7 +33,17 @@ Module không có trong map → `can()` dùng `legacyCan` (view=true mọi ngư�
 
 **Ví dụ Chương trình BTT:** `annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam'` — trong màn **Phân quyền** mục này nằm nhóm **Hệ thống / Sơ đồ tổ chức** (cạnh Phòng ban) để gán quyền cùng luồng nghiệp vụ cấu hình; route ứng dụng vẫn `/quan-ly-giao-viec/chuong-trinh-nam`.
 
-**Lọc dòng client (không mirror RLS):** `useChuongTrinhNamViewer` + `canViewChuongTrinhNamRow` trong [`features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts`](mdc:features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts) — xem hết khi `cap_bac=1`, quan_tri (`admin`/`all`), mock admin, hoặc `!matrixActive`; user chỉ `xem`: OR (do mình tạo **hoặc** cùng `id_phong_ban`). Form công việc lọc combobox chương trình cùng helper.
+**Lọc dòng client (không mirror RLS):** `useChuongTrinhNamViewer` + `canViewChuongTrinhNamRow` trong [`features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts`](mdc:features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts) — xem hết khi `cap_bac=1`, quan_tri (`admin`/`all`), mock admin, hoặc `!matrixActive`; user chỉ `xem`: **chỉ** dòng do mình tạo (`id_nguoi_tao`). `id_phong_ban` trên bản ghi/chip chỉ phục vụ nghiệp vụ phân công, không gate xem. Form công việc lọc combobox chương trình cùng helper.
+
+## Viết bài — tab "Tất cả" (danh sách bài + Nhuận bút)
+
+`useArticleAllTabViewer` + `rowVisibleOnArticleAllTab` (`features/quan-ly-viet-bai/hooks/use-article-all-tab-viewer.ts`); Nhuận bút re-export `useCommissionAllTabViewer`. RPC `get_bai_viet_page` scope `all` | `mine` | `all_don_vi` (`p_viewer_don_vi_id`).
+
+1. **Xem hết:** `cap_bac === 1`, grant **admin/all** trên `articles` **hoặc** `articleCommission`, `role=admin`, `!matrixActive`, hoặc `cap_quan_ly` = **Tỉnh**.
+2. **Xã phường:** chỉ bài có `id_don_vi_nguoi_tao` (embed `nguoi_tao.don_vi_id`) trùng `user.don_vi_id`; không có `don_vi_id` NV → không tải tab Tất cả (`canLoadArticleAllTab` false).
+3. **Còn lại (`cap_quan_ly` null):** mọi bài (chỉ cần quyền module).
+
+`bai-viet/index.tsx`: `resolveBaiVietAllTabRpcScope` + client filter đồng bộ gate trên.
 
 ## Lớp 2 — Module `index.tsx` (view guard)
 
@@ -107,7 +117,35 @@ Ngoài `can('view', 'matTranCommitteeMembers')`, danh sách / báo cáo / tab li
 3. **Chỉ xem — Xã phường:** nếu `user.don_vi_id` có giá trị → chỉ dòng có `mttq_uy_vien_uy_ban.don_vi_id` trùng (so sánh string-safe); nếu **không** có `don_vi_id` nhân viên → **không** dòng nào (kể cả dòng tự tạo).
 4. **Còn lại:** chỉ dòng `id_nguoi_tao === user.nhan_vien_id`.
 
-Báo cáo ủy viên lọc `rows` theo cùng helper trước khi aggregate. RLS mirror là tùy chọn riêng.
+**Form thêm/sửa ủy viên** (`mttq-uy-vien-uy-ban-form.tsx` + `utils/can-bo-options-for-uy-vien.ts`): cấp **Xã phường** — combobox cán bộ chỉ `mttq_can_bo.don_vi_id` trùng `user.don_vi_id`; đơn vị ủy viên khóa đúng xã (ẩn cấp Tỉnh); đổi cán bộ đồng bộ `don_vi_id` bản ghi.
+
+RLS mirror là tùy chọn riêng.
+
+## Báo cáo ủy viên — lọc xem từng dòng (client)
+
+Ngoài `can('view', 'matTranCommitteeMemberStats')`, trang báo cáo dùng `useMttqBaoCaoUyVienViewer` (`features/mat-tran-to-quoc/bao-cao-uy-vien/hooks/use-mttq-bao-cao-uy-vien-viewer.ts`) + `canViewUyVienUyBanRow(viewer, row)` trên `mttq_uy_vien_uy_ban.don_vi_id` — **trước** KPI/biểu đồ/export (`rowsInScope` trong `bao-cao-uy-vien/index.tsx`).
+
+**Bypass `canViewAll`:** grant **admin/all** (quan_tri) trên module **báo cáo** (`matTranCommitteeMemberStats`), không dùng grant module danh sách ủy viên.
+
+**Lọc dòng (giống danh sách ủy viên):**
+
+1. **Xem hết:** `cap_bac === 1`, grant admin/all trên báo cáo, `role=admin`, hoặc `!matrixActive`.
+2. **Tỉnh:** mọi dòng.
+3. **Xã phường:** chỉ `don_vi_id` trùng NV; không có `don_vi_id` NV → không dòng.
+4. **Còn lại:** chỉ `id_nguoi_tao === user.nhan_vien_id`.
+
+Drawer chi tiết ủy viên từ báo cáo cần thêm `can('view', 'matTranCommitteeMembers')` (`canOpenDetail`); đóng + toast nếu dòng không pass gate.
+
+## Kỳ họp — lọc xem từng dòng (client)
+
+Ngoài `can('view', 'matTranSession')`, danh sách / tab Nhiệm kỳ / ma trận điểm danh / tab điểm danh Ủy viên dùng `useMttqKyHopViewer` + `canViewKyHopRow(viewer, row)` (`features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop-viewer.ts`). Thứ tự ưu tiên:
+
+1. **Xem hết:** `chucVuCapBac === 1`, hoặc grant **admin/all** (quan_tri) trên module kỳ họp, hoặc `user.role === 'admin'`, hoặc ma trận tắt (`!matrixActive`).
+2. **Chỉ xem (hạn chế) — Tỉnh:** `cap_quan_ly` chức vụ chuẩn hoá là **Tỉnh** → mọi dòng.
+3. **Chỉ xem — Xã phường:** nếu `user.don_vi_id` có giá trị → chỉ dòng có `mttq_ky_hop.don_vi_id` trùng (kỳ cấp Tỉnh `don_vi_id = null` không hiển thị); nếu **không** có `don_vi_id` nhân viên → **không** dòng nào.
+4. **Còn lại:** chỉ dòng `id_nguoi_tao === user.nhan_vien_id`.
+
+Drawer chi tiết (trang list + nested trong Nhiệm kỳ) đóng + toast nếu `getById` trả dòng không pass gate. RLS mirror là tùy chọn riêng.
 
 ## Tập huấn — lọc xem (client)
 
@@ -118,3 +156,66 @@ Ngoài `can('view', 'matTranTrainingList')`: tab **Lớp tập huấn** hiển t
 **Xem hết ứng viên:** `chucVuCapBac === 1`, grant **admin/all** (quan_tri), `user.role === 'admin'`, ma trận tắt, hoặc `cap_quan_ly` = **Tỉnh**.
 
 **Xã phường (chỉ xem):** chỉ dòng CT có `can_bo_don_vi_id` trùng `user.don_vi_id` (tab CT, detail, thống kê đếm theo flat đã lọc); không có `don_vi_id` NV → không dòng CT nào.
+
+## Danh sách tăng lương (`matTranSalaryIncreaseList`)
+
+**Luật module (lớp 1–4, `lib/permissions.ts` → `can()`):**
+
+| Hành động | Điều kiện |
+|-----------|-----------|
+| Xem | `cap_bac === 1` **hoặc** quan_tri (`admin`/`all`) **hoặc** token `xem` |
+| Thêm | `cap_bac === 1` **hoặc** quan_tri **hoặc** token `them` |
+| Sửa | `cap_bac === 1` **hoặc** quan_tri **hoặc** token `sua` |
+| Xóa | `cap_bac === 1` **hoặc** quan_tri **hoặc** token `xoa` |
+
+**Lớp 2** `danh-sach-tang-luong/index.tsx`: `useCan('view')` + redirect sau hydrate; `listQueryEnabled` = `matrixActive && canView` (hoặc admin / matrix tắt).
+
+**Lớp 3–4** toolbar / row actions / detail: `useResourcePermissions('matTranSalaryIncreaseList')`. Handler `handleAdd` / `handleEdit` / `handleDelete` / kế hoạch «Ghi nhận» toast khi thiếu quyền.
+
+**Lọc dòng Xã phường (bổ sung):** `useMttqTangLuongViewer` + `canViewTangLuongRow` — **trước** search/chip/sort (`viewableRows`). Form: `can-bo-options-for-tang-luong.ts` + Zod `superRefine`.
+
+## Thiết lập lương (`matTranSalarySetup`)
+
+**Cùng luật module** như Danh sách tăng lương (bảng trên) với resource `matTranSalarySetup`.
+
+**Lớp 2** `thiet-lap-luong/index.tsx`: `useCan('view')`, `listQueryEnabled`, `waitingMatrixHydrate`, redirect sau hydrate.
+
+**Lớp 3–4** `luong-ngach-toolbar`, `luong-bac-toolbar`, row actions, detail, tab panel handlers: `useResourcePermissions('matTranSalarySetup')` + toast `noCreatePermission` / `noEditPermission` / `noDeletePermission` trên shortcut không qua toolbar.
+
+## Danh sách cán bộ — lọc xem theo `don_vi_id` (client)
+
+Ngoài `can('view', 'matTranOfficerList')`, danh sách và drawer dùng `useMttqCanBoViewer` + `canViewCanBoRow(viewer, row)` (`features/mat-tran-to-quoc/danh-sach-can-bo/hooks/use-mttq-can-bo-viewer.ts`) — **trước** search/chip/export/sort (`viewableRowsEnriched` trong `danh-sach-can-bo/index.tsx`).
+
+**Bypass `canViewAll`:** grant **admin/all** (quan_tri) trên module danh sách (`matTranOfficerList`), `cap_bac === 1`, `role=admin`, hoặc `!matrixActive`.
+
+**Lọc dòng (giống ứng viên Tập huấn):**
+
+1. **Xem hết:** bypass hoặc `cap_quan_ly` = **Tỉnh**.
+2. **Xã phường:** chỉ `mttq_can_bo.don_vi_id` trùng `user.don_vi_id`; không có `don_vi_id` NV → không dòng nào.
+3. **Khác / null:** mọi dòng.
+
+**Báo cáo cán bộ** (`bao-cao-can-bo/index.tsx`): `useMttqCanBoViewer('matTranOfficerStats')` — bypass admin/all theo module báo cáo; cùng `canViewCanBoRow` trước KPI/biểu đồ/export.
+
+**Form tạo mới** (`mttq-can-bo-form.tsx`): NV **Xã phường** + có `don_vi_id` → `lockDonViToViewer`: tự điền và khóa combobox đơn vị (`don_vi_id` = đơn vị NV).
+
+## Kho cứu trợ — phân quyền module-level (7 module)
+
+Luật chuẩn qua `can()` — **không** dùng viewer hook lọc dòng:
+
+| AppResource | `module_id` | Route |
+|-------------|-------------|-------|
+| `matTranReliefCampaign` | `mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro` | `/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro` |
+| `matTranReliefGoods` | `…/hang-hoa` | `/mat-tran-to-quoc/kho-cuu-tro/hang-hoa` |
+| `matTranReliefStockTransactions` | `…/nhap-xuat-kho` | `/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho` |
+| `matTranReliefInventory` | `…/ton-kho` | `/mat-tran-to-quoc/kho-cuu-tro/ton-kho` |
+| `matTranReliefWarehouseList` | `…/danh-sach-kho` | `/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho` |
+| `matTranReliefSupportUnits` | `…/don-vi-cuu-tro` | `/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro` |
+| `matTranReliefSupportReport` | `…/bao-cao-ho-tro` | `/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro` |
+
+**Quy tắc:** `cap_bac=1` hoặc `quan_tri` (`admin`/`all`) hoặc token `xem`/`them`/`sua`/`xoa` tương ứng action (xem [`lib/permissions.ts`](mdc:lib/permissions.ts)).
+
+**Query gating:** mọi trang list dùng `listQueryEnabled` + `waitingMatrixHydrate` — reference [`features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx`](mdc:features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx). Tab con **Tồn kho** nhận `listQueryEnabled` từ parent.
+
+**Cross-module:** form Nhập xuất kho gate combobox theo `useCan('view', …)` module liên quan; Báo cáo hỗ trợ mở drawer phiếu cần thêm `can('view', 'matTranReliefStockTransactions')`.
+
+**Tồn kho / Báo cáo hỗ trợ:** read-only + export — toolbar chỉ `canExport`, không CRUD row.

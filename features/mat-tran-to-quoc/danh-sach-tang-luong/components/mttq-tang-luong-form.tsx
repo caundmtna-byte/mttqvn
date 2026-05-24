@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -12,8 +12,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { formatDateShort, formatCurrency } from '@/lib/utils';
+import { formatDateShort } from '@/lib/utils';
 import Input from '@/components/ui/Input';
+import NumericFormatInput from '@/components/ui/NumericFormatInput';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
 import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDrawer';
@@ -32,6 +33,12 @@ import {
   tangLuongToFormInput,
   type MttqTangLuongFormValues,
 } from '../core/schema';
+import {
+  canViewTangLuongRow,
+  isTangLuongScopedToXaPhuong,
+  useMttqTangLuongViewer,
+} from '../hooks/use-mttq-tang-luong-viewer';
+import { buildTangLuongCanBoOptions } from '../utils/can-bo-options-for-tang-luong';
 import { MTTQ_TANG_LUONG_LOAI_KY_OPTIONS } from '../core/constants';
 import type { MttqTangLuongListRow } from '../core/types';
 import {
@@ -64,10 +71,42 @@ const MttqTangLuongForm: React.FC<Props> = ({
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const idNguoiTao = String(user?.nhan_vien_id ?? '').trim();
+  const viewer = useMttqTangLuongViewer();
   const { data: canBoList = [] } = useMttqCanBoList();
   const { data: ngachList = [] } = useLuongThietLapNgachList();
   const { data: allHistory = [] } = useMttqTangLuongList();
   const { data: cauHinh } = useLuongThietLapCauHinh();
+
+  const viewableHistory = useMemo(
+    () => allHistory.filter((r) => canViewTangLuongRow(viewer, r)),
+    [allHistory, viewer],
+  );
+
+  const formSchema = useMemo(
+    () =>
+      mttqTangLuongSchema.superRefine((data, ctx) => {
+        if (!isTangLuongScopedToXaPhuong(viewer)) return;
+        const dv = viewer.viewerDonViId;
+        if (!dv) {
+          ctx.addIssue({
+            code: 'custom',
+            message: txt('matTranTangLuong.validation.canBoNotInDonVi'),
+            path: ['can_bo_id'],
+          });
+          return;
+        }
+        const cb = canBoList.find((c) => String(c.id) === data.can_bo_id.trim());
+        const cbDv = String(cb?.don_vi_id ?? '').trim();
+        if (!cbDv || cbDv !== dv) {
+          ctx.addIssue({
+            code: 'custom',
+            message: txt('matTranTangLuong.validation.canBoNotInDonVi'),
+            path: ['can_bo_id'],
+          });
+        }
+      }),
+    [viewer, canBoList],
+  );
 
   const createMutation = useCreateMttqTangLuong(onClose);
   const updateMutation = useUpdateMttqTangLuong(onClose);
@@ -91,28 +130,34 @@ const MttqTangLuongForm: React.FC<Props> = ({
     formState: { errors, isSubmitting },
   } = useForm<MttqTangLuongFormValues>({
     defaultValues,
-    resolver: zodResolver(mttqTangLuongSchema) as Resolver<MttqTangLuongFormValues>,
+    resolver: zodResolver(formSchema) as Resolver<MttqTangLuongFormValues>,
   });
+
+  const prevBacForLuongRef = useRef<string | null>(null);
 
   useEffect(() => {
     reset(defaultValues);
+    prevBacForLuongRef.current = defaultValues.bac_luong_id_moi?.trim() || null;
   }, [defaultValues, reset]);
 
   const canBoId = watch('can_bo_id');
   const ngachMoiId = watch('ngach_luong_id_moi');
   const ngachCuId = watch('ngach_luong_id_cu');
   const bacMoiId = watch('bac_luong_id_moi');
-  const loaiKy = watch('loai_ky');
+  const luongValue = watch('luong');
 
   const { data: bacList = [] } = useLuongThietLapBacByNgach(ngachMoiId || null);
   const { data: bacCuList = [] } = useLuongThietLapBacByNgach(ngachCuId || null);
 
   const canBoOptions = useMemo(
     () =>
-      [...canBoList]
-        .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, 'vi'))
-        .map((c) => ({ label: c.ho_ten, value: c.id, subLabel: c.ten_phong_ban ?? undefined })),
-    [canBoList],
+      buildTangLuongCanBoOptions({
+        viewer,
+        canBoList,
+        ensureCanBoId: initialData?.can_bo_id,
+        ensureCanBoLabel: initialData?.ho_ten_can_bo,
+      }),
+    [canBoList, initialData?.can_bo_id, initialData?.ho_ten_can_bo, viewer],
   );
 
   const ngachOptions = useMemo(
@@ -151,8 +196,8 @@ const MttqTangLuongForm: React.FC<Props> = ({
 
   const latestForCanBo = useMemo(() => {
     if (!canBoId?.trim()) return null;
-    return getLatestRecordForCanBo(allHistory, canBoId.trim(), initialData?.id);
-  }, [allHistory, canBoId, initialData?.id]);
+    return getLatestRecordForCanBo(viewableHistory, canBoId.trim(), initialData?.id);
+  }, [viewableHistory, canBoId, initialData?.id]);
 
   const ngayDenHanGoc = useMemo(
     () => computeNgayDenHanGoc(latestForCanBo?.ngay_nang_luong),
@@ -160,22 +205,24 @@ const MttqTangLuongForm: React.FC<Props> = ({
   );
 
   const mlcsNum = Number(cauHinh?.muc_luong_co_so ?? 0);
-  const luongPreview = useMemo(() => {
+  const luongFromBac = useMemo(() => {
     if (!bacMoiId?.trim()) return 0;
     const bac = bacList.find((b) => b.id === bacMoiId);
     const heSo = Number(bac?.he_so ?? 0);
     return computeLuongFromMlcsAndHeSo(mlcsNum, heSo);
   }, [bacList, bacMoiId, mlcsNum]);
 
-  const luongDisplay = useMemo(() => {
-    if (luongPreview > 0) return formatCurrency(luongPreview);
-    if (isEdit && initialData?.luong) return formatCurrency(initialData.luong);
-    return '—';
-  }, [initialData?.luong, isEdit, luongPreview]);
+  useEffect(() => {
+    if (!bacMoiId?.trim() || luongFromBac <= 0) return;
+    const cur = bacMoiId.trim();
+    if (prevBacForLuongRef.current === cur) return;
+    prevBacForLuongRef.current = cur;
+    setValue('luong', luongFromBac, { shouldValidate: true });
+  }, [bacMoiId, luongFromBac, setValue]);
 
   useEffect(() => {
     if (isEdit || !canBoId?.trim()) return;
-    const latest = getLatestRecordForCanBo(allHistory, canBoId.trim());
+    const latest = getLatestRecordForCanBo(viewableHistory, canBoId.trim());
     if (!latest) return;
     if (!defaultNgachMoiId) {
       setValue('ngach_luong_id_cu', latest.ngach_luong_id_moi ?? '');
@@ -183,7 +230,7 @@ const MttqTangLuongForm: React.FC<Props> = ({
       if (!defaultNgachMoiId) setValue('ngach_luong_id_moi', latest.ngach_luong_id_moi);
       if (!defaultBacMoiId) setValue('bac_luong_id_moi', latest.bac_luong_id_moi);
     }
-  }, [allHistory, canBoId, defaultBacMoiId, defaultNgachMoiId, isEdit, setValue]);
+  }, [viewableHistory, canBoId, defaultBacMoiId, defaultNgachMoiId, isEdit, setValue]);
 
   useEffect(() => {
     if (!ngachMoiId) return;
@@ -198,7 +245,7 @@ const MttqTangLuongForm: React.FC<Props> = ({
       return;
     }
     const warn = checkConsecutiveEarlyAdvance(
-      allHistory,
+      viewableHistory,
       data.can_bo_id,
       data.ngay_nang_luong,
       data.loai_ky,
@@ -270,6 +317,7 @@ const MttqTangLuongForm: React.FC<Props> = ({
                     onChange={field.onChange}
                     error={errors.can_bo_id?.message}
                     disabled={isEdit}
+                    required
                     createFormStackLevel={1}
                   />
                 )}
@@ -286,6 +334,7 @@ const MttqTangLuongForm: React.FC<Props> = ({
                   value={field.value}
                   onChange={field.onChange}
                   error={errors.ngay_nang_luong?.message}
+                  required
                 />
               )}
             />
@@ -300,6 +349,7 @@ const MttqTangLuongForm: React.FC<Props> = ({
                   value={field.value}
                   onChange={field.onChange}
                   error={errors.loai_ky?.message}
+                  required
                 />
               )}
             />
@@ -351,6 +401,7 @@ const MttqTangLuongForm: React.FC<Props> = ({
                   value={field.value}
                   onChange={field.onChange}
                   error={errors.ngach_luong_id_moi?.message}
+                  required
                 />
               )}
             />
@@ -366,18 +417,29 @@ const MttqTangLuongForm: React.FC<Props> = ({
                   onChange={field.onChange}
                   error={errors.bac_luong_id_moi?.message}
                   disabled={!ngachMoiId}
+                  required
                 />
               )}
             />
             <div className={FORM_GRID_SPAN_FULL}>
-              <Input
-                label={txt('matTranTangLuong.form.luong')}
-                icon={Banknote}
-                value={luongDisplay}
-                disabled
+              <Controller
+                name="luong"
+                control={control}
+                render={({ field }) => (
+                  <NumericFormatInput
+                    label={txt('matTranTangLuong.form.luong')}
+                    icon={<Banknote className="h-4 w-4" />}
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.luong?.message}
+                    decimalScale={0}
+                    min={1}
+                    required
+                  />
+                )}
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                {luongPreview > 0
+                {Number(luongValue) > 0
                   ? txt('matTranTangLuong.form.luongHint')
                   : txt('matTranTangLuong.form.luongPreviewEmpty')}
               </p>

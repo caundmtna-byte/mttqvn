@@ -21,7 +21,9 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
+import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import ExportDialog from '@/components/shared/ExportDialog';
 import TabGroup from '@/components/ui/TabGroup';
@@ -76,7 +78,26 @@ const HangHoaPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefGoods');
+  const matrixEnabled = isPermissionMatrixEnabled();
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
+
+  const listQueryEnabled = Boolean(
+    user &&
+      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+  );
+
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  const waitingMatrixHydrate =
+    matrixEnabled &&
+    user != null &&
+    user.role !== 'admin' &&
+    chucVuKey.trim() !== '' &&
+    !matrixActive;
 
   const [activeTab, setActiveTab] = useTabSearchParam(HANG_HOA_MAIN_TABS, TAB_DM);
 
@@ -131,13 +152,17 @@ const HangHoaPage: React.FC = () => {
     columns: hhCols,
   } = hhStore;
 
-  const { data: dmRows = [], isLoading: dmLoading } = useKhoDanhMucHangHoaList({ enabled: canView });
+  const { data: dmRows = [], isLoading: dmLoading } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });
+  const dmDetailEnabled = listQueryEnabled && Boolean(dmViewingId?.trim()) && activeTab === TAB_DM;
   const { data: dmViewing } = useKhoDanhMucHangHoaDetail(dmViewingId, {
-    enabled: canView && Boolean(dmViewingId) && activeTab === TAB_DM,
+    enabled: dmDetailEnabled,
   });
 
-  const { data: hhRows = [], isLoading: hhLoading } = useKhoDanhSachHangHoaList({ enabled: canView });
-  const { data: hhViewing } = useKhoDanhSachHangHoaDetail(hhViewingId, { enabled: canView && activeTab === TAB_HH });
+  const { data: hhRows = [], isLoading: hhLoading } = useKhoDanhSachHangHoaList({ enabled: listQueryEnabled });
+  const hhDetailEnabled = listQueryEnabled && Boolean(hhViewingId?.trim()) && activeTab === TAB_HH;
+  const { data: hhViewing } = useKhoDanhSachHangHoaDetail(hhViewingId, { enabled: hhDetailEnabled });
+  const dmListLoading = dmLoading || waitingMatrixHydrate;
+  const hhListLoading = hhLoading || waitingMatrixHydrate;
 
   const deleteDm = useDeleteKhoDanhMucHangHoaMany();
   const deleteHh = useDeleteKhoDanhSachHangHoaMany();
@@ -424,7 +449,7 @@ const HangHoaPage: React.FC = () => {
             <div className="flex-1 min-h-0">
               <KhoDanhMucHangHoaTable
                 data={dmSorted}
-                isLoading={dmLoading}
+                isLoading={dmListLoading}
                 onEdit={(item) => {
                   startTransition(() => {
                     setDmFormOrigin('list');
@@ -469,7 +494,7 @@ const HangHoaPage: React.FC = () => {
             <div className="flex-1 min-h-0">
               <KhoDanhSachHangHoaTable
                 data={hhSorted}
-                isLoading={hhLoading}
+                isLoading={hhListLoading}
                 onEdit={(item) => {
                   setHhCreatePresetDanhMucId(null);
                   setDmViewingId(null);

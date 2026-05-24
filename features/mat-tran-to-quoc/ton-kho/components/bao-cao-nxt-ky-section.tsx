@@ -14,13 +14,14 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 
 interface Props {
   onBack: () => void;
+  listQueryEnabled: boolean;
 }
 
-const BaoCaoNxtKySection: React.FC<Props> = ({ onBack }) => {
+const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
   const { canExport } = useResourcePermissions('matTranReliefInventory');
-  const { data: khoList = [] } = useKhoDanhSachKhoList();
-  const { data: hangHoaList = [] } = useKhoDanhSachHangHoaList();
-  const { data: danhMucList = [] } = useKhoDanhMucHangHoaList();
+  const { data: khoList = [] } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
+  const { data: hangHoaList = [] } = useKhoDanhSachHangHoaList({ enabled: listQueryEnabled });
+  const { data: danhMucList = [] } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });
   const clearNxtFilters = useTonKhoNxtStore((s) => s.clearNxtFilters);
 
   const nxtDateFrom = useTonKhoNxtStore((s) => s.nxtDateFrom);
@@ -43,7 +44,7 @@ const BaoCaoNxtKySection: React.FC<Props> = ({ onBack }) => {
   );
 
   const rangeOk = isNXTDateRangeValid(filters);
-  const { data } = useNXTByPeriod(filters, true);
+  const { data } = useNXTByPeriod(filters, listQueryEnabled);
 
   const onExport = useCallback(async () => {
     if (!rangeOk) {

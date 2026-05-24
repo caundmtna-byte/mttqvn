@@ -6,6 +6,8 @@ import type { MttqThietLapLoai } from '@/features/mat-tran-to-quoc/thiet-lap-cai
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import { MTTQ_CAN_BO_GIOI_TINH, type MttqCanBoGioiTinh } from '../core/constants';
 import { buildMttqCanBoSchema, type MttqCanBoFormValues } from '../core/schema';
+import { chucVuBelongsToRootPhongBan } from '../utils/chuc-vu-options-for-phong-ban';
+import { parseImportTonGiao } from '../utils/ton-giao-form';
 import { createMttqCanBo } from './mttq-can-bo-service';
 
 const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
@@ -163,6 +165,9 @@ function rowToFormValues(
 
   const cv = resolveChucVuId(row.chuc_vu_id, ctx.positions);
   if ('errorKey' in cv) return { ok: false, errorKey: cv.errorKey };
+  if (!chucVuBelongsToRootPhongBan(cv.id, pb.id, ctx.positions, ctx.departments)) {
+    return { ok: false, errorKey: 'matTranCanBo.import.errorChucVuPhongBanMismatch' };
+  }
 
   const hoTen = trimCell(row.ho_ten);
   if (!hoTen) return { ok: false, errorKey: 'matTranCanBo.import.errorHoTenEmpty' };
@@ -185,7 +190,7 @@ function rowToFormValues(
     ngay_sinh: ngaySinh,
     gioi_tinh: parseImportGioiTinh(row.gioi_tinh) as MttqCanBoGioiTinh,
     dan_toc_id: danToc.id,
-    ton_giao: trimCell(row.ton_giao),
+    ton_giao: parseImportTonGiao(row.ton_giao),
     dia_chi: trimCell(row.dia_chi),
     dang_vien: parseImportDangVien(row.dang_vien),
     trinh_do_id: trinhDo.id,

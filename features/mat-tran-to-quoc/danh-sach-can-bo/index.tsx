@@ -35,6 +35,8 @@ import { useMttqCanBoList, useDeleteMttqCanBoMany, useImportMttqCanBo } from './
 import { useMttqCanBoStore } from './store/useMttqCanBoStore';
 import type { MttqCanBoRow } from './core/types';
 import { mttqCanBoMatchesAllFilters } from './utils/mttq-can-bo-filter-match';
+import { rowMatchesPhongBanFilter } from './utils/chuc-vu-options-for-phong-ban';
+import { normalizeMttqCanBoFilters } from './utils/mttq-can-bo-filters-normalize';
 import { computeAgeFromBirthDate } from './utils/age';
 import { formatCanBoPhoneDisplay } from './utils/display-format';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
@@ -45,6 +47,7 @@ import {
   CHIP_TRANG_THAI_NULL,
 } from './core/constants';
 import { useMttqCanBoFilterCounts } from './hooks/use-mttq-can-bo-filter-counts';
+import { canViewCanBoRow, useMttqCanBoViewer } from './hooks/use-mttq-can-bo-viewer';
 import MttqCanBoToolbar from './components/mttq-can-bo-toolbar';
 import MttqCanBoTable from './components/mttq-can-bo-table';
 
@@ -96,7 +99,7 @@ const DanhSachCanBoPage: React.FC = () => {
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
-  const { searchTerm, filters, sort, resetState, clearSelection, selectedIds, pagination, columns } =
+  const { searchTerm, filters, sort, resetState, clearSelection, selectedIds, pagination, columns, setFilter } =
     useMttqCanBoStore();
 
   const { data: rows = [], isLoading } = useMttqCanBoList({ enabled: canView });
@@ -107,7 +110,7 @@ const DanhSachCanBoPage: React.FC = () => {
     enabled:
       importQueriesEnabled && (canViewPositions || canCreateCanBo || canEditCanBo || canImport),
   });
-  const { data: departments = [] } = useDepartments({ enabled: importQueriesEnabled });
+  const { data: departments = [] } = useDepartments({ enabled: canView || importQueriesEnabled });
   const { data: tinhList = [] } = useTinhThanhList({ enabled: importQueriesEnabled });
   const { data: xaList = [] } = useQuery({
     queryKey: queryKeys.xaPhuong.listAll,
@@ -126,21 +129,37 @@ const DanhSachCanBoPage: React.FC = () => {
     [rows],
   );
 
+  const viewer = useMttqCanBoViewer();
+
+  /** Lọc theo viewer (Xã phường → cùng `don_vi_id`) trước search/chip/export. */
+  const viewableRowsEnriched = useMemo(
+    () => rowsEnriched.filter((r) => canViewCanBoRow(viewer, r)),
+    [rowsEnriched, viewer],
+  );
+
   useEffect(() => {
     return () => resetState();
   }, [resetState]);
 
   useEffect(() => {
     if (!viewing) return;
-    const fresh = rowsEnriched.find((r) => r.id === viewing.id);
+    if (!canViewCanBoRow(viewer, viewing)) {
+      toast.error(txt('matTranCanBo.noViewRowPermission'));
+      setViewing(null);
+      return;
+    }
+    const fresh = viewableRowsEnriched.find((r) => r.id === viewing.id);
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
-  }, [rowsEnriched, viewing]);
+  }, [viewableRowsEnriched, viewing, viewer]);
 
-  const filterFn = useCallback((item: MttqCanBoRow, term: string, f: typeof filters) => {
-    return mttqCanBoMatchesAllFilters(item, term, f);
-  }, []);
+  const filterFn = useCallback(
+    (item: MttqCanBoRow, term: string, f: typeof filters) => {
+      return mttqCanBoMatchesAllFilters(item, term, f, departments);
+    },
+    [departments],
+  );
 
-  const filtered = useListWithFilter(rowsEnriched, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRowsEnriched, searchTerm, filters, filterFn);
 
   const {
     trangThaiCounts,
@@ -154,7 +173,21 @@ const DanhSachCanBoPage: React.FC = () => {
     trinhDoCounts,
     lyLuanCounts,
     dangVienCounts,
-  } = useMttqCanBoFilterCounts(rowsEnriched, searchTerm, filters);
+  } = useMttqCanBoFilterCounts(viewableRowsEnriched, searchTerm, filters, departments);
+
+  useEffect(() => {
+    const F = normalizeMttqCanBoFilters(filters);
+    if (F.phong_ban_id.length === 0 || F.chuc_vu_id.length === 0) return;
+    const pruned = F.chuc_vu_id.filter((cvId) => {
+      if (cvId === CHIP_FILTER_NULL) return true;
+      return viewableRowsEnriched.some(
+        (r) =>
+          r.chuc_vu_id === cvId &&
+          rowMatchesPhongBanFilter(r.phong_ban_id, F.phong_ban_id, departments),
+      );
+    });
+    if (pruned.length !== F.chuc_vu_id.length) setFilter('chuc_vu_id', pruned);
+  }, [filters.phong_ban_id, filters.chuc_vu_id, viewableRowsEnriched, departments, setFilter]);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -177,7 +210,7 @@ const DanhSachCanBoPage: React.FC = () => {
 
   const trangThaiChipOptions = useMemo(() => {
     const labelByValue = new Map<string, string>();
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
       const value = r.trang_thai_id ?? CHIP_TRANG_THAI_NULL;
       const label = (r.ten_trang_thai ?? '').trim() || txt('common.emptyCell');
       if (!labelByValue.has(value)) labelByValue.set(value, label);
@@ -189,21 +222,21 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(trangThaiCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, trangThaiCounts]);
+  }, [viewableRowsEnriched, trangThaiCounts]);
 
   const gioiTinhChipOptions = useMemo(() => {
-    const set = new Set(rowsEnriched.map((r) => r.gioi_tinh).filter(Boolean));
+    const set = new Set(viewableRowsEnriched.map((r) => r.gioi_tinh).filter(Boolean));
     const values = [...set].sort((a, b) => a.localeCompare(b, getLanguage()));
     return values.map((value) => ({
       value,
       label: value,
       count: mttqCanBoChipCount(gioiTinhCounts, value),
     }));
-  }, [rowsEnriched, gioiTinhCounts]);
+  }, [viewableRowsEnriched, gioiTinhCounts]);
 
   const toChucChipOptions = useMemo(() => {
     const labelByValue = new Map<string, string>();
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
       const value = r.to_chuc_id ?? CHIP_FILTER_NULL;
       const label = (r.ten_to_chuc ?? '').trim() || txt('common.emptyCell');
       if (!labelByValue.has(value)) labelByValue.set(value, label);
@@ -215,12 +248,12 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(toChucCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, toChucCounts]);
+  }, [viewableRowsEnriched, toChucCounts]);
 
   const phongBanChipOptions = useMemo(() => {
     const labelByValue = new Map<string, string>();
     const ec = txt('common.emptyCell');
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
       const value = r.phong_ban_id ?? CHIP_FILTER_NULL;
       const parent = (r.ten_phong_ban ?? '').trim();
       const sub = (r.ten_bo_phan ?? '').trim();
@@ -234,11 +267,18 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(phongBanCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, phongBanCounts]);
+  }, [viewableRowsEnriched, phongBanCounts]);
 
   const chucVuChipOptions = useMemo(() => {
+    const F = normalizeMttqCanBoFilters(filters);
     const labelByValue = new Map<string, string>();
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
+      if (
+        F.phong_ban_id.length > 0 &&
+        !rowMatchesPhongBanFilter(r.phong_ban_id, F.phong_ban_id, departments)
+      ) {
+        continue;
+      }
       const value = r.chuc_vu_id ?? CHIP_FILTER_NULL;
       const label = (r.ten_chuc_vu ?? '').trim() || txt('common.emptyCell');
       if (!labelByValue.has(value)) labelByValue.set(value, label);
@@ -250,7 +290,7 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(chucVuCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, chucVuCounts]);
+  }, [viewableRowsEnriched, chucVuCounts, filters, departments]);
 
   const capQuanLyChipOptions = useMemo(
     () =>
@@ -267,7 +307,7 @@ const DanhSachCanBoPage: React.FC = () => {
 
   const donViChipOptions = useMemo(() => {
     const labelByValue = new Map<string, string>();
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
       const value = r.don_vi_id ?? CHIP_FILTER_NULL;
       const label =
         formatTenDonViCongTacDisplay(r.chuc_vu_cap_quan_ly, r.ten_don_vi).trim() || txt('common.emptyCell');
@@ -280,11 +320,11 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(donViCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, donViCounts]);
+  }, [viewableRowsEnriched, donViCounts]);
 
   const danTocChipOptions = useMemo(() => {
     const labelByValue = new Map<string, string>();
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
       const value = r.dan_toc_id ?? CHIP_FILTER_NULL;
       const label = (r.ten_dan_toc ?? '').trim() || txt('common.emptyCell');
       if (!labelByValue.has(value)) labelByValue.set(value, label);
@@ -296,11 +336,11 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(danTocCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, danTocCounts]);
+  }, [viewableRowsEnriched, danTocCounts]);
 
   const trinhDoChipOptions = useMemo(() => {
     const labelByValue = new Map<string, string>();
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
       const value = r.trinh_do_id ?? CHIP_FILTER_NULL;
       const label = (r.ten_trinh_do ?? '').trim() || txt('common.emptyCell');
       if (!labelByValue.has(value)) labelByValue.set(value, label);
@@ -312,11 +352,11 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(trinhDoCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, trinhDoCounts]);
+  }, [viewableRowsEnriched, trinhDoCounts]);
 
   const lyLuanChipOptions = useMemo(() => {
     const labelByValue = new Map<string, string>();
-    for (const r of rowsEnriched) {
+    for (const r of viewableRowsEnriched) {
       const value = r.ly_luan_chinh_tri_id ?? CHIP_FILTER_NULL;
       const label = (r.ten_ly_luan_chinh_tri ?? '').trim() || txt('common.emptyCell');
       if (!labelByValue.has(value)) labelByValue.set(value, label);
@@ -328,7 +368,7 @@ const DanhSachCanBoPage: React.FC = () => {
         count: mttqCanBoChipCount(lyLuanCounts, value),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [rowsEnriched, lyLuanCounts]);
+  }, [viewableRowsEnriched, lyLuanCounts]);
 
   const dangVienChipOptions = useMemo(
     () => [
@@ -459,6 +499,7 @@ const DanhSachCanBoPage: React.FC = () => {
         [txt('matTranCanBo.import.huongR3k'), txt('matTranCanBo.import.huongR3v')],
         [txt('matTranCanBo.import.huongR4k'), txt('matTranCanBo.import.huongR4v')],
         [txt('matTranCanBo.import.huongR5k'), txt('matTranCanBo.import.huongR5v')],
+        [txt('matTranCanBo.import.huongR6k'), txt('matTranCanBo.import.huongR6v')],
       ],
     };
 
@@ -610,7 +651,7 @@ const DanhSachCanBoPage: React.FC = () => {
     setShowForm(false);
     setEditing(null);
     if (origin === 'detail' && viewing && wasEditing && viewing.id === wasEditing.id) {
-      const fresh = rowsEnriched.find((r) => r.id === viewing.id);
+      const fresh = viewableRowsEnriched.find((r) => r.id === viewing.id);
       if (fresh) setViewing(fresh);
     }
     setFormOrigin('list');

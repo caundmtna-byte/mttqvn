@@ -23,6 +23,7 @@ import {
   canViewUyVienUyBanRow,
   useMttqUyVienUyBanViewer,
 } from '@/features/mat-tran-to-quoc/uy-vien-uy-ban/hooks/use-mttq-uy-vien-uy-ban-viewer';
+import { canViewKyHopRow, useMttqKyHopViewer } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop-viewer';
 import { useDiemDanhForNhiemKy, useUpsertDiemDanh } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-diem-danh';
 import type { MttqDiemDanhTrangThai } from '@/features/mat-tran-to-quoc/ky-hop/core/types';
 import type { MttqKyHop } from '@/features/mat-tran-to-quoc/ky-hop/core/types';
@@ -71,6 +72,11 @@ const MttqNhiemKyDiemDanhMatrixPage: React.FC = () => {
   const { data: uyVienRows = [], isLoading: loadingUv } = useMttqUyVienUyBanListForNhiemKy(nhiemKyId, {
     enabled: Boolean(nhiemKyId) && canViewUyVien,
   });
+  const kyHopViewer = useMttqKyHopViewer();
+  const visibleKyHopRows = useMemo(
+    () => kyHopRows.filter((r) => canViewKyHopRow(kyHopViewer, r)),
+    [kyHopRows, kyHopViewer],
+  );
   const uyVienViewer = useMttqUyVienUyBanViewer();
   const visibleUyVienRows = useMemo(
     () => uyVienRows.filter((r) => canViewUyVienUyBanRow(uyVienViewer, r)),
@@ -86,7 +92,7 @@ const MttqNhiemKyDiemDanhMatrixPage: React.FC = () => {
   const [pendingKey, setPendingKey] = useState<string | null>(null);
 
   const sortedKyHop = useMemo(() => {
-    const list = [...kyHopRows];
+    const list = [...visibleKyHopRows];
     list.sort((a, b) => {
       const da = a.ngay_hop ?? '';
       const db = b.ngay_hop ?? '';
@@ -94,7 +100,7 @@ const MttqNhiemKyDiemDanhMatrixPage: React.FC = () => {
       return String(b.ky_thu).localeCompare(String(a.ky_thu), 'vi');
     });
     return list;
-  }, [kyHopRows]);
+  }, [visibleKyHopRows]);
 
   const sortedUyVien = useMemo(() => {
     return [...visibleUyVienRows].sort((a, b) => a.ho_va_ten.localeCompare(b.ho_va_ten, 'vi'));

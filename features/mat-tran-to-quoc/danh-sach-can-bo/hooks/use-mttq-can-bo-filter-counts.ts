@@ -6,7 +6,11 @@ import {
   CHIP_TRANG_THAI_NULL,
 } from '../core/constants';
 import type { MttqCanBoFilters, MttqCanBoRow } from '../core/types';
-import { mttqCanBoMatchesAllFilters, omitChipFilter } from '../utils/mttq-can-bo-filter-match';
+import {
+  mttqCanBoMatchesAllFilters,
+  omitChipFilter,
+  type PhongBanFilterDept,
+} from '../utils/mttq-can-bo-filter-match';
 import { mttqCanBoCapQuanLyChipKeyFromRow } from '../utils/cap-quan-ly-chip-key';
 
 export interface MttqCanBoFilterCounts {
@@ -34,19 +38,20 @@ export function useMttqCanBoFilterCounts(
   rows: MttqCanBoRow[],
   searchTerm: string,
   filters: MttqCanBoFilters,
+  departments: readonly PhongBanFilterDept[] = [],
 ): MttqCanBoFilterCounts {
   return useMemo(() => {
     const trangThaiCounts: Record<string, number> = {};
     const fNoTt = omitChipFilter(filters, 'trang_thai_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoTt)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoTt, departments)) continue;
       bump(trangThaiCounts, r.trang_thai_id ?? CHIP_TRANG_THAI_NULL);
     }
 
     const gioiTinhCounts: Record<string, number> = {};
     const fNoGt = omitChipFilter(filters, 'gioi_tinh');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoGt)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoGt, departments)) continue;
       if (!r.gioi_tinh) continue;
       bump(gioiTinhCounts, r.gioi_tinh);
     }
@@ -54,56 +59,56 @@ export function useMttqCanBoFilterCounts(
     const toChucCounts: Record<string, number> = {};
     const fNoTo = omitChipFilter(filters, 'to_chuc_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoTo)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoTo, departments)) continue;
       bump(toChucCounts, r.to_chuc_id ?? CHIP_FILTER_NULL);
     }
 
     const phongBanCounts: Record<string, number> = {};
     const fNoPb = omitChipFilter(filters, 'phong_ban_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoPb)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoPb, departments)) continue;
       bump(phongBanCounts, r.phong_ban_id ?? CHIP_FILTER_NULL);
     }
 
     const chucVuCounts: Record<string, number> = {};
     const fNoCv = omitChipFilter(filters, 'chuc_vu_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoCv)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoCv, departments)) continue;
       bump(chucVuCounts, r.chuc_vu_id ?? CHIP_FILTER_NULL);
     }
 
     const capQuanLyCounts: Record<string, number> = {};
     const fNoCap = omitChipFilter(filters, 'chuc_vu_cap_quan_ly');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoCap)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoCap, departments)) continue;
       bump(capQuanLyCounts, mttqCanBoCapQuanLyChipKeyFromRow(r));
     }
 
     const donViCounts: Record<string, number> = {};
     const fNoXa = omitChipFilter(filters, 'don_vi_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoXa)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoXa, departments)) continue;
       bump(donViCounts, r.don_vi_id ?? CHIP_FILTER_NULL);
     }
 
     const danTocCounts: Record<string, number> = {};
     const fNoDt = omitChipFilter(filters, 'dan_toc_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoDt)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoDt, departments)) continue;
       bump(danTocCounts, r.dan_toc_id ?? CHIP_FILTER_NULL);
     }
 
     const trinhDoCounts: Record<string, number> = {};
     const fNoTd = omitChipFilter(filters, 'trinh_do_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoTd)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoTd, departments)) continue;
       bump(trinhDoCounts, r.trinh_do_id ?? CHIP_FILTER_NULL);
     }
 
     const lyLuanCounts: Record<string, number> = {};
     const fNoLl = omitChipFilter(filters, 'ly_luan_chinh_tri_id');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoLl)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoLl, departments)) continue;
       bump(lyLuanCounts, r.ly_luan_chinh_tri_id ?? CHIP_FILTER_NULL);
     }
 
@@ -113,7 +118,7 @@ export function useMttqCanBoFilterCounts(
     };
     const fNoDv = omitChipFilter(filters, 'dang_vien');
     for (const r of rows) {
-      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoDv)) continue;
+      if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoDv, departments)) continue;
       if (r.dang_vien) dangVienCounts[CHIP_DANG_VIEN_YES] += 1;
       else dangVienCounts[CHIP_DANG_VIEN_NO] += 1;
     }
@@ -131,5 +136,5 @@ export function useMttqCanBoFilterCounts(
       lyLuanCounts,
       dangVienCounts,
     };
-  }, [rows, searchTerm, filters]);
+  }, [rows, searchTerm, filters, departments]);
 }

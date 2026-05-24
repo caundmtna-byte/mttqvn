@@ -22,6 +22,8 @@ import { MTTQ_CAN_BO_FORM_DEFAULT_VALUES } from '../core/default-form-values';
 import type { MttqCanBo } from '../core/types';
 import { useCreateMttqCanBo, useUpdateMttqCanBo } from '../hooks/use-mttq-can-bo';
 import { mttqCanBoRowToFormValues } from '../utils/can-bo-row-to-form-values';
+import { buildMttqCanBoChucVuOptions } from '../utils/chuc-vu-options-for-phong-ban';
+import { useMttqCanBoViewer } from '../hooks/use-mttq-can-bo-viewer';
 import MttqCanBoFormBody from './mttq-can-bo-form-body';
 
 function optionsByLoai(
@@ -69,6 +71,10 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
     ...geoDataQueryOptions,
   });
 
+  const viewer = useMttqCanBoViewer();
+  const viewerDonViId = viewer.viewerDonViId;
+  const lockDonViToViewer = viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewerDonViId);
+
   const optToChuc = useMemo(() => optionsByLoai(thietLapAll, 'to_chuc'), [thietLapAll]);
   const optDanToc = useMemo(() => optionsByLoai(thietLapAll, 'dan_toc'), [thietLapAll]);
   const optTrinhDo = useMemo(() => optionsByLoai(thietLapAll, 'trinh_do'), [thietLapAll]);
@@ -105,25 +111,25 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
   const selectedPhongBan = watch('id_phong_ban');
   const chucVuIdWatch = watch('chuc_vu_id');
 
-  const optChucVu = useMemo(() => {
-    const active = positions.filter((p) => p.trang_thai === 'Đang hoạt động');
-    const root = selectedPhongBan ? String(selectedPhongBan) : '';
-    if (!root) return [];
-    const allowedDeptIds = new Set<string>([root]);
-    for (const d of departments) {
-      if (d.trang_thai === 'Đang hoạt động' && d.cha_id != null && String(d.cha_id) === root) {
-        allowedDeptIds.add(String(d.id));
-      }
+  const optChucVu = useMemo(
+    () =>
+      buildMttqCanBoChucVuOptions({
+        positions,
+        departments,
+        rootPhongBanId: selectedPhongBan ? String(selectedPhongBan) : '',
+        ensureChucVuId: chucVuIdWatch,
+      }),
+    [positions, selectedPhongBan, departments, chucVuIdWatch],
+  );
+
+  useEffect(() => {
+    const id = chucVuIdWatch ? String(chucVuIdWatch) : '';
+    if (!id) return;
+    if (!optChucVu.some((o) => o.value === id)) {
+      setValue('chuc_vu_id', '');
+      setValue('don_vi_id', '');
     }
-    return active
-      .filter((p) => {
-        const pb = p.phong_ban_id == null || p.phong_ban_id === '' ? '' : String(p.phong_ban_id);
-        if (!pb) return false;
-        return allowedDeptIds.has(pb);
-      })
-      .map((p) => ({ label: p.ten_chuc_vu, value: String(p.id) }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [positions, selectedPhongBan, departments]);
+  }, [optChucVu, chucVuIdWatch, setValue]);
 
   const needsDonViXaPhuong = useMemo(() => {
     const id = chucVuIdWatch ? String(chucVuIdWatch) : '';
@@ -135,6 +141,19 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
   const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
 
   const xaPhuongOptions = useMemo(() => {
+    if (lockDonViToViewer && viewerDonViId) {
+      const x = xaPhuongList.find((item) => String(item.id) === viewerDonViId);
+      if (x) {
+        const tinhTen = tinhById.get(x.id_tinh_thanh) ?? '';
+        return [
+          {
+            label: tinhTen ? `${x.ten} (${tinhTen})` : x.ten,
+            value: String(x.id),
+          },
+        ];
+      }
+      return [{ label: viewerDonViId, value: viewerDonViId }];
+    }
     const rows = [...xaPhuongList].sort((a, b) => {
       const ta = (tinhById.get(a.id_tinh_thanh) ?? '').localeCompare(tinhById.get(b.id_tinh_thanh) ?? '', 'vi');
       if (ta !== 0) return ta;
@@ -147,7 +166,7 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
         value: String(x.id),
       };
     });
-  }, [xaPhuongList, tinhById]);
+  }, [xaPhuongList, tinhById, lockDonViToViewer, viewerDonViId]);
 
   const positionsForCap = useMemo(
     () => positions.map((p) => ({ id: String(p.id), cap_quan_ly: p.cap_quan_ly ?? null })),
@@ -155,18 +174,22 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
   );
 
   useEffect(() => {
-    if (!needsDonViXaPhuong) {
+    if (!needsDonViXaPhuong && !lockDonViToViewer) {
       setValue('don_vi_id', '');
     }
-  }, [needsDonViXaPhuong, setValue]);
+  }, [needsDonViXaPhuong, lockDonViToViewer, setValue]);
 
   useEffect(() => {
     if (initialData) {
       reset(mttqCanBoRowToFormValues(initialData, departments));
     } else {
-      reset({ ...MTTQ_CAN_BO_FORM_DEFAULT_VALUES });
+      const defaults = { ...MTTQ_CAN_BO_FORM_DEFAULT_VALUES };
+      if (lockDonViToViewer && viewerDonViId) {
+        defaults.don_vi_id = viewerDonViId;
+      }
+      reset(defaults);
     }
-  }, [initialData, reset, departments]);
+  }, [initialData, reset, departments, lockDonViToViewer, viewerDonViId]);
 
   const onSubmit: SubmitHandler<MttqCanBoFormValues> = (data) => {
     if (!isEdit && !idNguoiTao) {
@@ -220,6 +243,7 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
           xaPhuongOptions={xaPhuongOptions}
           positionsForCap={positionsForCap}
           needsDonViXaPhuong={needsDonViXaPhuong}
+          lockDonViToViewer={lockDonViToViewer}
         />
       </form>
     </GenericDrawer>

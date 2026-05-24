@@ -35,11 +35,11 @@ const ThietLapLuongPage: React.FC = () => {
   );
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || canView || didRedirect.current || waitingMatrixHydrate) return;
     didRedirect.current = true;
     toast.error(txt('matTranThietLapLuong.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, canView, navigate, waitingMatrixHydrate]);
 
   const [activeTab, setActiveTab] = useTabSearchParam([TAB_NGACH, TAB_BAC] as const, TAB_NGACH);
 

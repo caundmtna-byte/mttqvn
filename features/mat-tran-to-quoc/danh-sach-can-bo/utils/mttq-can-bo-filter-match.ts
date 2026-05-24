@@ -9,7 +9,10 @@ import type { MttqCanBoFilters, MttqCanBoRow } from '../core/types';
 import { MTTQ_CAN_BO_SEARCHABLE_KEYS } from './search-keys';
 import { mttqCanBoMatchesColumnSearch } from './column-search';
 import { mttqCanBoCapQuanLyChipKeyFromRow } from './cap-quan-ly-chip-key';
+import { rowMatchesPhongBanFilter } from './chuc-vu-options-for-phong-ban';
 import { normalizeMttqCanBoFilters } from './mttq-can-bo-filters-normalize';
+
+export type PhongBanFilterDept = { id: string; cha_id: string | null };
 
 export type MttqCanBoChipFilterKey = Exclude<keyof MttqCanBoFilters, 'columnSearch'>;
 
@@ -22,6 +25,7 @@ export function mttqCanBoMatchesAllFilters(
   item: MttqCanBoRow,
   searchTerm: string,
   f: MttqCanBoFilters,
+  departments: readonly PhongBanFilterDept[] = [],
 ): boolean {
   if (
     !matchesSearchTerm(item as unknown as Record<string, unknown>, searchTerm, MTTQ_CAN_BO_SEARCHABLE_KEYS)
@@ -39,8 +43,17 @@ export function mttqCanBoMatchesAllFilters(
   const toKey = item.to_chuc_id ?? CHIP_FILTER_NULL;
   if (F.to_chuc_id.length > 0 && !F.to_chuc_id.includes(toKey)) return false;
 
-  const pbKey = item.phong_ban_id ?? CHIP_FILTER_NULL;
-  if (F.phong_ban_id.length > 0 && !F.phong_ban_id.includes(pbKey)) return false;
+  if (F.phong_ban_id.length > 0) {
+    const pbKey = item.phong_ban_id ?? CHIP_FILTER_NULL;
+    if (pbKey === CHIP_FILTER_NULL) {
+      if (!F.phong_ban_id.includes(CHIP_FILTER_NULL)) return false;
+    } else if (
+      !F.phong_ban_id.includes(pbKey) &&
+      !rowMatchesPhongBanFilter(item.phong_ban_id, F.phong_ban_id, departments)
+    ) {
+      return false;
+    }
+  }
 
   const cvKey = item.chuc_vu_id ?? CHIP_FILTER_NULL;
   if (F.chuc_vu_id.length > 0 && !F.chuc_vu_id.includes(cvKey)) return false;

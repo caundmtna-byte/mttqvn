@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { txt } from '@/lib/text';
-import { MTTQ_CAN_BO_GIOI_TINH } from './constants';
+import { MTTQ_CAN_BO_GIOI_TINH, MTTQ_CAN_BO_TON_GIAO } from './constants';
 import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import type { MttqCanBo } from './types';
 import type { Position } from '@/features/he-thong/chuc-vu/core/types';
@@ -25,7 +25,7 @@ const mttqCanBoFields = z.object({
   ngay_sinh: requiredIsoDate(txt('matTranCanBo.validation.ngaySinhRequired')),
   gioi_tinh: z.enum(MTTQ_CAN_BO_GIOI_TINH, { message: txt('matTranCanBo.validation.gioiTinhRequired') }),
   dan_toc_id: z.string().trim().min(1, txt('matTranCanBo.validation.danTocRequired')),
-  ton_giao: z.string().trim().min(1, txt('matTranCanBo.validation.tonGiaoRequired')),
+  ton_giao: z.enum(MTTQ_CAN_BO_TON_GIAO, { message: txt('matTranCanBo.validation.tonGiaoRequired') }),
   dia_chi: z.string().trim().min(1, txt('matTranCanBo.validation.diaChiRequired')),
   dang_vien: z.boolean(),
   trinh_do_id: z.string().trim().min(1, txt('matTranCanBo.validation.trinhDoRequired')),

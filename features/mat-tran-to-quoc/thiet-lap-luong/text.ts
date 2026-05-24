@@ -1,5 +1,8 @@
 export const matTranThietLapLuong = {
   noViewPermission: 'Bạn không có quyền xem thiết lập lương.',
+  noCreatePermission: 'Bạn không có quyền thêm dữ liệu thiết lập lương.',
+  noEditPermission: 'Bạn không có quyền sửa dữ liệu thiết lập lương.',
+  noDeletePermission: 'Bạn không có quyền xóa dữ liệu thiết lập lương.',
   tabNgach: 'Ngạch lương',
   tabBac: 'Bậc lương',
   deleteTitle: 'Xóa ngạch lương?',

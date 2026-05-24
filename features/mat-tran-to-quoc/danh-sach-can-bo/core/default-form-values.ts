@@ -1,3 +1,4 @@
+import { MTTQ_CAN_BO_TON_GIAO_DEFAULT } from './constants';
 import type { MttqCanBoFormValues } from './schema';
 
 export const MTTQ_CAN_BO_FORM_DEFAULT_VALUES: MttqCanBoFormValues = {
@@ -7,7 +8,7 @@ export const MTTQ_CAN_BO_FORM_DEFAULT_VALUES: MttqCanBoFormValues = {
   ngay_sinh: '',
   gioi_tinh: 'Nam',
   dan_toc_id: '',
-  ton_giao: '',
+  ton_giao: MTTQ_CAN_BO_TON_GIAO_DEFAULT,
   dia_chi: '',
   dang_vien: false,
   trinh_do_id: '',

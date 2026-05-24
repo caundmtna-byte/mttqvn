@@ -60,7 +60,7 @@ export const queryKeys = {
       search: string;
       scope: string;
       viewerNhanVienId: string | null;
-      viewerPhongBanId: string | null;
+      viewerDonViId: string | null;
       theLoaiIds: readonly string[];
       nguonDangIds: readonly string[];
       trangDangIds: readonly string[];

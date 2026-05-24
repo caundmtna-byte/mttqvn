@@ -26,9 +26,12 @@ export function flattenBaiVietDanhSachRow(row: Record<string, unknown>): BaiViet
   const theLoai = pickEmbedded<{ ten_the_loai?: string }>(row.the_loai);
   const nguon = pickEmbedded<{ ten?: string }>(row.nguon_dang);
   const trang = pickEmbedded<{ ten?: string }>(row.trang_dang);
-  const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string; id_phong_ban?: string | number | null }>(
-    row.nguoi_tao,
-  );
+  const nv = pickEmbedded<{
+    ho_va_ten?: string;
+    ten_tai_khoan?: string;
+    id_phong_ban?: string | number | null;
+    don_vi_id?: string | number | null;
+  }>(row.nguoi_tao);
   const rest = { ...row };
   delete rest.the_loai;
   delete rest.nguon_dang;
@@ -61,6 +64,10 @@ export function flattenBaiVietDanhSachRow(row: Record<string, unknown>): BaiViet
     id_phong_ban_nguoi_tao:
       nv?.id_phong_ban != null && String(nv.id_phong_ban).trim() !== ''
         ? String(nv.id_phong_ban).trim()
+        : null,
+    id_don_vi_nguoi_tao:
+      nv?.don_vi_id != null && String(nv.don_vi_id).trim() !== ''
+        ? String(nv.don_vi_id).trim()
         : null,
   } as BaiVietDanhSach;
 }
@@ -139,7 +146,7 @@ export async function deleteBaiVietDanhSachMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }
 
-export type BaiVietRpcScope = 'all' | 'mine' | 'all_dept';
+export type BaiVietRpcScope = 'all' | 'mine' | 'all_don_vi';
 
 export type BaiVietPageQuery = {
   page: number;
@@ -147,7 +154,7 @@ export type BaiVietPageQuery = {
   search: string;
   scope: BaiVietRpcScope;
   viewerNhanVienId: string | null;
-  viewerPhongBanId: string | null;
+  viewerDonViId: string | null;
   theLoaiIds: readonly string[];
   nguonDangIds: readonly string[];
   trangDangIds: readonly string[];
@@ -172,7 +179,7 @@ function filterBaiVietMockForPage(
     search: string | null;
     scope: BaiVietRpcScope;
     viewerNhanVienId: string | null;
-    viewerPhongBanId: string | null;
+    viewerDonViId: string | null;
     theLoaiIds: readonly string[];
     nguonDangIds: readonly string[];
     trangDangIds: readonly string[];
@@ -192,9 +199,9 @@ function filterBaiVietMockForPage(
   if (opts.scope === 'mine') {
     const id = String(opts.viewerNhanVienId ?? '').trim();
     list = id ? list.filter((b) => String(b.id_nguoi_tao) === id) : [];
-  } else if (opts.scope === 'all_dept') {
-    const pb = String(opts.viewerPhongBanId ?? '').trim();
-    list = pb ? list.filter((b) => String(b.id_phong_ban_nguoi_tao ?? '').trim() === pb) : [];
+  } else if (opts.scope === 'all_don_vi') {
+    const dv = String(opts.viewerDonViId ?? '').trim();
+    list = dv ? list.filter((b) => String(b.id_don_vi_nguoi_tao ?? '').trim() === dv) : [];
   }
   if (opts.theLoaiIds.length) {
     const set = new Set(opts.theLoaiIds.map(String));
@@ -253,7 +260,7 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
       search: pSearch,
       scope: q.scope,
       viewerNhanVienId: q.viewerNhanVienId,
-      viewerPhongBanId: q.viewerPhongBanId,
+      viewerDonViId: q.viewerDonViId,
       theLoaiIds: q.theLoaiIds,
       nguonDangIds: q.nguonDangIds,
       trangDangIds: q.trangDangIds,
@@ -274,7 +281,7 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
     p_offset: offset,
     p_scope: q.scope,
     p_viewer_nhan_vien_id: toRpcBigint(q.viewerNhanVienId),
-    p_viewer_phong_ban_id: toRpcBigint(q.viewerPhongBanId),
+    p_viewer_don_vi_id: toRpcBigint(q.viewerDonViId),
     p_the_loai_ids: theLoaiNums.length ? theLoaiNums : null,
     p_nguon_dang_ids: nguonNums.length ? nguonNums : null,
     p_trang_dang_ids: trangNums.length ? trangNums : null,

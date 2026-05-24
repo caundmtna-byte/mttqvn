@@ -9,6 +9,7 @@ import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { MttqKyHop } from '@/features/mat-tran-to-quoc/ky-hop/core/types';
 import { useMttqKyHopListForNhiemKy } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop';
+import { canViewKyHopRow, useMttqKyHopViewer } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop-viewer';
 import { donViDisplayLabel } from '@/features/mat-tran-to-quoc/ky-hop/utils/column-search';
 import { MttqKyHopTableRowActions } from '@/features/mat-tran-to-quoc/ky-hop/components/mttq-ky-hop-table-row-actions';
 
@@ -25,6 +26,11 @@ const MttqNhiemKyDetailKyHopTab: React.FC<Props> = ({ nhiemKyId, onViewRow, onEd
   const { canCreate } = useResourcePermissions('matTranSession');
   const tinhCap = txt('matTranKyHop.tinhCap');
   const { data: rows = [], isLoading } = useMttqKyHopListForNhiemKy(nhiemKyId, { enabled: canView });
+  const viewer = useMttqKyHopViewer();
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewKyHopRow(viewer, r)),
+    [rows, viewer],
+  );
   const [childMenuOpenId, setChildMenuOpenId] = useState<string | null>(null);
 
   const labelColumn = useMemo(
@@ -49,7 +55,7 @@ const MttqNhiemKyDetailKyHopTab: React.FC<Props> = ({ nhiemKyId, onViewRow, onEd
     );
   }
 
-  const countLabel = isLoading ? '…' : String(rows.length);
+  const countLabel = isLoading ? '…' : String(viewableRows.length);
   const showAdd = canCreate;
 
   return (
@@ -78,7 +84,7 @@ const MttqNhiemKyDetailKyHopTab: React.FC<Props> = ({ nhiemKyId, onViewRow, onEd
     >
       {isLoading ? (
         <p className="text-xs text-muted-foreground">{txt('common.loadingData')}</p>
-      ) : rows.length === 0 ? (
+      ) : viewableRows.length === 0 ? (
         <EmptyState
           title={txt('matTranNhiemKy.detail.kyHopEmpty')}
           icon={<CalendarDays className="h-10 w-10 text-muted-foreground" />}
@@ -93,7 +99,7 @@ const MttqNhiemKyDetailKyHopTab: React.FC<Props> = ({ nhiemKyId, onViewRow, onEd
         />
       ) : (
         <EmbeddedChildDataGrid<MttqKyHop>
-          rows={rows}
+          rows={viewableRows}
           getRowKey={(r) => r.id}
           onRowClick={onViewRow}
           maxVisibleBodyRows={8}

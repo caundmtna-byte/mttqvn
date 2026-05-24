@@ -17,6 +17,7 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ErrorState from '@/components/shared/ErrorState';
@@ -68,6 +69,7 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
+  const { canCreate, canEdit, canDelete } = useResourcePermissions('matTranSalarySetup');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<LuongThietLapNgachListRow | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -203,6 +205,10 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
   }, [rows, viewingId, queryClient]);
 
   const handleEditFromList = (item: LuongThietLapNgachListRow) => {
+    if (!canEdit) {
+      toast.error(txt('matTranThietLapLuong.noEditPermission'));
+      return;
+    }
     startTransition(() => {
       setFormOrigin('list');
       setEditing(item);
@@ -211,6 +217,10 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
   };
 
   const handleEditFromDetail = (d: LuongThietLapNgachListRow) => {
+    if (!canEdit) {
+      toast.error(txt('matTranThietLapLuong.noEditPermission'));
+      return;
+    }
     startTransition(() => {
       setFormOrigin('detail');
       setEditing(d);
@@ -219,6 +229,10 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
   };
 
   const handleDelete = (id: string) => {
+    if (!canDelete) {
+      toast.error(txt('matTranThietLapLuong.noDeletePermission'));
+      return;
+    }
     confirm({
       title: txt('matTranThietLapLuong.deleteTitle'),
       message: txt('matTranThietLapLuong.deleteMessage'),
@@ -235,6 +249,10 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
   };
 
   const handleDeleteMany = (ids: string[]) => {
+    if (!canDelete) {
+      toast.error(txt('matTranThietLapLuong.noDeletePermission'));
+      return;
+    }
     confirm({
       title: txt('matTranThietLapLuong.bulkDeleteTitle'),
       message: txt('matTranThietLapLuong.bulkDeleteMessage', { count: ids.length }),
@@ -281,6 +299,10 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
 
   const handleAddBacFromNgach = useCallback(
     (ngach: LuongThietLapNgachListRow) => {
+      if (!canCreate) {
+        toast.error(txt('matTranThietLapLuong.noCreatePermission'));
+        return;
+      }
       if (missingBacCodesForNgachDetail.length === 0) {
         toast.warning(txt('matTranThietLapLuong.bac.allSlotsFull'));
         return;
@@ -295,16 +317,23 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
         }
       });
     },
-    [missingBacCodesForNgachDetail.length, queryClient, viewingId],
+    [canCreate, missingBacCodesForNgachDetail.length, queryClient, viewingId],
   );
 
-  const handleEditBacFromNgach = useCallback((row: LuongThietLapBacRow) => {
-    startTransition(() => {
+  const handleEditBacFromNgach = useCallback(
+    (row: LuongThietLapBacRow) => {
+      if (!canEdit) {
+        toast.error(txt('matTranThietLapLuong.noEditPermission'));
+        return;
+      }
+      startTransition(() => {
       setBacEditing(row);
       setBacShowForm(true);
-      setBacViewingRow(null);
-    });
-  }, []);
+        setBacViewingRow(null);
+      });
+    },
+    [canEdit],
+  );
 
   const handleViewBacFromNgach = useCallback((row: LuongThietLapBacRow) => {
     setBacViewingRow(row);
@@ -314,6 +343,10 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
 
   const handleDeleteBacFromNgach = useCallback(
     (row: LuongThietLapBacRow) => {
+      if (!canDelete) {
+        toast.error(txt('matTranThietLapLuong.noDeletePermission'));
+        return;
+      }
       if (!viewingId) return;
       confirm({
         title: txt('matTranThietLapLuong.bac.deleteTitle'),
@@ -332,7 +365,7 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
         },
       });
     },
-    [confirm, deleteBacMutation, viewingId],
+    [canDelete, confirm, deleteBacMutation, viewingId],
   );
 
   return (
@@ -342,6 +375,10 @@ const LuongNgachTabPanel: React.FC<LuongNgachTabPanelProps> = ({
           onPageBack={onPageBack}
           tabsSlot={tabsSlot}
           onAdd={() => {
+            if (!canCreate) {
+              toast.error(txt('matTranThietLapLuong.noCreatePermission'));
+              return;
+            }
             startTransition(() => {
               setFormOrigin('list');
               setEditing(null);

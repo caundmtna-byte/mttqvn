@@ -17,10 +17,7 @@ import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import EnumBadge from '@/components/ui/EnumBadge';
 import type { MttqTangLuongListRow } from '../core/types';
-import {
-  formatNgachBacLabel,
-  getTangLuongLoaiKyBadgeConfig,
-} from '../utils/display-format';
+import { getTangLuongLoaiKyBadgeConfig } from '../utils/display-format';
 import { BTN_CLOSE, BTN_DELETE, BTN_EDIT, CONFIRM_DELETE } from '@/lib/button-labels';
 import Button from '@/components/ui/Button';
 import { useConfirmStore } from '@/store/useConfirmStore';
@@ -132,12 +129,22 @@ const MttqTangLuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete 
             <DetailField
               icon={<Layers size={12} />}
               label={txt('matTranTangLuong.form.ngachCu')}
-              value={formatNgachBacLabel(data.ten_ngach_cu, data.ma_bac_cu)}
+              value={data.ten_ngach_cu?.trim() || '—'}
+            />
+            <DetailField
+              icon={<Layers size={12} />}
+              label={txt('matTranTangLuong.form.bacCu')}
+              value={data.ma_bac_cu?.trim() || '—'}
             />
             <DetailField
               icon={<Layers size={12} />}
               label={txt('matTranTangLuong.form.ngachMoi')}
-              value={formatNgachBacLabel(data.ten_ngach_moi, data.ma_bac_moi)}
+              value={data.ten_ngach_moi?.trim() || '—'}
+            />
+            <DetailField
+              icon={<Layers size={12} />}
+              label={txt('matTranTangLuong.form.bacMoi')}
+              value={data.ma_bac_moi?.trim() || '—'}
             />
             <DetailField
               icon={<Banknote size={12} />}

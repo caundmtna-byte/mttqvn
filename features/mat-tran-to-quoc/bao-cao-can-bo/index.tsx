@@ -45,6 +45,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useMttqCanBoStatsList } from '../danh-sach-can-bo/hooks/use-mttq-can-bo';
+import { canViewCanBoRow, useMttqCanBoViewer } from '../danh-sach-can-bo/hooks/use-mttq-can-bo-viewer';
 import type { MttqCanBoRow } from '../danh-sach-can-bo/core/types';
 import { computeAgeFromBirthDate } from '../danh-sach-can-bo/utils/age';
 import { formatCanBoPhoneDisplay } from '../danh-sach-can-bo/utils/display-format';
@@ -147,6 +148,13 @@ const BaoCaoCanBoPage: React.FC = () => {
     [rows],
   );
 
+  const viewer = useMttqCanBoViewer('matTranOfficerStats');
+
+  const viewableRowsEnriched = useMemo(
+    () => rowsEnriched.filter((r) => canViewCanBoRow(viewer, r)),
+    [rowsEnriched, viewer],
+  );
+
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
   const [dims, setDims] = useState<OfficerStatsDimensionFilters>(initialDims);
   const [sortKey, setSortKey] = useState<OfficerLookupSortKey>('ho_ten');
@@ -156,9 +164,14 @@ const BaoCaoCanBoPage: React.FC = () => {
 
   useEffect(() => {
     if (!viewing) return;
-    const fresh = rowsEnriched.find((r) => r.id === viewing.id);
+    if (!canViewCanBoRow(viewer, viewing)) {
+      toast.error(txt('matTranCanBo.noViewRowPermission'));
+      setViewing(null);
+      return;
+    }
+    const fresh = viewableRowsEnriched.find((r) => r.id === viewing.id);
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
-  }, [rowsEnriched, viewing]);
+  }, [viewableRowsEnriched, viewing, viewer]);
 
   const presets = useMemo(
     () => [
@@ -178,8 +191,8 @@ const BaoCaoCanBoPage: React.FC = () => {
   );
 
   const filtered = useMemo(
-    () => filterRowsForOfficerStats(rowsEnriched, resolvedRange, dims),
-    [rowsEnriched, resolvedRange, dims],
+    () => filterRowsForOfficerStats(viewableRowsEnriched, resolvedRange, dims),
+    [viewableRowsEnriched, resolvedRange, dims],
   );
 
   const chartRange = useMemo(
@@ -220,101 +233,101 @@ const BaoCaoCanBoPage: React.FC = () => {
 
   const trangThaiOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.trang_thai_id?.trim() ? String(r.trang_thai_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_trang_thai?.trim() || txt('matTranOfficerStats.trangThaiChuaGan'),
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const gioiTinhOptions = useMemo(
-    () => buildDimOptions(rowsEnriched, (r) => ({ id: String(r.gioi_tinh), label: String(r.gioi_tinh) })),
-    [rowsEnriched],
+    () => buildDimOptions(viewableRowsEnriched, (r) => ({ id: String(r.gioi_tinh), label: String(r.gioi_tinh) })),
+    [viewableRowsEnriched],
   );
 
   const chucVuOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.chuc_vu_id?.trim() ? String(r.chuc_vu_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_chuc_vu?.trim() || '—',
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const capQuanLyOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => {
+      buildDimOptions(viewableRowsEnriched, (r) => {
         const norm = normalizeCapQuanLyInput(r.chuc_vu_cap_quan_ly);
         return {
           id: norm ?? CHIP_TRANG_THAI_NULL,
           label: norm ?? txt('matTranOfficerStats.capQuanLyChuaGan'),
         };
       }),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const phongBanOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.phong_ban_id?.trim() ? String(r.phong_ban_id) : CHIP_TRANG_THAI_NULL,
         label:
           [r.ten_bo_phan?.trim(), r.ten_phong_ban?.trim()].filter(Boolean).join(' — ') ||
           (r.phong_ban_id ? String(r.phong_ban_id) : '—'),
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const donViOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.don_vi_id?.trim() ? String(r.don_vi_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_don_vi?.trim() || '—',
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const danTocOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.dan_toc_id?.trim() ? String(r.dan_toc_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_dan_toc?.trim() || '—',
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const trinhDoOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.trinh_do_id?.trim() ? String(r.trinh_do_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_trinh_do?.trim() || '—',
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const lyLuanChinhTriOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.ly_luan_chinh_tri_id?.trim() ? String(r.ly_luan_chinh_tri_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_ly_luan_chinh_tri?.trim() || '—',
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const toChucOptions = useMemo(
     () =>
-      buildDimOptions(rowsEnriched, (r) => ({
+      buildDimOptions(viewableRowsEnriched, (r) => ({
         id: r.to_chuc_id?.trim() ? String(r.to_chuc_id) : CHIP_TRANG_THAI_NULL,
         label: r.ten_to_chuc?.trim() || '—',
       })),
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const dangVienOptions = useMemo<Option[]>(
     () => [
-      { value: 'true', label: txt('matTranOfficerStats.dangVienYes'), count: rowsEnriched.filter((r) => r.dang_vien).length },
-      { value: 'false', label: txt('matTranOfficerStats.dangVienNo'), count: rowsEnriched.filter((r) => !r.dang_vien).length },
+      { value: 'true', label: txt('matTranOfficerStats.dangVienYes'), count: viewableRowsEnriched.filter((r) => r.dang_vien).length },
+      { value: 'false', label: txt('matTranOfficerStats.dangVienNo'), count: viewableRowsEnriched.filter((r) => !r.dang_vien).length },
     ],
-    [rowsEnriched],
+    [viewableRowsEnriched],
   );
 
   const filterGroups = useMemo<FilterGroup[]>(

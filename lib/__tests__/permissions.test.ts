@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { can } from '../permissions';
+import { can, type AppResource } from '../permissions';
 import type { User } from '@/types';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 
@@ -166,31 +166,76 @@ describe('can', () => {
     );
     expect(can(member, 'edit', 'annualPrograms')).toBe(true);
   });
-
-  it('matrix: matTranReliefGoods — view on hang-hoa module only', () => {
-    usePermissionGrantStore.getState().setMatrixGrants(
-      { 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa': ['view'] },
-      2
-    );
-    expect(can(member, 'view', 'matTranReliefGoods')).toBe(true);
-    expect(can(member, 'export', 'matTranReliefGoods')).toBe(true);
-    expect(can(member, 'create', 'matTranReliefGoods')).toBe(false);
-    expect(can(member, 'edit', 'matTranReliefGoods')).toBe(false);
-    expect(can(member, 'delete', 'matTranReliefGoods')).toBe(false);
-  });
-
-  it('matrix: matTranReliefGoods — quan_tri (admin token) grants full CRUD', () => {
-    usePermissionGrantStore.getState().setMatrixGrants(
-      { 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa': ['admin'] },
-      4
-    );
-    expect(can(member, 'create', 'matTranReliefGoods')).toBe(true);
-    expect(can(member, 'delete', 'matTranReliefGoods')).toBe(true);
-  });
-
-  it('matrix: matTranReliefGoods — cap_bac=1 bypasses matrix', () => {
-    usePermissionGrantStore.getState().setMatrixGrants({}, 1);
-    expect(can(member, 'delete', 'matTranReliefGoods')).toBe(true);
-    expect(can(member, 'import', 'matTranReliefGoods')).toBe(true);
-  });
 });
+
+const RELIEF_WAREHOUSE_MODULES: {
+  resource: AppResource;
+  moduleId: string;
+  label: string;
+}[] = [
+  {
+    resource: 'matTranReliefCampaign',
+    moduleId: 'mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro',
+    label: 'dot-cuu-tro',
+  },
+  {
+    resource: 'matTranReliefGoods',
+    moduleId: 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa',
+    label: 'hang-hoa',
+  },
+  {
+    resource: 'matTranReliefStockTransactions',
+    moduleId: 'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho',
+    label: 'nhap-xuat-kho',
+  },
+  {
+    resource: 'matTranReliefInventory',
+    moduleId: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho',
+    label: 'ton-kho',
+  },
+  {
+    resource: 'matTranReliefWarehouseList',
+    moduleId: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho',
+    label: 'danh-sach-kho',
+  },
+  {
+    resource: 'matTranReliefSupportUnits',
+    moduleId: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
+    label: 'don-vi-cuu-tro',
+  },
+  {
+    resource: 'matTranReliefSupportReport',
+    moduleId: 'mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro',
+    label: 'bao-cao-ho-tro',
+  },
+];
+
+describe.each(RELIEF_WAREHOUSE_MODULES)(
+  'matrix: Kho cứu trợ — $label',
+  ({ resource, moduleId }) => {
+    beforeEach(() => {
+      usePermissionGrantStore.getState().clearMatrix();
+    });
+
+    it('view token grants view/export only', () => {
+      usePermissionGrantStore.getState().setMatrixGrants({ [moduleId]: ['view'] }, 2);
+      expect(can(member, 'view', resource)).toBe(true);
+      expect(can(member, 'export', resource)).toBe(true);
+      expect(can(member, 'create', resource)).toBe(false);
+      expect(can(member, 'edit', resource)).toBe(false);
+      expect(can(member, 'delete', resource)).toBe(false);
+    });
+
+    it('quan_tri (admin token) grants full CRUD', () => {
+      usePermissionGrantStore.getState().setMatrixGrants({ [moduleId]: ['admin'] }, 4);
+      expect(can(member, 'create', resource)).toBe(true);
+      expect(can(member, 'delete', resource)).toBe(true);
+    });
+
+    it('cap_bac=1 bypasses matrix', () => {
+      usePermissionGrantStore.getState().setMatrixGrants({}, 1);
+      expect(can(member, 'delete', resource)).toBe(true);
+      expect(can(member, 'import', resource)).toBe(true);
+    });
+  },
+);

@@ -20,8 +20,10 @@ import { useListWithFilter } from '@/lib/hooks';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { queryKeys } from '@/lib/query-keys';
@@ -32,6 +34,10 @@ import {
   useDeleteMttqTangLuong,
   useDeleteMttqTangLuongMany,
 } from './hooks/use-mttq-tang-luong';
+import {
+  canViewTangLuongRow,
+  useMttqTangLuongViewer,
+} from './hooks/use-mttq-tang-luong-viewer';
 import { useMttqTangLuongStore } from './store/useMttqTangLuongStore';
 import type { MttqTangLuongKeHoachRow, MttqTangLuongListRow } from './core/types';
 import {
@@ -75,8 +81,26 @@ const DanhSachTangLuongPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranSalaryIncreaseList');
-  const { canDelete } = useResourcePermissions('matTranSalaryIncreaseList');
+  const { canCreate, canEdit, canDelete } = useResourcePermissions('matTranSalaryIncreaseList');
+  const matrixEnabled = isPermissionMatrixEnabled();
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
+
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  const waitingMatrixHydrate =
+    matrixEnabled &&
+    user != null &&
+    user.role !== 'admin' &&
+    chucVuKey.trim() !== '' &&
+    !matrixActive;
+
+  const listQueryEnabled = Boolean(
+    user && (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+  );
 
   const [mainTab, setMainTab] = useTabSearchParam(TANG_LUONG_MAIN_TABS, 'lich_su');
   const [showForm, setShowForm] = useState(false);
@@ -96,30 +120,36 @@ const DanhSachTangLuongPage: React.FC = () => {
     clearSelection,
   } = useMttqTangLuongStore();
 
-  const listEnabled = canView;
   const { data: rows = [], isLoading, isError, refetch, isFetching } = useMttqTangLuongList({
-    enabled: listEnabled,
+    enabled: listQueryEnabled,
   });
+  const isListLoading = isLoading || isFetching || waitingMatrixHydrate;
   const deleteOne = useDeleteMttqTangLuong();
   const deleteMany = useDeleteMttqTangLuongMany();
+  const viewer = useMttqTangLuongViewer();
+
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewTangLuongRow(viewer, r)),
+    [rows, viewer],
+  );
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || canView || didRedirect.current || waitingMatrixHydrate) return;
     didRedirect.current = true;
     toast.error(txt('matTranTangLuong.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, canView, navigate, waitingMatrixHydrate]);
 
   useEffect(() => () => resetState(), [resetState]);
 
   const enrichedRows = useMemo(
     () =>
-      rows.map((r) => ({
+      viewableRows.map((r) => ({
         ...r,
         loai_ky_label: getTangLuongLoaiKyLabel(r.loai_ky),
         luong_display: r.luong > 0 ? formatCurrency(r.luong) : '',
       })),
-    [rows],
+    [viewableRows],
   );
 
   const filterFn = useCallback(
@@ -156,6 +186,9 @@ const DanhSachTangLuongPage: React.FC = () => {
       const dir = sort.direction === 'desc' ? -1 : 1;
       list.sort((a, b) => {
         const col = sort.column as keyof MttqTangLuongListRow;
+        if (col === 'luong') {
+          return (Number(a.luong) - Number(b.luong)) * dir;
+        }
         const av = String(a[col] ?? '');
         const bv = String(b[col] ?? '');
         return av.localeCompare(bv, 'vi') * dir;
@@ -178,9 +211,17 @@ const DanhSachTangLuongPage: React.FC = () => {
   }, [searchTerm, filters.columnSearch, filters.loai_ky, filters.phong_ban_id, filters.don_vi_id, filters.to_chuc_id, sort.column]);
 
   const viewingRow = useMemo(
-    () => (viewingId ? rows.find((r) => r.id === viewingId) ?? null : null),
-    [rows, viewingId],
+    () => (viewingId ? viewableRows.find((r) => r.id === viewingId) ?? null : null),
+    [viewableRows, viewingId],
   );
+
+  useEffect(() => {
+    if (!viewingId || !viewingRow) return;
+    if (!canViewTangLuongRow(viewer, viewingRow)) {
+      toast.error(txt('matTranTangLuong.noViewPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingRow, viewer]);
 
   const tabsSlot = useMemo(
     () => (
@@ -205,20 +246,31 @@ const DanhSachTangLuongPage: React.FC = () => {
     setFormPrefill({});
   };
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
+    if (!canCreate) {
+      toast.error(txt('matTranTangLuong.noCreatePermission'));
+      return;
+    }
     setEditing(null);
     setFormPrefill({});
     setShowForm(true);
-  };
+  }, [canCreate]);
 
-  const handleEdit = useCallback((row: MttqTangLuongListRow) => {
-    startTransition(() => {
-      setEditing(row);
-      setFormPrefill({});
-      setShowForm(true);
-      setViewingId(null);
-    });
-  }, []);
+  const handleEdit = useCallback(
+    (row: MttqTangLuongListRow) => {
+      if (!canEdit) {
+        toast.error(txt('matTranTangLuong.noEditPermission'));
+        return;
+      }
+      startTransition(() => {
+        setEditing(row);
+        setFormPrefill({});
+        setShowForm(true);
+        setViewingId(null);
+      });
+    },
+    [canEdit],
+  );
 
   const handleView = useCallback(
     (row: MttqTangLuongListRow) => {
@@ -230,6 +282,10 @@ const DanhSachTangLuongPage: React.FC = () => {
 
   const handleDelete = useCallback(
     (row: MttqTangLuongListRow) => {
+      if (!canDelete) {
+        toast.error(txt('matTranTangLuong.noDeletePermission'));
+        return;
+      }
       confirm({
         title: txt('matTranTangLuong.deleteTitle'),
         message: txt('matTranTangLuong.deleteMessage', { ngay: row.ngay_nang_luong }),
@@ -242,10 +298,14 @@ const DanhSachTangLuongPage: React.FC = () => {
         },
       });
     },
-    [confirm, deleteOne],
+    [canDelete, confirm, deleteOne],
   );
 
   const handleDeleteMany = useCallback(() => {
+    if (!canDelete) {
+      toast.error(txt('matTranTangLuong.noDeletePermission'));
+      return;
+    }
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     confirm({
@@ -257,33 +317,50 @@ const DanhSachTangLuongPage: React.FC = () => {
         deleteMany.mutate(ids, { onSuccess: () => clearSelection() });
       },
     });
-  }, [clearSelection, confirm, deleteMany, selectedIds]);
+  }, [canDelete, clearSelection, confirm, deleteMany, selectedIds]);
 
-  const handleRecordFromKeHoach = useCallback((row: MttqTangLuongKeHoachRow) => {
-    setMainTab('lich_su');
+  const handleRecordFromKeHoach = useCallback(
+    (row: MttqTangLuongKeHoachRow) => {
+      if (!canCreate) {
+        toast.error(txt('matTranTangLuong.noCreatePermission'));
+        return;
+      }
+      setMainTab('lich_su');
     setEditing(null);
     setFormPrefill({
       canBoId: row.can_bo_id,
       ngachMoiId: row.ngach_luong_id_moi ?? undefined,
       bacMoiId: row.bac_luong_id_moi ?? undefined,
     });
-    setShowForm(true);
-  }, [setMainTab]);
+      setShowForm(true);
+    },
+    [canCreate, setMainTab],
+  );
 
   useEffect(() => {
-    if (mainTab !== 'lich_su' || rows.length === 0) return;
+    if (mainTab !== 'lich_su' || viewableRows.length === 0) return;
     const raw = searchParams.get('open')?.trim();
     if (!raw) return;
-    const row = rows.find((r) => r.id === raw);
+    const row = viewableRows.find((r) => r.id === raw);
     if (row) handleView(row);
     const next = new URLSearchParams(searchParams);
     next.delete('open');
     setSearchParams(next, { replace: true });
-  }, [handleView, mainTab, rows, searchParams, setSearchParams]);
+  }, [handleView, mainTab, viewableRows, searchParams, setSearchParams]);
 
-  if (!canView) return null;
+  if (!canView) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center min-h-[40vh] px-4"
+        aria-busy={waitingMatrixHydrate}
+        aria-label={txt('common.loading')}
+      >
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
-  if (isError && listEnabled) {
+  if (isError && listQueryEnabled) {
     return (
       <div className="flex flex-col h-full min-h-0 p-4">
         <ErrorState
@@ -318,12 +395,12 @@ const DanhSachTangLuongPage: React.FC = () => {
           <div className="flex-1 min-h-0 flex flex-col overflow-auto p-3 sm:p-4">
             <MttqTangLuongTable
               data={sorted}
-              isLoading={isLoading || isFetching}
+              isLoading={isListLoading}
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDelete}
               emptyTitle={
-                rows.length === 0
+                viewableRows.length === 0
                   ? txt('matTranTangLuong.emptyTitle')
                   : sorted.length === 0 && hasListFilters
                     ? txt('common.noResults')
@@ -340,21 +417,21 @@ const DanhSachTangLuongPage: React.FC = () => {
 
         {mainTab === 'ke_hoach' ? (
           <MttqTangLuongKeHoachPanel
-            allRows={rows}
+            allRows={viewableRows}
             year={keHoachYear}
             groupMode={keHoachGroupMode}
             onRecord={handleRecordFromKeHoach}
-            isLoading={isLoading}
+            isLoading={isListLoading}
           />
         ) : null}
 
         {mainTab === 'thong_ke' ? (
           <MttqTangLuongThongKePanel
-            rows={rows}
+            rows={viewableRows}
             statsYear={statsYear}
             loaiKy={filters.loai_ky}
             phongBanIds={filters.phong_ban_id}
-            isLoading={isLoading}
+            isLoading={isListLoading}
           />
         ) : null}
       </div>

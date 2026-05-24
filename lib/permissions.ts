@@ -84,7 +84,9 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranReliefWarehouseList: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho',
   matTranReliefSupportUnits: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
   matTranReliefSupportReport: 'mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro',
+  /** Danh sách tăng lương — `can()`: `cap_bac===1` hoặc `quan_tri` (`admin`/`all`) hoặc token `xem`/`them`/`sua`/`xoa`. */
   matTranSalaryIncreaseList: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong',
+  /** Thiết lập lương — cùng luật `can()` như danh sách tăng lương. */
   matTranSalarySetup: 'mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong',
   annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam',
   tasks: 'quan-ly-giao-viec/cong-viec',

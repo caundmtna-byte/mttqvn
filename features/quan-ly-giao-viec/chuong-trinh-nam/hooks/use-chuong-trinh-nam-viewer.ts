@@ -9,18 +9,16 @@ export interface ChuongTrinhNamViewer {
   viewAll: boolean;
   /** `var_nhan_vien.id` — so khớp `id_nguoi_tao`. */
   viewerNhanVienId: string | null;
-  /** `var_nhan_vien.id_phong_ban` — so khớp `id_phong_ban` khi cùng phòng. */
-  viewerPhongBanId: string | null;
 }
 
-export type ChuongTrinhNamRowForViewGate = Pick<ChuongTrinhNamListRow, 'id_nguoi_tao' | 'id_phong_ban'>;
+export type ChuongTrinhNamRowForViewGate = Pick<ChuongTrinhNamListRow, 'id_nguoi_tao'>;
 
 /**
  * Tổng hợp viewer cho module Chương trình BTT (lọc UI, không RLS).
  *
  * `viewAll`: admin mock, legacy (!matrixActive), `cap_bac === 1`, hoặc grant `admin`/`all` trên module.
  *
- * Khi không `viewAll`: OR — dòng do mình tạo hoặc `id_phong_ban` trùng phòng ban nhân viên (cả hai phía có giá trị).
+ * Khi không `viewAll`: chỉ dòng do mình tạo (`id_nguoi_tao`).
  */
 export function useChuongTrinhNamViewer(): ChuongTrinhNamViewer {
   const user = useAuthStore((s) => s.user);
@@ -39,13 +37,11 @@ export function useChuongTrinhNamViewer(): ChuongTrinhNamViewer {
       allowed.includes('admin') ||
       allowed.includes('all');
     const nv = user?.nhan_vien_id?.toString().trim();
-    const pb = user?.id_phong_ban?.toString().trim();
     return {
       viewAll,
       viewerNhanVienId: nv ? nv : null,
-      viewerPhongBanId: pb ? pb : null,
     };
-  }, [user?.role, user?.nhan_vien_id, user?.id_phong_ban, matrixActive, grantsByModule, chucVuCapBac]);
+  }, [user?.role, user?.nhan_vien_id, matrixActive, grantsByModule, chucVuCapBac]);
 }
 
 export function canViewChuongTrinhNamRow(
@@ -54,11 +50,5 @@ export function canViewChuongTrinhNamRow(
 ): boolean {
   if (viewer.viewAll) return true;
   const creator = row.id_nguoi_tao?.toString().trim();
-  const mine = Boolean(viewer.viewerNhanVienId) && Boolean(creator) && creator === viewer.viewerNhanVienId;
-  const rowPb = row.id_phong_ban?.toString().trim();
-  const samePb =
-    Boolean(viewer.viewerPhongBanId) &&
-    Boolean(rowPb) &&
-    rowPb === viewer.viewerPhongBanId;
-  return mine || samePb;
+  return Boolean(viewer.viewerNhanVienId) && Boolean(creator) && creator === viewer.viewerNhanVienId;
 }

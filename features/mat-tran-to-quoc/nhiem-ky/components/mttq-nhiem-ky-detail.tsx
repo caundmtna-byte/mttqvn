@@ -26,6 +26,7 @@ import {
   useMttqKyHopDetail,
   useDeleteMttqKyHopMany,
 } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop';
+import { canViewKyHopRow, useMttqKyHopViewer } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop-viewer';
 import {
   useMttqUyVienUyBanDetail,
   useDeleteMttqUyVienUyBanMany,
@@ -86,6 +87,15 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
   const { data: uyVienNestedData } = useMttqUyVienUyBanDetail(nestedUyVienId);
   const deleteKyHopMutation = useDeleteMttqKyHopMany();
   const deleteUyVienMutation = useDeleteMttqUyVienUyBanMany();
+  const kyHopViewer = useMttqKyHopViewer();
+
+  useEffect(() => {
+    if (!nestedKyHopId || !kyHopNestedData) return;
+    if (!canViewKyHopRow(kyHopViewer, kyHopNestedData)) {
+      toast.error(txt('matTranKyHop.noViewPermission'));
+      setNestedKyHopId(null);
+    }
+  }, [nestedKyHopId, kyHopNestedData, kyHopViewer]);
 
   useEffect(() => {
     setDetailTab(TAB_INFO);

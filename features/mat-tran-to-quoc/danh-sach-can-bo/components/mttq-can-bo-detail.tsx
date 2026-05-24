@@ -28,6 +28,7 @@ import {
   trimmedDisplay,
 } from '../utils/display-format';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
+import { normalizeTonGiaoFromDb } from '../utils/ton-giao-form';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { capQuanLyBadgeConfig, normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -160,7 +161,7 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
             <DetailField
               label={txt('matTranCanBo.form.tonGiao')}
               icon={<Church size={12} />}
-              value={trimmedDisplay(data.ton_giao) ?? undefined}
+              value={normalizeTonGiaoFromDb(data.ton_giao)}
             />
             <DetailField
               label={txt('matTranCanBo.form.dangVien')}

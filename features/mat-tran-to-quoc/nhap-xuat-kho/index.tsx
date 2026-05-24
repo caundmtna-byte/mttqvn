@@ -21,7 +21,9 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
+import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
 import { formatCurrency } from '@/lib/utils';
@@ -83,7 +85,26 @@ const NhapXuatKhoPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefStockTransactions');
+  const matrixEnabled = isPermissionMatrixEnabled();
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
+
+  const listQueryEnabled = Boolean(
+    user &&
+      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+  );
+
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  const waitingMatrixHydrate =
+    matrixEnabled &&
+    user != null &&
+    user.role !== 'admin' &&
+    chucVuKey.trim() !== '' &&
+    !matrixActive;
 
   const [activeTab, setActiveTab] = useTabSearchParam(NHAP_XUAT_KHO_TABS, TAB_LIST);
 
@@ -125,10 +146,12 @@ const NhapXuatKhoPage: React.FC = () => {
     columns: ctCols,
   } = ctStore;
 
-  const { data: rows = [], isLoading: listLoading } = useNhapXuatKhoList({ enabled: canView });
-  const { data: ctRows = [], isLoading: ctLoading } = useNhapXuatKhoCtFlatList({ enabled: canView });
-  const detailEnabled = canView && Boolean(viewingId?.trim());
+  const { data: rows = [], isLoading: listLoading } = useNhapXuatKhoList({ enabled: listQueryEnabled });
+  const { data: ctRows = [], isLoading: ctLoading } = useNhapXuatKhoCtFlatList({ enabled: listQueryEnabled });
+  const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useNhapXuatKhoDetail(viewingId, { enabled: detailEnabled });
+  const isListTabLoading = listLoading || waitingMatrixHydrate;
+  const isCtTabLoading = ctLoading || waitingMatrixHydrate;
   const deleteMany = useDeleteNhapXuatKhoMany();
 
   useEffect(() => {
@@ -500,7 +523,7 @@ const NhapXuatKhoPage: React.FC = () => {
             <div className="flex-1 min-h-0">
               <NhapXuatKhoTable
                 data={sorted}
-                isLoading={listLoading}
+                isLoading={isListTabLoading}
                 onEdit={handleEditFromList}
                 onDelete={handleDelete}
                 onView={(item) => setViewingId(item.id)}
@@ -520,7 +543,7 @@ const NhapXuatKhoPage: React.FC = () => {
             <div className="flex-1 min-h-0">
               <NhapXuatKhoCtFlatTable
                 data={sortedCt}
-                isLoading={ctLoading}
+                isLoading={isCtTabLoading}
                 onView={handleViewFromCtFlat}
                 emptyTitle={ctEmptyTitle}
                 emptyDescription={ctEmptyDescription}

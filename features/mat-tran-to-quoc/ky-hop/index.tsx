@@ -26,6 +26,7 @@ import {
   useMttqKyHopDetail,
   useImportMttqKyHop,
 } from './hooks/use-mttq-ky-hop';
+import { canViewKyHopRow, useMttqKyHopViewer } from './hooks/use-mttq-ky-hop-viewer';
 import { useMttqKyHopStore } from './store/useMttqKyHopStore';
 import type { MttqKyHop, MttqKyHopListRow } from './core/types';
 import { MTTQ_KY_HOP_SEARCHABLE_KEYS } from './utils/search-keys';
@@ -97,9 +98,26 @@ const KyHopPage: React.FC = () => {
   const deleteMutation = useDeleteMttqKyHopMany();
   const importMutation = useImportMttqKyHop(() => setShowImport(false));
 
+  const viewer = useMttqKyHopViewer();
+
+  /** Lọc theo viewer trước khi mọi tính toán hiển thị (chip / search / export / sort). */
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewKyHopRow(viewer, r)),
+    [rows, viewer],
+  );
+
   useEffect(() => {
     return () => resetState();
   }, [resetState]);
+
+  /** Drawer chi tiết: nếu data về mà viewer không đủ quyền (vd. đoán id), tự đóng + báo. */
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewKyHopRow(viewer, viewingData)) {
+      toast.error(txt('matTranKyHop.noViewPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, viewer]);
 
   const clearListFilters = useCallback(() => {
     setSearchTerm('');
@@ -132,7 +150,7 @@ const KyHopPage: React.FC = () => {
     [],
   );
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -172,7 +190,7 @@ const KyHopPage: React.FC = () => {
 
   const nhiemKyChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const value = r.nhiem_ky_id;
       const label = r.ten_nhiem_ky || value;
       const cur = map.get(value);
@@ -182,11 +200,11 @@ const KyHopPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [rows]);
+  }, [viewableRows]);
 
   const donViChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const value = r.don_vi_id ?? DON_VI_FILTER_TINH;
       const label = donViDisplayLabel(r, tinhCapLabel);
       const cur = map.get(value);
@@ -196,11 +214,11 @@ const KyHopPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [rows, tinhCapLabel]);
+  }, [viewableRows, tinhCapLabel]);
 
   const namChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
-    for (const r of rows) {
+    for (const r of viewableRows) {
       const y = yearFromNgayHop(r);
       if (!y) continue;
       const cur = map.get(y);
@@ -210,7 +228,7 @@ const KyHopPage: React.FC = () => {
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => Number(b.value) - Number(a.value));
-  }, [rows]);
+  }, [viewableRows]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -377,7 +395,7 @@ const KyHopPage: React.FC = () => {
     });
   };
 
-  const hasRows = rows.length > 0;
+  const hasRows = viewableRows.length > 0;
   const hasFilteredRows = sorted.length > 0;
   const showFilteredEmpty = hasRows && !hasFilteredRows && !isLoading;
 

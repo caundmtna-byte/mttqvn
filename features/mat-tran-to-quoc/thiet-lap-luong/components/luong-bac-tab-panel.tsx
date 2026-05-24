@@ -54,7 +54,7 @@ interface Props {
 
 const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnabled }) => {
   const confirm = useConfirmStore((s) => s.confirm);
-  const { canEdit, canCreate } = useResourcePermissions('matTranSalarySetup');
+  const { canEdit, canCreate, canDelete } = useResourcePermissions('matTranSalarySetup');
   const { data: ngachRows = [] } = useLuongThietLapNgachList({ enabled: listQueryEnabled });
   const [selectedNgachId, setSelectedNgachId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -196,6 +196,10 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
   };
 
   const handleAdd = () => {
+    if (!canCreate) {
+      toast.error(txt('matTranThietLapLuong.noCreatePermission'));
+      return;
+    }
     if (!selectedNgachId) {
       toast.warning(txt('matTranThietLapLuong.bac.addPickNgach'));
       return;
@@ -214,22 +218,40 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
     setViewingId(row.id);
   }, []);
 
-  const handleEdit = useCallback((row: LuongThietLapBacRow) => {
-    startTransition(() => {
+  const handleEdit = useCallback(
+    (row: LuongThietLapBacRow) => {
+      if (!canEdit) {
+        toast.error(txt('matTranThietLapLuong.noEditPermission'));
+        return;
+      }
+      startTransition(() => {
       setEditing(row);
       setShowForm(true);
-      setViewingId(null);
-    });
-  }, []);
+        setViewingId(null);
+      });
+    },
+    [canEdit],
+  );
 
-  const handleEditFromDetail = useCallback((row: LuongThietLapBacRow) => {
-    setViewingId(null);
-    setEditing(row);
-    setShowForm(true);
-  }, []);
+  const handleEditFromDetail = useCallback(
+    (row: LuongThietLapBacRow) => {
+      if (!canEdit) {
+        toast.error(txt('matTranThietLapLuong.noEditPermission'));
+        return;
+      }
+      setViewingId(null);
+      setEditing(row);
+      setShowForm(true);
+    },
+    [canEdit],
+  );
 
   const handleDeleteBac = useCallback(
     (row: LuongThietLapBacRow) => {
+      if (!canDelete) {
+        toast.error(txt('matTranThietLapLuong.noDeletePermission'));
+        return;
+      }
       const ngachId = row.ngach_id?.trim();
       if (!ngachId) return;
       confirm({
@@ -249,7 +271,7 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
         },
       });
     },
-    [confirm, deleteBac],
+    [canDelete, confirm, deleteBac],
   );
 
   const handleSaveMlcs = () => {

@@ -47,8 +47,10 @@ import { CHART_FILL_FALLBACK } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useCan } from '@/hooks/use-can';
+import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import ErrorState from '@/components/shared/ErrorState';
@@ -114,9 +116,28 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefSupportReport');
+  const matrixEnabled = isPermissionMatrixEnabled();
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const { canExport } = useResourcePermissions('matTranReliefSupportReport');
   const canOpenPhieuDetail = useCan('view', 'matTranReliefStockTransactions');
   const didRedirect = useRef(false);
+
+  const listQueryEnabled = Boolean(
+    user &&
+      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+  );
+
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  const waitingMatrixHydrate =
+    matrixEnabled &&
+    user != null &&
+    user.role !== 'admin' &&
+    chucVuKey.trim() !== '' &&
+    !matrixActive;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -136,7 +157,8 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
     isError,
     error,
     refetch,
-  } = useKhoBaoCaoHoTroRawData({ enabled: canView });
+  } = useKhoBaoCaoHoTroRawData({ enabled: listQueryEnabled });
+  const isReportLoading = isLoading || waitingMatrixHydrate;
 
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
   const [dims, setDims] = useState<ReliefSupportDimensionFilters>(initialDims);
@@ -621,7 +643,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
             message={error instanceof Error ? error.message : txt('common.error')}
             onRetry={() => void refetch()}
           />
-        ) : isLoading ? (
+        ) : isReportLoading ? (
           <p className="text-sm text-muted-foreground py-8 text-center">{txt('matTranReliefSupportReport.loading')}</p>
         ) : stats.filtered.length === 0 ? (
           <div className="py-12 text-center space-y-2">

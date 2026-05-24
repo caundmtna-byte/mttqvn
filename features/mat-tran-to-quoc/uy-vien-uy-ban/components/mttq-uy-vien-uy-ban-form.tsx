@@ -46,6 +46,8 @@ import {
 } from '../core/schema';
 import type { MttqUyVienUyBan } from '../core/types';
 import { useCreateMttqUyVienUyBan, useUpdateMttqUyVienUyBan } from '../hooks/use-mttq-uy-vien-uy-ban';
+import { useMttqUyVienUyBanViewer } from '../hooks/use-mttq-uy-vien-uy-ban-viewer';
+import { buildUyVienCanBoOptions } from '../utils/can-bo-options-for-uy-vien';
 import { formatTenPhongBanHienThi } from '../utils/phong-ban-hien-thi';
 
 const FORM_ID = 'mttq-uy-vien-uy-ban-form';
@@ -167,6 +169,10 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
   const { data: tinhList = [] } = useTinhThanhList();
   const { data: xaList = [] } = useXaPhuongForTab(true, '');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
+  const viewer = useMttqUyVienUyBanViewer();
+  const isXaPhuongViewer = viewer.chucVuCapQuanLy === 'Xã phường';
+  const viewerDonViId = viewer.viewerDonViId;
+  const lockDonViToViewer = isXaPhuongViewer && Boolean(viewerDonViId);
 
   const createMutation = useCreateMttqUyVienUyBan(onClose);
   const updateMutation = useUpdateMttqUyVienUyBan(onClose);
@@ -188,6 +194,19 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
   );
 
   const xaOptions = useMemo(() => {
+    if (lockDonViToViewer && viewerDonViId) {
+      const x = xaList.find((item) => String(item.id) === viewerDonViId);
+      if (x) {
+        return [
+          {
+            label: x.ten,
+            value: String(x.id),
+            subLabel: tinhMap.get(x.id_tinh_thanh),
+          },
+        ];
+      }
+      return [{ label: viewerDonViId, value: viewerDonViId }];
+    }
     const tinhCap = {
       label: `${txt('matTranUyVienUyBan.tinhCap')} (${txt('matTranUyVienUyBan.form.donViPlaceholder')})`,
       value: TINH_CAP_VALUE,
@@ -205,7 +224,7 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
         subLabel: tinhMap.get(x.id_tinh_thanh),
       }));
     return [tinhCap, ...rest];
-  }, [xaList, tinhMap]);
+  }, [xaList, tinhMap, lockDonViToViewer, viewerDonViId]);
 
   const canBoMap = useMemo(() => {
     const m = new Map<string, MttqCanBo>();
@@ -213,37 +232,35 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     return m;
   }, [canBoList]);
 
-  const canBoOptions = useMemo(() => {
-    const ensureId = initialData?.can_bo_id?.trim();
-    const rows = [...canBoList].sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, 'vi'));
-    const opts = rows.map((c) => ({
-      value: String(c.id),
-      label: c.ho_ten,
-      subLabel: [c.ten_chuc_vu, c.ten_don_vi].filter(Boolean).join(' · ') || undefined,
-    }));
-    if (ensureId && !canBoMap.has(ensureId)) {
-      opts.unshift({
-        value: ensureId,
-        label: initialData?.ho_va_ten ? `${initialData.ho_va_ten} (#${ensureId})` : `#${ensureId}`,
-        subLabel: undefined,
-      });
-    }
-    return opts;
-  }, [canBoList, canBoMap, initialData?.can_bo_id, initialData?.ho_va_ten]);
+  const canBoOptions = useMemo(
+    () =>
+      buildUyVienCanBoOptions({
+        viewer,
+        canBoList,
+        ensureCanBoId: initialData?.can_bo_id,
+        ensureCanBoLabel: initialData?.ho_va_ten,
+      }),
+    [viewer, canBoList, initialData?.can_bo_id, initialData?.ho_va_ten],
+  );
 
   const defaultValues = useMemo(() => {
     const base = mttqUyVienUyBanToFormInput(initialData ?? null);
+    let next = base;
     if (!initialData && defaultNhiemKyId?.trim()) {
-      return { ...base, nhiem_ky_id: defaultNhiemKyId.trim() };
+      next = { ...next, nhiem_ky_id: defaultNhiemKyId.trim() };
     }
-    return base;
-  }, [initialData, defaultNhiemKyId]);
+    if (!initialData && lockDonViToViewer && viewerDonViId) {
+      next = { ...next, don_vi_id: viewerDonViId };
+    }
+    return next;
+  }, [initialData, defaultNhiemKyId, lockDonViToViewer, viewerDonViId]);
 
   const {
     register,
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<MttqUyVienUyBanFormInput, unknown, MttqUyVienUyBanFormValues>({
     defaultValues,
@@ -275,12 +292,25 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
 
   useEffect(() => {
     const base = mttqUyVienUyBanToFormInput(initialData ?? null);
+    let next = base;
     if (!initialData && defaultNhiemKyId?.trim()) {
-      reset({ ...base, nhiem_ky_id: defaultNhiemKyId.trim() });
-    } else {
-      reset(base);
+      next = { ...next, nhiem_ky_id: defaultNhiemKyId.trim() };
     }
-  }, [initialData, defaultNhiemKyId, reset]);
+    if (!initialData && lockDonViToViewer && viewerDonViId) {
+      next = { ...next, don_vi_id: viewerDonViId };
+    }
+    reset(next);
+  }, [initialData, defaultNhiemKyId, reset, lockDonViToViewer, viewerDonViId]);
+
+  useEffect(() => {
+    if (!lockDonViToViewer) return;
+    const id = String(watchedCanBoId ?? '').trim();
+    if (!id) return;
+    const c = canBoMap.get(id);
+    const dv = c?.don_vi_id != null ? String(c.don_vi_id).trim() : '';
+    if (dv) setValue('don_vi_id', dv);
+    else if (viewerDonViId) setValue('don_vi_id', viewerDonViId);
+  }, [watchedCanBoId, lockDonViToViewer, canBoMap, viewerDonViId, setValue]);
 
   const persistCanBoIfNeeded = useCallback(
     async (canBoId: string) => {
@@ -419,6 +449,7 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
                   error={errors.don_vi_id?.message as string | undefined}
                   icon={<MapPin size={14} />}
                   dropdownInPortal
+                  disabled={lockDonViToViewer}
                 />
               )}
             />

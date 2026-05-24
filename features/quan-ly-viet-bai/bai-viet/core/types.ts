@@ -22,8 +22,10 @@ export interface BaiVietDanhSach {
   ten_trang_dang?: string | null;
   link: string;
   id_nguoi_tao: string;
-  /** Phòng ban nhân viên tạo bài (embed `nguoi_tao`) — dùng lọc phạm vi tab Nhuận bút "Tất cả". */
+  /** Phòng ban nhân viên tạo bài (embed `nguoi_tao`) — chip lọc UI. */
   id_phong_ban_nguoi_tao?: string | null;
+  /** Đơn vị nhân viên tạo bài — lọc phạm vi tab "Tất cả" theo `cap_quan_ly`. */
+  id_don_vi_nguoi_tao?: string | null;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
   tg_tao: string;

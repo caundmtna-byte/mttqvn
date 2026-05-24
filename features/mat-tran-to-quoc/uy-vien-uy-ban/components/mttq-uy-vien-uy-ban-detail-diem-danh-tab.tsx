@@ -8,6 +8,7 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { MttqDiemDanhTrangThai } from '@/features/mat-tran-to-quoc/ky-hop/core/types';
 import type { MttqKyHop } from '@/features/mat-tran-to-quoc/ky-hop/core/types';
 import { useMttqKyHopListForNhiemKy } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop';
+import { canViewKyHopRow, useMttqKyHopViewer } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-ky-hop-viewer';
 import { useDiemDanhForNhiemKy, useUpsertDiemDanh } from '@/features/mat-tran-to-quoc/ky-hop/hooks/use-mttq-diem-danh';
 
 interface Props {
@@ -24,6 +25,11 @@ const MttqUyVienUyBanDetailDiemDanhTab: React.FC<Props> = ({ uyVienId, nhiemKyId
   const { data: kyHopRows = [], isLoading: loadingKyHop } = useMttqKyHopListForNhiemKy(nhiemKyId, {
     enabled: canViewSession && Boolean(nhiemKyId.trim()),
   });
+  const kyHopViewer = useMttqKyHopViewer();
+  const visibleKyHopRows = useMemo(
+    () => kyHopRows.filter((r) => canViewKyHopRow(kyHopViewer, r)),
+    [kyHopRows, kyHopViewer],
+  );
   const { data: diemDanhRows = [], isLoading: loadingDiemDanh } = useDiemDanhForNhiemKy(nhiemKyId, {
     enabled: canViewSession && Boolean(nhiemKyId.trim()),
   });
@@ -31,7 +37,7 @@ const MttqUyVienUyBanDetailDiemDanhTab: React.FC<Props> = ({ uyVienId, nhiemKyId
   const [pendingKyHopId, setPendingKyHopId] = useState<string | null>(null);
 
   const kyHopSorted = useMemo(() => {
-    const list = [...kyHopRows];
+    const list = [...visibleKyHopRows];
     list.sort((a, b) => {
       const da = a.ngay_hop ?? '';
       const db = b.ngay_hop ?? '';
@@ -39,7 +45,7 @@ const MttqUyVienUyBanDetailDiemDanhTab: React.FC<Props> = ({ uyVienId, nhiemKyId
       return a.ky_thu.localeCompare(b.ky_thu, 'vi');
     });
     return list;
-  }, [kyHopRows]);
+  }, [visibleKyHopRows]);
 
   const trangThaiByKyHopId = useMemo(() => {
     const m = new Map<string, MttqDiemDanhTrangThai>();

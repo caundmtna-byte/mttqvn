@@ -25,7 +25,12 @@ import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useTheLoais } from '../thiet-lap-bai-viet/hooks/use-the-loai';
 import { useThietLapKhacAll } from '../thiet-lap-bai-viet/hooks/use-thiet-lap-khac';
-import { useArticleAllTabViewer, rowVisibleOnArticleAllTab } from '../hooks/use-article-all-tab-viewer';
+import {
+  canLoadArticleAllTab,
+  resolveBaiVietAllTabRpcScope,
+  useArticleAllTabViewer,
+  rowVisibleOnArticleAllTab,
+} from '../hooks/use-article-all-tab-viewer';
 import { useBaiVietDanhSachPage, useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
 import { useBaiVietDanhSachStore } from './store/useBaiVietDanhSachStore';
 import type { BaiVietDanhSach, BaiVietListScope } from './core/types';
@@ -97,12 +102,12 @@ const BaiVietDanhSachPage: React.FC = () => {
   const { data: khacRows = [] } = useThietLapKhacAll({ enabled: canView });
 
   const rpcScope: BaiVietRpcScope =
-    listScope === TAB_MINE ? 'mine' : allTabViewer.canViewAllOrg ? 'all' : 'all_dept';
+    listScope === TAB_MINE ? 'mine' : resolveBaiVietAllTabRpcScope(allTabViewer);
 
   const pageQueryEnabled =
     canView &&
     (listScope !== TAB_MINE || Boolean(nhanVienId)) &&
-    (listScope !== TAB_ALL || allTabViewer.canViewAllOrg || Boolean(allTabViewer.viewerPhongBanId));
+    (listScope !== TAB_ALL || canLoadArticleAllTab(allTabViewer));
 
   const pageQuery = useMemo(
     () => ({
@@ -111,7 +116,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       search: searchTerm,
       scope: rpcScope,
       viewerNhanVienId: listScope === TAB_MINE ? nhanVienId : null,
-      viewerPhongBanId: rpcScope === 'all_dept' ? allTabViewer.viewerPhongBanId : null,
+      viewerDonViId: rpcScope === 'all_don_vi' ? allTabViewer.viewerDonViId : null,
       theLoaiIds: filters.id_the_loai,
       nguonDangIds: filters.id_nguon_dang,
       trangDangIds: filters.id_trang_dang,
@@ -123,7 +128,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       rpcScope,
       listScope,
       nhanVienId,
-      allTabViewer.viewerPhongBanId,
+      allTabViewer.viewerDonViId,
       filters.id_the_loai,
       filters.id_nguon_dang,
       filters.id_trang_dang,

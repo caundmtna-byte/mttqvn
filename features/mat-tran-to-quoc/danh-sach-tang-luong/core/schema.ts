@@ -20,6 +20,9 @@ export const mttqTangLuongSchema = z
     bac_luong_id_cu: z.string().optional().or(z.literal('')),
     ngach_luong_id_moi: z.string().min(1, txt('matTranTangLuong.validation.ngachMoiRequired')),
     bac_luong_id_moi: z.string().min(1, txt('matTranTangLuong.validation.bacMoiRequired')),
+    luong: z
+      .number({ message: txt('matTranTangLuong.validation.luongRequired') })
+      .positive(txt('matTranTangLuong.validation.luongZero')),
     ghi_chu: optionalText,
     file_quyet_dinh: optionalText,
   })
@@ -42,6 +45,7 @@ export function tangLuongToFormInput(
       bac_luong_id_cu: defaults?.bac_luong_id_cu ?? '',
       ngach_luong_id_moi: defaults?.ngach_luong_id_moi ?? '',
       bac_luong_id_moi: defaults?.bac_luong_id_moi ?? '',
+      luong: defaults?.luong ?? 0,
       ghi_chu: defaults?.ghi_chu ?? '',
       file_quyet_dinh: defaults?.file_quyet_dinh ?? '',
     };
@@ -54,6 +58,7 @@ export function tangLuongToFormInput(
     bac_luong_id_cu: row.bac_luong_id_cu ?? '',
     ngach_luong_id_moi: row.ngach_luong_id_moi,
     bac_luong_id_moi: row.bac_luong_id_moi,
+    luong: row.luong > 0 ? row.luong : 0,
     ghi_chu: row.ghi_chu ?? '',
     file_quyet_dinh: row.file_quyet_dinh ?? '',
   };

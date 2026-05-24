@@ -21,7 +21,9 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
+import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import ExportDialog from '@/components/shared/ExportDialog';
 import {
   useKhoDanhSachKhoList,
@@ -59,7 +61,26 @@ const KhoDanhSachKhoPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefWarehouseList');
+  const matrixEnabled = isPermissionMatrixEnabled();
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
+
+  const listQueryEnabled = Boolean(
+    user &&
+      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+  );
+
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  const waitingMatrixHydrate =
+    matrixEnabled &&
+    user != null &&
+    user.role !== 'admin' &&
+    chucVuKey.trim() !== '' &&
+    !matrixActive;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -85,8 +106,10 @@ const KhoDanhSachKhoPage: React.FC = () => {
     columns,
   } = useKhoDanhSachKhoStore();
 
-  const { data: rows = [], isLoading } = useKhoDanhSachKhoList({ enabled: canView });
-  const { data: viewingData } = useKhoDanhSachKhoDetail(viewingId, { enabled: canView });
+  const { data: rows = [], isLoading } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
+  const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
+  const { data: viewingData } = useKhoDanhSachKhoDetail(viewingId, { enabled: detailEnabled });
+  const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteKhoDanhSachKhoMany();
 
   useEffect(() => {
@@ -296,7 +319,7 @@ const KhoDanhSachKhoPage: React.FC = () => {
         <div className="flex-1 min-h-0">
           <KhoDanhSachKhoTable
             data={sorted}
-            isLoading={isLoading}
+            isLoading={isListLoading}
             onEdit={handleEditFromList}
             onDelete={handleDelete}
             onView={(item) => setViewingId(item.id)}

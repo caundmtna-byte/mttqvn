@@ -24,7 +24,7 @@ import Combobox from '@/components/ui/Combobox';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
-import { MTTQ_CAN_BO_GIOI_TINH } from '../core/constants';
+import { MTTQ_CAN_BO_GIOI_TINH, MTTQ_CAN_BO_TON_GIAO } from '../core/constants';
 import type { MttqCanBoFormValues } from '../core/schema';
 
 export interface MttqCanBoFormBodyProps {
@@ -45,6 +45,8 @@ export interface MttqCanBoFormBodyProps {
   positionsForCap: { id: string; cap_quan_ly: string | null }[];
   /** Chức vụ cấp xã — bắt buộc chọn đơn vị xã/phường. */
   needsDonViXaPhuong: boolean;
+  /** NV cấp Xã phường — khóa đơn vị theo `user.don_vi_id`. */
+  lockDonViToViewer: boolean;
 }
 
 /**
@@ -66,6 +68,7 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
   xaPhuongOptions,
   positionsForCap,
   needsDonViXaPhuong,
+  lockDonViToViewer,
 }) => {
   const selectedPhongBan = watch('id_phong_ban');
   const chucVuIdWatch = watch('chuc_vu_id');
@@ -82,6 +85,11 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
 
   const gioiTinhOptions = useMemo(
     () => MTTQ_CAN_BO_GIOI_TINH.map((g) => ({ label: g, value: g })),
+    [],
+  );
+
+  const tonGiaoOptions = useMemo(
+    () => MTTQ_CAN_BO_TON_GIAO.map((v) => ({ label: v, value: v })),
     [],
   );
 
@@ -141,12 +149,22 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
               />
             )}
           />
-          <Input
-            label={txt('matTranCanBo.form.tonGiao')}
-            icon={<Landmark size={12} />}
-            {...register('ton_giao')}
-            error={errors.ton_giao?.message}
-            required
+          <Controller
+            name="ton_giao"
+            control={control}
+            render={({ field }) => (
+              <Combobox
+                label={txt('matTranCanBo.form.tonGiao')}
+                icon={<Landmark size={12} />}
+                options={tonGiaoOptions}
+                value={field.value}
+                onChange={(v) => field.onChange(String(v))}
+                error={errors.ton_giao?.message}
+                required
+                clearable={false}
+                dropdownInPortal
+              />
+            )}
           />
           <div className="flex items-center gap-2 pt-6">
             <Controller
@@ -253,7 +271,7 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
             />
             <p className="m-0 mt-1 text-xs text-muted-foreground">{txt('matTranCanBo.form.capQuanLyHint')}</p>
           </div>
-          {needsDonViXaPhuong ? (
+          {needsDonViXaPhuong || lockDonViToViewer ? (
             <Controller
               name="don_vi_id"
               control={control}
@@ -266,7 +284,8 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
                   onChange={(v) => field.onChange(v === '' ? '' : String(v))}
                   placeholder={txt('common.select')}
                   error={errors.don_vi_id?.message}
-                  required
+                  required={needsDonViXaPhuong}
+                  disabled={lockDonViToViewer}
                   searchPlaceholder={txt('employee.form.donViXaPhuongSearch')}
                   dropdownInPortal
                 />

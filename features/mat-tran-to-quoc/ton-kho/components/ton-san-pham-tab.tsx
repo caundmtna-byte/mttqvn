@@ -22,11 +22,23 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { txt } from '@/lib/text';
 import { cn, formatDecimal } from '@/lib/utils';
 
-const TonSanPhamTab: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
+const TonSanPhamTab: React.FC<{
+  onBack?: () => void;
+  listQueryEnabled: boolean;
+  waitingMatrixHydrate: boolean;
+}> = ({ onBack, listQueryEnabled, waitingMatrixHydrate }) => {
   const { canExport } = useResourcePermissions('matTranReliefInventory');
-  const { data: khoList = [] } = useKhoDanhSachKhoList();
-  const { data: danhMucList = [] } = useKhoDanhMucHangHoaList();
-  const { data: displayRows = [], isLoading, isFetching, isError, error, refetch } = useTonKhoDisplay();
+  const { data: khoList = [] } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
+  const { data: danhMucList = [] } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });
+  const {
+    data: displayRows = [],
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useTonKhoDisplay({ enabled: listQueryEnabled });
+  const isListLoading = isLoading || waitingMatrixHydrate;
 
   const filters = useTonKhoByProductStore((s) => s.filters);
   const searchTerm = useTonKhoByProductStore((s) => s.searchTerm);
@@ -251,7 +263,7 @@ const TonSanPhamTab: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         />
 
         <div className="flex-1 min-h-0 flex flex-col bg-card overflow-hidden relative">
-          {isFetching && !isLoading ? (
+          {isFetching && !isListLoading ? (
             <div
               className="absolute inset-0 z-[25] pointer-events-none flex items-start justify-center pt-3 bg-background/30 backdrop-blur-[1px]"
               aria-busy="true"
@@ -263,7 +275,7 @@ const TonSanPhamTab: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               />
             </div>
           ) : null}
-          {isLoading ? (
+          {isListLoading ? (
             <ListPageSkeleton
               loadingText={txt('common.loading')}
               tableColumns={visibleColumns.length}

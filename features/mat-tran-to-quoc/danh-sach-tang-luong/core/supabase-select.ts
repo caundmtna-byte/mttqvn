@@ -9,6 +9,7 @@ const BASE_COLS = [
   'bac_luong_id_moi',
   'so_thang_rut_ngan',
   'ngay_den_han_goc',
+  'luong',
   'ghi_chu',
   'file_quyet_dinh',
   'id_nguoi_tao',

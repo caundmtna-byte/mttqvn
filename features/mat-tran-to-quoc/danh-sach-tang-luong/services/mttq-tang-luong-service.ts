@@ -12,9 +12,6 @@ import {
   MTTQ_TANG_LUONG_SELECT_LIST,
 } from '../core/supabase-select';
 import { computeNgayDenHanGoc, getLatestRecordForCanBo } from '../utils/tang-luong-cycle';
-import { computeLuongFromMlcsAndHeSo } from '../utils/compute-luong-snapshot';
-import { getLuongThietLapCauHinh } from '@/features/mat-tran-to-quoc/thiet-lap-luong/services/luong-thiet-lap-cau-hinh-service';
-import { getLuongThietLapBacAll } from '@/features/mat-tran-to-quoc/thiet-lap-luong/services/luong-thiet-lap-bac-service';
 import { MTTQ_TANG_LUONG_MOCK } from '../mock-data';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -173,32 +170,12 @@ function payloadFromForm(
   };
 }
 
-async function resolveLuongSnapshot(bacLuongIdMoi: string): Promise<number> {
-  const bacId = bacLuongIdMoi.trim();
-  if (!bacId) return 0;
-
-  const cauHinh = await getLuongThietLapCauHinh();
-  const mlcs = Number(cauHinh?.muc_luong_co_so ?? 0);
-  if (!Number.isFinite(mlcs) || mlcs <= 0) return 0;
-
-  let heSo = 0;
-  if (!isSupabase()) {
-    const all = await getLuongThietLapBacAll();
-    const bac = all.find((b) => b.id === bacId);
-    heSo = Number(bac?.he_so ?? 0);
-  } else {
-    const supabase = getSupabase();
-    if (!supabase) return 0;
-    const { data, error } = await supabase
-      .from('luong_thiet_lap_bac_luong')
-      .select('he_so')
-      .eq('id', bacId)
-      .maybeSingle();
-    if (error) handleSupabaseError(error);
-    heSo = Number(data?.he_so ?? 0);
+function resolveLuongFromForm(data: MttqTangLuongFormValues): number {
+  const luong = Number(data.luong);
+  if (!Number.isFinite(luong) || luong <= 0) {
+    throw new Error(txt('matTranTangLuong.validation.luongZero'));
   }
-
-  return computeLuongFromMlcsAndHeSo(mlcs, heSo);
+  return Math.round(luong);
 }
 
 export async function getMttqTangLuongList(): Promise<MttqTangLuongListRow[]> {
@@ -276,8 +253,7 @@ export async function createMttqTangLuong(
   if (!trimmed) throw new Error(txt('matTranTangLuong.service.noEmployeeProfile'));
   await assertBacBelongsToNgach(data.ngach_luong_id_moi, data.bac_luong_id_moi);
   const ngayDenHanGoc = await resolveNgayDenHanGoc(data.can_bo_id, data.ngay_nang_luong);
-  const luong = await resolveLuongSnapshot(data.bac_luong_id_moi);
-  if (luong <= 0) throw new Error(txt('matTranTangLuong.validation.luongZero'));
+  const luong = resolveLuongFromForm(data);
   const payload = payloadFromForm(data, ngayDenHanGoc, luong);
 
   if (!isSupabase()) {
@@ -317,8 +293,7 @@ export async function updateMttqTangLuong(
 ): Promise<MttqTangLuongListRow> {
   await assertBacBelongsToNgach(data.ngach_luong_id_moi, data.bac_luong_id_moi);
   const ngayDenHanGoc = await resolveNgayDenHanGoc(data.can_bo_id, data.ngay_nang_luong, id);
-  const luong = await resolveLuongSnapshot(data.bac_luong_id_moi);
-  if (luong <= 0) throw new Error(txt('matTranTangLuong.validation.luongZero'));
+  const luong = resolveLuongFromForm(data);
   const payload = payloadFromForm(data, ngayDenHanGoc, luong);
 
   if (!isSupabase()) {

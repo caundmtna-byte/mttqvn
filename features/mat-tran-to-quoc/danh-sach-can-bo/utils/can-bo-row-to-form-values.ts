@@ -1,6 +1,7 @@
 import type { MttqCanBo } from '../core/types';
 import type { MttqCanBoFormValues } from '../core/schema';
 import { rootPhongBanIdForForm } from './phong-ban-form';
+import { normalizeTonGiaoFromDb } from './ton-giao-form';
 
 function toFormFk(v: string | null | undefined): string {
   return v != null && String(v).trim() !== '' ? String(v) : '';
@@ -24,7 +25,7 @@ export function mttqCanBoRowToFormValues(
     ngay_sinh: toFormDate(initialData.ngay_sinh),
     gioi_tinh: initialData.gioi_tinh as MttqCanBoFormValues['gioi_tinh'],
     dan_toc_id: toFormFk(initialData.dan_toc_id),
-    ton_giao: initialData.ton_giao ?? '',
+    ton_giao: normalizeTonGiaoFromDb(initialData.ton_giao),
     dia_chi: initialData.dia_chi ?? '',
     dang_vien: initialData.dang_vien,
     trinh_do_id: toFormFk(initialData.trinh_do_id),
