@@ -14,7 +14,10 @@ import ChartTooltip from '@/components/ui/ChartTooltip';
 import { chartFillByIndex, chartFillFromBadgeConfig } from '@/lib/constants/chart-colors';
 import { getTapHuanCapBadgeConfig, getTapHuanThuocDienBadgeConfig } from '../utils/display-format';
 import type { MttqLopTapHuanListRow, MttqTapHuanChiTietFlatRow } from '../core/types';
-import type { MttqLopTapHuanViewer } from '../hooks/use-mttq-tap-huan-viewer';
+import {
+  isTapHuanUngVienScopedToXaPhuong,
+  type MttqLopTapHuanViewer,
+} from '../hooks/use-mttq-tap-huan-viewer';
 import {
   computeTapHuanKpisScoped,
   aggregateTapHuanByCap,
@@ -22,6 +25,10 @@ import {
   aggregateTapHuanTopDonViLop,
   aggregateTapHuanByThuocDien,
   aggregateTapHuanTopTenLop,
+  aggregateTapHuanByCapFromFlat,
+  aggregateTapHuanByNamFromFlat,
+  aggregateTapHuanTopDonViLopFromFlat,
+  aggregateTapHuanTopTenLopFromFlat,
 } from '../utils/aggregate-mttq-tap-huan-stats';
 
 const DON_VI_NONE_ID = '__none__';
@@ -39,12 +46,27 @@ interface Props {
 }
 
 const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLoading, isLoadingFlat }) => {
+  const statsFromFlat = isTapHuanUngVienScopedToXaPhuong(viewer);
+
   const kpis = useMemo(() => computeTapHuanKpisScoped(rows, flatRows), [rows, flatRows]);
-  const byCap = useMemo(() => aggregateTapHuanByCap(rows), [rows]);
-  const byNam = useMemo(() => aggregateTapHuanByNam(rows), [rows]);
+  const byCap = useMemo(
+    () => (statsFromFlat ? aggregateTapHuanByCapFromFlat(flatRows) : aggregateTapHuanByCap(rows)),
+    [statsFromFlat, rows, flatRows],
+  );
+  const byNam = useMemo(
+    () => (statsFromFlat ? aggregateTapHuanByNamFromFlat(flatRows) : aggregateTapHuanByNam(rows)),
+    [statsFromFlat, rows, flatRows],
+  );
   const byThuocDien = useMemo(() => aggregateTapHuanByThuocDien(flatRows), [flatRows]);
-  const topDonVi = useMemo(() => aggregateTapHuanTopDonViLop(rows, 10), [rows]);
-  const topLop = useMemo(() => aggregateTapHuanTopTenLop(rows, 10), [rows]);
+  const topDonVi = useMemo(
+    () =>
+      statsFromFlat ? aggregateTapHuanTopDonViLopFromFlat(flatRows, 10) : aggregateTapHuanTopDonViLop(rows, 10),
+    [statsFromFlat, rows, flatRows],
+  );
+  const topLop = useMemo(
+    () => (statsFromFlat ? aggregateTapHuanTopTenLopFromFlat(flatRows, 10) : aggregateTapHuanTopTenLop(rows, 10)),
+    [statsFromFlat, rows, flatRows],
+  );
 
   const topDonViRows = useMemo(
     () =>
@@ -85,7 +107,7 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
     [kpis],
   );
 
-  const showScopeHint = !viewer.canViewAll;
+  const showScopeHint = statsFromFlat;
 
   if (isLoading || isLoadingFlat) {
     return (
@@ -93,7 +115,7 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
     );
   }
 
-  if (rows.length === 0) {
+  if (rows.length === 0 && flatRows.length === 0) {
     return (
       <div className="py-12 text-center space-y-2">
         <p className="text-sm font-medium text-foreground">{txt('matTranTapHuan.stats.noData')}</p>

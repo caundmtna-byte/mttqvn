@@ -17,7 +17,10 @@ import { CONG_VIEC_MUC_DO, CONG_VIEC_TRANG_THAI } from '../core/constants';
 import { congViecDanhSachSchema, type CongViecDanhSachFormValues } from '../core/schema';
 import type { CongViecDanhSach } from '../core/types';
 import { useCreateCongViecDanhSach, useUpdateCongViecDanhSach } from '../hooks/use-cong-viec-danh-sach';
-import { useCongViecAssigneeScope } from '../hooks/use-cong-viec-assignee-scope';
+import {
+  isCongViecAssigneeSelectable,
+  useCongViecAssigneeScope,
+} from '../hooks/use-cong-viec-assignee-scope';
 import { useChuongTrinhNamList } from '@/features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam';
 import {
   useChuongTrinhNamViewer,
@@ -83,26 +86,27 @@ const CongViecForm: React.FC<Props> = ({ initialData, onClose, defaultIdChuongTr
   }, [defaultIdChuongTrinh, chuongTrinhRowsInScope, chuongTrinhRows, initialData?.ten_chuong_trinh]);
 
   const { data: employees = [] } = useEmployees();
-  const { canSelectAll, viewerPhongBanId } = useCongViecAssigneeScope();
+  const assigneeScope = useCongViecAssigneeScope();
+
+  const assigneeSelectOpts = useMemo(
+    () => ({
+      viewerNhanVienId: idNguoiTao || undefined,
+      savedTrachNhiemId: initialData?.id_trach_nhiem,
+      savedHoTroIds: initialData?.ids_ho_tro,
+    }),
+    [idNguoiTao, initialData?.id_trach_nhiem, initialData?.ids_ho_tro],
+  );
 
   const employeeOptions = useMemo(() => {
     const active = employees.filter((e) => e.trang_thai === 'Hoạt động');
-    const inScope = canSelectAll
-      ? active
-      : active.filter((e) => {
-          if (viewerPhongBanId && e.id_phong_ban === viewerPhongBanId) return true;
-          // Edit mode: giữ assignee đã lưu (dù khác phòng ban) để form không drop value hợp lệ.
-          if (initialData?.id_trach_nhiem && String(e.id) === initialData.id_trach_nhiem) return true;
-          if (initialData?.ids_ho_tro?.includes(String(e.id))) return true;
-          // Viewer luôn được chọn chính mình (mặc định trách nhiệm khi tạo mới).
-          if (idNguoiTao && String(e.id) === idNguoiTao) return true;
-          return false;
-        });
+    const inScope = active.filter((e) =>
+      isCongViecAssigneeSelectable(assigneeScope, e, assigneeSelectOpts),
+    );
     return inScope.map((e) => ({
       label: `${e.ho_va_ten} (${e.ten_tai_khoan})`,
       value: String(e.id),
     }));
-  }, [employees, canSelectAll, viewerPhongBanId, initialData, idNguoiTao]);
+  }, [employees, assigneeScope, assigneeSelectOpts]);
 
   const mucDoOptions = useMemo(
     () => CONG_VIEC_MUC_DO.map((m) => ({ label: m, value: m })),

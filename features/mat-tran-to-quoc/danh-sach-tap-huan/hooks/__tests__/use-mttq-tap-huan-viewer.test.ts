@@ -1,67 +1,64 @@
 import { describe, expect, it } from 'vitest';
-import { canViewLopTapHuanRow, type MttqLopTapHuanViewer } from '../use-mttq-tap-huan-viewer';
+import {
+  canViewTapHuanUngVienRow,
+  isTapHuanUngVienScopedToXaPhuong,
+  isTapHuanUngVienViewUnrestricted,
+  type MttqLopTapHuanViewer,
+} from '../use-mttq-tap-huan-viewer';
 
-function row(cap: 'Cấp tỉnh' | 'Cấp xã', don_vi_id: string | null = null) {
-  return { cap_tap_huan: cap, don_vi_id };
+function ungVien(can_bo_don_vi_id: string | null = null) {
+  return { can_bo_don_vi_id };
 }
 
-describe('canViewLopTapHuanRow', () => {
+describe('canViewTapHuanUngVienRow', () => {
   it('bypass when canViewAll', () => {
     const viewer: MttqLopTapHuanViewer = {
       canViewAll: true,
       chucVuCapQuanLy: null,
       viewerDonViId: null,
     };
-    expect(canViewLopTapHuanRow(viewer, row('Cấp tỉnh'))).toBe(true);
-    expect(canViewLopTapHuanRow(viewer, row('Cấp xã', '9'))).toBe(true);
+    expect(canViewTapHuanUngVienRow(viewer, ungVien('9'))).toBe(true);
+    expect(canViewTapHuanUngVienRow(viewer, ungVien(null))).toBe(true);
   });
 
-  it('Cấp tỉnh only for viewer Tỉnh', () => {
+  it('Tỉnh sees all ứng viên (tab CT / thống kê)', () => {
     const tinh: MttqLopTapHuanViewer = {
       canViewAll: false,
       chucVuCapQuanLy: 'Tỉnh',
       viewerDonViId: null,
     };
-    const xa: MttqLopTapHuanViewer = {
-      canViewAll: false,
-      chucVuCapQuanLy: 'Xã phường',
-      viewerDonViId: '5',
-    };
+    expect(isTapHuanUngVienViewUnrestricted(tinh)).toBe(true);
+    expect(isTapHuanUngVienScopedToXaPhuong(tinh)).toBe(false);
+    expect(canViewTapHuanUngVienRow(tinh, ungVien('99'))).toBe(true);
+    expect(canViewTapHuanUngVienRow(tinh, ungVien(null))).toBe(true);
+  });
+
+  it('cap_quan_ly null with only xem sees all ứng viên', () => {
     const none: MttqLopTapHuanViewer = {
       canViewAll: false,
       chucVuCapQuanLy: null,
       viewerDonViId: '5',
     };
-    expect(canViewLopTapHuanRow(tinh, row('Cấp tỉnh'))).toBe(true);
-    expect(canViewLopTapHuanRow(xa, row('Cấp tỉnh'))).toBe(false);
-    expect(canViewLopTapHuanRow(none, row('Cấp tỉnh'))).toBe(false);
+    expect(canViewTapHuanUngVienRow(none, ungVien('99'))).toBe(true);
   });
 
-  it('Cấp xã: Tỉnh sees all', () => {
-    const viewer: MttqLopTapHuanViewer = {
-      canViewAll: false,
-      chucVuCapQuanLy: 'Tỉnh',
-      viewerDonViId: null,
-    };
-    expect(canViewLopTapHuanRow(viewer, row('Cấp xã', '99'))).toBe(true);
-  });
-
-  it('Cấp xã: Xã phường same don_vi_id only', () => {
+  it('Xã phường: same can_bo don_vi_id only', () => {
     const viewer: MttqLopTapHuanViewer = {
       canViewAll: false,
       chucVuCapQuanLy: 'Xã phường',
       viewerDonViId: '5',
     };
-    expect(canViewLopTapHuanRow(viewer, row('Cấp xã', '5'))).toBe(true);
-    expect(canViewLopTapHuanRow(viewer, row('Cấp xã', '6'))).toBe(false);
+    expect(isTapHuanUngVienScopedToXaPhuong(viewer)).toBe(true);
+    expect(canViewTapHuanUngVienRow(viewer, ungVien('5'))).toBe(true);
+    expect(canViewTapHuanUngVienRow(viewer, ungVien('6'))).toBe(false);
   });
 
-  it('Cấp xã: Xã phường without viewer don_vi sees nothing', () => {
+  it('Xã phường without viewer don_vi sees nothing', () => {
     const viewer: MttqLopTapHuanViewer = {
       canViewAll: false,
       chucVuCapQuanLy: 'Xã phường',
       viewerDonViId: null,
     };
-    expect(canViewLopTapHuanRow(viewer, row('Cấp xã', '5'))).toBe(false);
+    expect(canViewTapHuanUngVienRow(viewer, ungVien('5'))).toBe(false);
   });
 });

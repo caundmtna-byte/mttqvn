@@ -100,3 +100,69 @@ export function aggregateTapHuanTopTenLop(rows: MttqLopTapHuanListRow[], topN: n
     .sort((a, b) => b.value - a.value)
     .slice(0, topN);
 }
+
+/** Phân bố theo cấp lớp — đếm dòng CT (phạm vi đã lọc quyền xem). */
+export function aggregateTapHuanByCapFromFlat(
+  flatRows: MttqTapHuanChiTietFlatRow[],
+): { label: string; count: number }[] {
+  const map = new Map<string, number>();
+  for (const r of flatRows) {
+    const k = r.cap_tap_huan || '';
+    map.set(k, (map.get(k) ?? 0) + 1);
+  }
+  return [...map.entries()]
+    .map(([label, count]) => ({ label: label || '—', count }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Phân bố theo năm — đếm dòng CT trong phạm vi flat. */
+export function aggregateTapHuanByNamFromFlat(
+  flatRows: MttqTapHuanChiTietFlatRow[],
+): { label: string; count: number }[] {
+  const map = new Map<string, number>();
+  for (const r of flatRows) {
+    const y = String(r.nam_tap_huan ?? '');
+    if (!y || y === 'NaN') continue;
+    map.set(y, (map.get(y) ?? 0) + 1);
+  }
+  return [...map.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.label.localeCompare(a.label));
+}
+
+/** Top đơn vị lớp — đếm ứng viên theo `ten_don_vi_lop` (flat). */
+export function aggregateTapHuanTopDonViLopFromFlat(
+  flatRows: MttqTapHuanChiTietFlatRow[],
+  topN: number,
+): TopDonViLopRow[] {
+  const map = new Map<string, number>();
+  for (const r of flatRows) {
+    const raw = (r.ten_don_vi_lop ?? '').trim();
+    const key = raw || DON_VI_EMPTY_KEY;
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  return [...map.entries()]
+    .map(([id, value]) => ({
+      id,
+      label: id === DON_VI_EMPTY_KEY ? '—' : id,
+      value,
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, topN);
+}
+
+/** Top lớp — đếm số dòng CT theo lớp trong phạm vi flat. */
+export function aggregateTapHuanTopTenLopFromFlat(
+  flatRows: MttqTapHuanChiTietFlatRow[],
+  topN: number,
+): TopTenLopRow[] {
+  const map = new Map<string, { label: string; value: number }>();
+  for (const r of flatRows) {
+    const id = r.id_lop_tap_huan;
+    const label = r.ten_lop_tap_huan?.trim() ? r.ten_lop_tap_huan : '—';
+    const cur = map.get(id);
+    if (cur) cur.value += 1;
+    else map.set(id, { label, value: 1 });
+  }
+  return [...map.values()].sort((a, b) => b.value - a.value).slice(0, topN);
+}

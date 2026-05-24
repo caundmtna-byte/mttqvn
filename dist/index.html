@@ -6,11 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
     <title>MTTQVN</title>
-    <!-- Open Graph (share preview) – logo Quốc huy -->
+    <meta name="description" content="Hệ thống nền tảng số" />
     <meta property="og:title" content="MTTQVN" />
     <meta property="og:description" content="Hệ thống nền tảng số" />
     <meta property="og:image" content="https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png" />
-    <!-- Favicon & logo app (logo trên browser tab) -->
     <link rel="icon" type="image/png" href="https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png" />
     <link rel="apple-touch-icon" href="https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png" />
     
@@ -39,7 +38,7 @@
           var el = document.documentElement;
           var ff = state && state.fontFamily;
           if (!ff || !(ff in GOOGLE_FONT_PARAM)) ff = 'Inter';
-          var param = allowed[ff];
+          var param = GOOGLE_FONT_PARAM[ff];
           if (param) {
             var id = 'gfont-' + ff.replace(/\s+/g, '-');
             if (!document.getElementById(id)) {
@@ -96,6 +95,69 @@
         } catch (e) {}
       })();
     </script>
+    <!-- Logo / favicon / PWA từ ui-storage (Thông tin tổ chức) trước khi React mount -->
+    <script>
+      (function() {
+        var DEFAULT_LOGO = 'https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png';
+        var DEFAULT_NAME = 'MTTQVN';
+        var DEFAULT_DESC = 'Hệ thống nền tảng số';
+        function guessMime(url) {
+          if (!url) return '';
+          if (url.indexOf('data:image/png') === 0) return 'image/png';
+          if (url.indexOf('data:image/jpeg') === 0 || url.indexOf('data:image/jpg') === 0) return 'image/jpeg';
+          if (url.indexOf('data:image/webp') === 0) return 'image/webp';
+          if (url.indexOf('data:image/svg') === 0) return 'image/svg+xml';
+          var u = url.split('?')[0].toLowerCase();
+          if (u.slice(-4) === '.png') return 'image/png';
+          if (u.slice(-4) === '.jpg' || u.slice(-5) === '.jpeg') return 'image/jpeg';
+          if (u.slice(-5) === '.webp') return 'image/webp';
+          if (u.slice(-4) === '.svg') return 'image/svg+xml';
+          return '';
+        }
+        function setMeta(prop, content, isName) {
+          var sel = isName ? 'meta[name="' + prop + '"]' : 'meta[property="' + prop + '"]';
+          var el = document.querySelector(sel);
+          if (!el) {
+            el = document.createElement('meta');
+            if (isName) el.setAttribute('name', prop);
+            else el.setAttribute('property', prop);
+            document.head.appendChild(el);
+          }
+          el.content = content;
+        }
+        function setIcon(rel, href, mime) {
+          var el = document.querySelector('link[rel="' + rel + '"]');
+          if (!el) {
+            el = document.createElement('link');
+            el.rel = rel;
+            document.head.appendChild(el);
+          }
+          el.href = href;
+          if (mime) el.type = mime;
+          else el.removeAttribute('type');
+        }
+        try {
+          var raw = localStorage.getItem('ui-storage');
+          var ci = null;
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            ci = parsed.state && parsed.state.companyInfo;
+          }
+          var name = (ci && ci.appName && String(ci.appName).trim()) || DEFAULT_NAME;
+          var desc = (ci && ci.appDescription != null) ? String(ci.appDescription).trim() : DEFAULT_DESC;
+          var logo = (ci && ci.appLogo && String(ci.appLogo).trim()) || DEFAULT_LOGO;
+          var title = desc ? name + ' - ' + desc : name;
+          var mime = guessMime(logo);
+          document.title = title;
+          setIcon('icon', logo, mime);
+          setIcon('apple-touch-icon', logo, mime);
+          setMeta('og:title', title, false);
+          setMeta('og:description', desc || name, false);
+          setMeta('og:image', logo, false);
+          setMeta('description', desc || name, true);
+        } catch (e) {}
+      })();
+    </script>
 
   <script type="importmap">
 {
@@ -127,14 +189,14 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-B7pJqn_x.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/vendor-icons-Cg4m9tR2.js">
-  <link rel="modulepreload" crossorigin href="/assets/vendor-framer-4-gBZFoX.js">
-  <link rel="modulepreload" crossorigin href="/assets/vendor-tanstack-BxS0Yd5q.js">
-  <link rel="modulepreload" crossorigin href="/assets/vendor-jspdf-wm5-pbVS.js">
-  <link rel="modulepreload" crossorigin href="/assets/vendor-recharts-D77Woukk.js">
+  <script type="module" crossorigin src="/assets/index-DBlyNyp2.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/vendor-icons-CL9bhFmc.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-framer-D11t4eUi.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-tanstack-63VR67qe.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-jspdf-CRe_OXOC.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-recharts-Bva7AEaA.js">
   <link rel="modulepreload" crossorigin href="/assets/vendor-supabase-DX0i8-Of.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-BHvZJMsM.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-DzPuZJyC.css">
 <link rel="manifest" href="/manifest.webmanifest"></head>
   <body>
     <div id="root"></div>

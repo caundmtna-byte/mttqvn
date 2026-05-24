@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
+import { DEFAULT_BRANDING_LOGO, DEFAULT_BRANDING_APP_NAME, DEFAULT_BRANDING_APP_DESCRIPTION } from './lib/branding-defaults';
 
 export default defineConfig(() => {
     return {
@@ -52,30 +53,24 @@ export default defineConfig(() => {
           registerType: 'autoUpdate',
           includeAssets: ['favicon.svg'],
           manifest: {
-            name: 'MTTQVN',
-            short_name: 'MTTQVN',
-            description: 'Hệ thống nền tảng số',
+            name: DEFAULT_BRANDING_APP_NAME,
+            short_name: DEFAULT_BRANDING_APP_NAME.slice(0, 12),
+            description: DEFAULT_BRANDING_APP_DESCRIPTION,
             theme_color: '#ffffff',
             background_color: '#ffffff',
             display: 'standalone',
             start_url: '/',
             icons: [
               {
-                src: '/favicon.svg',
-                sizes: 'any',
-                type: 'image/svg+xml',
+                src: DEFAULT_BRANDING_LOGO,
+                sizes: '192x192',
+                type: 'image/png',
                 purpose: 'any',
               },
               {
-                src: '/favicon.svg',
-                sizes: '192x192',
-                type: 'image/svg+xml',
-                purpose: 'any maskable',
-              },
-              {
-                src: '/favicon.svg',
+                src: DEFAULT_BRANDING_LOGO,
                 sizes: '512x512',
-                type: 'image/svg+xml',
+                type: 'image/png',
                 purpose: 'any maskable',
               },
             ],

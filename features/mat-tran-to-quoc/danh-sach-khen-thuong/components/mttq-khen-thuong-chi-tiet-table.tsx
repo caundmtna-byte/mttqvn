@@ -9,6 +9,7 @@ import GenericTable from '@/components/shared/GenericTable';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
 import {
+  getKhenThuongCapBadgeConfig,
   getKhenThuongDanhHieuBadgeConfig,
   getKhenThuongHinhThucBadgeConfig,
   getKhenThuongTrangThaiBadgeConfig,
@@ -70,6 +71,7 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
   const trangThaiBadgeConfig = useMemo(() => getKhenThuongTrangThaiBadgeConfig(), []);
   const hinhThucBadgeConfig = useMemo(() => getKhenThuongHinhThucBadgeConfig(), []);
   const danhHieuBadgeConfig = useMemo(() => getKhenThuongDanhHieuBadgeConfig(), []);
+  const capKhenThuongBadgeConfig = useMemo(() => getKhenThuongCapBadgeConfig(), []);
 
   const trangThaiMultiOptions: Option[] = useMemo(
     () =>
@@ -263,6 +265,8 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
               <span className="truncate text-body-sm text-foreground">{item.ten_can_bo ?? txt('common.emptyCell')}</span>
             </div>
           );
+        case 'cap_khen_thuong':
+          return <EnumBadge value={item.cap_khen_thuong} config={capKhenThuongBadgeConfig} truncate shape="pill" />;
         case 'hinh_thuc_khen':
           return <EnumBadge value={item.hinh_thuc_khen} config={hinhThucBadgeConfig} truncate shape="pill" />;
         case 'danh_hieu':
@@ -299,7 +303,7 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
           return null;
       }
     },
-    [rowMenuOpenId, trangThaiBadgeConfig, hinhThucBadgeConfig, danhHieuBadgeConfig, onEdit, onDelete],
+    [rowMenuOpenId, trangThaiBadgeConfig, capKhenThuongBadgeConfig, hinhThucBadgeConfig, danhHieuBadgeConfig, onEdit, onDelete],
   );
 
   const handleRowClick = useCallback(

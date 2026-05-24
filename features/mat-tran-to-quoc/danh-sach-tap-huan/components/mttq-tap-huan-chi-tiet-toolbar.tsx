@@ -1,6 +1,10 @@
 import React, { useMemo } from 'react';
-import { Tag, CalendarDays, ListFilter } from 'lucide-react';
+import { Download, Tag, CalendarDays, ListFilter, GraduationCap, Plus } from 'lucide-react';
+import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
+import Button from '@/components/ui/Button';
+import Tooltip from '@/components/ui/Tooltip';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { useMttqTapHuanChiTietListStore } from '../store/useMttqTapHuanChiTietListStore';
@@ -14,19 +18,26 @@ interface ChipOption {
 
 interface Props {
   onPageBack: () => void;
+  onExport: () => void;
+  onAdd?: () => void;
   capOptions: ChipOption[];
   namOptions: ChipOption[];
+  lopOptions: ChipOption[];
   thuocDienOptions: ChipOption[];
   desktopStartSlot?: React.ReactNode;
 }
 
 const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
   onPageBack,
+  onExport,
+  onAdd,
   capOptions,
   namOptions,
+  lopOptions,
   thuocDienOptions,
   desktopStartSlot,
 }) => {
+  const { canExport, canEdit } = useResourcePermissions('matTranTrainingList');
   const {
     searchTerm,
     setSearchTerm,
@@ -50,6 +61,7 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
       columnSearchN +
       (filters.cap_tap_huan.length > 0 ? 1 : 0) +
       (filters.nam_tap_huan.length > 0 ? 1 : 0) +
+      (filters.id_lop_tap_huan.length > 0 ? 1 : 0) +
       (filters.thuoc_dien.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
@@ -59,6 +71,7 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
     setFilter('columnSearch', {});
     setFilter('cap_tap_huan', []);
     setFilter('nam_tap_huan', []);
+    setFilter('id_lop_tap_huan', []);
     setFilter('thuoc_dien', []);
     setSort(null, null);
   };
@@ -83,6 +96,14 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
           className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
         />
         <FilterChipMultiSelect
+          options={lopOptions}
+          value={filters.id_lop_tap_huan}
+          onChange={(val) => setFilter('id_lop_tap_huan', val)}
+          placeholder={txt('matTranTapHuan.chiTietList.lopChip')}
+          icon={GraduationCap}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,30vw)] sm:max-w-[280px]"
+        />
+        <FilterChipMultiSelect
           options={thuocDienOptions}
           value={filters.thuoc_dien}
           onChange={(val) => setFilter('thuoc_dien', val)}
@@ -92,7 +113,17 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
         />
       </div>
     ),
-    [capOptions, namOptions, thuocDienOptions, filters.cap_tap_huan, filters.nam_tap_huan, filters.thuoc_dien, setFilter],
+    [
+      capOptions,
+      namOptions,
+      lopOptions,
+      thuocDienOptions,
+      filters.cap_tap_huan,
+      filters.nam_tap_huan,
+      filters.id_lop_tap_huan,
+      filters.thuoc_dien,
+      setFilter,
+    ],
   );
 
   const filterGroups = useMemo(
@@ -114,6 +145,14 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
         onChange: (val: string[]) => setFilter('nam_tap_huan', val),
       },
       {
+        key: 'id_lop_tap_huan',
+        label: txt('matTranTapHuan.chiTietList.lopChip'),
+        icon: GraduationCap,
+        options: lopOptions,
+        value: filters.id_lop_tap_huan,
+        onChange: (val: string[]) => setFilter('id_lop_tap_huan', val),
+      },
+      {
         key: 'thuoc_dien',
         label: txt('matTranTapHuan.stats.thuocDienChip'),
         icon: ListFilter,
@@ -122,12 +161,69 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
         onChange: (val: string[]) => setFilter('thuoc_dien', val),
       },
     ],
-    [capOptions, namOptions, thuocDienOptions, filters.cap_tap_huan, filters.nam_tap_huan, filters.thuoc_dien, setFilter],
+    [
+      capOptions,
+      namOptions,
+      lopOptions,
+      thuocDienOptions,
+      filters.cap_tap_huan,
+      filters.nam_tap_huan,
+      filters.id_lop_tap_huan,
+      filters.thuoc_dien,
+      setFilter,
+    ],
+  );
+
+  const mobileActions = useMemo<ActionItem[]>(
+    () =>
+      canExport
+        ? [
+            {
+              key: 'export',
+              label: txt('common.export'),
+              icon: Download,
+              onClick: onExport,
+              description: '',
+            },
+          ]
+        : [],
+    [canExport, onExport],
+  );
+
+  const renderActions = (
+    <>
+      {canExport ? (
+        <div className="hidden sm:flex items-center gap-2">
+          <Tooltip content={txt('common.export')} placement="bottom">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExport}
+              className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+          </Tooltip>
+        </div>
+      ) : null}
+      {canEdit && onAdd ? (
+        <Button
+          onClick={onAdd}
+          size="sm"
+          className="bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary/20 h-9 px-3 sm:px-4"
+        >
+          <Plus className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-2" />
+          <span className="hidden sm:inline">{txt('common.addNew')}</span>
+        </Button>
+      ) : null}
+    </>
   );
 
   return (
     <GenericToolbar
       desktopStartSlot={desktopStartSlot}
+      actions={renderActions}
+      mobileActions={mobileActions}
       selectedCount={selectedCount}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
@@ -141,6 +237,7 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
       onToggleColumn={toggleColumn}
       onReorderColumns={reorderColumns}
       onResetColumns={resetColumns}
+      onAdd={canEdit && onAdd ? onAdd : undefined}
       showBack
       onBack={onPageBack}
     />

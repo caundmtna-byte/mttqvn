@@ -9,7 +9,7 @@ export interface MttqKhenThuongViewer {
   canViewAll: boolean;
   /** `var_chuc_vu.cap_quan_ly` — Tỉnh / Xã phường / null. */
   chucVuCapQuanLy: CapQuanLy | null;
-  /** `var_nhan_vien.id` — so khớp `id_nguoi_tao` quyết định. */
+  /** `var_nhan_vien.id` — so khớp `id_nguoi_tao` cán bộ / quyết định. */
   viewerNhanVienId: string | null;
   /** `var_nhan_vien.don_vi_id` — so khớp `don_vi_id` cán bộ được khen (cấp Xã phường). */
   viewerDonViId: string | null;
@@ -18,14 +18,10 @@ export interface MttqKhenThuongViewer {
 /**
  * Tổng hợp viewer cho module Khen thưởng.
  *
- * `canViewAll`:
- * - `user.role === 'admin'`
- * - `!matrixActive`
- * - `var_chuc_vu.cap_bac === 1`
- * - Grant `admin` / `all` trên module khen thưởng
+ * Tab **Danh sách QĐ**, **Chi tiết phẳng**, **Thống kê**: `Tỉnh` / `Xã phường` / bypass xem hết.
  *
- * Không bypass: `cap_quan_ly === 'Tỉnh'` xem hết; `'Xã phường'` xem QĐ do mình tạo hoặc có
- * người được khen thuộc cùng `don_vi_id`; còn lại không xem dòng nào.
+ * **Drawer detail — bảng con**: Xã phường chỉ dòng có cán bộ do mình tạo (`mttq_can_bo.id_nguoi_tao`)
+ * hoặc `can_bo.don_vi_id` trùng đơn vị NV.
  */
 export function useMttqKhenThuongViewer(): MttqKhenThuongViewer {
   const user = useAuthStore((s) => s.user);
@@ -64,44 +60,57 @@ export function useMttqKhenThuongViewer(): MttqKhenThuongViewer {
   ]);
 }
 
-/** Dữ liệu tối thiểu để gate xem (danh sách QĐ / detail / tab Chi tiết phẳng). */
+/** Dữ liệu tối thiểu để gate xem danh sách QĐ / tab Chi tiết phẳng. */
 export type KhenThuongRowForViewGate = {
   id_nguoi_tao?: string | null;
-  /** Danh sách QĐ — `don_vi_id` cán bộ được khen (đã chuẩn hoá). */
-  rewarded_can_bo_don_vi_ids?: string[];
-  /** Detail — lấy từ `chi_tiet[].can_bo_don_vi_id`. */
-  chi_tiet?: { can_bo_don_vi_id?: string | null }[];
-  /** Tab Chi tiết phẳng — một cán bộ / dòng. */
-  can_bo_don_vi_id?: string | null;
 };
 
-function collectRewardedDonViIds(row: KhenThuongRowForViewGate): string[] {
-  if (row.rewarded_can_bo_don_vi_ids?.length) return row.rewarded_can_bo_don_vi_ids;
-  if (row.chi_tiet?.length) {
-    const out: string[] = [];
-    for (const c of row.chi_tiet) {
-      const t = c.can_bo_don_vi_id?.toString().trim();
-      if (t) out.push(t);
-    }
-    return out;
-  }
-  const t = row.can_bo_don_vi_id?.toString().trim();
-  return t ? [t] : [];
+/** Dòng bảng con trong drawer detail. */
+export type KhenThuongDetailChiTietLineForViewGate = {
+  can_bo_don_vi_id?: string | null;
+  /** `mttq_can_bo.id_nguoi_tao` */
+  can_bo_id_nguoi_tao?: string | null;
+};
+
+function isKhenThuongModuleViewUnrestricted(viewer: MttqKhenThuongViewer): boolean {
+  return (
+    viewer.canViewAll ||
+    viewer.chucVuCapQuanLy === 'Tỉnh' ||
+    viewer.chucVuCapQuanLy === 'Xã phường'
+  );
 }
 
-/** Helper dùng cho danh sách QĐ, drawer detail và tab Chi tiết phẳng. */
-export function canViewKhenThuongRow(viewer: MttqKhenThuongViewer, row: KhenThuongRowForViewGate): boolean {
-  if (viewer.canViewAll) return true;
-  if (viewer.chucVuCapQuanLy === 'Tỉnh') return true;
-
-  const creator = row.id_nguoi_tao?.toString().trim();
-  const createdByMe =
-    Boolean(viewer.viewerNhanVienId) && Boolean(creator) && creator === viewer.viewerNhanVienId;
-
-  if (viewer.chucVuCapQuanLy === 'Xã phường') {
-    if (createdByMe) return true;
-    if (!viewer.viewerDonViId) return false;
-    return collectRewardedDonViIds(row).some((id) => id === viewer.viewerDonViId);
-  }
+/** Tab Danh sách QĐ — ai có quyền module và cap Tỉnh / Xã phường xem hết QĐ. */
+export function canViewKhenThuongRow(
+  viewer: MttqKhenThuongViewer,
+  _row: KhenThuongRowForViewGate,
+): boolean {
+  if (isKhenThuongModuleViewUnrestricted(viewer)) return true;
   return false;
+}
+
+/** Tab Chi tiết phẳng — cùng phạm vi với tab Danh sách QĐ. */
+export function canViewKhenThuongChiTietRow(
+  viewer: MttqKhenThuongViewer,
+  _row: KhenThuongRowForViewGate,
+): boolean {
+  return canViewKhenThuongRow(viewer, _row);
+}
+
+/** Bảng con trong drawer detail — Xã phường lọc theo cán bộ. */
+export function canViewKhenThuongDetailChiTietLine(
+  viewer: MttqKhenThuongViewer,
+  line: KhenThuongDetailChiTietLineForViewGate,
+): boolean {
+  if (viewer.canViewAll || viewer.chucVuCapQuanLy === 'Tỉnh') return true;
+  if (viewer.chucVuCapQuanLy === 'Xã phường') {
+    const canBoCreator = line.can_bo_id_nguoi_tao?.toString().trim();
+    const createdCanBoByMe =
+      Boolean(viewer.viewerNhanVienId) && Boolean(canBoCreator) && canBoCreator === viewer.viewerNhanVienId;
+    if (createdCanBoByMe) return true;
+    if (!viewer.viewerDonViId) return false;
+    const rowDv = line.can_bo_don_vi_id?.toString().trim();
+    return Boolean(rowDv) && rowDv === viewer.viewerDonViId;
+  }
+  return true;
 }

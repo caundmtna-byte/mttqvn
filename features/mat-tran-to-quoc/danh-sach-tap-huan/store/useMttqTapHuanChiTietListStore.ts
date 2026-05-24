@@ -101,6 +101,7 @@ const initialFilters: MttqTapHuanChiTietListFilters = {
   cap_tap_huan: [],
   nam_tap_huan: [],
   thuoc_dien: [],
+  id_lop_tap_huan: [],
 };
 
 export const useMttqTapHuanChiTietListStore = createGenericStore<MttqTapHuanChiTietListFilters>(

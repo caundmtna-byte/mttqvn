@@ -16,6 +16,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { txt } from '@/lib/text';
 import { getErrorMessage, getLanguage } from '@/lib/utils';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import { matchesSearchTerm } from '@/lib/searchUtils';
 import { useListWithFilter } from '@/lib/hooks';
 import TabGroup from '@/components/ui/TabGroup';
@@ -47,11 +48,16 @@ import {
   mttqTapHuanChiTietFlatMatchesColumnSearch,
 } from './utils/column-search';
 import { getMttqLopTapHuanById } from './services/mttq-tap-huan-service';
-import { canViewLopTapHuanRow, useMttqLopTapHuanViewer } from './hooks/use-mttq-tap-huan-viewer';
+import {
+  canViewTapHuanUngVienRow,
+  isTapHuanUngVienScopedToXaPhuong,
+  useMttqLopTapHuanViewer,
+} from './hooks/use-mttq-tap-huan-viewer';
 import MttqLopTapHuanToolbar from './components/mttq-tap-huan-toolbar';
 import MttqLopTapHuanTable from './components/mttq-tap-huan-table';
 import MttqTapHuanChiTietToolbar from './components/mttq-tap-huan-chi-tiet-toolbar';
 import MttqTapHuanChiTietTable from './components/mttq-tap-huan-chi-tiet-table';
+import MttqTapHuanChiTietAddHost from './components/mttq-tap-huan-chi-tiet-add-host';
 import MttqTapHuanThongKePanel from './components/mttq-tap-huan-thong-ke-panel';
 
 const MttqLopTapHuanForm = lazy(() => import('./components/mttq-tap-huan-form'));
@@ -112,6 +118,9 @@ const DanhSachTapHuanPage: React.FC = () => {
   const [editing, setEditing] = useState<MttqLopTapHuan | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
+  const [showChiTietAdd, setShowChiTietAdd] = useState(false);
+  /** Tab khi mở ExportDialog — tránh lệch cột khi user đổi tab lúc dialog mở. */
+  const [exportTab, setExportTab] = useState<TapHuanMainTab>('lop');
 
   const {
     searchTerm,
@@ -130,6 +139,9 @@ const DanhSachTapHuanPage: React.FC = () => {
     filters: chiFilters,
     sort: chiSort,
     resetState: resetChiTietListState,
+    selectedIds: chiSelectedIds,
+    pagination: chiPagination,
+    columns: chiColumns,
   } = useMttqTapHuanChiTietListStore();
 
   const { data: rows = [], isLoading } = useMttqLopTapHuanList({ enabled: canView });
@@ -142,14 +154,15 @@ const DanhSachTapHuanPage: React.FC = () => {
 
   const viewer = useMttqLopTapHuanViewer();
 
-  /** Lọc theo viewer trước khi mọi tính toán hiển thị (chip / search / export / sort). */
-  const viewableRows = useMemo(
-    () => rows.filter((r) => canViewLopTapHuanRow(viewer, r)),
-    [rows, viewer],
-  );
+  /** Tab Lớp: ai có quyền xem module thì thấy hết lớp. */
+  const viewableRows = rows;
 
+  /**
+   * Tab Danh sách CT + Thống kê: Tỉnh / cap_bac=1 / quan_tri xem hết ứng viên;
+   * Xã phường chỉ `can_bo_don_vi_id` trùng đơn vị NV.
+   */
   const viewableChiTietFlatRows = useMemo(
-    () => chiTietFlatRows.filter((r) => canViewLopTapHuanRow(viewer, r)),
+    () => chiTietFlatRows.filter((r) => canViewTapHuanUngVienRow(viewer, r)),
     [chiTietFlatRows, viewer],
   );
 
@@ -181,15 +194,6 @@ const DanhSachTapHuanPage: React.FC = () => {
       resetChiTietListState();
     };
   }, [resetLopListState, resetChiTietListState]);
-
-  /** Drawer chi tiết: nếu data về mà viewer không đủ quyền (vd. đoán id), tự đóng + báo. */
-  useEffect(() => {
-    if (!viewingId || !viewingData) return;
-    if (!canViewLopTapHuanRow(viewer, viewingData)) {
-      toast.error(txt('matTranTapHuan.noViewPermission'));
-      setViewingId(null);
-    }
-  }, [viewingId, viewingData, viewer]);
 
   /** Mở drawer chi tiết khi đi từ liên kết `?open=<id_lop_tap_huan>` (vd. từ detail cán bộ). */
   useEffect(() => {
@@ -231,6 +235,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       if (f.cap_tap_huan?.length && !f.cap_tap_huan.includes(item.cap_tap_huan)) return false;
       if (f.nam_tap_huan?.length && !f.nam_tap_huan.includes(String(item.nam_tap_huan))) return false;
       if (f.thuoc_dien?.length && !f.thuoc_dien.includes(item.thuoc_dien)) return false;
+      if (f.id_lop_tap_huan?.length && !f.id_lop_tap_huan.includes(item.id_lop_tap_huan)) return false;
       if (!mttqTapHuanChiTietFlatMatchesColumnSearch(item, f.columnSearch)) return false;
       return matchesSearch;
     },
@@ -266,10 +271,17 @@ const DanhSachTapHuanPage: React.FC = () => {
   const hasThongKeChipFilter = thongKeThuocDien.length > 0 || thongKeDonViLop.length > 0;
 
   const rowsForStats = useMemo(() => {
-    if (!hasThongKeChipFilter) return filtered;
-    const ids = new Set(flatAfterThongKeChips.map((f) => f.id_lop_tap_huan));
-    return filtered.filter((r) => ids.has(r.id));
-  }, [filtered, flatAfterThongKeChips, hasThongKeChipFilter]);
+    let base = filtered;
+    if (isTapHuanUngVienScopedToXaPhuong(viewer)) {
+      const visibleLopIds = new Set(viewableChiTietFlatRows.map((f) => f.id_lop_tap_huan));
+      base = base.filter((r) => visibleLopIds.has(r.id));
+    }
+    if (hasThongKeChipFilter) {
+      const ids = new Set(flatAfterThongKeChips.map((f) => f.id_lop_tap_huan));
+      base = base.filter((r) => ids.has(r.id));
+    }
+    return base;
+  }, [filtered, viewableChiTietFlatRows, viewer, flatAfterThongKeChips, hasThongKeChipFilter]);
 
   const flatForStatsPanel = useMemo(() => {
     if (!hasThongKeChipFilter) return flatUnderFilteredLop;
@@ -357,7 +369,46 @@ const DanhSachTapHuanPage: React.FC = () => {
     [viewableChiTietFlatRows],
   );
 
-  const exportSourceRows = mainTab === 'thong_ke' ? rowsForStats : filtered;
+  const lopChipOptionsChiTiet = useMemo(() => {
+    const map = new Map<string, { label: string; count: number }>();
+    for (const r of viewableChiTietFlatRows) {
+      const value = r.id_lop_tap_huan;
+      const label = r.ten_lop_tap_huan?.trim() || txt('common.emptyCell');
+      const cur = map.get(value);
+      if (cur) cur.count += 1;
+      else map.set(value, { label, count: 1 });
+    }
+    return [...map.entries()]
+      .map(([value, { label, count }]) => ({ value, label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [viewableChiTietFlatRows]);
+
+  const lopPickOptionsForChiTietAdd = useMemo(() => {
+    const filteredIds = chiFilters.id_lop_tap_huan;
+    const source =
+      filteredIds.length > 0
+        ? viewableRows.filter((r) => filteredIds.includes(r.id))
+        : viewableRows;
+    return source.map((r) => ({
+      value: r.id,
+      label: r.ten_lop_tap_huan,
+    }));
+  }, [viewableRows, chiFilters.id_lop_tap_huan]);
+
+  const chiTietAddPresetLopId = useMemo(() => {
+    const ids = chiFilters.id_lop_tap_huan;
+    return ids.length === 1 ? ids[0] : null;
+  }, [chiFilters.id_lop_tap_huan]);
+
+  const handleChiTietAdd = useCallback(() => {
+    if (viewableRows.length === 0) {
+      toast.warning(txt('matTranTapHuan.chiTietList.noLopToAdd'));
+      return;
+    }
+    setShowChiTietAdd(true);
+  }, [viewableRows.length]);
+
+  const exportSourceRowsLop = mainTab === 'thong_ke' ? rowsForStats : filtered;
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -471,7 +522,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       .sort((a, b) => Number(b.value) - Number(a.value));
   }, [viewableChiTietFlatRows]);
 
-  const EXPORT_COLUMNS = useMemo(
+  const EXPORT_COLUMNS_LOP = useMemo(
     () => [
       { key: 'ten_lop_tap_huan', label: txt('matTranTapHuan.store.tenLopCol') },
       { key: 'nam_tap_huan', label: txt('matTranTapHuan.store.namCol') },
@@ -483,7 +534,23 @@ const DanhSachTapHuanPage: React.FC = () => {
     [],
   );
 
-  const exportMapFn = useCallback(
+  const EXPORT_COLUMNS_CHI_TIET = useMemo(
+    () => [
+      { key: 'ten_lop_tap_huan', label: txt('matTranTapHuan.store.tenLopCol') },
+      { key: 'nam_tap_huan', label: txt('matTranTapHuan.store.namCol') },
+      { key: 'cap_tap_huan', label: txt('matTranTapHuan.store.capCol') },
+      { key: 'ten_don_vi_lop', label: txt('matTranTapHuan.chiTietList.cols.donViLop') },
+      { key: 'ten_can_bo', label: txt('matTranTapHuan.form.hoVaTen') },
+      { key: 'ten_to_chuc', label: txt('matTranCanBo.store.toChucCol') },
+      { key: 'ten_phong_ban', label: txt('matTranCanBo.store.phongBanCol') },
+      { key: 'chuc_vu', label: txt('matTranTapHuan.form.chucVu') },
+      { key: 'ten_don_vi_can_bo', label: txt('matTranTapHuan.form.donViCongTac') },
+      { key: 'thuoc_dien', label: txt('matTranTapHuan.form.thuocDien') },
+    ],
+    [],
+  );
+
+  const exportMapFnLop = useCallback(
     (item: MttqLopTapHuanListRow) => ({
       ten_lop_tap_huan: item.ten_lop_tap_huan,
       nam_tap_huan: String(item.nam_tap_huan ?? ''),
@@ -495,22 +562,54 @@ const DanhSachTapHuanPage: React.FC = () => {
     [],
   );
 
-  const {
-    exportData,
-    paginatedData: paginatedExportData,
-    selectedData: selectedExportData,
-  } = useExportData({
-    data: exportSourceRows,
-    isOpen: showExport,
-    mapFn: exportMapFn,
+  const exportMapFnChiTiet = useCallback((item: MttqTapHuanChiTietFlatRow) => {
+    const ec = txt('common.emptyCell');
+    const donViCanBo = formatTenDonViCongTacDisplay(
+      item.chuc_vu_cap_quan_ly,
+      item.ten_don_vi_can_bo,
+    );
+    return {
+      ten_lop_tap_huan: item.ten_lop_tap_huan,
+      nam_tap_huan: String(item.nam_tap_huan ?? ''),
+      cap_tap_huan: item.cap_tap_huan,
+      ten_don_vi_lop: item.cap_tap_huan === 'Cấp xã' ? (item.ten_don_vi_lop ?? '') : '',
+      ten_can_bo: item.ten_can_bo ?? '',
+      ten_to_chuc: item.ten_to_chuc ?? '',
+      ten_phong_ban: item.ten_phong_ban ?? '',
+      chuc_vu: item.chuc_vu ?? '',
+      ten_don_vi_can_bo: donViCanBo === ec ? '' : donViCanBo,
+      thuoc_dien: item.thuoc_dien,
+    };
+  }, []);
+
+  const isChiTietExport = exportTab === 'chi_tiet';
+
+  const lopExport = useExportData({
+    data: exportSourceRowsLop,
+    isOpen: showExport && !isChiTietExport,
+    mapFn: exportMapFnLop,
     pagination,
     selectedIds,
     keyExtractor: (r) => r.id,
   });
 
-  const visibleColumnKeys = useMemo(
+  const chiTietExport = useExportData({
+    data: filteredChiTietFlat,
+    isOpen: showExport && isChiTietExport,
+    mapFn: exportMapFnChiTiet,
+    pagination: chiPagination,
+    selectedIds: chiSelectedIds,
+    keyExtractor: (r) => r.id,
+  });
+
+  const visibleColumnKeysLop = useMemo(
     () => columns.filter((c) => c.visible).map((c) => c.id),
     [columns],
+  );
+
+  const visibleColumnKeysChiTiet = useMemo(
+    () => chiColumns.filter((c) => c.visible).map((c) => c.id),
+    [chiColumns],
   );
 
   const handleEditFromList = async (item: MttqLopTapHuanListRow) => {
@@ -522,10 +621,6 @@ const DanhSachTapHuanPage: React.FC = () => {
       });
       if (!full) {
         toast.error(txt('matTranTapHuan.service.notFound'));
-        return;
-      }
-      if (!canViewLopTapHuanRow(viewer, full)) {
-        toast.error(txt('matTranTapHuan.noViewPermission'));
         return;
       }
       startTransition(() => {
@@ -615,9 +710,18 @@ const DanhSachTapHuanPage: React.FC = () => {
   };
 
   const handleExport = () => {
-    if (exportSourceRows.length === 0) {
-      toast.warning(txt('matTranTapHuan.noExportData'));
-      return;
+    if (mainTab === 'chi_tiet') {
+      if (filteredChiTietFlat.length === 0) {
+        toast.warning(txt('matTranTapHuan.noExportData'));
+        return;
+      }
+      setExportTab('chi_tiet');
+    } else {
+      if (exportSourceRowsLop.length === 0) {
+        toast.warning(txt('matTranTapHuan.noExportData'));
+        return;
+      }
+      setExportTab(mainTab);
     }
     setShowExport(true);
   };
@@ -702,8 +806,11 @@ const DanhSachTapHuanPage: React.FC = () => {
             <MttqTapHuanChiTietToolbar
               desktopStartSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
+              onExport={handleExport}
+              onAdd={handleChiTietAdd}
               capOptions={capChipOptionsChiTiet}
               namOptions={namChipOptionsChiTiet}
+              lopOptions={lopChipOptionsChiTiet}
               thuocDienOptions={thuocDienChipOptionsChiTiet}
             />
             <div className="flex-1 min-h-0">
@@ -766,10 +873,22 @@ const DanhSachTapHuanPage: React.FC = () => {
       </AnimatePresence>
 
       <AnimatePresence>
+        {showChiTietAdd && (
+          <MttqTapHuanChiTietAddHost
+            open={showChiTietAdd}
+            onClose={() => setShowChiTietAdd(false)}
+            lopOptions={lopPickOptionsForChiTietAdd}
+            presetLopId={chiTietAddPresetLopId}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {viewingId && viewingData && !showForm && (
           <Suspense fallback={<DrawerLazyFallback />}>
             <MttqLopTapHuanDetail
               data={viewingData}
+              viewer={viewer}
               onClose={() => setViewingId(null)}
               onEdit={handleEditFromDetail}
               onDelete={handleDelete}
@@ -783,12 +902,16 @@ const DanhSachTapHuanPage: React.FC = () => {
           <ExportDialog
             open={showExport}
             onClose={() => setShowExport(false)}
-            columns={EXPORT_COLUMNS}
-            data={exportData}
-            paginatedData={paginatedExportData}
-            selectedData={selectedExportData}
-            fileName={txt('matTranTapHuan.exportFileName')}
-            visibleColumnKeys={visibleColumnKeys}
+            columns={isChiTietExport ? EXPORT_COLUMNS_CHI_TIET : EXPORT_COLUMNS_LOP}
+            data={isChiTietExport ? chiTietExport.exportData : lopExport.exportData}
+            paginatedData={isChiTietExport ? chiTietExport.paginatedData : lopExport.paginatedData}
+            selectedData={isChiTietExport ? chiTietExport.selectedData : lopExport.selectedData}
+            fileName={
+              isChiTietExport
+                ? txt('matTranTapHuan.chiTietList.exportFileName')
+                : txt('matTranTapHuan.exportFileName')
+            }
+            visibleColumnKeys={isChiTietExport ? visibleColumnKeysChiTiet : visibleColumnKeysLop}
           />
         )}
       </AnimatePresence>

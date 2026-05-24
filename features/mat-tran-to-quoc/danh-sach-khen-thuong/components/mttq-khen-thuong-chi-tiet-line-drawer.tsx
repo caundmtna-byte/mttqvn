@@ -3,6 +3,7 @@ import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-ho
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   AlignLeft,
+  Landmark,
   Link2,
   ListChecks,
   Medal,
@@ -26,6 +27,7 @@ import {
 const EMPTY_LINE: MttqKhenThuongChiTietLineFormValues = {
   id: undefined,
   can_bo_id: '',
+  cap_khen_thuong: 'Xã',
   hinh_thuc_khen: 'Thường xuyên',
   danh_hieu: 'Giấy khen',
   noi_dung_khen: undefined,
@@ -39,6 +41,7 @@ interface Props {
   /** Giá trị ban đầu khi mở drawer (đồng bộ khi `open` bật). */
   initialLine: MttqKhenThuongChiTietLineFormValues;
   canBoOptions: { label: string; value: string }[];
+  capKhenThuongOpts: { label: string; value: string }[];
   hinhThucOpts: { label: string; value: string }[];
   danhHieuOpts: { label: string; value: string }[];
   /** Trả về Promise khi cần đợi ghi DB trước khi đóng drawer (vd. lưu từ màn detail). */
@@ -57,6 +60,7 @@ const MttqKhenThuongChiTietLineDrawer: React.FC<Props> = ({
   mode,
   initialLine,
   canBoOptions,
+  capKhenThuongOpts,
   hinhThucOpts,
   danhHieuOpts,
   onSave,
@@ -81,6 +85,7 @@ const MttqKhenThuongChiTietLineDrawer: React.FC<Props> = ({
       ...initialLine,
       id: initialLine.id,
       can_bo_id: initialLine.can_bo_id ?? '',
+      cap_khen_thuong: initialLine.cap_khen_thuong ?? 'Xã',
       hinh_thuc_khen: initialLine.hinh_thuc_khen ?? 'Thường xuyên',
       danh_hieu: initialLine.danh_hieu ?? 'Giấy khen',
       noi_dung_khen: initialLine.noi_dung_khen,
@@ -132,6 +137,23 @@ const MttqKhenThuongChiTietLineDrawer: React.FC<Props> = ({
                   error={errors.can_bo_id?.message}
                   icon={<Users size={12} />}
                   required
+                  dropdownInPortal
+                />
+              )}
+            />
+            <Controller
+              name="cap_khen_thuong"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  label={txt('matTranKhenThuong.form.capKhenThuong')}
+                  options={capKhenThuongOpts}
+                  value={field.value}
+                  onChange={(v) => field.onChange(String(v))}
+                  error={errors.cap_khen_thuong?.message}
+                  icon={<Landmark size={12} />}
+                  required
+                  clearable={false}
                   dropdownInPortal
                 />
               )}

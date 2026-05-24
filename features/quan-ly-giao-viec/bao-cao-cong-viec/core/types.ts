@@ -22,9 +22,9 @@ export interface TaskReportFilters {
   overdueOnly: boolean;
   /** Phân quyền — `var_nhan_vien.id` của user hiện tại (null nếu chưa map). */
   viewerId: number | null;
-  /** Phân quyền — `var_nhan_vien.id_phong_ban` của user hiện tại. */
-  viewerPhongBanId: number | null;
-  /** Phân quyền — true ⇒ bypass gating (cap_bac=1 hoặc quan_tri/admin). */
+  /** Phân quyền — `var_nhan_vien.don_vi_id` của user hiện tại. */
+  viewerDonViId: number | null;
+  /** Phân quyền — true ⇒ bypass gating (cap_bac=1, Tỉnh, hoặc quan_tri/admin). */
   viewAll: boolean;
 }
 
@@ -39,8 +39,8 @@ export interface TaskReportRpcArgs {
   p_overdue_only: boolean;
   /** Phân quyền — viewer (`nhan_vien_id`) để khớp `id_nguoi_tao` / `ids_ho_tro`. */
   p_viewer_id: number | null;
-  /** Phân quyền — `id_phong_ban` viewer để khớp phòng ban của trách nhiệm. */
-  p_viewer_phong_ban_id: number | null;
+  /** Phân quyền — `don_vi_id` viewer để khớp đơn vị của trách nhiệm (Xã phường). */
+  p_viewer_don_vi_id: number | null;
   /** Phân quyền — true ⇒ bypass mọi gating. */
   p_view_all: boolean;
 }

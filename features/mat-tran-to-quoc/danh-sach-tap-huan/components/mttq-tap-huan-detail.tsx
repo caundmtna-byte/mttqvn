@@ -11,6 +11,7 @@ import {
   ListChecks,
   MapPin,
   Plus,
+  Printer,
   StickyNote,
   Tag,
   Trash2,
@@ -18,6 +19,7 @@ import {
   UserCircle,
   Users,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -27,6 +29,7 @@ import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-l
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import { DRAWER_WIDTH_DETAIL_SMALL } from '@/lib/dialog-sizes';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
+import DetailToolbar, { type DetailToolbarAction } from '@/components/shared/DetailToolbar';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
@@ -45,6 +48,10 @@ import {
 } from '../core/schema';
 import { MTTQ_TAP_HUAN_THUOC_DIEN } from '../core/constants';
 import { useUpdateMttqLopTapHuan } from '../hooks/use-mttq-tap-huan';
+import {
+  canViewTapHuanUngVienRow,
+  type MttqLopTapHuanViewer,
+} from '../hooks/use-mttq-tap-huan-viewer';
 import MttqTapHuanChiTietLineDrawer, {
   MTTQ_TAP_HUAN_CHI_TIET_EMPTY_LINE,
 } from './mttq-tap-huan-chi-tiet-line-drawer';
@@ -60,6 +67,7 @@ import { buildTapHuanCanBoOptions } from '../utils/can-bo-options-for-lop';
 
 interface Props {
   data: MttqLopTapHuan;
+  viewer: MttqLopTapHuanViewer;
   onClose: () => void;
   onEdit: (item: MttqLopTapHuan) => void;
   onDelete: (id: string) => void;
@@ -102,7 +110,11 @@ function chiTietCellClass(extra: string) {
   return `${CELL_NOWRAP} ${extra}`;
 }
 
-const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
+const IN_DANH_SACH_PATH_PREFIX =
+  '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan';
+
+const MttqLopTapHuanDetail: React.FC<Props> = ({ data, viewer, onClose, onEdit, onDelete }) => {
+  const navigate = useNavigate();
   const { canEdit, canDelete } = useResourcePermissions('matTranTrainingList');
   const confirm = useConfirmStore((s) => s.confirm);
   const updateMutation = useUpdateMttqLopTapHuan();
@@ -153,8 +165,29 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   );
 
   const gridRows: ChiTietDetailRow[] = useMemo(
-    () => data.chi_tiet.map((r, i) => ({ ...r, rowIndex: i })),
-    [data.chi_tiet],
+    () =>
+      data.chi_tiet
+        .map((r, i) => ({ ...r, rowIndex: i }))
+        .filter((r) => canViewTapHuanUngVienRow(viewer, r)),
+    [data.chi_tiet, viewer],
+  );
+
+  const toolbarActions: DetailToolbarAction[] = useMemo(
+    () => [
+      {
+        label: txt('matTranTapHuan.detail.printList'),
+        icon: <Printer size={16} />,
+        variant: 'info',
+        onClick: () => {
+          if (gridRows.length === 0) {
+            toast.warning(txt('matTranTapHuan.detail.printListEmpty'));
+            return;
+          }
+          navigate(`${IN_DANH_SACH_PATH_PREFIX}/${data.id}/in-danh-sach`);
+        },
+      },
+    ],
+    [data.id, gridRows.length, navigate],
   );
 
   const openAddLine = useCallback(() => {
@@ -305,6 +338,11 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                 {data.nam_tap_huan ? String(data.nam_tap_huan) : txt('common.emptyCell')}
               </p>
             }
+          />
+
+          <DetailToolbar
+            actions={toolbarActions}
+            className="bg-card rounded-xl border border-border"
           />
 
           <DetailSection

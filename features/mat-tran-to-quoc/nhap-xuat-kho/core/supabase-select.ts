@@ -65,6 +65,8 @@ const PHIEU_FOR_CT_FLAT = [
   'ngay_phieu',
   'kho_xuat_id',
   'kho_nhap_id',
+  'don_vi_cuu_tro_id',
+  'dot_cuu_tro_id',
   KHO_XUAT,
   KHO_NHAP,
   DON_VI,

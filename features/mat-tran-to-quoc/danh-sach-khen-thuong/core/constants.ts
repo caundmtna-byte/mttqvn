@@ -6,3 +6,6 @@ export type MttqKhenThuongHinhThuc = (typeof MTTQ_KHEN_THUONG_HINH_THUC)[number]
 
 export const MTTQ_KHEN_THUONG_DANH_HIEU = ['Giấy khen', 'Bằng khen'] as const;
 export type MttqKhenThuongDanhHieu = (typeof MTTQ_KHEN_THUONG_DANH_HIEU)[number];
+
+export const MTTQ_KHEN_THUONG_CAP = ['Tỉnh', 'Trung ương', 'Xã'] as const;
+export type MttqKhenThuongCap = (typeof MTTQ_KHEN_THUONG_CAP)[number];

@@ -73,8 +73,11 @@ interface GenericToolbarProps {
     /** Sau nút Back (desktop + mobile): vd. TabGroup — luôn đứng bên phải nút Back. */
     desktopStartSlot?: React.ReactNode;
 
+    /** Số chip lọc tối đa hiển thị trên desktop; phần còn lại gom vào nút … */
+    maxVisibleFilterChips?: number;
+
     /**
-     * @deprecated Dùng FilterChipOverflowRow (tích hợp sẵn). Giữ prop để tương thích — không còn tác dụng.
+     * Desktop: Back + TabGroup + chip lọc + search trên cùng một hàng (chip nằm bên phải TabGroup).
      */
     filtersDesktopSeparateScroll?: boolean;
     /**
@@ -106,6 +109,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
     onAdd,
     searchTrailing,
     desktopStartSlot,
+    maxVisibleFilterChips,
     filtersDesktopSeparateScroll = false,
     filtersMobileBelowSearchScroll = false,
     secondaryRow,
@@ -367,7 +371,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
             {filtersMobileBelowSearchScroll && filters && !hasSelection && (
                 <div className="sm:hidden px-1 pb-0.5 pt-1.5 border-t border-border/50">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
-                        <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
+                        <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                         {activeFilterCount > 0 && onClearAllFilters && (
                             <button
                                 type="button"
@@ -454,7 +458,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                         (showBack || desktopStartSlot) && 'border-l border-border pl-3 ml-0.5',
                                     )}
                                 >
-                                    <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
+                                    <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                                     {activeFilterCount > 0 && onClearAllFilters && (
                                         <button
                                             onClick={onClearAllFilters}
@@ -565,7 +569,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                             {(filters || (activeFilterCount > 0 && onClearAllFilters)) &&
                             (showBack || desktopStartSlot) ? (
                                 <div className="border-l border-border pl-3 ml-1 flex items-center gap-2 flex-wrap min-w-0">
-                                    <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
+                                    <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                                     {activeFilterCount > 0 && onClearAllFilters && (
                                         <button
                                             onClick={onClearAllFilters}
@@ -580,7 +584,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                 <>
                                     {filters && (
                                         <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                            <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
+                                            <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                                         </div>
                                     )}
                                     {activeFilterCount > 0 && onClearAllFilters && (

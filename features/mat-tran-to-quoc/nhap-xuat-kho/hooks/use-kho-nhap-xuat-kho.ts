@@ -97,6 +97,7 @@ function patchListAfterMutation(
     refetchType: 'active',
   });
   void queryClient.invalidateQueries({ queryKey: queryKeys.khoTonKho.all, refetchType: 'active' });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.khoBaoCaoHoTro.all, refetchType: 'none' });
 }
 
 export function useCreateNhapXuatKho(onSuccess?: () => void) {
@@ -155,6 +156,7 @@ export function useDeleteNhapXuatKhoMany() {
         refetchType: 'active',
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.khoTonKho.all, refetchType: 'active' });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.khoBaoCaoHoTro.all, refetchType: 'none' });
       toast.success(txt('matTranNhapXuatKho.toast.delete', { count: ids.length }));
     },
     onError: (err: unknown) => toast.error(getErrorMessage(err)),

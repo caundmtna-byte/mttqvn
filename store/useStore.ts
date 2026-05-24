@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware';
+import {
+  DEFAULT_BRANDING_APP_DESCRIPTION,
+  DEFAULT_BRANDING_APP_NAME,
+  DEFAULT_BRANDING_LOGO,
+} from '@/lib/branding-defaults';
 import type { AppFontFamily } from '../lib/theme/fonts';
 import { AuthState, User } from '../types';
 import { usePermissionGrantStore } from './usePermissionGrantStore';
@@ -110,9 +115,9 @@ export interface CompanyInfo {
 
 /** Mặc định MTTQVN — đồng bộ với index.html / PWA; chỉnh trong Hệ thống → Thông tin tổ chức. */
 export const DEFAULT_COMPANY_INFO: CompanyInfo = {
-  appName: 'MTTQVN',
-  appDescription: 'Hệ thống nền tảng số',
-  appLogo: 'https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png',
+  appName: DEFAULT_BRANDING_APP_NAME,
+  appDescription: DEFAULT_BRANDING_APP_DESCRIPTION,
+  appLogo: DEFAULT_BRANDING_LOGO,
   companyName: 'Mặt trận Tổ quốc Việt Nam',
   address: 'Khối 7, đường Hùng Vương, TP. Vinh, tỉnh Nghệ An',
   phone: '',

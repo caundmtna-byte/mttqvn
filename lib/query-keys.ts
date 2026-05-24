@@ -107,7 +107,7 @@ export const queryKeys = {
       p_start: string;
       p_end: string;
       p_viewer_id: number | null;
-      p_viewer_phong_ban_id: number | null;
+      p_viewer_don_vi_id: number | null;
       p_view_all: boolean;
     }) => ['cong-viec-bao-cao', 'filter-options', range] as const,
   },
@@ -196,6 +196,10 @@ export const queryKeys = {
     nxtProductWh: (filters: unknown, hangHoaId: string) =>
       ['kho-ton-kho', 'nxt-product-wh', filters, hangHoaId] as const,
     hangNxHistory: (hangHoaId: string) => ['kho-ton-kho', 'hang-nx-history', hangHoaId] as const,
+  },
+  khoBaoCaoHoTro: {
+    all: ['kho-bao-cao-ho-tro'] as const,
+    stats: (filters: unknown) => ['kho-bao-cao-ho-tro', 'stats', filters] as const,
   },
   luongThietLapNgach: {
     all: ['luong-thiet-lap-ngach'] as const,

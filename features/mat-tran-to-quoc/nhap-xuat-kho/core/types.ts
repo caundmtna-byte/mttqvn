@@ -71,7 +71,9 @@ export interface NhapXuatKhoCtFlatRow {
   ten_kho_xuat: string | null;
   kho_nhap_id: string | null;
   ten_kho_nhap: string | null;
+  don_vi_cuu_tro_id: string | null;
   ten_don_vi_cuu_tro: string | null;
+  dot_cuu_tro_id: string | null;
   ten_dot_cuu_tro: string | null;
   hang_hoa_id: string;
   ten_hang_hoa: string | null;

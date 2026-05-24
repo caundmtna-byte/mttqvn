@@ -35,7 +35,7 @@ import {
   useMttqKhenThuongDetail,
   useUpdateMttqKhenThuong,
 } from './hooks/use-mttq-khen-thuong';
-import { canViewKhenThuongRow, useMttqKhenThuongViewer } from './hooks/use-mttq-khen-thuong-viewer';
+import { canViewKhenThuongRow, canViewKhenThuongChiTietRow, useMttqKhenThuongViewer } from './hooks/use-mttq-khen-thuong-viewer';
 import { useMttqKhenThuongStore } from './store/useMttqKhenThuongStore';
 import { useMttqKhenThuongChiTietListStore } from './store/useMttqKhenThuongChiTietListStore';
 import type { MttqKhenThuong, MttqKhenThuongChiTietFlatRow, MttqKhenThuongListRow } from './core/types';
@@ -69,6 +69,7 @@ function khenThuongToFormValues(d: MttqKhenThuong): MttqKhenThuongFormValues {
     chi_tiet: d.chi_tiet.map((c) => ({
       id: c.id,
       can_bo_id: c.can_bo_id,
+      cap_khen_thuong: c.cap_khen_thuong,
       hinh_thuc_khen: c.hinh_thuc_khen,
       danh_hieu: c.danh_hieu,
       noi_dung_khen: c.noi_dung_khen ?? undefined,
@@ -153,7 +154,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
   );
 
   const viewableChiTietFlatRows = useMemo(
-    () => chiTietFlatRows.filter((r) => canViewKhenThuongRow(viewer, r)),
+    () => chiTietFlatRows.filter((r) => canViewKhenThuongChiTietRow(viewer, r)),
     [chiTietFlatRows, viewer],
   );
 

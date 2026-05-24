@@ -8,6 +8,7 @@ import {
   Clock,
   Edit,
   FileText,
+  Landmark,
   Link2,
   ListChecks,
   Medal,
@@ -43,15 +44,19 @@ import type {
   MttqKhenThuongStatusChangeValues,
 } from '../core/schema';
 import {
+  MTTQ_KHEN_THUONG_CAP,
   MTTQ_KHEN_THUONG_DANH_HIEU,
   MTTQ_KHEN_THUONG_HINH_THUC,
 } from '../core/constants';
 import { useUpdateMttqKhenThuong } from '../hooks/use-mttq-khen-thuong';
+import { useMttqKhenThuongViewer, canViewKhenThuongDetailChiTietLine } from '../hooks/use-mttq-khen-thuong-viewer';
+import { buildKhenThuongCanBoOptions } from '../utils/can-bo-options-for-khen-thuong';
 import MttqKhenThuongChiTietLineDrawer, {
   MTTQ_KHEN_THUONG_CHI_TIET_EMPTY_LINE,
 } from './mttq-khen-thuong-chi-tiet-line-drawer';
 import MttqKhenThuongChuyenTrangThaiDialog from './mttq-khen-thuong-chuyen-trang-thai-dialog';
 import {
+  getKhenThuongCapBadgeConfig,
   getKhenThuongDanhHieuBadgeConfig,
   getKhenThuongHinhThucBadgeConfig,
   getKhenThuongTrangThaiBadgeConfig,
@@ -72,6 +77,7 @@ function chiTietToLineForm(c: MttqKhenThuongCt): MttqKhenThuongChiTietLineFormVa
   return {
     id: c.id,
     can_bo_id: c.can_bo_id,
+    cap_khen_thuong: c.cap_khen_thuong,
     hinh_thuc_khen: c.hinh_thuc_khen,
     danh_hieu: c.danh_hieu,
     noi_dung_khen: c.noi_dung_khen ?? undefined,
@@ -90,7 +96,7 @@ function parentToFormValues(d: MttqKhenThuong, chiLines: MttqKhenThuongChiTietLi
   };
 }
 
-const CHI_TIET_TABLE_CLASS = 'min-w-[56rem]';
+const CHI_TIET_TABLE_CLASS = 'min-w-[64rem]';
 const CELL_NOWRAP = 'whitespace-nowrap align-top';
 
 function chiTietCellClass(extra: string) {
@@ -103,6 +109,7 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   const updateMutation = useUpdateMttqKhenThuong();
   const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
+  const viewer = useMttqKhenThuongViewer();
 
   const [lineDrawer, setLineDrawer] = useState<LineDrawerState>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -110,6 +117,7 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   const trangThaiBadgeConfig = useMemo(() => getKhenThuongTrangThaiBadgeConfig(), []);
   const hinhThucBadgeConfig = useMemo(() => getKhenThuongHinhThucBadgeConfig(), []);
   const danhHieuBadgeConfig = useMemo(() => getKhenThuongDanhHieuBadgeConfig(), []);
+  const capKhenThuongBadgeConfig = useMemo(() => getKhenThuongCapBadgeConfig(), []);
 
   const toolbarActions: DetailToolbarAction[] = useMemo(
     () =>
@@ -133,10 +141,12 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
 
   const canBoOptions = useMemo(
     () =>
-      [...canBoList]
-        .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, 'vi'))
-        .map((c) => ({ label: c.ho_ten, value: String(c.id) })),
-    [canBoList],
+      buildKhenThuongCanBoOptions({
+        viewer,
+        canBoList,
+        ensureCanBoId: lineDrawer?.mode === 'edit' ? lineFormRows[lineDrawer.index]?.can_bo_id : undefined,
+      }),
+    [viewer, canBoList, lineDrawer, lineFormRows],
   );
 
   const hinhThucOpts = useMemo(
@@ -147,10 +157,17 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
     () => MTTQ_KHEN_THUONG_DANH_HIEU.map((v) => ({ label: v, value: v })),
     [],
   );
+  const capKhenThuongOpts = useMemo(
+    () => MTTQ_KHEN_THUONG_CAP.map((v) => ({ label: v, value: v })),
+    [],
+  );
 
   const gridRows: ChiTietDetailRow[] = useMemo(
-    () => data.chi_tiet.map((r, i) => ({ ...r, rowIndex: i })),
-    [data.chi_tiet],
+    () =>
+      data.chi_tiet
+        .map((r, i) => ({ ...r, rowIndex: i }))
+        .filter((r) => canViewKhenThuongDetailChiTietLine(viewer, r)),
+    [data.chi_tiet, viewer],
   );
 
   const openAddLine = useCallback(() => {
@@ -406,6 +423,25 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                 }}
                 columns={[
                   {
+                    id: 'cap_khen_thuong',
+                    header: (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Landmark size={12} className="shrink-0 opacity-90" aria-hidden />
+                        {txt('matTranKhenThuong.form.capKhenThuong')}
+                      </span>
+                    ),
+                    headerClassName: 'min-w-[7.5rem]',
+                    cellClassName: chiTietCellClass('min-w-[7.5rem]'),
+                    renderCell: (r) => (
+                      <EnumBadge
+                        value={r.cap_khen_thuong}
+                        config={capKhenThuongBadgeConfig}
+                        shape="rounded"
+                        truncate
+                      />
+                    ),
+                  },
+                  {
                     id: 'hinh_thuc',
                     header: (
                       <span className="inline-flex items-center gap-1.5">
@@ -503,6 +539,7 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
           mode={lineDrawer.mode}
           initialLine={lineDrawerInitial}
           canBoOptions={canBoOptions}
+          capKhenThuongOpts={capKhenThuongOpts}
           hinhThucOpts={hinhThucOpts}
           danhHieuOpts={danhHieuOpts}
           onSave={handleLineDrawerSave}

@@ -3,28 +3,25 @@ import { APP_RESOURCE_TO_MODULE, isChucVuCapBacOne } from '@/lib/permissions';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import type { CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
-import type { MttqTapHuanCap } from '../core/constants';
 
 export interface MttqLopTapHuanViewer {
   /** True ⇒ bypass: `cap_bac === 1`, quan_tri (`admin`/`all`), `role=admin`, hoặc legacy khi chưa hydrate matrix. */
   canViewAll: boolean;
   /** `var_chuc_vu.cap_quan_ly` sau hydrate — Tỉnh / Xã phường / null. */
   chucVuCapQuanLy: CapQuanLy | null;
-  /** `var_nhan_vien.don_vi_id` — so khớp `mttq_lop_tap_huan.don_vi_id` khi lớp Cấp xã. */
+  /** `var_nhan_vien.don_vi_id` — so khớp `mttq_can_bo.don_vi_id` của ứng viên khi Xã phường. */
   viewerDonViId: string | null;
 }
 
 /**
- * Tổng hợp viewer cho module Tập huấn (tab lớp + Danh sách CT).
+ * Tổng hợp viewer cho module Tập huấn.
  *
- * `canViewAll`:
- * - `user.role === 'admin'`
- * - `!matrixActive` (legacy, không ẩn dữ liệu khi chưa hydrate)
- * - `var_chuc_vu.cap_bac === 1`
- * - Grant `admin` / `all` (map từ `quan_tri`) trên module tập huấn
+ * Tab **Lớp tập huấn**: ai có quyền `xem` module thì thấy hết lớp (không lọc dòng lớp).
  *
- * Không bypass: theo `cap_tap_huan` của lớp và `cap_quan_ly` chức vụ —
- * Cấp tỉnh chỉ Tỉnh; Cấp xã là Tỉnh hoặc Xã phường (có `don_vi_id` NV) khớp `don_vi_id` lớp.
+ * **Ứng viên / dòng CT** (detail lớp, tab Danh sách CT, tab Thống kê):
+ * - `canViewAll` (cap_bac=1, quan_tri, admin, legacy) hoặc `cap_quan_ly` = **Tỉnh** → hết
+ * - `cap_quan_ly` = **Xã phường** → chỉ dòng có `can_bo_don_vi_id` trùng `viewerDonViId`
+ * - `cap_quan_ly` khác / null → hết
  */
 export function useMttqLopTapHuanViewer(): MttqLopTapHuanViewer {
   const user = useAuthStore((s) => s.user);
@@ -53,26 +50,31 @@ export function useMttqLopTapHuanViewer(): MttqLopTapHuanViewer {
   }, [user?.role, user?.don_vi_id, matrixActive, grantsByModule, chucVuCapBac, chucVuCapQuanLy]);
 }
 
-export type LopTapHuanRowForViewGate = {
-  cap_tap_huan: MttqTapHuanCap;
-  don_vi_id?: string | null;
+export type TapHuanUngVienRowForViewGate = {
+  /** FK `mttq_can_bo.don_vi_id` — gating Xã phường trong detail / tab CT / thống kê. */
+  can_bo_don_vi_id?: string | null;
 };
 
-/** Helper rút gọn dùng cho cả danh sách lớp, tab CT và detail (thuần hàm — dễ unit test). */
-export function canViewLopTapHuanRow(viewer: MttqLopTapHuanViewer, row: LopTapHuanRowForViewGate): boolean {
-  if (viewer.canViewAll) return true;
-  const cap = row.cap_tap_huan;
-  if (cap === 'Cấp tỉnh') {
-    return viewer.chucVuCapQuanLy === 'Tỉnh';
+/** cap_bac=1, quan_tri, admin, legacy, hoặc chức vụ Tỉnh — xem hết ứng viên. */
+export function isTapHuanUngVienViewUnrestricted(viewer: MttqLopTapHuanViewer): boolean {
+  return viewer.canViewAll || viewer.chucVuCapQuanLy === 'Tỉnh';
+}
+
+/** Chỉ Xã phường (không bypass) — lọc theo `can_bo.don_vi_id`. */
+export function isTapHuanUngVienScopedToXaPhuong(viewer: MttqLopTapHuanViewer): boolean {
+  return !isTapHuanUngVienViewUnrestricted(viewer) && viewer.chucVuCapQuanLy === 'Xã phường';
+}
+
+/** Lọc ứng viên (dòng CT) — detail lớp, tab Danh sách CT, tab Thống kê. */
+export function canViewTapHuanUngVienRow(
+  viewer: MttqLopTapHuanViewer,
+  row: TapHuanUngVienRowForViewGate,
+): boolean {
+  if (isTapHuanUngVienViewUnrestricted(viewer)) return true;
+  if (viewer.chucVuCapQuanLy === 'Xã phường') {
+    if (!viewer.viewerDonViId) return false;
+    const rowDv = row.can_bo_don_vi_id?.toString().trim();
+    return Boolean(rowDv) && rowDv === viewer.viewerDonViId;
   }
-  if (cap === 'Cấp xã') {
-    if (viewer.chucVuCapQuanLy === 'Tỉnh') return true;
-    if (viewer.chucVuCapQuanLy === 'Xã phường') {
-      if (!viewer.viewerDonViId) return false;
-      const rowDv = row.don_vi_id?.toString().trim();
-      return Boolean(rowDv) && rowDv === viewer.viewerDonViId;
-    }
-    return false;
-  }
-  return false;
+  return true;
 }

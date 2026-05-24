@@ -83,8 +83,12 @@ const MttqTapHuanChiTietLineDrawer: React.FC<Props> = ({
   }, [open, initialLine, reset]);
 
   const onSubmit: SubmitHandler<MttqTapHuanChiTietLineFormValues> = async (formData) => {
-    await Promise.resolve(onSave(formData));
-    onClose();
+    try {
+      await Promise.resolve(onSave(formData));
+      onClose();
+    } catch {
+      /* Giữ drawer mở khi onSave từ chối (vd. trùng cán bộ). */
+    }
   };
 
   if (!open) return null;

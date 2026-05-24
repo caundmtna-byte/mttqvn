@@ -81,7 +81,7 @@ describe('buildTaskReportRpcArgs', () => {
     mucDo: [],
     overdueOnly: false,
     viewerId: null,
-    viewerPhongBanId: null,
+    viewerDonViId: null,
     viewAll: false,
   };
 
@@ -129,7 +129,7 @@ describe('buildTaskReportRpcArgs', () => {
   it('mặc định viewer → null/false (RPC trả 0 row khi không cấp viewer)', () => {
     const args = buildTaskReportRpcArgs(baseFilters);
     expect(args.p_viewer_id).toBeNull();
-    expect(args.p_viewer_phong_ban_id).toBeNull();
+    expect(args.p_viewer_don_vi_id).toBeNull();
     expect(args.p_view_all).toBe(false);
   });
 
@@ -141,11 +141,11 @@ describe('buildTaskReportRpcArgs', () => {
     const memberArgs = buildTaskReportRpcArgs({
       ...baseFilters,
       viewerId: 42,
-      viewerPhongBanId: 7,
+      viewerDonViId: 7,
       viewAll: false,
     });
     expect(memberArgs.p_viewer_id).toBe(42);
-    expect(memberArgs.p_viewer_phong_ban_id).toBe(7);
+    expect(memberArgs.p_viewer_don_vi_id).toBe(7);
     expect(memberArgs.p_view_all).toBe(false);
   });
 });

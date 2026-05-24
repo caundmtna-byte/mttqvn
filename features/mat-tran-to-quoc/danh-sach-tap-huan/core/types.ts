@@ -24,6 +24,8 @@ export interface MttqLopTapHuanCt {
   thuoc_dien: MttqTapHuanThuocDien;
   /** Họ tên cán bộ (join từ mttq_can_bo). */
   ten_can_bo?: string | null;
+  /** FK `mttq_can_bo.don_vi_id` — gating Xã phường trong detail / tab CT. */
+  can_bo_don_vi_id?: string | null;
   /** Đơn vị xã/phường trên hồ sơ cán bộ (join `mttq_can_bo.don_vi_id`). */
   ten_don_vi_can_bo?: string | null;
   /** `var_chuc_vu.cap_quan_ly` từ embed cán bộ — hiển thị đơn vị (Tỉnh → `-`). */
@@ -77,12 +79,16 @@ export interface MttqTapHuanChiTietFlatRow {
   ten_phong_ban: string | null;
   chuc_vu: string | null;
   ten_don_vi_can_bo: string | null;
+  /** FK `mttq_can_bo.don_vi_id` — gating Xã phường trong detail / tab CT. */
+  can_bo_don_vi_id: string | null;
   /** `var_chuc_vu.cap_quan_ly` từ embed cán bộ — hiển thị đơn vị (Tỉnh → `-`). */
   chuc_vu_cap_quan_ly?: string | null;
   thuoc_dien: MttqTapHuanThuocDien;
 }
 
-/** Bộ lọc tab chi tiết — cấp / năm / thuộc diện + columnSearch (không dùng don_vi_id lớp). */
+/** Bộ lọc tab chi tiết — cấp / năm / thuộc diện / lớp + columnSearch (không dùng don_vi_id lớp). */
 export interface MttqTapHuanChiTietListFilters extends Omit<MttqLopTapHuanFilters, 'don_vi_id'> {
   thuoc_dien: string[];
+  /** FK `mttq_lop_tap_huan.id` — lọc dòng CT theo lớp cha. */
+  id_lop_tap_huan: string[];
 }

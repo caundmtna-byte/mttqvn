@@ -49,6 +49,7 @@ BEGIN
   INSERT INTO public.mttq_khen_thuong_ct (
     id_khen_thuong,
     can_bo_id,
+    cap_khen_thuong,
     hinh_thuc_khen,
     danh_hieu,
     noi_dung_khen,
@@ -57,6 +58,7 @@ BEGIN
     (
       v_kt,
       v_cb1,
+      'Xã',
       'Thường xuyên',
       'Giấy khen',
       'Hoàn thành tốt nhiệm vụ được giao (seed).',
@@ -65,6 +67,7 @@ BEGIN
     (
       v_kt,
       COALESCE(v_cb2, v_cb1),
+      'Tỉnh',
       'Chuyên đề',
       'Bằng khen',
       'Tham gia tích cực đợt cao điểm (seed).',

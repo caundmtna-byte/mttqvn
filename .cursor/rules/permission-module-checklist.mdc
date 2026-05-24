@@ -109,10 +109,12 @@ Ngoài `can('view', 'matTranCommitteeMembers')`, danh sách / báo cáo / tab li
 
 Báo cáo ủy viên lọc `rows` theo cùng helper trước khi aggregate. RLS mirror là tùy chọn riêng.
 
-## Tập huấn — lọc xem theo cấp lớp (client)
+## Tập huấn — lọc xem (client)
 
-Ngoài `can('view', 'matTranTrainingList')`, tab **Lớp** và **Danh sách CT** dùng `useMttqLopTapHuanViewer` + `canViewLopTapHuanRow(viewer, row)` (`features/mat-tran-to-quoc/danh-sach-tap-huan/hooks/use-mttq-tap-huan-viewer.ts`). `row` cần `cap_tap_huan` và `don_vi_id` (lớp; tab CT lấy từ embed lớp).
+Ngoài `can('view', 'matTranTrainingList')`: tab **Lớp tập huấn** hiển thị **hết lớp** cho mọi user có quyền xem module.
 
-**Xem hết:** `chucVuCapBac === 1`, grant **admin/all** trên module tập huấn, `user.role === 'admin'`, hoặc ma trận tắt.
+**Ứng viên / dòng CT** (detail lớp, tab Danh sách CT, KPI người tham gia): `useMttqLopTapHuanViewer` + `canViewTapHuanUngVienRow(viewer, row)` — `row` cần `can_bo_don_vi_id` (`mttq_can_bo.don_vi_id`).
 
-**Chỉ xem:** lớp **Cấp tỉnh** chỉ khi `cap_quan_ly` chức vụ là **Tỉnh**. Lớp **Cấp xã:** **Tỉnh** xem hết; **Xã phường** chỉ khi `user.don_vi_id` khớp `mttq_lop_tap_huan.don_vi_id` (string-safe); không có `don_vi_id` nhân viên → không thấy lớp cấp xã. `cap_quan_ly` null → không thấy cấp tỉnh; cấp xã không khớp đơn vị → không.
+**Xem hết ứng viên:** `chucVuCapBac === 1`, grant **admin/all** (quan_tri), `user.role === 'admin'`, ma trận tắt, hoặc `cap_quan_ly` = **Tỉnh**.
+
+**Xã phường (chỉ xem):** chỉ dòng CT có `can_bo_don_vi_id` trùng `user.don_vi_id` (tab CT, detail, thống kê đếm theo flat đã lọc); không có `don_vi_id` NV → không dòng CT nào.

@@ -1,6 +1,7 @@
 import type { BadgeConfig } from '@/components/ui/EnumBadge';
-import type { MttqKhenThuongDanhHieu, MttqKhenThuongHinhThuc, MttqKhenThuongTrangThai } from '../core/constants';
+import type { MttqKhenThuongCap, MttqKhenThuongDanhHieu, MttqKhenThuongHinhThuc, MttqKhenThuongTrangThai } from '../core/constants';
 import {
+  MTTQ_KHEN_THUONG_CAP,
   MTTQ_KHEN_THUONG_DANH_HIEU,
   MTTQ_KHEN_THUONG_HINH_THUC,
   MTTQ_KHEN_THUONG_TRANG_THAI,
@@ -48,5 +49,21 @@ export function getKhenThuongDanhHieuBadgeConfig(): BadgeConfig<MttqKhenThuongDa
       return acc;
     },
     {} as BadgeConfig<MttqKhenThuongDanhHieu>,
+  );
+}
+
+/** Cấp khen thưởng — bảng con list/detail. */
+export function getKhenThuongCapBadgeConfig(): BadgeConfig<MttqKhenThuongCap> {
+  const map: Record<MttqKhenThuongCap, { label: string; color: 'violet' | 'amber' | 'cyan' }> = {
+    Tỉnh: { label: 'Tỉnh', color: 'violet' },
+    'Trung ương': { label: 'Trung ương', color: 'amber' },
+    Xã: { label: 'Xã', color: 'cyan' },
+  };
+  return MTTQ_KHEN_THUONG_CAP.reduce(
+    (acc, key) => {
+      acc[key] = map[key];
+      return acc;
+    },
+    {} as BadgeConfig<MttqKhenThuongCap>,
   );
 }

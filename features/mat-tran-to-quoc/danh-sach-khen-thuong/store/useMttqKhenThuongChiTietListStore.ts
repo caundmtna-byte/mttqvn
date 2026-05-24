@@ -48,12 +48,20 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 4,
   },
   {
+    id: 'cap_khen_thuong',
+    label: txt('matTranKhenThuong.form.capKhenThuong'),
+    visible: true,
+    minWidth: 112,
+    maxWidth: 140,
+    order: 5,
+  },
+  {
     id: 'hinh_thuc_khen',
     label: txt('matTranKhenThuong.form.hinhThuc'),
     visible: true,
     minWidth: 120,
     maxWidth: 160,
-    order: 5,
+    order: 6,
   },
   {
     id: 'danh_hieu',
@@ -61,7 +69,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 160,
-    order: 6,
+    order: 7,
   },
   {
     id: 'noi_dung_khen',
@@ -69,7 +77,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 160,
     maxWidth: 280,
-    order: 7,
+    order: 8,
   },
   {
     id: 'ho_so_khen',
@@ -77,14 +85,14 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 120,
     maxWidth: 200,
-    order: 8,
+    order: 9,
   },
   {
     id: 'tg_cap_nhat_qd',
     label: txt('matTranKhenThuong.chiTietList.cols.tgCapNhatQd'),
     visible: false,
     ...P.datetime,
-    order: 9,
+    order: 10,
   },
 ];
 

@@ -217,7 +217,7 @@ const BaoCaoCongViecPage: React.FC = () => {
         mucDo,
         overdueOnly,
         viewerId: viewer.viewerId,
-        viewerPhongBanId: viewer.viewerPhongBanId,
+        viewerDonViId: viewer.viewerDonViId,
         viewAll: viewer.viewAll,
       }),
     [
@@ -228,7 +228,7 @@ const BaoCaoCongViecPage: React.FC = () => {
       mucDo,
       overdueOnly,
       viewer.viewerId,
-      viewer.viewerPhongBanId,
+      viewer.viewerDonViId,
       viewer.viewAll,
     ],
   );
@@ -255,7 +255,7 @@ const BaoCaoCongViecPage: React.FC = () => {
       p_start: rpcArgs.p_start,
       p_end: rpcArgs.p_end,
       p_viewer_id: rpcArgs.p_viewer_id,
-      p_viewer_phong_ban_id: rpcArgs.p_viewer_phong_ban_id,
+      p_viewer_don_vi_id: rpcArgs.p_viewer_don_vi_id,
       p_view_all: rpcArgs.p_view_all,
     },
     { enabled: canOpenPage },

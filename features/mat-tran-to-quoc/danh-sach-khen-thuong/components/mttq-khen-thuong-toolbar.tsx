@@ -296,6 +296,7 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
       onResetColumns={hideListControls ? undefined : resetColumns}
       showBack
       onBack={onPageBack}
+      maxVisibleFilterChips={2}
     />
   );
 };

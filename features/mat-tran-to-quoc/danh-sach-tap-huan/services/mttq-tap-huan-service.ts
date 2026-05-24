@@ -126,6 +126,7 @@ export function flattenCtRow(row: Record<string, unknown>): MttqLopTapHuanCt {
     don_vi_cong_tac: dv,
     thuoc_dien: String(row.thuoc_dien) as MttqTapHuanThuocDien,
     ten_can_bo: hoTenFromEmbed(canBo),
+    can_bo_don_vi_id: canBo ? nullableId(canBo.don_vi_id) : null,
     ten_don_vi_can_bo: tenDonViFromXaEmbed(canBo?.don_vi),
     chuc_vu_cap_quan_ly: chucVuCapQuanLyFromCanBoEmbed(canBo),
   };
@@ -154,6 +155,7 @@ export function flattenChiTietFlatRow(row: Record<string, unknown>): MttqTapHuan
     ten_phong_ban: ct.ten_phong_ban ?? null,
     chuc_vu: ct.chuc_vu,
     ten_don_vi_can_bo: ct.ten_don_vi_can_bo ?? null,
+    can_bo_don_vi_id: ct.can_bo_don_vi_id ?? null,
     chuc_vu_cap_quan_ly: ct.chuc_vu_cap_quan_ly ?? null,
     thuoc_dien: ct.thuoc_dien,
   };
@@ -194,6 +196,7 @@ function mockCanBoPostgrestFromMttq(
       : null;
   return {
     ho_ten: cb.ho_ten,
+    don_vi_id: cb.don_vi_id,
     don_vi: cb.ten_don_vi ? { ten: cb.ten_don_vi } : null,
     chuc_vu: chucVuEmb && Object.keys(chucVuEmb).length > 0 ? chucVuEmb : null,
     to_chuc: cb.ten_to_chuc ? { ten: cb.ten_to_chuc } : null,
@@ -496,6 +499,7 @@ export async function getMttqLopTapHuanById(id: string): Promise<MttqLopTapHuan 
           ten_phong_ban: three.ten_phong_ban.trim() ? three.ten_phong_ban : null,
           don_vi_cong_tac: snap.don_vi_cong_tac.trim() ? snap.don_vi_cong_tac : null,
           ten_can_bo: cb?.ho_ten ?? null,
+          can_bo_don_vi_id: cb?.don_vi_id != null ? String(cb.don_vi_id) : null,
           ten_don_vi_can_bo: cb?.ten_don_vi ?? null,
           chuc_vu_cap_quan_ly: cb?.chuc_vu_cap_quan_ly ?? null,
         };

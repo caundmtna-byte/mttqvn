@@ -334,7 +334,7 @@ export const ui = {
       "reliefSupportUnits": "Đơn vị hỗ trợ",
       "reliefSupportUnitsDesc": "Danh sách tổ chức và cá nhân tham gia quyên góp, hỗ trợ cứu trợ.",
       "reliefSupportReport": "Báo cáo hỗ trợ",
-      "reliefSupportReportDesc": "Chức năng đang được phát triển.",
+      "reliefSupportReportDesc": "Tổng hợp nhập – xuất cứu trợ theo đơn vị hỗ trợ, đợt cứu trợ và hàng hóa.",
       "officerList": "Danh sách cán bộ",
       "officerListDesc": "Cán bộ thuộc phạm vi thiết lập Mặt trận Tổ quốc.",
       "officerStatsReport": "Báo cáo cán bộ",

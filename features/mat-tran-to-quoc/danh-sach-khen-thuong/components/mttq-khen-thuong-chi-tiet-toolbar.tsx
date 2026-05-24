@@ -236,6 +236,7 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
+      maxVisibleFilterChips={2}
     />
   );
 };

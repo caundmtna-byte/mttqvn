@@ -84,7 +84,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
 
   const filtersSlot = useMemo(
     () => (
-      <div className="flex flex-wrap items-center gap-2 min-w-0">
+      <>
         <FilterChipMultiSelect
           options={trangThaiOptions}
           value={filters.trang_thai ?? []}
@@ -117,7 +117,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
           icon={Gauge}
           className="shrink-0 w-full min-w-0 sm:w-[min(180px,26vw)] sm:max-w-[240px]"
         />
-      </div>
+      </>
     ),
     [
       trangThaiOptions,
@@ -247,6 +247,8 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
       showBack
       onBack={onPageBack}
       desktopStartSlot={tabsSlot}
+      filtersDesktopSeparateScroll
+      maxVisibleFilterChips={2}
     />
   );
 };

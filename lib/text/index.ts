@@ -31,6 +31,7 @@ import { matTranDotCuuTro } from '../../features/mat-tran-to-quoc/dot-cuu-tro/te
 import { matTranHangHoa } from '../../features/mat-tran-to-quoc/hang-hoa/text';
 import { matTranNhapXuatKho } from '../../features/mat-tran-to-quoc/nhap-xuat-kho/text';
 import { matTranTonKho } from '../../features/mat-tran-to-quoc/ton-kho/text';
+import { matTranReliefSupportReport } from '../../features/mat-tran-to-quoc/bao-cao-ho-tro/text';
 import { matTranThietLapLuong } from '../../features/mat-tran-to-quoc/thiet-lap-luong/text';
 import { matTranTangLuong } from '../../features/mat-tran-to-quoc/danh-sach-tang-luong/text';
 import { diaBan } from '../../features/he-thong/danh-sach-tinh-thanh/text';
@@ -80,6 +81,7 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('matTranHangHoa', matTranHangHoa),
   ...flatten('matTranNhapXuatKho', matTranNhapXuatKho),
   ...flatten('matTranTonKho', matTranTonKho),
+  ...flatten('matTranReliefSupportReport', matTranReliefSupportReport),
   ...flatten('matTranThietLapLuong', matTranThietLapLuong),
   ...flatten('matTranTangLuong', matTranTangLuong),
   ...flatten('tenure', tenure),
@@ -142,6 +144,7 @@ export {
   matTranHangHoa,
   matTranNhapXuatKho,
   matTranTonKho,
+  matTranReliefSupportReport,
   matTranThietLapLuong,
   diaBan,
 };

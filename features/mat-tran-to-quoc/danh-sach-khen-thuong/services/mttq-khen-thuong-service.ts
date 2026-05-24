@@ -11,7 +11,7 @@ import type {
   MttqKhenThuongListRow,
 } from '../core/types';
 import type { MttqKhenThuongFormValues } from '../core/schema';
-import type { MttqKhenThuongDanhHieu, MttqKhenThuongHinhThuc, MttqKhenThuongTrangThai } from '../core/constants';
+import type { MttqKhenThuongCap, MttqKhenThuongDanhHieu, MttqKhenThuongHinhThuc, MttqKhenThuongTrangThai } from '../core/constants';
 import {
   MTTQ_KHEN_THUONG_CT_SELECT_FLAT_LIST,
   MTTQ_KHEN_THUONG_SELECT_FULL,
@@ -75,17 +75,26 @@ function donViIdFromCanBoEmbed(v: unknown): string | null {
   return String(d);
 }
 
+function nguoiTaoFromCanBoEmbed(v: unknown): string | null {
+  const o = pickEmbedded<{ id_nguoi_tao?: unknown }>(v);
+  const d = o?.id_nguoi_tao;
+  if (d == null || d === '') return null;
+  return String(d);
+}
+
 export function flattenCtRow(row: Record<string, unknown>): MttqKhenThuongCt {
   return {
     id: String(row.id),
     id_khen_thuong: String(row.id_khen_thuong),
     can_bo_id: String(row.can_bo_id),
+    cap_khen_thuong: String(row.cap_khen_thuong ?? 'Xã') as MttqKhenThuongCap,
     hinh_thuc_khen: String(row.hinh_thuc_khen) as MttqKhenThuongHinhThuc,
     danh_hieu: String(row.danh_hieu) as MttqKhenThuongDanhHieu,
     noi_dung_khen: nullableStr(row.noi_dung_khen),
     ho_so_khen: nullableStr(row.ho_so_khen),
     ten_can_bo: tenCanBoFromEmbed(row.can_bo),
     can_bo_don_vi_id: donViIdFromCanBoEmbed(row.can_bo),
+    can_bo_id_nguoi_tao: nguoiTaoFromCanBoEmbed(row.can_bo),
   };
 }
 
@@ -191,6 +200,7 @@ export function flattenKhenThuongChiTietFlatRow(row: Record<string, unknown>): M
     id_nguoi_tao: String(qd?.id_nguoi_tao ?? ''),
     can_bo_id: ct.can_bo_id,
     ten_can_bo: ct.ten_can_bo ?? null,
+    cap_khen_thuong: ct.cap_khen_thuong,
     hinh_thuc_khen: ct.hinh_thuc_khen,
     danh_hieu: ct.danh_hieu,
     noi_dung_khen: ct.noi_dung_khen,
@@ -271,6 +281,7 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
   // (3 lượt tối đa thay vì N+1 lượt).
   const baseOf = (line: MttqKhenThuongFormValues['chi_tiet'][number]) => ({
     can_bo_id: Number(line.can_bo_id),
+    cap_khen_thuong: line.cap_khen_thuong,
     hinh_thuc_khen: line.hinh_thuc_khen,
     danh_hieu: line.danh_hieu,
     noi_dung_khen: line.noi_dung_khen?.trim() ?? null,
@@ -305,6 +316,7 @@ function syncChildrenMock(parentId: string, lines: MttqKhenThuongFormValues['chi
       id,
       id_khen_thuong: parentId,
       can_bo_id: line.can_bo_id,
+      cap_khen_thuong: line.cap_khen_thuong,
       hinh_thuc_khen: line.hinh_thuc_khen,
       danh_hieu: line.danh_hieu,
       noi_dung_khen: line.noi_dung_khen?.trim() ?? null,
@@ -471,6 +483,7 @@ export async function getMttqKhenThuongLinesForCanBoId(canBoId: string): Promise
         trang_thai: p.trang_thai,
         hinh_thuc_khen: c.hinh_thuc_khen,
         danh_hieu: c.danh_hieu,
+        cap_khen_thuong: c.cap_khen_thuong,
         noi_dung_khen: c.noi_dung_khen ?? null,
         ho_so_khen: c.ho_so_khen ?? null,
       });
@@ -485,7 +498,7 @@ export async function getMttqKhenThuongLinesForCanBoId(canBoId: string): Promise
   const q = () => supabase.from('mttq_khen_thuong_ct');
   const { data, error } = await q()
     .select(
-      'id, id_khen_thuong, hinh_thuc_khen, danh_hieu, noi_dung_khen, ho_so_khen, mttq_khen_thuong!inner(id, so_qd, ngay_khen_thuong, trang_thai)',
+      'id, id_khen_thuong, cap_khen_thuong, hinh_thuc_khen, danh_hieu, noi_dung_khen, ho_so_khen, mttq_khen_thuong!inner(id, so_qd, ngay_khen_thuong, trang_thai)',
     )
     .eq('can_bo_id', canBoKey);
   if (error) handleSupabaseError(error);
@@ -500,6 +513,7 @@ export async function getMttqKhenThuongLinesForCanBoId(canBoId: string): Promise
       so_qd: String(p?.so_qd ?? ''),
       ngay_khen_thuong: dateOnly(p?.ngay_khen_thuong),
       trang_thai: String(p?.trang_thai ?? 'Mới') as MttqKhenThuongLineForCanBo['trang_thai'],
+      cap_khen_thuong: String(row.cap_khen_thuong ?? 'Xã') as MttqKhenThuongLineForCanBo['cap_khen_thuong'],
       hinh_thuc_khen: String(row.hinh_thuc_khen) as MttqKhenThuongLineForCanBo['hinh_thuc_khen'],
       danh_hieu: String(row.danh_hieu) as MttqKhenThuongLineForCanBo['danh_hieu'],
       noi_dung_khen: nullableStr(row.noi_dung_khen),
@@ -521,6 +535,7 @@ export async function getMttqKhenThuongChiTietFlatList(): Promise<MttqKhenThuong
         id: c.id,
         id_khen_thuong: c.id_khen_thuong,
         can_bo_id: c.can_bo_id,
+        cap_khen_thuong: c.cap_khen_thuong,
         hinh_thuc_khen: c.hinh_thuc_khen,
         danh_hieu: c.danh_hieu,
         noi_dung_khen: c.noi_dung_khen,

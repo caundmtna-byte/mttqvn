@@ -16,6 +16,7 @@ export const MTTQ_KHEN_THUONG_CHI_TIET_FLAT_SEARCHABLE_KEYS: string[] = [
   'ten_can_bo',
   'hinh_thuc_khen',
   'danh_hieu',
+  'cap_khen_thuong',
   'noi_dung_khen',
   'ho_so_khen',
 ];

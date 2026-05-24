@@ -40,6 +40,7 @@ export const MTTQ_KHEN_THUONG_MOCK_CHILDREN: Omit<MttqKhenThuongCt, 'ten_can_bo'
     id: '880101',
     id_khen_thuong: '88001',
     can_bo_id: '90001',
+    cap_khen_thuong: 'Xã',
     hinh_thuc_khen: 'Thường xuyên',
     danh_hieu: 'Giấy khen',
     noi_dung_khen: 'Hoàn thành xuất sắc nhiệm vụ',

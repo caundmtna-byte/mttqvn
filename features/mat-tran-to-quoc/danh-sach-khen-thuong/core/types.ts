@@ -1,4 +1,4 @@
-import type { MttqKhenThuongDanhHieu, MttqKhenThuongHinhThuc, MttqKhenThuongTrangThai } from './constants';
+import type { MttqKhenThuongCap, MttqKhenThuongDanhHieu, MttqKhenThuongHinhThuc, MttqKhenThuongTrangThai } from './constants';
 
 export interface MttqKhenThuongFilters {
   columnSearch: Record<string, string>;
@@ -20,13 +20,16 @@ export interface MttqKhenThuongCt {
   id: string;
   id_khen_thuong: string;
   can_bo_id: string;
+  cap_khen_thuong: MttqKhenThuongCap;
   hinh_thuc_khen: MttqKhenThuongHinhThuc;
   danh_hieu: MttqKhenThuongDanhHieu;
   noi_dung_khen: string | null;
   ho_so_khen: string | null;
   ten_can_bo?: string | null;
-  /** `mttq_can_bo.don_vi_id` từ embed — phân quyền xem (cấp Xã). */
+  /** `mttq_can_bo.don_vi_id` từ embed — phân quyền xem bảng con detail (cấp Xã). */
   can_bo_don_vi_id?: string | null;
+  /** `mttq_can_bo.id_nguoi_tao` — phân quyền xem bảng con detail (cấp Xã). */
+  can_bo_id_nguoi_tao?: string | null;
 }
 
 /** Bản ghi cha + danh sách con (đã join). */
@@ -73,6 +76,7 @@ export interface MttqKhenThuongChiTietFlatRow {
   id_phong_ban_nguoi_tao: string | null;
   can_bo_id: string;
   ten_can_bo: string | null;
+  cap_khen_thuong: MttqKhenThuongCap;
   hinh_thuc_khen: MttqKhenThuongHinhThuc;
   danh_hieu: MttqKhenThuongDanhHieu;
   noi_dung_khen: string | null;
@@ -93,6 +97,7 @@ export interface MttqKhenThuongLineForCanBo {
   so_qd: string;
   ngay_khen_thuong: string;
   trang_thai: MttqKhenThuongTrangThai;
+  cap_khen_thuong: MttqKhenThuongCap;
   hinh_thuc_khen: MttqKhenThuongHinhThuc;
   danh_hieu: MttqKhenThuongDanhHieu;
   noi_dung_khen: string | null;

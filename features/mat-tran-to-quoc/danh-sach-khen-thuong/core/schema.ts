@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { txt } from '@/lib/text';
 import {
   MTTQ_KHEN_THUONG_DANH_HIEU,
+  MTTQ_KHEN_THUONG_CAP,
   MTTQ_KHEN_THUONG_HINH_THUC,
   MTTQ_KHEN_THUONG_TRANG_THAI,
 } from './constants';
@@ -20,6 +21,9 @@ export const mttqKhenThuongChiTietLineSchema = z.object({
     .optional()
     .transform((s) => (s === '' ? undefined : s)),
   can_bo_id: z.string().trim().min(1, txt('matTranKhenThuong.validation.canBoRequired')),
+  cap_khen_thuong: z.enum(MTTQ_KHEN_THUONG_CAP, {
+    message: txt('matTranKhenThuong.validation.capKhenThuongRequired'),
+  }),
   hinh_thuc_khen: z.enum(MTTQ_KHEN_THUONG_HINH_THUC, {
     message: txt('matTranKhenThuong.validation.hinhThucRequired'),
   }),
