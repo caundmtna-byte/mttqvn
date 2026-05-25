@@ -24,6 +24,7 @@ import {
 } from '../core/schema';
 import type { MttqKyHop } from '../core/types';
 import { useCreateMttqKyHop, useUpdateMttqKyHop } from '../hooks/use-mttq-ky-hop';
+import { useMttqKyHopViewer } from '../hooks/use-mttq-ky-hop-viewer';
 
 const FORM_ID = 'mttq-ky-hop-form';
 
@@ -48,6 +49,15 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
   const createMutation = useCreateMttqKyHop(onClose);
   const updateMutation = useUpdateMttqKyHop(onClose);
 
+  const viewer = useMttqKyHopViewer();
+  /**
+   * NV cấp Xã phường + có `don_vi_id`: khoá form về đúng xã của NV. Đồng bộ pattern
+   * `lockDonViToViewer` ở Ủy viên ủy ban form.
+   */
+  const lockDonViToViewer =
+    viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewer.viewerDonViId);
+  const viewerDonViId = viewer.viewerDonViId;
+
   const tinhMap = useMemo(() => {
     const m = new Map<string, string>();
     for (const t of tinhList) m.set(t.id, t.ten);
@@ -63,6 +73,19 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
   );
 
   const xaOptions = useMemo(() => {
+    if (lockDonViToViewer && viewerDonViId) {
+      const x = xaList.find((item) => String(item.id) === viewerDonViId);
+      if (x) {
+        return [
+          {
+            label: x.ten,
+            value: String(x.id),
+            subLabel: tinhMap.get(x.id_tinh_thanh),
+          },
+        ];
+      }
+      return [{ label: viewerDonViId, value: viewerDonViId }];
+    }
     const tinhCap = { label: `${txt('matTranKyHop.tinhCap')} (${txt('matTranKyHop.form.donViPlaceholder')})`, value: TINH_CAP_VALUE };
     const rest = [...xaList]
       .sort((a, b) => {
@@ -77,15 +100,19 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
         subLabel: tinhMap.get(x.id_tinh_thanh),
       }));
     return [tinhCap, ...rest];
-  }, [xaList, tinhMap]);
+  }, [xaList, tinhMap, lockDonViToViewer, viewerDonViId]);
 
   const defaultValues = useMemo(() => {
     const base = mttqKyHopToFormInput(initialData ?? null);
+    let next = base;
     if (!initialData && defaultNhiemKyId?.trim()) {
-      return { ...base, nhiem_ky_id: defaultNhiemKyId.trim() };
+      next = { ...next, nhiem_ky_id: defaultNhiemKyId.trim() };
     }
-    return base;
-  }, [initialData, defaultNhiemKyId]);
+    if (!initialData && lockDonViToViewer && viewerDonViId) {
+      next = { ...next, don_vi_id: viewerDonViId };
+    }
+    return next;
+  }, [initialData, defaultNhiemKyId, lockDonViToViewer, viewerDonViId]);
 
   const {
     control,
@@ -99,12 +126,15 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
 
   useEffect(() => {
     const base = mttqKyHopToFormInput(initialData ?? null);
+    let next = base;
     if (!initialData && defaultNhiemKyId?.trim()) {
-      reset({ ...base, nhiem_ky_id: defaultNhiemKyId.trim() });
-    } else {
-      reset(base);
+      next = { ...next, nhiem_ky_id: defaultNhiemKyId.trim() };
     }
-  }, [initialData, defaultNhiemKyId, reset]);
+    if (!initialData && lockDonViToViewer && viewerDonViId) {
+      next = { ...next, don_vi_id: viewerDonViId };
+    }
+    reset(next);
+  }, [initialData, defaultNhiemKyId, reset, lockDonViToViewer, viewerDonViId]);
 
   const onSubmit: SubmitHandler<MttqKyHopFormValues> = (data) => {
     if (!isEdit) {
@@ -173,11 +203,13 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
                 <Combobox
                   options={xaOptions}
                   value={
-                    field.value === '' || field.value === undefined
-                      ? TINH_CAP_VALUE
-                      : field.value === TINH_CAP_VALUE
+                    lockDonViToViewer && viewerDonViId
+                      ? viewerDonViId
+                      : field.value === '' || field.value === undefined
                         ? TINH_CAP_VALUE
-                        : field.value
+                        : field.value === TINH_CAP_VALUE
+                          ? TINH_CAP_VALUE
+                          : field.value
                   }
                   onChange={(v) => {
                     if (v === '' || v == null || v === TINH_CAP_VALUE) field.onChange('');
@@ -188,6 +220,7 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
                   error={errors.don_vi_id?.message as string | undefined}
                   icon={<MapPin size={14} />}
                   dropdownInPortal
+                  disabled={lockDonViToViewer}
                 />
               )}
             />

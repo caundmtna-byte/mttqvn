@@ -277,8 +277,7 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
   const existingIds = (existing ?? []).map((r) => String(r.id));
   const toDelete = existingIds.filter((id: string) => !keep.has(id));
 
-  // Batch để giảm round-trip: 1 delete (in-list) + 1 upsert update + 1 insert
-  // (3 lượt tối đa thay vì N+1 lượt).
+  // Batch để giảm round-trip: 1 delete (in-list) + N update từng dòng + 1 insert.
   const baseOf = (line: MttqKhenThuongFormValues['chi_tiet'][number]) => ({
     can_bo_id: Number(line.can_bo_id),
     cap_khen_thuong: line.cap_khen_thuong,
@@ -287,7 +286,7 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
     noi_dung_khen: line.noi_dung_khen?.trim() ?? null,
     ho_so_khen: line.ho_so_khen?.trim() ?? null,
   });
-  const toUpsertExisting = lines
+  const toUpdateExisting = lines
     .filter((l) => isPersistedChildId(l.id))
     .map((l) => ({ id: Number(l.id), id_khen_thuong: Number(parentId), ...baseOf(l) }));
   const toInsertNew = lines
@@ -298,8 +297,12 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
     const { error: e2 } = await q().delete().in('id', toDelete);
     if (e2) handleSupabaseError(e2);
   }
-  if (toUpsertExisting.length > 0) {
-    const { error: e3 } = await q().upsert(toUpsertExisting, { onConflict: 'id' });
+  // Không dùng `.upsert(..., onConflict: 'id')`: cột `id` là GENERATED ALWAYS AS IDENTITY —
+  // PostgREST vẫn tạo INSERT có `id` → Postgres trả 400 ("cannot insert a non-DEFAULT value into column \"id\"").
+  // Cập nhật từng dòng đã persist bằng `.update().eq('id', id)`.
+  for (const row of toUpdateExisting) {
+    const { id, ...patch } = row;
+    const { error: e3 } = await q().update(patch).eq('id', id);
     if (e3) handleSupabaseError(e3);
   }
   if (toInsertNew.length > 0) {

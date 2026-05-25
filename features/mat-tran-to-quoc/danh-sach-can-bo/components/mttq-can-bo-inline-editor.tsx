@@ -16,7 +16,6 @@ import { MTTQ_CAN_BO_FORM_DEFAULT_VALUES } from '../core/default-form-values';
 import type { MttqCanBo } from '../core/types';
 import { mttqCanBoRowToFormValues } from '../utils/can-bo-row-to-form-values';
 import { buildMttqCanBoChucVuOptions } from '../utils/chuc-vu-options-for-phong-ban';
-import { useMttqCanBoViewer } from '../hooks/use-mttq-can-bo-viewer';
 import MttqCanBoFormBody from './mttq-can-bo-form-body';
 
 function optionsByLoai(
@@ -57,10 +56,6 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
     queryFn: getXaPhuongAll,
     ...geoDataQueryOptions,
   });
-
-  const viewer = useMttqCanBoViewer();
-  const viewerDonViId = viewer.viewerDonViId;
-  const lockDonViToViewer = viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewerDonViId);
 
   const optToChuc = useMemo(() => optionsByLoai(thietLapAll, 'to_chuc'), [thietLapAll]);
   const optDanToc = useMemo(() => optionsByLoai(thietLapAll, 'dan_toc'), [thietLapAll]);
@@ -129,19 +124,6 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
   const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
 
   const xaPhuongOptions = useMemo(() => {
-    if (lockDonViToViewer && viewerDonViId) {
-      const x = xaPhuongList.find((item) => String(item.id) === viewerDonViId);
-      if (x) {
-        const tinhTen = tinhById.get(x.id_tinh_thanh) ?? '';
-        return [
-          {
-            label: tinhTen ? `${x.ten} (${tinhTen})` : x.ten,
-            value: String(x.id),
-          },
-        ];
-      }
-      return [{ label: viewerDonViId, value: viewerDonViId }];
-    }
     const rows = [...xaPhuongList].sort((a, b) => {
       const ta = (tinhById.get(a.id_tinh_thanh) ?? '').localeCompare(tinhById.get(b.id_tinh_thanh) ?? '', 'vi');
       if (ta !== 0) return ta;
@@ -154,7 +136,7 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
         value: String(x.id),
       };
     });
-  }, [xaPhuongList, tinhById, lockDonViToViewer, viewerDonViId]);
+  }, [xaPhuongList, tinhById]);
 
   const positionsForCap = useMemo(
     () => positions.map((p) => ({ id: String(p.id), cap_quan_ly: p.cap_quan_ly ?? null })),
@@ -162,18 +144,14 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
   );
 
   useEffect(() => {
-    if (!needsDonViXaPhuong && !lockDonViToViewer) {
+    if (!needsDonViXaPhuong) {
       setValue('don_vi_id', '');
     }
-  }, [needsDonViXaPhuong, lockDonViToViewer, setValue]);
+  }, [needsDonViXaPhuong, setValue]);
 
   useEffect(() => {
-    const values = mttqCanBoRowToFormValues(row, departments);
-    if (lockDonViToViewer && viewerDonViId) {
-      values.don_vi_id = viewerDonViId;
-    }
-    reset(values);
-  }, [row, departments, reset, lockDonViToViewer, viewerDonViId]);
+    reset(mttqCanBoRowToFormValues(row, departments));
+  }, [row, departments, reset]);
 
   useImperativeHandle(ref, () => ({
     validateAndGet: async () => {
@@ -201,7 +179,6 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
         xaPhuongOptions={xaPhuongOptions}
         positionsForCap={positionsForCap}
         needsDonViXaPhuong={needsDonViXaPhuong}
-        lockDonViToViewer={lockDonViToViewer}
       />
     </div>
   );

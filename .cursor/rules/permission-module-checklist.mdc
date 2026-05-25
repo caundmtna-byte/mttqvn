@@ -196,7 +196,7 @@ Ngoài `can('view', 'matTranOfficerList')`, danh sách và drawer dùng `useMttq
 
 **Báo cáo cán bộ** (`bao-cao-can-bo/index.tsx`): `useMttqCanBoViewer('matTranOfficerStats')` — bypass admin/all theo module báo cáo; cùng `canViewCanBoRow` trước KPI/biểu đồ/export.
 
-**Form tạo mới** (`mttq-can-bo-form.tsx`): NV **Xã phường** + có `don_vi_id` → `lockDonViToViewer`: tự điền và khóa combobox đơn vị (`don_vi_id` = đơn vị NV).
+**Form tạo mới** (`mttq-can-bo-form.tsx`): NV **Xã phường** + có `don_vi_id` → `defaultDonViFromViewer`: tự điền `don_vi_id` = đơn vị NV làm mặc định khi tạo mới (không khóa — user vẫn được chọn xã/phường khác). Khi sửa, `don_vi_id` giữ nguyên giá trị bản ghi.
 
 ## Kho cứu trợ — phân quyền module-level (7 module)
 

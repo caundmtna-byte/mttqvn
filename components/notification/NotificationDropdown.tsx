@@ -1,12 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { txt } from '../../lib/text';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, CheckCheck, Trash2, ChevronRight, ChevronUp } from 'lucide-react';
-import { useNotificationStore } from '../../store/useNotificationStore';
-import NotificationItem from './NotificationItem';
+import { motion } from 'framer-motion';
+import { Bell, Wrench } from 'lucide-react';
 import { cn } from '../../lib/utils';
-
-const PREVIEW_LIMIT = 5;
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -19,32 +15,11 @@ interface NotificationDropdownProps {
 
 const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   isOpen,
-  onClose,
+  onClose: _onClose,
   anchorRef: _anchorRef,
   className,
   placement = 'default',
 }) => {
-  const [expanded, setExpanded] = useState(false);
-
-  const {
-    notifications,
-    markAsRead,
-    markAllAsRead,
-    remove,
-    clearAll,
-    unreadCount,
-  } = useNotificationStore();
-
-  useEffect(() => {
-    if (!isOpen) queueMicrotask(() => setExpanded(false));
-  }, [isOpen]);
-
-  const unread = unreadCount();
-  const hasItems = notifications.length > 0;
-  const previewList = notifications.slice(0, PREVIEW_LIMIT);
-  const hasMore = notifications.length > PREVIEW_LIMIT;
-  const displayList = expanded ? notifications : previewList;
-
   if (!isOpen) return null;
 
   const isOpenUp = placement === 'top';
@@ -52,12 +27,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   return (
     <motion.div
       initial={{ opacity: 0, y: isOpenUp ? -8 : 8, scale: 0.96 }}
-      animate={{
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        maxHeight: expanded ? 560 : 420,
-      }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: isOpenUp ? -8 : 8, scale: 0.96 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
       className={cn(
@@ -69,87 +39,24 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       )}
     >
       {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-        <div className="flex items-center gap-2">
-          <Bell size={18} className="text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">
-            {txt('notification.title')}
-          </h3>
-          {unread > 0 && (
-            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-              {unread}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          {hasItems && unread > 0 && (
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
-              title={txt('notification.markAllRead')}
-            >
-              <CheckCheck size={16} />
-            </button>
-          )}
-          {hasItems && (
-            <button
-              type="button"
-              onClick={() => {
-                clearAll();
-                onClose();
-              }}
-              className="p-2 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-              title={txt('notification.clearAll')}
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-        </div>
+      <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-border bg-card">
+        <Bell size={18} className="text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">
+          {txt('notification.title')}
+        </h3>
       </div>
 
-      {/* List – khi expanded cuộn từng phần */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar">
-        {hasItems ? (
-          <>
-            <ul className="p-2 space-y-0.5">
-              <AnimatePresence mode="popLayout">
-                {displayList.map((item) => (
-                  <NotificationItem
-                    key={item.id}
-                    item={item}
-                    onMarkRead={markAsRead}
-                    onRemove={remove}
-                  />
-                ))}
-              </AnimatePresence>
-            </ul>
-            <div className="shrink-0 border-t border-border p-2">
-              {hasMore || expanded ? (
-                <button
-                  type="button"
-                  onClick={() => setExpanded(!expanded)}
-                  className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
-                >
-                  {expanded ? txt('notification.collapse') : txt('notification.viewAll')}
-                  {expanded ? <ChevronUp size={16} /> : <ChevronRight size={16} />}
-                </button>
-              ) : null}
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
-              <Bell size={24} className="text-muted-foreground" />
-            </div>
-            <p className="text-sm font-medium text-foreground">
-              {txt('notification.empty')}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {txt('notification.emptyHint')}
-            </p>
-          </div>
-        )}
+      {/* Nội dung: chỉ hiển thị thông báo tính năng đang phát triển */}
+      <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3 dark:bg-amber-500/15 dark:text-amber-300">
+          <Wrench size={26} strokeWidth={2} />
+        </div>
+        <p className="text-sm font-semibold text-foreground">
+          {txt('notification.demoBannerTitle')}
+        </p>
+        <p className="text-xs text-muted-foreground leading-snug mt-1.5 max-w-[260px]">
+          {txt('notification.demoBannerDesc')}
+        </p>
       </div>
     </motion.div>
   );

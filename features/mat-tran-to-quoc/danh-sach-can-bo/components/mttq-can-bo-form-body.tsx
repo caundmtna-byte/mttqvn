@@ -45,8 +45,6 @@ export interface MttqCanBoFormBodyProps {
   positionsForCap: { id: string; cap_quan_ly: string | null }[];
   /** Chức vụ cấp xã — bắt buộc chọn đơn vị xã/phường. */
   needsDonViXaPhuong: boolean;
-  /** NV cấp Xã phường — khóa đơn vị theo `user.don_vi_id`. */
-  lockDonViToViewer: boolean;
 }
 
 /**
@@ -68,7 +66,6 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
   xaPhuongOptions,
   positionsForCap,
   needsDonViXaPhuong,
-  lockDonViToViewer,
 }) => {
   const selectedPhongBan = watch('id_phong_ban');
   const chucVuIdWatch = watch('chuc_vu_id');
@@ -271,7 +268,7 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
             />
             <p className="m-0 mt-1 text-xs text-muted-foreground">{txt('matTranCanBo.form.capQuanLyHint')}</p>
           </div>
-          {needsDonViXaPhuong || lockDonViToViewer ? (
+          {needsDonViXaPhuong ? (
             <Controller
               name="don_vi_id"
               control={control}
@@ -284,8 +281,7 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
                   onChange={(v) => field.onChange(v === '' ? '' : String(v))}
                   placeholder={txt('common.select')}
                   error={errors.don_vi_id?.message}
-                  required={needsDonViXaPhuong}
-                  disabled={lockDonViToViewer}
+                  required
                   searchPlaceholder={txt('employee.form.donViXaPhuongSearch')}
                   dropdownInPortal
                 />

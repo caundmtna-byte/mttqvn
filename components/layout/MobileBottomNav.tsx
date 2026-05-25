@@ -2,9 +2,8 @@ import React from 'react';
 import { useIsMaxWidth } from '../../lib/use-media-query';
 import { txt } from '../../lib/text';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, ChevronLeft, Home } from 'lucide-react';
+import { Bell, ChevronLeft, Home, Wrench } from 'lucide-react';
 import { getParentPath } from '../shared/Breadcrumbs';
-import { useNotificationStore } from '../../store/useNotificationStore';
 import { cn } from '../../lib/utils';
 
 /** Bottom nav mobile: Trái Back | Giữa Trang chủ | Phải Notification. Chỉ hiện khi isMobile. */
@@ -18,9 +17,6 @@ const MobileBottomNav: React.FC = () => {
     [location.pathname]
   );
   const showBack = parentPath !== undefined;
-  const unreadCount = useNotificationStore((s) =>
-    s.notifications.filter((n) => !n.read).length
-  );
 
   if (!isMobile) return null;
 
@@ -71,6 +67,7 @@ const MobileBottomNav: React.FC = () => {
           <Link
             to="/thong-bao"
             aria-label={txt('nav.notification')}
+            title={txt('notification.demoTooltip')}
             aria-current={location.pathname === '/thong-bao' ? 'page' : undefined}
             className={cn(
               'relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition-all',
@@ -78,14 +75,12 @@ const MobileBottomNav: React.FC = () => {
             )}
           >
             <Bell size={24} strokeWidth={1.8} className="shrink-0" />
-            {unreadCount > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-primary text-xs font-semibold text-primary-foreground rounded-full shadow-sm ring-2 ring-card"
-                aria-hidden
-              >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
+            <span
+              className="absolute -top-0.5 -right-0.5 w-[16px] h-[16px] flex items-center justify-center rounded-full bg-amber-500 text-white shadow-sm ring-2 ring-card dark:bg-amber-400 dark:text-amber-950"
+              aria-hidden
+            >
+              <Wrench size={9} strokeWidth={2.5} className="shrink-0" />
+            </span>
           </Link>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
-import type { MttqDiemDanhTrangThai, MttqDiemDanhUyVien } from '../core/types';
+import type { MttqDiemDanhTrangThai, MttqDiemDanhUyVien, MttqKyHop, MttqKyHopListRow } from '../core/types';
 import { getDiemDanhForKyHop, getDiemDanhForNhiemKy, upsertDiemDanh } from '../services/mttq-diem-danh-service';
 import type { MttqUyVienUyBanListRow } from '@/features/mat-tran-to-quoc/uy-vien-uy-ban/core/types';
 
@@ -102,6 +102,27 @@ export const useUpsertDiemDanh = () => {
               : row,
           );
           queryClient.setQueryData(k, next);
+        }
+
+        // Cache patch tương tự cho `mttqKyHop`: bảng list, list theo nhiệm kỳ, và
+        // detail (single object). Tránh stale `diem_danh_*` trên bảng kỳ họp và
+        // drawer summary card cho đến lần refetch tiếp theo.
+        const kyHopPatchOne = <T extends Partial<MttqKyHopListRow>>(row: T): T => ({
+          ...row,
+          diem_danh_co_mat: Math.max(0, (row.diem_danh_co_mat ?? 0) + dCo),
+          diem_danh_vang_mat: Math.max(0, (row.diem_danh_vang_mat ?? 0) + dVang),
+          diem_danh_chua: Math.max(0, (row.diem_danh_chua ?? 0) + dChua),
+        });
+        const kyHopPairs = queryClient.getQueriesData<MttqKyHopListRow[] | MttqKyHop>({
+          queryKey: queryKeys.mttqKyHop.all,
+        });
+        for (const [k, value] of kyHopPairs) {
+          if (Array.isArray(value)) {
+            const next = value.map((row) => (row.id === kyHopId ? kyHopPatchOne(row) : row));
+            queryClient.setQueryData(k, next);
+          } else if (value && typeof value === 'object' && (value as MttqKyHop).id === kyHopId) {
+            queryClient.setQueryData(k, kyHopPatchOne(value as MttqKyHop));
+          }
         }
       }
 

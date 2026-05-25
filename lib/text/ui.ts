@@ -479,7 +479,10 @@ export const ui = {
     "emptyHint": "Các thông báo mới sẽ hiển thị tại đây.",
     "remove": "Xóa thông báo",
     "viewAll": "Xem tất cả thông báo",
-    "collapse": "Thu gọn"
+    "collapse": "Thu gọn",
+    "demoTooltip": "Thông báo · Tính năng đang phát triển",
+    "demoBannerTitle": "Tính năng đang phát triển",
+    "demoBannerDesc": "Hệ thống thông báo thời gian thực đang được hoàn thiện. Vui lòng quay lại sau."
   },
   "breadcrumb": {
     "label": "Đường dẫn",

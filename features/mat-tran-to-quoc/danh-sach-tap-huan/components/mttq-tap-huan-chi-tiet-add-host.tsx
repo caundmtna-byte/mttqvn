@@ -19,6 +19,7 @@ import {
 import type { MttqLopTapHuan } from '../core/types';
 import { MTTQ_TAP_HUAN_THUOC_DIEN } from '../core/constants';
 import { useMttqLopTapHuanDetail, useUpdateMttqLopTapHuan } from '../hooks/use-mttq-tap-huan';
+import { useMttqLopTapHuanViewer } from '../hooks/use-mttq-tap-huan-viewer';
 import { buildTapHuanCanBoOptions } from '../utils/can-bo-options-for-lop';
 import { tapHuanCanBoThreeColFromCanBo } from '../utils/snapshot-from-can-bo';
 import MttqTapHuanChiTietLineDrawer, {
@@ -79,6 +80,7 @@ const MttqTapHuanChiTietAddHost: React.FC<Props> = ({
   const updateMutation = useUpdateMttqLopTapHuan();
   const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
+  const viewer = useMttqLopTapHuanViewer();
 
   const activeLopId = (presetLopId?.trim() || pickedLopId.trim() || '') || null;
   const showPicker = open && !activeLopId;
@@ -113,8 +115,9 @@ const MttqTapHuanChiTietAddHost: React.FC<Props> = ({
       cap: lopData.cap_tap_huan,
       donViIdLop: toFormFk(lopData.don_vi_id),
       canBoList,
+      viewer,
     });
-  }, [lopData, canBoList]);
+  }, [lopData, canBoList, viewer]);
 
   const canBoMap = useMemo(() => {
     const m = new Map<string, (typeof canBoList)[number]>();

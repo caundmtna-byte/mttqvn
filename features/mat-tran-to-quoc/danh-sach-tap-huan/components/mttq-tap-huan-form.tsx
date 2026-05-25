@@ -59,6 +59,7 @@ import {
 } from '../core/constants';
 import type { MttqLopTapHuan } from '../core/types';
 import { useCreateMttqLopTapHuan, useUpdateMttqLopTapHuan } from '../hooks/use-mttq-tap-huan';
+import { useMttqLopTapHuanViewer } from '../hooks/use-mttq-tap-huan-viewer';
 import MttqTapHuanChiTietLineDrawer, {
   MTTQ_TAP_HUAN_CHI_TIET_EMPTY_LINE,
 } from './mttq-tap-huan-chi-tiet-line-drawer';
@@ -116,6 +117,7 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
+  const viewer = useMttqLopTapHuanViewer();
 
   const validationSchema = useMemo(() => createMttqTapHuanSchema(canBoList), [canBoList]);
 
@@ -166,12 +168,13 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
         cap: (watchedCap ?? 'Cấp tỉnh') as MttqTapHuanCap,
         donViIdLop: String(watchedDonVi ?? ''),
         canBoList,
+        viewer,
         ensureCanBoId:
           lineDrawer?.mode === 'edit'
             ? (watchedChiTiet[lineDrawer.index]?.can_bo_id ?? undefined)
             : undefined,
       }),
-    [watchedCap, watchedDonVi, canBoList, lineDrawer, watchedChiTiet],
+    [watchedCap, watchedDonVi, canBoList, viewer, lineDrawer, watchedChiTiet],
   );
 
   const { data: tinhList = [] } = useTinhThanhList();

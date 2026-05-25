@@ -143,9 +143,10 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, viewer, onClose, onEdit, 
         cap: data.cap_tap_huan,
         donViIdLop: toFormFk(data.don_vi_id),
         canBoList,
+        viewer,
         ensureCanBoId: ensureCanBoIdForDrawer,
       }),
-    [data.cap_tap_huan, data.don_vi_id, canBoList, ensureCanBoIdForDrawer],
+    [data.cap_tap_huan, data.don_vi_id, canBoList, viewer, ensureCanBoIdForDrawer],
   );
 
   const thuocDienOpts = useMemo(

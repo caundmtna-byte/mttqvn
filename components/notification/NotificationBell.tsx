@@ -2,9 +2,8 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useIsMaxWidth } from '../../lib/use-media-query';
 import { txt } from '../../lib/text';
 import { createPortal } from 'react-dom';
-import { Bell } from 'lucide-react';
+import { Bell, Wrench } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import { useNotificationStore } from '../../store/useNotificationStore';
 import NotificationDropdown from './NotificationDropdown';
 import { cn } from '../../lib/utils';
 
@@ -19,9 +18,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ placement = 'defaul
   const [dropdownTop, setDropdownTop] = useState(0);
   const [portalPosition, setPortalPosition] = useState<{ top: number; right: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const count = useNotificationStore((s) =>
-    s.notifications.filter((n) => !n.read).length
-  );
 
   useLayoutEffect(() => {
     if (!isOpen || placement !== 'default' || !buttonRef.current) return;
@@ -81,6 +77,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ placement = 'defaul
         ref={buttonRef}
         type="button"
         aria-label={txt('nav.notification')}
+        title={txt('notification.demoTooltip')}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
         className={cn(
@@ -91,14 +88,12 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ placement = 'defaul
         )}
       >
         <Bell size={20} strokeWidth={1.8} className="shrink-0" />
-        {count > 0 && (
-          <span
-            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-primary text-xs font-semibold text-primary-foreground rounded-full shadow-sm ring-2 ring-card"
-            aria-hidden
-          >
-            {count > 99 ? '99+' : count}
-          </span>
-        )}
+        <span
+          className="absolute -top-1 -right-1 w-[16px] h-[16px] flex items-center justify-center rounded-full bg-amber-500 text-white shadow-sm ring-2 ring-card dark:bg-amber-400 dark:text-amber-950"
+          aria-hidden
+        >
+          <Wrench size={9} strokeWidth={2.5} className="shrink-0" />
+        </span>
       </button>
 
       {/* Desktop: render dropdown in portal to avoid being clipped by main overflow */}

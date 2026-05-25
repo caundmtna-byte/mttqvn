@@ -73,7 +73,8 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
 
   const viewer = useMttqCanBoViewer();
   const viewerDonViId = viewer.viewerDonViId;
-  const lockDonViToViewer = viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewerDonViId);
+  /** Operator cấp Xã phường — auto-fill `don_vi_id` mặc định khi tạo mới (không khóa). */
+  const defaultDonViFromViewer = viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewerDonViId);
 
   const optToChuc = useMemo(() => optionsByLoai(thietLapAll, 'to_chuc'), [thietLapAll]);
   const optDanToc = useMemo(() => optionsByLoai(thietLapAll, 'dan_toc'), [thietLapAll]);
@@ -141,19 +142,6 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
   const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
 
   const xaPhuongOptions = useMemo(() => {
-    if (lockDonViToViewer && viewerDonViId) {
-      const x = xaPhuongList.find((item) => String(item.id) === viewerDonViId);
-      if (x) {
-        const tinhTen = tinhById.get(x.id_tinh_thanh) ?? '';
-        return [
-          {
-            label: tinhTen ? `${x.ten} (${tinhTen})` : x.ten,
-            value: String(x.id),
-          },
-        ];
-      }
-      return [{ label: viewerDonViId, value: viewerDonViId }];
-    }
     const rows = [...xaPhuongList].sort((a, b) => {
       const ta = (tinhById.get(a.id_tinh_thanh) ?? '').localeCompare(tinhById.get(b.id_tinh_thanh) ?? '', 'vi');
       if (ta !== 0) return ta;
@@ -166,7 +154,7 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
         value: String(x.id),
       };
     });
-  }, [xaPhuongList, tinhById, lockDonViToViewer, viewerDonViId]);
+  }, [xaPhuongList, tinhById]);
 
   const positionsForCap = useMemo(
     () => positions.map((p) => ({ id: String(p.id), cap_quan_ly: p.cap_quan_ly ?? null })),
@@ -174,22 +162,30 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
   );
 
   useEffect(() => {
-    if (!needsDonViXaPhuong && !lockDonViToViewer) {
+    if (!needsDonViXaPhuong) {
       setValue('don_vi_id', '');
     }
-  }, [needsDonViXaPhuong, lockDonViToViewer, setValue]);
+  }, [needsDonViXaPhuong, setValue]);
+
+  const donViIdWatch = watch('don_vi_id');
+  useEffect(() => {
+    if (isEdit) return;
+    if (needsDonViXaPhuong && defaultDonViFromViewer && viewerDonViId && !donViIdWatch) {
+      setValue('don_vi_id', viewerDonViId);
+    }
+  }, [isEdit, needsDonViXaPhuong, defaultDonViFromViewer, viewerDonViId, donViIdWatch, setValue]);
 
   useEffect(() => {
     if (initialData) {
       reset(mttqCanBoRowToFormValues(initialData, departments));
     } else {
       const defaults = { ...MTTQ_CAN_BO_FORM_DEFAULT_VALUES };
-      if (lockDonViToViewer && viewerDonViId) {
+      if (defaultDonViFromViewer && viewerDonViId) {
         defaults.don_vi_id = viewerDonViId;
       }
       reset(defaults);
     }
-  }, [initialData, reset, departments, lockDonViToViewer, viewerDonViId]);
+  }, [initialData, reset, departments, defaultDonViFromViewer, viewerDonViId]);
 
   const onSubmit: SubmitHandler<MttqCanBoFormValues> = (data) => {
     if (!isEdit && !idNguoiTao) {
@@ -243,7 +239,6 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
           xaPhuongOptions={xaPhuongOptions}
           positionsForCap={positionsForCap}
           needsDonViXaPhuong={needsDonViXaPhuong}
-          lockDonViToViewer={lockDonViToViewer}
         />
       </form>
     </GenericDrawer>
