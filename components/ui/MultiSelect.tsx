@@ -499,7 +499,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                 left: fixedPanelRect.left,
                 width: fixedPanelRect.width,
               }}
-              className="z-[85] overscroll-contain bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 min-w-[200px] max-w-[calc(100vw-1rem)]"
+              className="z-[205] overscroll-contain bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 min-w-[200px] max-w-[calc(100vw-1rem)]"
               onMouseDown={(e) => e.stopPropagation()}
             >
               {dropdownPanelInner}
