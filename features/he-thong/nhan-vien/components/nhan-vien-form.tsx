@@ -3,9 +3,11 @@ import { txt } from '../../../../lib/text';
 import { useForm, Controller, SubmitHandler, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { User, AtSign, Building2, Layers, Briefcase, MapPin } from 'lucide-react';
+import { User, AtSign, Building2, Layers, Briefcase, MapPin, MapPinned } from 'lucide-react';
+import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
 import Input from '../../../../components/ui/Input';
 import Combobox from '../../../../components/ui/Combobox';
+import MultiSelect from '../../../../components/ui/MultiSelect';
 import ToggleSwitch from '../../../../components/ui/ToggleSwitch';
 import SingleImageInput from '../../../../components/ui/SingleImageInput';
 import { EmployeeFormValues, buildEmployeeSchema } from '../core/schema';
@@ -65,6 +67,7 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: tinhList = [] } = useTinhThanhList();
+  const { data: thietLapAll = [] } = useMttqThietLapAll();
   const { data: xaPhuongList = [] } = useQuery({
     queryKey: queryKeys.xaPhuong.listAll,
     queryFn: getXaPhuongAll,
@@ -72,8 +75,8 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   const employeeResolver = useMemo(
-    () => zodResolver(buildEmployeeSchema(positions)) as Resolver<EmployeeFormValues>,
-    [positions],
+    () => zodResolver(buildEmployeeSchema()) as Resolver<EmployeeFormValues>,
+    [],
   );
 
   const {
@@ -98,7 +101,10 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const selectedDept = useWatch({ control, name: 'id_phong_ban' });
   const selectedUnit = useWatch({ control, name: 'id_bo_phan' });
-  const selectedChucVuId = useWatch({ control, name: 'id_chuc_vu' });
+  const deptById = useMemo(
+    () => new Map(departments.map((d) => [String(d.id), d])),
+    [departments],
+  );
   const watchedUsername = (useWatch({ control, name: 'ten_tai_khoan' }) ?? '').trim().toLowerCase();
   const watchedHinhAnh = useWatch({ control, name: 'hinh_anh' });
   const avatarDisplaySrc = useSignedEmployeeAvatarSrc(watchedHinhAnh ?? null);
@@ -122,12 +128,24 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
     [departments, selectedDept],
   );
 
-  const needsDonViXaPhuong = useMemo(() => {
-    const id = selectedChucVuId ? String(selectedChucVuId) : '';
-    if (!id) return false;
-    const p = positions.find((x) => String(x.id) === id);
-    return p?.cap_quan_ly === 'Xã phường';
-  }, [positions, selectedChucVuId]);
+  const watchedCapQuanLy = useWatch({ control, name: 'cap_quan_ly' }) as string[];
+  const needsDonViXaPhuong = Array.isArray(watchedCapQuanLy) && watchedCapQuanLy.includes('Xã phường');
+
+  const capQuanLyOptions = useMemo(
+    () => [
+      { label: txt('position.capQuanLyTinh'), value: 'Tỉnh' },
+      { label: txt('position.capQuanLyXaPhuong'), value: 'Xã phường' },
+    ],
+    [],
+  );
+
+  const optToChuc = useMemo(
+    () =>
+      thietLapAll
+        .filter((x) => x.loai === 'to_chuc')
+        .map((x) => ({ label: x.ten, value: String(x.id) })),
+    [thietLapAll],
+  );
 
   const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
 
@@ -146,24 +164,13 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
     });
   }, [xaPhuongList, tinhById]);
 
-  const positionOptions = useMemo(() => {
-    const active = positions.filter((p) => p.trang_thai === 'Đang hoạt động');
-    const dept = selectedDept ? String(selectedDept) : '';
-    const unit = selectedUnit ? String(selectedUnit) : '';
-    if (!dept && !unit) return active.map((p) => ({ label: p.ten_chuc_vu, value: String(p.id) }));
-    // Chức vụ có thể gắn `phong_ban_id` = phòng ban cha hoặc bộ phận con — khi đã chọn bộ phận,
-    // vẫn hiện chức vụ thuộc phòng ban đang chọn (tránh list rỗng / không có dropdown).
-    const allowedDeptIds = new Set<string>();
-    if (dept) allowedDeptIds.add(dept);
-    if (unit) allowedDeptIds.add(unit);
-    return active
-      .filter((p) => {
-        const pb = p.phong_ban_id == null || p.phong_ban_id === '' ? '' : String(p.phong_ban_id);
-        if (!pb) return false;
-        return allowedDeptIds.has(pb);
-      })
-      .map((p) => ({ label: p.ten_chuc_vu, value: String(p.id) }));
-  }, [positions, selectedDept, selectedUnit]);
+  const positionOptions = useMemo(
+    () =>
+      positions
+        .filter((p) => p.trang_thai === 'Đang hoạt động')
+        .map((p) => ({ label: p.ten_chuc_vu, value: String(p.id) })),
+    [positions],
+  );
 
   const onSubmit: SubmitHandler<EmployeeFormValues> = (data) => {
     setPendingValues(data);
@@ -264,54 +271,6 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
         <FormSection title={txt('employee.form.workInfo')} icon={<Briefcase size={14} />} variant="primary">
           <FormGrid cols={3}>
             <Controller
-              name="id_phong_ban"
-              control={control}
-              render={({ field }) => (
-                <Combobox
-                  label={txt('employee.form.department')}
-                  options={departmentOptions}
-                  value={field.value || ''}
-                  onChange={(v) => {
-                    const next = v || '';
-                    if (next !== (field.value || '')) {
-                      setValue('id_bo_phan', '');
-                      setValue('id_chuc_vu', '');
-                      setValue('don_vi_id', '');
-                    }
-                    field.onChange(next);
-                  }}
-                  placeholder={txt('employee.form.departmentPlaceholder')}
-                  error={errors.id_phong_ban?.message}
-                  icon={<Building2 size={12} />}
-                  required
-                />
-              )}
-            />
-            <Controller
-              name="id_bo_phan"
-              control={control}
-              render={({ field }) => (
-                <Combobox
-                  label={txt('employee.form.unit')}
-                  options={unitOptions}
-                  value={field.value || ''}
-                  onChange={(v) => {
-                    const next = v || '';
-                    if (next !== (field.value || '')) {
-                      setValue('id_chuc_vu', '');
-                      setValue('don_vi_id', '');
-                    }
-                    field.onChange(next);
-                  }}
-                  placeholder={txt('employee.form.unitPlaceholder')}
-                  error={errors.id_bo_phan?.message}
-                  icon={<Layers size={12} />}
-                  disabled={!selectedDept}
-                  required
-                />
-              )}
-            />
-            <Controller
               name="id_chuc_vu"
               control={control}
               render={({ field }) => (
@@ -322,13 +281,95 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
                   onChange={(v) => {
                     field.onChange(v || '');
                     setValue('don_vi_id', '');
+                    if (!v) {
+                      setValue('id_phong_ban', '');
+                      setValue('id_bo_phan', '');
+                      return;
+                    }
+                    const pos = positions.find((p) => String(p.id) === v);
+                    const pbId = pos?.phong_ban_id ? String(pos.phong_ban_id) : '';
+                    if (!pbId) {
+                      setValue('id_phong_ban', '');
+                      setValue('id_bo_phan', '');
+                      return;
+                    }
+                    const dept = deptById.get(pbId);
+                    if (dept?.cha_id) {
+                      setValue('id_bo_phan', pbId);
+                      setValue('id_phong_ban', String(dept.cha_id));
+                    } else {
+                      setValue('id_phong_ban', pbId);
+                      setValue('id_bo_phan', '');
+                    }
                   }}
                   placeholder={txt('employee.form.positionPlaceholder')}
                   error={errors.id_chuc_vu?.message}
                   icon={<Briefcase size={12} />}
-                  disabled={!selectedDept}
                   required
                   dropdownInPortal
+                />
+              )}
+            />
+            <Controller
+              name="id_phong_ban"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  label={txt('employee.form.department')}
+                  options={departmentOptions}
+                  value={field.value || ''}
+                  onChange={(v) => field.onChange(v || '')}
+                  placeholder={txt('employee.form.departmentPlaceholder')}
+                  error={errors.id_phong_ban?.message}
+                  icon={<Building2 size={12} />}
+                  required
+                  disabled
+                />
+              )}
+            />
+            {selectedUnit && (
+              <Controller
+                name="id_bo_phan"
+                control={control}
+                render={({ field }) => (
+                  <Combobox
+                    label={txt('employee.form.unit')}
+                    options={unitOptions}
+                    value={field.value || ''}
+                    onChange={(v) => field.onChange(v || '')}
+                    placeholder={txt('employee.form.unitPlaceholder')}
+                    error={errors.id_bo_phan?.message}
+                    icon={<Layers size={12} />}
+                    disabled
+                  />
+                )}
+              />
+            )}
+            <Controller
+              name="cap_quan_ly"
+              control={control}
+              render={({ field }) => (
+                <MultiSelect
+                  label={txt('position.form.managementLevel')}
+                  options={capQuanLyOptions}
+                  value={Array.isArray(field.value) ? field.value : []}
+                  onChange={field.onChange}
+                  icon={MapPinned}
+                  error={(errors.cap_quan_ly as { message?: string } | undefined)?.message}
+                />
+              )}
+            />
+            <Controller
+              name="to_chuc_ids"
+              control={control}
+              render={({ field }) => (
+                <MultiSelect
+                  label={txt('matTranCanBo.form.toChuc')}
+                  options={optToChuc}
+                  value={Array.isArray(field.value) ? field.value : []}
+                  onChange={field.onChange}
+                  icon={Building2}
+                  error={(errors.to_chuc_ids as { message?: string } | undefined)?.message}
                 />
               )}
             />

@@ -112,6 +112,7 @@ export const useTaskReportFilterOptions = (
     p_end: string;
     p_viewer_id: number | null;
     p_viewer_don_vi_id: number | null;
+    p_viewer_phong_ban_id: number | null;
     p_view_all: boolean;
   },
   opts: BaseOpts = {},

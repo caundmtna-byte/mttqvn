@@ -11,13 +11,14 @@ export interface CongViecAssigneeScope {
    * - chế độ legacy (`!matrixActive`)
    * - chức vụ `cap_bac === 1`
    * - quyền `quan_tri` (token `admin`/`all`) trên module `tasks`
-   * - chức vụ `cap_quan_ly === 'Tỉnh'`.
    */
   canSelectAll: boolean;
   /** `var_chuc_vu.cap_quan_ly` sau hydrate — Tỉnh / Xã phường / null. */
   chucVuCapQuanLy: CapQuanLy | null;
   /** `var_nhan_vien.don_vi_id` của viewer — so khớp NV khi cấp Xã phường. */
   viewerDonViId: string | null;
+  /** `var_nhan_vien.id_phong_ban` của viewer — so khớp NV khi cấp Tỉnh (không bypass). */
+  viewerPhongBanId: string | null;
 }
 
 export type CongViecAssigneeSelectableOpts = {
@@ -26,11 +27,14 @@ export type CongViecAssigneeSelectableOpts = {
   savedHoTroIds?: string[];
 };
 
-function sameDonViId(a: string | null | undefined, b: string | null | undefined): boolean {
+function sameId(a: string | null | undefined, b: string | null | undefined): boolean {
   const sa = a?.toString().trim();
   const sb = b?.toString().trim();
   return Boolean(sa) && Boolean(sb) && sa === sb;
 }
+
+/** @deprecated alias — dùng `sameId` trực tiếp trong code mới. */
+const sameDonViId = sameId;
 
 function isAssigneeException(
   employeeId: string,
@@ -47,10 +51,15 @@ function isAssigneeException(
 
 /**
  * Có được hiển thị trong combobox Trách nhiệm / Hỗ trợ hay không (thuần hàm — dễ unit test).
+ *
+ * - bypass (`canSelectAll`) → hiện tất cả
+ * - exception (viewer, saved trách nhiệm, saved hỗ trợ) → luôn hiện
+ * - `Xã phường` → lọc `don_vi_id` (giữ nguyên cũ)
+ * - `Tỉnh` hoặc null → lọc `id_phong_ban` của viewer
  */
 export function isCongViecAssigneeSelectable(
   scope: CongViecAssigneeScope,
-  employee: { id: string; don_vi_id?: string | null },
+  employee: { id: string; don_vi_id?: string | null; id_phong_ban?: string | null },
   opts?: CongViecAssigneeSelectableOpts,
 ): boolean {
   if (scope.canSelectAll) return true;
@@ -58,12 +67,13 @@ export function isCongViecAssigneeSelectable(
   if (scope.chucVuCapQuanLy === 'Xã phường') {
     return sameDonViId(employee.don_vi_id, scope.viewerDonViId);
   }
-  return false;
+  return sameId(employee.id_phong_ban, scope.viewerPhongBanId);
 }
 
 /**
  * Phạm vi chọn `id_trach_nhiem` / `ids_ho_tro` trong form Công việc.
- * Tỉnh (hoặc bypass) ⇒ mọi NV hoạt động; Xã phường ⇒ cùng `don_vi_id`.
+ * bypass (cap_bac=1 / quan_tri) ⇒ mọi NV hoạt động;
+ * Xã phường ⇒ cùng `don_vi_id`; Tỉnh / null ⇒ cùng `id_phong_ban`.
  */
 export function useCongViecAssigneeScope(): CongViecAssigneeScope {
   const user = useAuthStore((s) => s.user);
@@ -81,18 +91,20 @@ export function useCongViecAssigneeScope(): CongViecAssigneeScope {
       !matrixActive ||
       isChucVuCapBacOne(chucVuCapBac) ||
       allowed.includes('admin') ||
-      allowed.includes('all') ||
-      capQuanLy === 'Tỉnh';
+      allowed.includes('all');
 
     const dv = user?.don_vi_id?.toString().trim();
+    const pb = user?.id_phong_ban?.toString().trim();
     return {
       canSelectAll,
       chucVuCapQuanLy: capQuanLy,
       viewerDonViId: dv ? dv : null,
+      viewerPhongBanId: pb ? pb : null,
     };
   }, [
     user?.role,
     user?.don_vi_id,
+    user?.id_phong_ban,
     matrixActive,
     grantsByModule,
     chucVuCapBac,

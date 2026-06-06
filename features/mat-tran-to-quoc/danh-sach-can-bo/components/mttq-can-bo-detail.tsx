@@ -60,7 +60,9 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
   const summarySubtitleParts = [
     trimmedDisplay(data.ten_chuc_vu),
     capNorm ? capNorm : null,
-    trimmedDisplay(data.ten_to_chuc),
+    Array.isArray(data.ten_to_chuc_arr) && data.ten_to_chuc_arr.length > 0
+      ? data.ten_to_chuc_arr.join(', ')
+      : null,
   ].filter(Boolean);
 
   const footer = (
@@ -151,7 +153,21 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
             <DetailField
               label={txt('matTranCanBo.form.gioiTinh')}
               icon={<UserCircle2 size={12} />}
-              value={trimmedDisplay(data.gioi_tinh) ?? undefined}
+              value={(() => {
+                const gt = (data.gioi_tinh ?? '').trim();
+                if (!gt) return undefined;
+                const cls =
+                  gt === 'Nam'
+                    ? 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300'
+                    : gt === 'Nữ'
+                      ? 'border-pink-200 bg-pink-50 text-pink-800 dark:border-pink-900 dark:bg-pink-950/40 dark:text-pink-300'
+                      : 'border-border/80 bg-muted/40 text-muted-foreground';
+                return (
+                  <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${cls}`}>
+                    {gt}
+                  </span>
+                );
+              })()}
             />
             <DetailField
               label={txt('matTranCanBo.form.danToc')}
@@ -181,7 +197,20 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
             <DetailField
               label={txt('matTranCanBo.form.toChuc')}
               icon={<Building2 size={12} />}
-              value={trimmedDisplay(data.ten_to_chuc) ?? undefined}
+              value={
+                Array.isArray(data.ten_to_chuc_arr) && data.ten_to_chuc_arr.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {data.ten_to_chuc_arr.map((ten) => (
+                      <span
+                        key={ten}
+                        className="inline-flex items-center rounded-md border border-border/70 bg-muted/40 px-2 py-0.5 text-xs font-medium text-foreground"
+                      >
+                        {ten}
+                      </span>
+                    ))}
+                  </div>
+                ) : undefined
+              }
             />
             <DetailField
               label={txt('matTranCanBo.form.phongBan')}
@@ -197,10 +226,14 @@ const MttqCanBoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) =
               label={txt('matTranCanBo.form.capQuanLy')}
               icon={<Binary size={12} />}
               value={
-                capNorm ? (
-                  <EnumBadge value={capNorm} config={capBadgeCfg} shape="pill" truncate />
+                Array.isArray(data.cap_quan_ly) && data.cap_quan_ly.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {data.cap_quan_ly.map((v) => (
+                      <EnumBadge key={v} value={v} config={capBadgeCfg} shape="pill" truncate />
+                    ))}
+                  </div>
                 ) : (
-                  trimmedDisplay(data.chuc_vu_cap_quan_ly) ?? txt('matTranCanBo.form.capQuanLyChuaGan')
+                  txt('matTranCanBo.form.capQuanLyChuaGan')
                 )
               }
             />

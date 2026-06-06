@@ -16,7 +16,9 @@ export interface TaskReportViewer {
   viewerId: number | null;
   /** `var_nhan_vien.don_vi_id` của viewer hoặc null. */
   viewerDonViId: number | null;
-  /** True ⇒ bypass mọi gating: cap_bac=1, Tỉnh, quan_tri/admin, mock admin, hoặc legacy mode. */
+  /** `var_nhan_vien.id_phong_ban` của viewer — lọc Tỉnh theo phòng ban (thay thế bypass). */
+  viewerPhongBanId: number | null;
+  /** True ⇒ bypass mọi gating: cap_bac=1, quan_tri/admin, mock admin, hoặc legacy mode. */
   viewAll: boolean;
 }
 
@@ -27,42 +29,42 @@ export interface TaskReportViewer {
  * - `user.role === 'admin'`: mock admin xem hết.
  * - `!matrixActive`: chế độ legacy (chưa hydrate matrix).
  * - `cap_bac === 1`: cấp lãnh đạo bypass.
- * - `cap_quan_ly === 'Tỉnh'`: xem toàn tỉnh.
  * - Token `admin` / `all` (map từ `quan_tri`) trong grants của module báo cáo.
  *
- * Còn lại (Xã phường): filter theo đơn vị trách nhiệm OR id_nguoi_tao OR ids_ho_tro OR id_trach_nhiem.
+ * Khi không bypass:
+ * - Tỉnh: RPC lọc theo `p_viewer_phong_ban_id` (phòng ban của trách nhiệm).
+ * - Xã phường: RPC lọc theo `p_viewer_don_vi_id` (đơn vị của trách nhiệm).
+ * - Cá nhân: RPC lọc creator / support / assignee qua `p_viewer_id`.
  */
 export function useTaskReportViewer(): TaskReportViewer {
   const user = useAuthStore((s) => s.user);
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
   const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
-  const chucVuCapQuanLy = usePermissionGrantStore((s) => s.chucVuCapQuanLy);
 
   return useMemo(() => {
     const moduleId = APP_RESOURCE_TO_MODULE.taskReports ?? 'quan-ly-giao-viec/bao-cao-cong-viec';
     const allowed = grantsByModule[moduleId] ?? [];
-    const capQuanLy = chucVuCapQuanLy ?? null;
     const viewAll =
       user?.role === 'admin' ||
       !matrixActive ||
       isChucVuCapBacOne(chucVuCapBac) ||
       allowed.includes('admin') ||
-      allowed.includes('all') ||
-      capQuanLy === 'Tỉnh';
+      allowed.includes('all');
 
     return {
       viewerId: toBigintOrNull(user?.nhan_vien_id),
       viewerDonViId: toBigintOrNull(user?.don_vi_id),
+      viewerPhongBanId: toBigintOrNull(user?.id_phong_ban),
       viewAll,
     };
   }, [
     user?.role,
     user?.nhan_vien_id,
     user?.don_vi_id,
+    user?.id_phong_ban,
     matrixActive,
     grantsByModule,
     chucVuCapBac,
-    chucVuCapQuanLy,
   ]);
 }

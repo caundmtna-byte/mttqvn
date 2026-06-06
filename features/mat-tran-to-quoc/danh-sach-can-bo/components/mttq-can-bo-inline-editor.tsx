@@ -114,12 +114,8 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
     }
   }, [optChucVu, chucVuIdWatch, setValue]);
 
-  const needsDonViXaPhuong = useMemo(() => {
-    const id = chucVuIdWatch ? String(chucVuIdWatch) : '';
-    if (!id) return false;
-    const p = positions.find((x) => String(x.id) === id);
-    return p?.cap_quan_ly === 'Xã phường';
-  }, [positions, chucVuIdWatch]);
+  const watchedCapQuanLy = watch('cap_quan_ly') as string[];
+  const needsDonViXaPhuong = Array.isArray(watchedCapQuanLy) && watchedCapQuanLy.includes('Xã phường');
 
   const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
 
@@ -137,11 +133,6 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
       };
     });
   }, [xaPhuongList, tinhById]);
-
-  const positionsForCap = useMemo(
-    () => positions.map((p) => ({ id: String(p.id), cap_quan_ly: p.cap_quan_ly ?? null })),
-    [positions],
-  );
 
   useEffect(() => {
     if (!needsDonViXaPhuong) {
@@ -177,7 +168,6 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
         departmentOptions={departmentOptions}
         optChucVu={optChucVu}
         xaPhuongOptions={xaPhuongOptions}
-        positionsForCap={positionsForCap}
         needsDonViXaPhuong={needsDonViXaPhuong}
       />
     </div>

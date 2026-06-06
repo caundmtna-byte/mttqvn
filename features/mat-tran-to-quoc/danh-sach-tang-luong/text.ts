@@ -87,6 +87,8 @@ export const matTranTangLuong = {
     planDone: 'Đã nâng',
     planPending: 'Chưa nâng',
     yearFilter: 'Năm thống kê',
+    noExportData: 'Chưa có dữ liệu để xuất.',
+    exportFileName: 'TangLuong_ThongKe',
   },
   validation: {
     canBoRequired: 'Chọn cán bộ.',

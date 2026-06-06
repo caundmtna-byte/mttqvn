@@ -29,6 +29,7 @@ export const matTranUyVienUyBan = {
     hoVaTenRequired: 'Nhập họ và tên.',
     canBoRequired: 'Chọn cán bộ từ Danh sách cán bộ.',
     importCanBoRequired: 'Cần can_bo_id (số) hoặc cặp họ tên + ngày sinh khớp một cán bộ.',
+    trangThamGiaInvalid: 'Chọn trạng thái tham gia: Đang tham gia hoặc Thôi tham gia.',
   },
   store: {
     canBoIdCol: 'ID cán bộ (can_bo_id)',
@@ -50,6 +51,7 @@ export const matTranUyVienUyBan = {
     title: 'Ủy viên ủy ban',
   },
   searchPlaceholder: 'Tìm theo tên, mã UV, nhiệm kỳ, đơn vị, chức vụ…',
+  trangThamGiaChuaGan: 'Chưa gán trạng thái',
   emptyTitle: 'Chưa có ủy viên',
   emptyHint: 'Thêm ủy viên mới để bắt đầu.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',

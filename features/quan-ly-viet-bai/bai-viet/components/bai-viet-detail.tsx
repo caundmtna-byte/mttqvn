@@ -16,7 +16,7 @@ import {
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import type { BaiVietDanhSach } from '../core/types';
-import { formatCurrency, formatDateShort, formatDateTimeShort } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
@@ -99,7 +99,7 @@ const BaiVietDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
           title={data.ten_bai}
           subtitle={
             <p className="m-0">
-              {formatDateShort(data.ngay_dang)} · {data.ten_the_loai ?? txt('common.emptyCell')}
+              {formatDate(data.ngay_dang)} · {data.ten_the_loai ?? txt('common.emptyCell')}
             </p>
           }
         />
@@ -114,7 +114,7 @@ const BaiVietDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
             />
             <DetailField
               label={txt('articleList.store.ngayDangCol')}
-              value={formatDateShort(data.ngay_dang)}
+              value={formatDate(data.ngay_dang)}
               icon={<Calendar size={12} />}
             />
             <DetailField

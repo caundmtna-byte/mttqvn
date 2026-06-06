@@ -27,6 +27,16 @@ export function normalizeCapQuanLyInput(v: string | null | undefined): CapQuanLy
   return null;
 }
 
+/**
+ * Resolve mảng đa chọn → giá trị duy nhất cho store/viewer hooks.
+ * Tỉnh ưu tiên hơn Xã phường (broader access wins).
+ */
+export function resolveEffectiveCapQuanLy(arr: string[]): CapQuanLy | null {
+  if (arr.includes('Tỉnh')) return 'Tỉnh';
+  if (arr.includes('Xã phường')) return 'Xã phường';
+  return null;
+}
+
 /** Tỉnh = violet; Xã phường = cyan — dễ phân biệt trên list/detail. */
 export function capQuanLyBadgeConfig(
   labelTinh: string,

@@ -1,4 +1,8 @@
 import type { BadgeConfig } from '@/components/ui/EnumBadge';
+import {
+  MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG,
+  MTTQ_UY_VIEN_TRANG_THAM_GIA_THOI,
+} from '../core/constants';
 import { formatDate, formatDateShort } from '@/lib/utils';
 import {
   canBoPhoneTelHref,
@@ -40,13 +44,10 @@ export function getUyVienGioiTinhBadgeConfig(): BadgeConfig<string> {
   };
 }
 
-/** Giá trị nghiệp vụ thường gặp; không khớp → EnumBadge dùng fallback slate. */
 export function getUyVienTrangThamGiaBadgeConfig(): BadgeConfig<string> {
   return {
-    'Đang tham gia': { label: 'Đang tham gia', color: 'emerald' },
-    'Thôi tham gia': { label: 'Thôi tham gia', color: 'slate' },
-    'Tạm nghỉ': { label: 'Tạm nghỉ', color: 'amber' },
-    'Chờ xác nhận': { label: 'Chờ xác nhận', color: 'sky' },
+    [MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG]: { label: MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG, color: 'emerald' },
+    [MTTQ_UY_VIEN_TRANG_THAM_GIA_THOI]: { label: MTTQ_UY_VIEN_TRANG_THAM_GIA_THOI, color: 'slate' },
   };
 }
 

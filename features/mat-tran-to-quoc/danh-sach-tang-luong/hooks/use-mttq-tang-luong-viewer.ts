@@ -50,23 +50,33 @@ export function useMttqTangLuongViewer(): MttqTangLuongViewer {
 export type TangLuongRowForViewGate = {
   /** FK `mttq_can_bo.don_vi_id` — flatten từ embed cán bộ. */
   don_vi_id?: string | null;
+  /** `mttq_can_bo.cap_quan_ly` — dùng để lọc dòng cho nhân sự cấp Tỉnh. */
+  can_bo_cap_quan_ly?: string[] | null;
 };
 
-/** cap_bac=1, quan_tri, admin, legacy, hoặc chức vụ Tỉnh — xem hết. */
+/** cap_bac=1, quan_tri, admin, legacy — xem hết (Tỉnh không còn bypass). */
 export function isTangLuongViewUnrestricted(viewer: MttqTangLuongViewer): boolean {
-  return viewer.canViewAll || viewer.chucVuCapQuanLy === 'Tỉnh';
+  return viewer.canViewAll;
+}
+
+/** Tỉnh (không bypass) — lọc theo `can_bo_cap_quan_ly` chứa 'Tỉnh'. */
+export function isTangLuongScopedToTinh(viewer: MttqTangLuongViewer): boolean {
+  return !viewer.canViewAll && viewer.chucVuCapQuanLy === 'Tỉnh';
 }
 
 /** Chỉ Xã phường (không bypass) — lọc theo `don_vi_id` cán bộ. */
 export function isTangLuongScopedToXaPhuong(viewer: MttqTangLuongViewer): boolean {
-  return !isTangLuongViewUnrestricted(viewer) && viewer.chucVuCapQuanLy === 'Xã phường';
+  return !viewer.canViewAll && viewer.chucVuCapQuanLy === 'Xã phường';
 }
 
 export function canViewTangLuongRow(
   viewer: MttqTangLuongViewer,
   row: TangLuongRowForViewGate,
 ): boolean {
-  if (isTangLuongViewUnrestricted(viewer)) return true;
+  if (viewer.canViewAll) return true;
+  if (viewer.chucVuCapQuanLy === 'Tỉnh') {
+    return (row.can_bo_cap_quan_ly ?? []).includes('Tỉnh');
+  }
   if (viewer.chucVuCapQuanLy === 'Xã phường') {
     if (!viewer.viewerDonViId) return false;
     const rowDv = row.don_vi_id?.toString().trim();

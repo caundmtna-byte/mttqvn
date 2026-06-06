@@ -235,13 +235,19 @@ const DanhSachCanBoPage: React.FC = () => {
   }, [viewableRowsEnriched, gioiTinhCounts]);
 
   const toChucChipOptions = useMemo(() => {
-    const labelByValue = new Map<string, string>();
+    const labelById = new Map<string, string>();
     for (const r of viewableRowsEnriched) {
-      const value = r.to_chuc_id ?? CHIP_FILTER_NULL;
-      const label = (r.ten_to_chuc ?? '').trim() || txt('common.emptyCell');
-      if (!labelByValue.has(value)) labelByValue.set(value, label);
+      const ids = Array.isArray(r.to_chuc_ids) ? r.to_chuc_ids : [];
+      const names = Array.isArray(r.ten_to_chuc_arr) ? r.ten_to_chuc_arr : [];
+      if (ids.length === 0) {
+        if (!labelById.has(CHIP_FILTER_NULL)) labelById.set(CHIP_FILTER_NULL, txt('common.emptyCell'));
+      } else {
+        ids.forEach((id, idx) => {
+          if (!labelById.has(id)) labelById.set(id, names[idx] ?? id);
+        });
+      }
     }
-    return [...labelByValue.entries()]
+    return [...labelById.entries()]
       .map(([value, label]) => ({
         value,
         label,
@@ -440,7 +446,7 @@ const DanhSachCanBoPage: React.FC = () => {
       tuoi: item.tuoi != null ? txt('matTranCanBo.display.ageYears', { years: String(item.tuoi) }) : '',
       gioi_tinh: item.gioi_tinh,
       ten_trang_thai: item.ten_trang_thai ?? '',
-      ten_to_chuc: item.ten_to_chuc ?? '',
+      ten_to_chuc: Array.isArray(item.ten_to_chuc_arr) ? item.ten_to_chuc_arr.join(', ') : '',
       ten_phong_ban: item.ten_phong_ban ?? '',
       ten_chuc_vu: item.ten_chuc_vu ?? '',
       chuc_vu_cap_quan_ly: normalizeCapQuanLyInput(item.chuc_vu_cap_quan_ly) ?? '',
@@ -545,7 +551,7 @@ const DanhSachCanBoPage: React.FC = () => {
       rows: posRows.map((p) => [
         p.id,
         p.ten_chuc_vu,
-        p.cap_quan_ly ?? '',
+        '',
         p.phong_ban_id ?? '',
         p.ten_phong_ban ?? '',
       ]),

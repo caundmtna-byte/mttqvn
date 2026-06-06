@@ -15,6 +15,8 @@ const NotificationPage = lazy(() => import('./pages/NotificationPage'));
 const SystemDashboard = lazy(() => import('./pages/dashboards/SystemDashboard'));
 const QuanLyVietBaiDashboard = lazy(() => import('./pages/dashboards/QuanLyVietBaiDashboard'));
 const TrangThongTinKhacDashboard = lazy(() => import('./pages/dashboards/TrangThongTinKhacDashboard'));
+const PhanBienXaHoiDashboard = lazy(() => import('./pages/dashboards/PhanBienXaHoiDashboard'));
+const DanTocTonGiaoDashboard = lazy(() => import('./pages/dashboards/DanTocTonGiaoDashboard'));
 const MatTranToQuocModulePlaceholder = lazy(() => import('./pages/mat-tran-to-quoc/MatTranToQuocModulePlaceholder'));
 const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet-lap-bai-viet/index'));
 const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
@@ -142,6 +144,8 @@ const App = () => {
           <Route path="/quan-ly-giao-viec/chuong-trinh-nam" element={<ChuongTrinhNamPage />} />
           <Route path="/quan-ly-giao-viec/cong-viec" element={<CongViecPage />} />
           <Route path="/quan-ly-giao-viec/bao-cao-cong-viec" element={<BaoCaoCongViecPage />} />
+          <Route path="/phan-bien-xa-hoi" element={<PhanBienXaHoiDashboard />} />
+          <Route path="/dan-toc-ton-giao" element={<DanTocTonGiaoDashboard />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
           <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 

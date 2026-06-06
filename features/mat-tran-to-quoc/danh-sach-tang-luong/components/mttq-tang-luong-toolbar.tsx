@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { TrendingUp, Plus, BarChart3, Building2, MapPin, Landmark, Calendar } from 'lucide-react';
+import { TrendingUp, Plus, BarChart3, Building2, MapPin, Landmark, Calendar, Download } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericToolbar from '@/components/shared/GenericToolbar';
@@ -24,6 +24,7 @@ interface Props {
   hideListControls?: boolean;
   onAdd?: () => void;
   onDeleteMany?: () => void;
+  onExportThongKe?: () => void;
   statsYear?: number;
   onStatsYearChange?: (y: number) => void;
   keHoachYear?: number;
@@ -40,6 +41,7 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
   hideListControls = false,
   onAdd,
   onDeleteMany,
+  onExportThongKe,
   statsYear,
   onStatsYearChange,
   keHoachYear,
@@ -48,7 +50,7 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
   onKeHoachGroupModeChange,
   items,
 }) => {
-  const { canCreate, canDelete } = useResourcePermissions('matTranSalaryIncreaseList');
+  const { canCreate, canDelete, canExport } = useResourcePermissions('matTranSalaryIncreaseList');
   const itemRows = Array.isArray(items) ? items : [];
 
   const {
@@ -470,19 +472,35 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
   }, [keHoachYearChip, mainTab, statsYearChip]);
 
   const renderActions = useMemo(
-    () =>
-      canCreate && onAdd && mainTab === 'lich_su' ? (
-        <Button
-          type="button"
-          onClick={onAdd}
-          size="sm"
-          className="bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary/20 h-9 px-3 sm:px-4"
-        >
-          <Plus className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-2" />
-          <span className="hidden sm:inline">{BTN_ADD()}</span>
-        </Button>
-      ) : null,
-    [canCreate, mainTab, onAdd],
+    () => (
+      <>
+        {canExport && onExportThongKe && mainTab === 'thong_ke' ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onExportThongKe}
+            className="inline-flex h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+            title={txt('common.export')}
+            aria-label={txt('common.export')}
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+        ) : null}
+        {canCreate && onAdd && mainTab === 'lich_su' ? (
+          <Button
+            type="button"
+            onClick={onAdd}
+            size="sm"
+            className="bg-primary text-white hover:bg-primary/90 shadow-md shadow-primary/20 h-9 px-3 sm:px-4"
+          >
+            <Plus className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-2" />
+            <span className="hidden sm:inline">{BTN_ADD()}</span>
+          </Button>
+        ) : null}
+      </>
+    ),
+    [canCreate, canExport, mainTab, onAdd, onExportThongKe],
   );
 
   return (

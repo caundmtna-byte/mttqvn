@@ -7,11 +7,10 @@ export const MTTQ_CAN_BO_EMBED_PHONG_BAN =
 
 /** Embed đầy đủ — detail / form / returning sau mutation. Export cho join từ bảng cha. */
 export const MTTQ_CAN_BO_EMBED_FULL = [
-  'to_chuc_ref:mttq_thiet_lap!mttq_can_bo_to_chuc_id_fkey(ten,loai)',
   'dan_toc:mttq_thiet_lap!mttq_can_bo_dan_toc_id_fkey(ten,loai)',
   'trinh_do:mttq_thiet_lap!mttq_can_bo_trinh_do_id_fkey(ten,loai)',
   'ly_luan_chinh_tri:mttq_thiet_lap!mttq_can_bo_ly_luan_chinh_tri_id_fkey(ten,loai)',
-  'chuc_vu:var_chuc_vu!mttq_can_bo_chuc_vu_id_fkey(ten_chuc_vu,cap_quan_ly)',
+  'chuc_vu:var_chuc_vu!mttq_can_bo_chuc_vu_id_fkey(ten_chuc_vu)',
   'don_vi:var_ssn_xa_phuong!mttq_can_bo_don_vi_id_fkey(ten,var_ssn_tinh_thanh(ten))',
   MTTQ_CAN_BO_EMBED_PHONG_BAN,
   'trang_thai:mttq_thiet_lap!mttq_can_bo_trang_thai_id_fkey(ten,loai)',
@@ -20,11 +19,10 @@ export const MTTQ_CAN_BO_EMBED_FULL = [
 
 /** Chỉ join phục vụ cột bảng mặc định + filter chip — giảm egress so với FULL. Export để embed từ bảng cha (vd. ủy viên ủy ban). */
 export const MTTQ_CAN_BO_EMBED_LIST = [
-  'to_chuc_ref:mttq_thiet_lap!mttq_can_bo_to_chuc_id_fkey(ten,loai)',
   'dan_toc:mttq_thiet_lap!mttq_can_bo_dan_toc_id_fkey(ten,loai)',
   'trinh_do:mttq_thiet_lap!mttq_can_bo_trinh_do_id_fkey(ten,loai)',
   'ly_luan_chinh_tri:mttq_thiet_lap!mttq_can_bo_ly_luan_chinh_tri_id_fkey(ten,loai)',
-  'chuc_vu:var_chuc_vu!mttq_can_bo_chuc_vu_id_fkey(ten_chuc_vu,cap_quan_ly)',
+  'chuc_vu:var_chuc_vu!mttq_can_bo_chuc_vu_id_fkey(ten_chuc_vu)',
   'don_vi:var_ssn_xa_phuong!mttq_can_bo_don_vi_id_fkey(ten,var_ssn_tinh_thanh(ten))',
   MTTQ_CAN_BO_EMBED_PHONG_BAN,
   'trang_thai:mttq_thiet_lap!mttq_can_bo_trang_thai_id_fkey(ten,loai)',
@@ -32,7 +30,7 @@ export const MTTQ_CAN_BO_EMBED_LIST = [
 
 const BASE_COLS = [
   'id',
-  'to_chuc_id',
+  'to_chuc_ids',
   'ho_ten',
   'ngay_sinh',
   'gioi_tinh',
@@ -46,6 +44,7 @@ const BASE_COLS = [
   'chuc_vu_id',
   'phong_ban_id',
   'don_vi_id',
+  'cap_quan_ly',
   'ngay_tham_gia_to_chuc',
   'trang_thai_id',
   'ngay_nhap_trang_thai',
@@ -63,7 +62,7 @@ export const MTTQ_CAN_BO_SELECT_LIST = `${BASE_COLS},${MTTQ_CAN_BO_EMBED_LIST}`;
 /** Báo cáo thống kê: bỏ cột ít dùng để giảm egress; giữ embed LIST + dân tộc/trình độ cho nhãn filter. */
 const STATS_COLS = [
   'id',
-  'to_chuc_id',
+  'to_chuc_ids',
   'ho_ten',
   'ngay_sinh',
   'gioi_tinh',
@@ -75,6 +74,7 @@ const STATS_COLS = [
   'chuc_vu_id',
   'phong_ban_id',
   'don_vi_id',
+  'cap_quan_ly',
   'trang_thai_id',
   'ngay_nhap_trang_thai',
   'van_hoa',

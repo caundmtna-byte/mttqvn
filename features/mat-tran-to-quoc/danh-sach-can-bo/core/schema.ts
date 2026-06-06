@@ -1,15 +1,15 @@
 import { z } from 'zod';
 import { txt } from '@/lib/text';
 import { MTTQ_CAN_BO_GIOI_TINH, MTTQ_CAN_BO_TON_GIAO } from './constants';
-import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
-import type { MttqCanBo } from './types';
 import type { Position } from '@/features/he-thong/chuc-vu/core/types';
 import type { Department } from '@/features/he-thong/phong-ban/core/types';
 
-type PositionForCanBoSchema = Pick<Position, 'id' | 'cap_quan_ly' | 'phong_ban_id'>;
+type PositionForCanBoSchema = Pick<Position, 'id' | 'phong_ban_id'>;
 
 /** Phòng ban (cây) — lọc chức vụ theo phòng gốc + các bộ phận con. */
 export type DepartmentForCanBoSchema = Pick<Department, 'id' | 'cha_id' | 'trang_thai'>;
+
+const CAP_QUAN_LY_ENUM = ['Tỉnh', 'Xã phường'] as const;
 
 function requiredIsoDate(messageEmpty: string) {
   return z
@@ -20,7 +20,9 @@ function requiredIsoDate(messageEmpty: string) {
 }
 
 const mttqCanBoFields = z.object({
-  to_chuc_id: z.string().trim().min(1, txt('matTranCanBo.validation.toChucRequired')),
+  to_chuc_ids: z
+    .array(z.string().trim().min(1))
+    .min(1, txt('matTranCanBo.validation.toChucRequired')),
   ho_ten: z.string().trim().min(1, txt('matTranCanBo.validation.hoTenRequired')),
   ngay_sinh: requiredIsoDate(txt('matTranCanBo.validation.ngaySinhRequired')),
   gioi_tinh: z.enum(MTTQ_CAN_BO_GIOI_TINH, { message: txt('matTranCanBo.validation.gioiTinhRequired') }),
@@ -33,6 +35,7 @@ const mttqCanBoFields = z.object({
   dien_thoai: z.string().trim().min(1, txt('matTranCanBo.validation.dienThoaiRequired')),
   id_phong_ban: z.string().trim().min(1, txt('matTranCanBo.validation.phongBanRequired')),
   chuc_vu_id: z.string().trim().min(1, txt('matTranCanBo.validation.chucVuRequired')),
+  cap_quan_ly: z.array(z.enum(CAP_QUAN_LY_ENUM)).default([]),
   don_vi_id: z.string(),
   ngay_tham_gia_to_chuc: requiredIsoDate(txt('matTranCanBo.validation.ngayThamGiaRequired')),
   trang_thai_id: z.string().trim().min(1, txt('matTranCanBo.validation.trangThaiRequired')),
@@ -45,26 +48,9 @@ const mttqCanBoFields = z.object({
 
 export type MttqCanBoFormValues = z.infer<typeof mttqCanBoFields>;
 
-function capByChucVuFromPositionsAndRow(
-  positions: PositionForCanBoSchema[],
-  initial: MttqCanBo | null | undefined,
-): Map<string, ReturnType<typeof normalizeCapQuanLyInput>> {
-  const m = new Map<string, ReturnType<typeof normalizeCapQuanLyInput>>();
-  for (const p of positions) {
-    m.set(String(p.id), normalizeCapQuanLyInput(p.cap_quan_ly as string | null | undefined));
-  }
-  if (initial?.chuc_vu_id) {
-    const id = String(initial.chuc_vu_id);
-    if (!m.has(id) || m.get(id) == null) {
-      m.set(id, normalizeCapQuanLyInput(initial.chuc_vu_cap_quan_ly ?? undefined));
-    }
-  }
-  return m;
-}
-
 export function buildMttqCanBoSchema(
   positions: PositionForCanBoSchema[],
-  initialData: MttqCanBo | null | undefined,
+  _initialData: unknown,
   departments: DepartmentForCanBoSchema[],
 ) {
   return mttqCanBoFields.superRefine((data, ctx) => {
@@ -94,9 +80,7 @@ export function buildMttqCanBoSchema(
         });
       }
     }
-    const capMap = capByChucVuFromPositionsAndRow(positions, initialData);
-    const cap = capMap.get(String(data.chuc_vu_id));
-    const needDonVi = cap === 'Xã phường';
+    const needDonVi = data.cap_quan_ly.includes('Xã phường');
     const dv = data.don_vi_id.trim();
     if (needDonVi && !dv) {
       ctx.addIssue({

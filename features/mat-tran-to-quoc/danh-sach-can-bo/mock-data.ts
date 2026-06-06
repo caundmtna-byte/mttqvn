@@ -4,7 +4,7 @@ import type { MttqCanBo } from './core/types';
 export const MTTQ_CAN_BO_MOCK_DATA: MttqCanBo[] = [
   {
     id: '90001',
-    to_chuc_id: null,
+    to_chuc_ids: [],
     ho_ten: 'Nguyễn Văn A',
     ngay_sinh: '1985-03-15',
     gioi_tinh: 'Nam',
@@ -28,7 +28,7 @@ export const MTTQ_CAN_BO_MOCK_DATA: MttqCanBo[] = [
     id_nguoi_tao: '1',
     tg_tao: new Date().toISOString(),
     tg_cap_nhat: new Date().toISOString(),
-    ten_to_chuc: null,
+    ten_to_chuc_arr: [],
     ten_dan_toc: null,
     ten_trinh_do: null,
     ten_ly_luan_chinh_tri: null,
@@ -42,7 +42,7 @@ export const MTTQ_CAN_BO_MOCK_DATA: MttqCanBo[] = [
   },
   {
     id: '90002',
-    to_chuc_id: null,
+    to_chuc_ids: [],
     ho_ten: 'Trần Thị B',
     ngay_sinh: '1992-07-22',
     gioi_tinh: 'Nữ',
@@ -66,7 +66,7 @@ export const MTTQ_CAN_BO_MOCK_DATA: MttqCanBo[] = [
     id_nguoi_tao: '1',
     tg_tao: new Date().toISOString(),
     tg_cap_nhat: new Date().toISOString(),
-    ten_to_chuc: null,
+    ten_to_chuc_arr: [],
     ten_dan_toc: null,
     ten_trinh_do: null,
     ten_ly_luan_chinh_tri: null,

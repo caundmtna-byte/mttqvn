@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import type { MttqUyVienUyBan } from '../../uy-vien-uy-ban/core/types';
+import { isUyVienTrangThamGia } from '../../uy-vien-uy-ban/core/constants';
 import { CHIP_TRANG_THAI_NULL } from '../../danh-sach-can-bo/core/constants';
 
 dayjs.extend(isoWeek);
@@ -81,7 +82,8 @@ function matchesNullableFk(rowVal: string | null | undefined, selected: string[]
 
 function matchesTrangThamGia(row: MttqUyVienUyBan, selected: string[]): boolean {
   if (selected.length === 0) return true;
-  const id = row.trang_thai_tham_gia?.trim() ? String(row.trang_thai_tham_gia) : CHIP_TRANG_THAI_NULL;
+  const raw = row.trang_thai_tham_gia?.trim();
+  const id = raw && isUyVienTrangThamGia(raw) ? raw : CHIP_TRANG_THAI_NULL;
   return selected.includes(id);
 }
 

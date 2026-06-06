@@ -60,7 +60,12 @@ export function useMttqCanBoFilterCounts(
     const fNoTo = omitChipFilter(filters, 'to_chuc_id');
     for (const r of rows) {
       if (!mttqCanBoMatchesAllFilters(r, searchTerm, fNoTo, departments)) continue;
-      bump(toChucCounts, r.to_chuc_id ?? CHIP_FILTER_NULL);
+      const ids = Array.isArray(r.to_chuc_ids) ? r.to_chuc_ids : [];
+      if (ids.length === 0) {
+        bump(toChucCounts, CHIP_FILTER_NULL);
+      } else {
+        ids.forEach((id) => bump(toChucCounts, id));
+      }
     }
 
     const phongBanCounts: Record<string, number> = {};

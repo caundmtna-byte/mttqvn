@@ -9,12 +9,13 @@ function scope(partial: Partial<CongViecAssigneeScope>): CongViecAssigneeScope {
     canSelectAll: false,
     chucVuCapQuanLy: null,
     viewerDonViId: null,
+    viewerPhongBanId: null,
     ...partial,
   };
 }
 
-function emp(id: string, don_vi_id?: string | null) {
-  return { id, don_vi_id };
+function emp(id: string, don_vi_id?: string | null, id_phong_ban?: string | null) {
+  return { id, don_vi_id, id_phong_ban };
 }
 
 describe('isCongViecAssigneeSelectable', () => {
@@ -23,9 +24,14 @@ describe('isCongViecAssigneeSelectable', () => {
     expect(isCongViecAssigneeSelectable(s, emp('99', '2'))).toBe(true);
   });
 
-  it('Tỉnh qua canSelectAll — NV khác đơn vị vẫn được chọn', () => {
-    const s = scope({ canSelectAll: true, chucVuCapQuanLy: 'Tỉnh', viewerDonViId: '1' });
-    expect(isCongViecAssigneeSelectable(s, emp('2', '99'))).toBe(true);
+  it('Tỉnh qua canSelectAll (cap_bac=1 / quan_tri) — NV khác phòng vẫn được chọn', () => {
+    const s = scope({
+      canSelectAll: true,
+      chucVuCapQuanLy: 'Tỉnh',
+      viewerDonViId: '1',
+      viewerPhongBanId: '5',
+    });
+    expect(isCongViecAssigneeSelectable(s, emp('2', '99', '99'))).toBe(true);
   });
 
   it('Xã phường — cùng don_vi_id', () => {
@@ -61,11 +67,41 @@ describe('isCongViecAssigneeSelectable', () => {
     ).toBe(true);
   });
 
-  it('cap_quan_ly null — chỉ ngoại lệ', () => {
-    const s = scope({ chucVuCapQuanLy: null, viewerDonViId: '10' });
-    expect(isCongViecAssigneeSelectable(s, emp('2', '10'))).toBe(false);
+  it('cap_quan_ly null, không có viewerPhongBanId — chỉ ngoại lệ', () => {
+    const s = scope({ chucVuCapQuanLy: null, viewerDonViId: '10', viewerPhongBanId: null });
+    expect(isCongViecAssigneeSelectable(s, emp('2', '10', '5'))).toBe(false);
     expect(
-      isCongViecAssigneeSelectable(s, emp('2', '10'), { savedTrachNhiemId: '2' }),
+      isCongViecAssigneeSelectable(s, emp('2', '10', '5'), { savedTrachNhiemId: '2' }),
     ).toBe(true);
+  });
+
+  it('Tỉnh không bypass — cùng phòng ban thì được chọn', () => {
+    const s = scope({ chucVuCapQuanLy: 'Tỉnh', viewerPhongBanId: '7' });
+    expect(isCongViecAssigneeSelectable(s, emp('2', null, '7'))).toBe(true);
+  });
+
+  it('Tỉnh không bypass — khác phòng ban → không, trừ ngoại lệ', () => {
+    const s = scope({ chucVuCapQuanLy: 'Tỉnh', viewerPhongBanId: '7' });
+    expect(isCongViecAssigneeSelectable(s, emp('2', null, '8'))).toBe(false);
+    expect(
+      isCongViecAssigneeSelectable(s, emp('2', null, '8'), { viewerNhanVienId: '2' }),
+    ).toBe(true);
+    expect(
+      isCongViecAssigneeSelectable(s, emp('2', null, '8'), { savedTrachNhiemId: '2' }),
+    ).toBe(true);
+    expect(
+      isCongViecAssigneeSelectable(s, emp('3', null, '8'), { savedHoTroIds: ['3'] }),
+    ).toBe(true);
+  });
+
+  it('Tỉnh không bypass, NV không có phòng ban — không được chọn', () => {
+    const s = scope({ chucVuCapQuanLy: 'Tỉnh', viewerPhongBanId: '7' });
+    expect(isCongViecAssigneeSelectable(s, emp('2', null, null))).toBe(false);
+  });
+
+  it('null cap_quan_ly với viewerPhongBanId — cùng phòng ban thì được chọn', () => {
+    const s = scope({ chucVuCapQuanLy: null, viewerPhongBanId: '3' });
+    expect(isCongViecAssigneeSelectable(s, emp('2', null, '3'))).toBe(true);
+    expect(isCongViecAssigneeSelectable(s, emp('2', null, '4'))).toBe(false);
   });
 });

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { txt } from '../../../../lib/text';
 import { useForm, Controller, SubmitHandler, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Briefcase, Layers, Building2, FileText, Power, MapPinned } from 'lucide-react';
+import { Briefcase, Layers, Building2, FileText, Power } from 'lucide-react';
 import { TRANG_THAI_HOAT_DONG } from '@/lib/constants/trang-thai';
 import Input from '../../../../components/ui/Input';
 import Combobox from '../../../../components/ui/Combobox';
@@ -21,12 +21,9 @@ import { useJobLevels } from '../../cap-bac/hooks/use-cap-bac';
 import { useDepartments } from '../../phong-ban/hooks/use-phong-ban';
 import type { Department } from '../../phong-ban/core/types';
 import { usePositions } from '../hooks/use-chuc-vu';
-import { normalizeCapQuanLyInput } from '../utils/cap-quan-ly';
-
 const DEFAULT_VALUES = {
   ten_chuc_vu: '',
   cap_bac: '',
-  cap_quan_ly: '',
   phong_ban_id: '',
   mo_ta: '',
   thu_tu: 1,
@@ -107,14 +104,6 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
     return opts;
   }, [departments, selectedPhongBanId]);
 
-  const capQuanLyOptions = useMemo(
-    () => [
-      { label: txt('position.capQuanLyTinh'), value: 'Tỉnh' },
-      { label: txt('position.capQuanLyXaPhuong'), value: 'Xã phường' },
-    ],
-    []
-  );
-
   const { register, handleSubmit, formState: { errors }, reset, control } = useForm<PositionFormValues>({
     resolver: zodResolver(positionSchema) as Resolver<PositionFormValues>,
     defaultValues: DEFAULT_VALUES,
@@ -129,7 +118,6 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
         initialData.cap_bac != null && String(initialData.cap_bac).trim() !== ''
           ? String(initialData.cap_bac).trim()
           : '',
-      cap_quan_ly: (initialData.cap_quan_ly ?? '') as PositionFormValues['cap_quan_ly'],
       phong_ban_id:
         initialData.phong_ban_id != null && String(initialData.phong_ban_id).trim() !== ''
           ? String(initialData.phong_ban_id).trim()
@@ -147,13 +135,11 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
   }, [initialData, positions, reset]);
 
   const onSubmit: SubmitHandler<PositionFormValues> = (data) => {
-    const capQl = normalizeCapQuanLyInput(data.cap_quan_ly.trim());
     const sanitizedData: PositionFormValues = {
       ...data,
       ten_chuc_vu: data.ten_chuc_vu.trim(),
       cap_bac: String(data.cap_bac).trim(),
       phong_ban_id: String(data.phong_ban_id).trim(),
-      cap_quan_ly: (capQl ?? data.cap_quan_ly.trim()) as PositionFormValues['cap_quan_ly'],
       mo_ta: data.mo_ta && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null,
     };
 
@@ -244,23 +230,6 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
                       icon={<Building2 size={12} />}
                       clearable={false}
                       dropdownInPortal
-                    />
-                  )}
-                />
-                <Controller
-                  name="cap_quan_ly"
-                  control={control}
-                  render={({ field }) => (
-                    <Combobox
-                      label={txt('position.form.managementLevel')}
-                      options={capQuanLyOptions}
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                      placeholder={txt('position.form.managementLevelPlaceholder')}
-                      required
-                      clearable={false}
-                      error={errors.cap_quan_ly?.message}
-                      icon={<MapPinned size={12} />}
                     />
                   )}
                 />

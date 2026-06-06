@@ -213,13 +213,17 @@ const EmployeeTable = memo(function EmployeeTable({
           </div>
         );
       case 'cap_quan_ly':
-        return item.cap_quan_ly ? (
-          <EnumBadge value={item.cap_quan_ly} config={capQuanLyBadge} shape="rounded" truncate />
+        return Array.isArray(item.cap_quan_ly) && item.cap_quan_ly.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {item.cap_quan_ly.map((v) => (
+              <EnumBadge key={v} value={v} config={capQuanLyBadge} shape="rounded" truncate />
+            ))}
+          </div>
         ) : (
           <span className="text-xs text-muted-foreground italic">{txt('common.emptyCell')}</span>
         );
       case 'ten_don_vi':
-        if (item.cap_quan_ly === 'Tỉnh') {
+        if (Array.isArray(item.cap_quan_ly) && item.cap_quan_ly.includes('Tỉnh') && !item.cap_quan_ly.includes('Xã phường')) {
           return <span className="text-body-sm text-muted-foreground tabular-nums">-</span>;
         }
         return item.ten_don_vi?.trim() ? (
@@ -228,6 +232,22 @@ const EmployeeTable = memo(function EmployeeTable({
             <span className="truncate" title={item.ten_don_vi}>
               {item.ten_don_vi}
             </span>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground italic">{txt('common.emptyCell')}</span>
+        );
+      case 'ten_to_chuc_arr':
+        return Array.isArray(item.ten_to_chuc_arr) && item.ten_to_chuc_arr.length > 0 ? (
+          <div className="flex flex-wrap gap-1 min-w-0">
+            {item.ten_to_chuc_arr.map((ten) => (
+              <span
+                key={ten}
+                className="inline-flex max-w-full min-w-0 items-center truncate rounded-md border border-border/70 bg-muted/40 px-1.5 py-0.5 text-xs font-medium text-foreground"
+                title={ten}
+              >
+                {ten}
+              </span>
+            ))}
           </div>
         ) : (
           <span className="text-xs text-muted-foreground italic">{txt('common.emptyCell')}</span>
@@ -289,8 +309,8 @@ const EmployeeTable = memo(function EmployeeTable({
         <p className="truncate text-xs text-muted-foreground">
           @{item.ten_tai_khoan}
           {item.ten_chuc_vu ? ` · ${item.ten_chuc_vu}` : ''}
-          {item.cap_quan_ly ? ` · ${item.cap_quan_ly}` : ''}
-          {item.cap_quan_ly === 'Tỉnh' ? ' · -' : item.ten_don_vi?.trim() ? ` · ${item.ten_don_vi}` : ''}
+          {Array.isArray(item.cap_quan_ly) && item.cap_quan_ly.length > 0 ? ` · ${item.cap_quan_ly.join(', ')}` : ''}
+          {Array.isArray(item.cap_quan_ly) && item.cap_quan_ly.includes('Tỉnh') && !item.cap_quan_ly.includes('Xã phường') ? ' · -' : item.ten_don_vi?.trim() ? ` · ${item.ten_don_vi}` : ''}
         </p>
       )}
       footerStart={(

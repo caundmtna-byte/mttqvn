@@ -4,7 +4,7 @@ import { txt } from '@/lib/text';
 import type { BaiVietDanhSach } from '../core/types';
 import { useBaiVietDanhSachStore } from '../store/useBaiVietDanhSachStore';
 import GenericTable from '@/components/shared/GenericTable';
-import { formatCurrency, formatDateShort } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import { BaiVietTableRowActions } from './bai-viet-table-row-actions';
 
 interface Props {
@@ -59,7 +59,7 @@ const BaiVietTable = memo(function BaiVietTable({
             <span className="text-body-sm font-medium tabular-nums text-foreground">{formatCurrency(item.don_gia)}</span>
           );
         case 'ngay_dang':
-          return <span className="text-body-sm text-muted-foreground">{formatDateShort(item.ngay_dang)}</span>;
+          return <span className="text-body-sm text-muted-foreground">{formatDate(item.ngay_dang)}</span>;
         case 'ten_nguon_dang':
           return <span className="text-body-sm truncate">{item.ten_nguon_dang ?? txt('common.emptyCell')}</span>;
         case 'ten_trang_dang':
@@ -84,7 +84,7 @@ const BaiVietTable = memo(function BaiVietTable({
             </span>
           );
         case 'tg_cap_nhat':
-          return <span className="text-xs text-muted-foreground">{formatDateShort(item.tg_cap_nhat)}</span>;
+          return <span className="text-xs text-muted-foreground">{formatDate(item.tg_cap_nhat)}</span>;
         case 'actions':
           return (
             <BaiVietTableRowActions
@@ -147,7 +147,7 @@ const BaiVietTable = memo(function BaiVietTable({
               />
             </div>
             <p className="text-xs text-muted-foreground mb-2 truncate">
-              {item.ten_the_loai} · {formatDateShort(item.ngay_dang)}
+              {item.ten_the_loai} · {formatDate(item.ngay_dang)}
             </p>
             <p className="text-xs text-muted-foreground truncate mb-3">{item.link}</p>
             <div className="flex justify-end pt-2 border-t border-border">

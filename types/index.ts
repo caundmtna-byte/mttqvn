@@ -20,6 +20,8 @@ export interface User {
   ten_chuc_vu?: string | null;
   /** FK `var_ssn_xa_phuong.id` — gắn nhân viên với xã/phường (phân quyền xem ủy viên theo đơn vị). */
   don_vi_id?: string | null;
+  /** Cấp quản lý trực tiếp trên nhân viên (thay thế var_chuc_vu.cap_quan_ly). Đa chọn: 'Tỉnh' | 'Xã phường'. */
+  cap_quan_ly?: string[];
   /** Trạng thái tài khoản trong `var_nhan_vien` (tiếng Việt có dấu) */
   trang_thai?: 'Hoạt động' | 'Khóa';
 }

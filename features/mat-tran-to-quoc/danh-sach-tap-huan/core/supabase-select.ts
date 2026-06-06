@@ -28,8 +28,9 @@ export const MTTQ_LOP_TAP_HUAN_SELECT_LIST = `${BASE_COLS},${NGUOI_TAO},${DON_VI
 const CAN_BO_EMBED = [
   'ho_ten',
   'don_vi_id',
-  'to_chuc:mttq_thiet_lap!mttq_can_bo_to_chuc_id_fkey(ten,loai)',
-  'chuc_vu:var_chuc_vu!mttq_can_bo_chuc_vu_id_fkey(ten_chuc_vu,cap_quan_ly)',
+  'cap_quan_ly',
+  'to_chuc_ids',
+  'chuc_vu:var_chuc_vu!mttq_can_bo_chuc_vu_id_fkey(ten_chuc_vu)',
   'don_vi:var_ssn_xa_phuong!mttq_can_bo_don_vi_id_fkey(ten,var_ssn_tinh_thanh(ten))',
   MTTQ_CAN_BO_EMBED_PHONG_BAN,
 ].join(',');

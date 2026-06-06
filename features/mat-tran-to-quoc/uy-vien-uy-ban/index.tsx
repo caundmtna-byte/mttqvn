@@ -31,6 +31,8 @@ import type { MttqUyVienUyBan, MttqUyVienUyBanListRow } from './core/types';
 import { MTTQ_UY_VIEN_UY_BAN_SEARCHABLE_KEYS } from './utils/search-keys';
 import { mttqUyVienUyBanMatchesColumnSearch, donViDisplayLabel } from './utils/column-search';
 import { formatUyVienMaUvDisplay } from './utils/display-format';
+import { buildUyVienTrangThamGiaChipOptions } from './utils/trang-tham-gia-options';
+import { isUyVienTrangThamGia } from './core/constants';
 import { getMttqUyVienUyBanById } from './services/mttq-uy-vien-uy-ban-service';
 import { canViewUyVienUyBanRow, useMttqUyVienUyBanViewer } from './hooks/use-mttq-uy-vien-uy-ban-viewer';
 import { CHIP_TRANG_THAI_NULL } from '../danh-sach-can-bo/core/constants';
@@ -144,7 +146,8 @@ const UyVienUyBanPage: React.FC = () => {
         if (!f.don_vi_filter.includes(dv)) return false;
       }
       if (f.trang_thai_tham_gia_filter.length > 0) {
-        const tt = item.trang_thai_tham_gia?.trim() || CHIP_TRANG_THAI_NULL;
+        const raw = item.trang_thai_tham_gia?.trim();
+        const tt = raw && isUyVienTrangThamGia(raw) ? raw : CHIP_TRANG_THAI_NULL;
         if (!f.trang_thai_tham_gia_filter.includes(tt)) return false;
       }
       return matchesSearch;
@@ -212,19 +215,10 @@ const UyVienUyBanPage: React.FC = () => {
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
   }, [viewableRows, tinhCapLabel]);
 
-  const trangThaiChipOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    for (const r of viewableRows) {
-      const value = r.trang_thai_tham_gia?.trim() || CHIP_TRANG_THAI_NULL;
-      const label = r.trang_thai_tham_gia?.trim() || txt('common.emptyCell');
-      const cur = map.get(value);
-      if (cur) cur.count += 1;
-      else map.set(value, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [viewableRows]);
+  const trangThaiChipOptions = useMemo(
+    () => buildUyVienTrangThamGiaChipOptions(viewableRows),
+    [viewableRows],
+  );
 
   const EXPORT_COLUMNS = useMemo(
     () => [

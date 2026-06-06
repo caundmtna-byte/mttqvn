@@ -13,6 +13,7 @@ import {
   type MttqUyVienUyBanFormInput,
   type MttqUyVienUyBanFormValues,
 } from '../core/schema';
+import { normalizeUyVienTrangThamGia } from '../core/constants';
 import {
   MTTQ_UY_VIEN_UY_BAN_SELECT_FULL,
   MTTQ_UY_VIEN_UY_BAN_SELECT_LIST,
@@ -172,7 +173,10 @@ export function flattenRow(row: Record<string, unknown>): MttqUyVienUyBan {
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
     id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
-    ten_to_chuc: canBo?.ten_to_chuc ?? null,
+    ten_to_chuc:
+      canBo != null && Array.isArray(canBo.ten_to_chuc_arr) && canBo.ten_to_chuc_arr.length > 0
+        ? canBo.ten_to_chuc_arr.join(', ')
+        : null,
     ten_phong_ban_hien_thi: canBo ? formatTenPhongBanHienThi(canBo.ten_phong_ban, canBo.ten_bo_phan) : null,
     ten_don_vi_can_bo: canBo?.ten_don_vi ?? null,
     dia_chi_can_bo: canBo?.dia_chi ?? null,
@@ -459,10 +463,9 @@ function importRowToFormInput(
     ma_uv: row.ma_uv != null && String(row.ma_uv).trim() !== '' ? String(row.ma_uv) : undefined,
     nhiem_ky_id: resolved.nhiem_ky_id,
     don_vi_id: resolved.don_vi_id,
-    trang_thai_tham_gia:
-      row.trang_thai_tham_gia != null && String(row.trang_thai_tham_gia).trim() !== ''
-        ? String(row.trang_thai_tham_gia)
-        : undefined,
+    trang_thai_tham_gia: normalizeUyVienTrangThamGia(
+      row.trang_thai_tham_gia != null ? String(row.trang_thai_tham_gia) : undefined,
+    ),
     ghi_chu: row.ghi_chu != null && String(row.ghi_chu).trim() !== '' ? String(row.ghi_chu) : undefined,
   };
 }

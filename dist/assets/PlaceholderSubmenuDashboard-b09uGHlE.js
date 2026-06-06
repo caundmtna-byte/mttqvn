@@ -1,0 +1,1 @@
+import{j as r}from"./vendor-framer-DTuC4_JC.js";import{M as t}from"./ModuleDashboardLayout-LhQrMIO1.js";import{t as a}from"./index-BewZ-IPK.js";const n=({nameKey:o,icon:s})=>r.jsx(t,{groups:[],submenuTitle:a(o),submenuIcon:s});export{n as P};

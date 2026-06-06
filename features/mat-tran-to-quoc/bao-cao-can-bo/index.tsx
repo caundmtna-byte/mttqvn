@@ -313,14 +313,29 @@ const BaoCaoCanBoPage: React.FC = () => {
     [viewableRowsEnriched],
   );
 
-  const toChucOptions = useMemo(
-    () =>
-      buildDimOptions(viewableRowsEnriched, (r) => ({
-        id: r.to_chuc_id?.trim() ? String(r.to_chuc_id) : CHIP_TRANG_THAI_NULL,
-        label: r.ten_to_chuc?.trim() || '—',
-      })),
-    [viewableRowsEnriched],
-  );
+  const toChucOptions = useMemo(() => {
+    const labelById = new Map<string, string>();
+    for (const r of viewableRowsEnriched) {
+      const ids = Array.isArray(r.to_chuc_ids) ? r.to_chuc_ids : [];
+      const names = Array.isArray(r.ten_to_chuc_arr) ? r.ten_to_chuc_arr : [];
+      if (ids.length === 0) {
+        if (!labelById.has(CHIP_TRANG_THAI_NULL)) labelById.set(CHIP_TRANG_THAI_NULL, '—');
+      } else {
+        ids.forEach((id, idx) => {
+          if (!labelById.has(id)) labelById.set(id, names[idx] ?? id);
+        });
+      }
+    }
+    const all = [...viewableRowsEnriched];
+    return [...labelById.entries()].map(([id, label]) => ({
+      value: id,
+      label,
+      count: all.filter((r) => {
+        const ids = Array.isArray(r.to_chuc_ids) ? r.to_chuc_ids : [];
+        return ids.length === 0 ? id === CHIP_TRANG_THAI_NULL : ids.includes(id);
+      }).length,
+    }));
+  }, [viewableRowsEnriched]);
 
   const dangVienOptions = useMemo<Option[]>(
     () => [

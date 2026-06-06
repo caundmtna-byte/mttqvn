@@ -54,6 +54,7 @@ import { useMttqBaoCaoUyVienViewer } from './hooks/use-mttq-bao-cao-uy-vien-view
 import type { MttqUyVienUyBan } from '../uy-vien-uy-ban/core/types';
 import { computeAgeFromBirthDate } from '../danh-sach-can-bo/utils/age';
 import { formatUyVienPhoneDisplay } from '../uy-vien-uy-ban/utils/display-format';
+import { buildUyVienTrangThamGiaChipOptions } from '../uy-vien-uy-ban/utils/trang-tham-gia-options';
 import { CHIP_TRANG_THAI_NULL } from '../danh-sach-can-bo/core/constants';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import {
@@ -248,11 +249,7 @@ const BaoCaoUyVienPage: React.FC = () => {
   );
 
   const trangThamGiaOptions = useMemo(
-    () =>
-      buildDimOptions(rowsEnriched, (r) => ({
-        id: r.trang_thai_tham_gia?.trim() ? String(r.trang_thai_tham_gia) : CHIP_TRANG_THAI_NULL,
-        label: r.trang_thai_tham_gia?.trim() || txt('matTranCommitteeMemberStats.trangThaiChuaGan'),
-      })),
+    () => buildUyVienTrangThamGiaChipOptions(rowsEnriched),
     [rowsEnriched],
   );
 

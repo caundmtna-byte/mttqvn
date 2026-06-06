@@ -21,6 +21,7 @@ export function useHydratePositionPermissions(): void {
       ? user.id_chuc_vu[0] ?? ''
       : (user.id_chuc_vu ?? '')
     : '';
+  const capQuanLy = user?.cap_quan_ly ?? [];
 
   const enabled = hasHydrated && matrixEnabled && !!user && !!chucVuKey;
 
@@ -28,8 +29,8 @@ export function useHydratePositionPermissions(): void {
   // dùng `MASTER_DATA_STALE_TIME_MS` (30 phút) thay vì `staleTime: 0` để tránh
   // refetch mỗi lần remount/reconnect — đỡ egress cho mọi route protect bằng quyền.
   const { data: payload } = useQuery({
-    queryKey: ['permission-grants', chucVuKey],
-    queryFn: () => fetchPositionPermissionGrants(chucVuKey),
+    queryKey: ['permission-grants', chucVuKey, capQuanLy],
+    queryFn: () => fetchPositionPermissionGrants(chucVuKey, capQuanLy),
     enabled,
     staleTime: MASTER_DATA_STALE_TIME_MS,
     gcTime: SERVER_GC_TIME_MS,

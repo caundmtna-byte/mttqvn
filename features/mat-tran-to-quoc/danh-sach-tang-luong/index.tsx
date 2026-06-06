@@ -27,6 +27,8 @@ import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { queryKeys } from '@/lib/query-keys';
+import { useExportData } from '@/lib/useExportData';
+import ExportDialog from '@/components/shared/ExportDialog';
 import TabGroup from '@/components/ui/TabGroup';
 import ErrorState from '@/components/shared/ErrorState';
 import {
@@ -50,6 +52,7 @@ import {
   tangLuongMatchesColumnSearch,
 } from './utils/column-search';
 import { getTangLuongLoaiKyLabel } from './utils/display-format';
+import { filterRowsForStats } from './utils/aggregate-tang-luong-stats';
 import { CHIP_FILTER_NULL } from '../danh-sach-can-bo/core/constants';
 import MttqTangLuongToolbar from './components/mttq-tang-luong-toolbar';
 import MttqTangLuongTable from './components/mttq-tang-luong-table';
@@ -81,7 +84,7 @@ const DanhSachTangLuongPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranSalaryIncreaseList');
-  const { canCreate, canEdit, canDelete } = useResourcePermissions('matTranSalaryIncreaseList');
+  const { canCreate, canEdit, canDelete, canExport } = useResourcePermissions('matTranSalaryIncreaseList');
   const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
@@ -110,6 +113,7 @@ const DanhSachTangLuongPage: React.FC = () => {
   const [keHoachYear, setKeHoachYear] = useState(() => new Date().getFullYear());
   const [keHoachGroupMode, setKeHoachGroupMode] = useState<'quarter' | 'month'>('quarter');
   const [statsYear, setStatsYear] = useState(() => new Date().getFullYear());
+  const [showExport, setShowExport] = useState(false);
 
   const {
     searchTerm,
@@ -214,6 +218,59 @@ const DanhSachTangLuongPage: React.FC = () => {
     () => (viewingId ? viewableRows.find((r) => r.id === viewingId) ?? null : null),
     [viewableRows, viewingId],
   );
+
+  const scopedStatsRows = useMemo(
+    () =>
+      filterRowsForStats(viewableRows, {
+        year: statsYear,
+        loaiKy: filters.loai_ky,
+        phongBanIds: filters.phong_ban_id,
+      }),
+    [viewableRows, statsYear, filters.loai_ky, filters.phong_ban_id],
+  );
+
+  const exportColumns = useMemo(
+    () => [
+      { key: 'ho_ten', label: txt('matTranTangLuong.store.canBoCol') },
+      { key: 'ngay_nang_luong', label: txt('matTranTangLuong.store.ngayNangCol') },
+      { key: 'loai_ky', label: txt('matTranTangLuong.store.loaiKyCol') },
+      { key: 'ngach_bac_moi', label: txt('matTranTangLuong.store.ngachMoiCol') },
+      { key: 'luong', label: txt('matTranTangLuong.store.luongCol') },
+      { key: 'phong_ban', label: txt('matTranTangLuong.filterPhongBan') },
+      { key: 'don_vi', label: txt('matTranTangLuong.filterDonVi') },
+    ],
+    [],
+  );
+
+  const exportMapFn = useCallback(
+    (item: MttqTangLuongListRow) => ({
+      ho_ten: item.ho_ten_can_bo,
+      ngay_nang_luong: item.ngay_nang_luong,
+      loai_ky: getTangLuongLoaiKyLabel(item.loai_ky),
+      ngach_bac_moi: [item.ten_ngach_moi, item.ma_bac_moi].filter(Boolean).join(' · '),
+      luong: item.luong > 0 ? formatCurrency(item.luong) : '',
+      phong_ban: item.ten_phong_ban ?? '',
+      don_vi: item.ten_don_vi ?? '',
+    }),
+    [],
+  );
+
+  const { exportData, paginatedData: paginatedExportData } = useExportData({
+    data: scopedStatsRows,
+    isOpen: showExport,
+    mapFn: exportMapFn,
+    pagination: { page: 1, pageSize: 100_000 },
+    selectedIds: new Set(),
+    keyExtractor: (r) => r.id,
+  });
+
+  const handleExportThongKe = useCallback(() => {
+    if (scopedStatsRows.length === 0) {
+      toast.warning(txt('matTranTangLuong.stats.noExportData'));
+      return;
+    }
+    setShowExport(true);
+  }, [scopedStatsRows.length]);
 
   useEffect(() => {
     if (!viewingId || !viewingRow) return;
@@ -382,6 +439,7 @@ const DanhSachTangLuongPage: React.FC = () => {
           hideListControls={mainTab !== 'lich_su'}
           onAdd={handleAdd}
           onDeleteMany={handleDeleteMany}
+          onExportThongKe={canExport ? handleExportThongKe : undefined}
           statsYear={statsYear}
           onStatsYearChange={setStatsYear}
           keHoachYear={keHoachYear}
@@ -462,6 +520,17 @@ const DanhSachTangLuongPage: React.FC = () => {
           </Suspense>
         ) : null}
       </AnimatePresence>
+
+      <ExportDialog
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        columns={exportColumns}
+        data={exportData}
+        paginatedData={paginatedExportData}
+        selectedData={[]}
+        fileName={txt('matTranTangLuong.stats.exportFileName')}
+        visibleColumnKeys={exportColumns.map((c) => c.key)}
+      />
     </div>
   );
 };

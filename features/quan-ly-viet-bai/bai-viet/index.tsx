@@ -9,11 +9,10 @@ import React, {
   startTransition,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { getLanguage } from '@/lib/utils';
+import { formatDate, getLanguage } from '@/lib/utils';
 import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
@@ -21,7 +20,6 @@ import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { useCan } from '@/hooks/use-can';
-import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useTheLoais } from '../thiet-lap-bai-viet/hooks/use-the-loai';
 import { useThietLapKhacAll } from '../thiet-lap-bai-viet/hooks/use-thiet-lap-khac';
@@ -32,18 +30,15 @@ import {
   rowVisibleOnArticleAllTab,
 } from '../hooks/use-article-all-tab-viewer';
 import { useBaiVietDanhSachPage, useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
+import { useBaiVietNguoiTaoFilterOptions } from './hooks/use-bai-viet-nguoi-tao-filter-options';
 import { useBaiVietDanhSachStore } from './store/useBaiVietDanhSachStore';
-import type { BaiVietDanhSach, BaiVietListScope } from './core/types';
-import type { BaiVietRpcScope } from './services/bai-viet-danh-sach-service';
+import type { BaiVietDanhSach } from './core/types';
 import { baiVietMatchesColumnSearch } from './utils/column-search';
 import BaiVietToolbar from './components/bai-viet-toolbar';
 import BaiVietTable from './components/bai-viet-table';
 
 const BaiVietForm = lazy(() => import('./components/bai-viet-form'));
 const BaiVietDetail = lazy(() => import('./components/bai-viet-detail'));
-
-const TAB_ALL: BaiVietListScope = 'all';
-const TAB_MINE: BaiVietListScope = 'mine';
 
 const DrawerLazyFallback: React.FC = () => (
   <div
@@ -73,12 +68,6 @@ const BaiVietDanhSachPage: React.FC = () => {
     navigate('/quan-ly-viet-bai', { replace: true });
   }, [user, canView, navigate]);
 
-  const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
-
-  const [listScope, setListScope] = useTabSearchParam(
-    [TAB_ALL, TAB_MINE] as const satisfies readonly BaiVietListScope[],
-    TAB_ALL,
-  );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BaiVietDanhSach | null>(null);
   const [viewing, setViewing] = useState<BaiVietDanhSach | null>(null);
@@ -101,13 +90,8 @@ const BaiVietDanhSachPage: React.FC = () => {
   const { data: theLoais = [] } = useTheLoais({ enabled: canView });
   const { data: khacRows = [] } = useThietLapKhacAll({ enabled: canView });
 
-  const rpcScope: BaiVietRpcScope =
-    listScope === TAB_MINE ? 'mine' : resolveBaiVietAllTabRpcScope(allTabViewer);
-
-  const pageQueryEnabled =
-    canView &&
-    (listScope !== TAB_MINE || Boolean(nhanVienId)) &&
-    (listScope !== TAB_ALL || canLoadArticleAllTab(allTabViewer));
+  const rpcScope = resolveBaiVietAllTabRpcScope(allTabViewer);
+  const pageQueryEnabled = canView && canLoadArticleAllTab(allTabViewer);
 
   const pageQuery = useMemo(
     () => ({
@@ -115,28 +99,34 @@ const BaiVietDanhSachPage: React.FC = () => {
       pageSize: pagination.pageSize,
       search: searchTerm,
       scope: rpcScope,
-      viewerNhanVienId: listScope === TAB_MINE ? nhanVienId : null,
+      viewerNhanVienId: null,
       viewerDonViId: rpcScope === 'all_don_vi' ? allTabViewer.viewerDonViId : null,
       theLoaiIds: filters.id_the_loai,
       nguonDangIds: filters.id_nguon_dang,
       trangDangIds: filters.id_trang_dang,
+      nguoiTaoIds: filters.id_nguoi_tao,
     }),
     [
       pagination.page,
       pagination.pageSize,
       searchTerm,
       rpcScope,
-      listScope,
-      nhanVienId,
       allTabViewer.viewerDonViId,
       filters.id_the_loai,
       filters.id_nguon_dang,
       filters.id_trang_dang,
+      filters.id_nguoi_tao,
     ],
   );
 
   const { data: pageData, isLoading } = useBaiVietDanhSachPage({
     ...pageQuery,
+    enabled: pageQueryEnabled,
+  });
+
+  const { data: nguoiTaoFilterRows = [] } = useBaiVietNguoiTaoFilterOptions({
+    scope: rpcScope,
+    viewerDonViId: rpcScope === 'all_don_vi' ? allTabViewer.viewerDonViId : null,
     enabled: pageQueryEnabled,
   });
 
@@ -151,20 +141,13 @@ const BaiVietDanhSachPage: React.FC = () => {
   }, [resetState]);
 
   useEffect(() => {
-    clearSelection();
-  }, [listScope, clearSelection]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [listScope, setPage]);
-
-  useEffect(() => {
     setPage(1);
   }, [
     searchTerm,
     filters.id_the_loai.join(','),
     filters.id_nguon_dang.join(','),
     filters.id_trang_dang.join(','),
+    filters.id_nguoi_tao.join(','),
     setPage,
   ]);
 
@@ -176,15 +159,14 @@ const BaiVietDanhSachPage: React.FC = () => {
 
   const filterFn = useCallback(
     (item: BaiVietDanhSach, _term: string, f: typeof filters) => {
-      if (listScope === TAB_MINE && String(item.id_nguoi_tao) !== nhanVienId) return false;
-      if (listScope === TAB_ALL && !rowVisibleOnArticleAllTab(allTabViewer, item)) return false;
+      if (!rowVisibleOnArticleAllTab(allTabViewer, item)) return false;
       if (f.id_the_loai?.length && !f.id_the_loai.includes(String(item.id_the_loai))) return false;
       if (f.id_nguon_dang?.length && !f.id_nguon_dang.includes(String(item.id_nguon_dang))) return false;
       if (f.id_trang_dang?.length && !f.id_trang_dang.includes(String(item.id_trang_dang))) return false;
-      const matchesCol = baiVietMatchesColumnSearch(item, f);
-      return matchesCol;
+      if (f.id_nguoi_tao?.length && !f.id_nguoi_tao.includes(String(item.id_nguoi_tao))) return false;
+      return baiVietMatchesColumnSearch(item, f);
     },
-    [listScope, nhanVienId, allTabViewer],
+    [allTabViewer],
   );
 
   const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
@@ -227,7 +209,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       ten_bai: item.ten_bai,
       ten_the_loai: item.ten_the_loai ?? '',
       don_gia_num: item.don_gia,
-      ngay_dang: item.ngay_dang,
+      ngay_dang: formatDate(item.ngay_dang),
       ten_nguon_dang: item.ten_nguon_dang ?? '',
       ten_trang_dang: item.ten_trang_dang ?? '',
       link: item.link,
@@ -308,26 +290,6 @@ const BaiVietDanhSachPage: React.FC = () => {
     setFormOrigin('list');
   };
 
-  const tabs = useMemo(
-    () => [
-      { id: TAB_ALL, label: txt('articleList.tabAll') },
-      { id: TAB_MINE, label: txt('articleList.tabMine') },
-    ],
-    [],
-  );
-
-  const tabsSlot = useMemo(
-    () => (
-      <TabGroup
-        tabs={tabs}
-        activeTab={listScope}
-        onChange={(id) => setListScope(id as BaiVietListScope)}
-        className="shrink-0"
-      />
-    ),
-    [tabs, listScope],
-  );
-
   const theLoaiChipOptions = useMemo(
     () =>
       [...theLoais]
@@ -368,6 +330,16 @@ const BaiVietDanhSachPage: React.FC = () => {
     }));
   }, [khacRows, rows]);
 
+  const nguoiTaoChipOptions = useMemo(
+    () =>
+      nguoiTaoFilterRows.map((o) => ({
+        value: o.id,
+        label: o.label,
+        count: o.count,
+      })),
+    [nguoiTaoFilterRows],
+  );
+
   if (!canView) {
     return (
       <div
@@ -385,10 +357,10 @@ const BaiVietDanhSachPage: React.FC = () => {
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <BaiVietToolbar
           onPageBack={() => navigate('/quan-ly-viet-bai')}
-          tabsSlot={tabsSlot}
           theLoaiOptions={theLoaiChipOptions}
           nguonDangOptions={nguonDangChipOptions}
           trangDangOptions={trangDangChipOptions}
+          nguoiTaoOptions={nguoiTaoChipOptions}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');

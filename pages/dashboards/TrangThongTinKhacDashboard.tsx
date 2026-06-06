@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Newspaper, MessageCircle, MonitorSmartphone, FileStack } from 'lucide-react';
+import { Newspaper, MessageCircle, MonitorSmartphone, FileStack, CalendarDays } from 'lucide-react';
 import { txt } from '../../lib/text';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -13,6 +13,7 @@ const MTTQ_PORTAL_URL = 'http://mattrannghean.org.vn/cms/portal/folder/home';
 const ZALO_OA_URL = 'https://oa.zalo.me/home';
 const MAT_TRAN_SO_URL = 'https://app.mattranso.vn/';
 const QUAN_LY_VAN_BAN_URL = 'https://dhtn.mattran.vn/app-view/';
+const LICH_CONG_TAC_BAN_TT_URL = 'https://mttqnghean.vnptioffice.vn/Lichcongtac/lichtv9.aspx';
 
 function openExternal(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -61,6 +62,14 @@ const TrangThongTinKhacDashboard: React.FC = () => {
             description: txt('page.externalLinksDashboard.quanLyVanBanDesc'),
             icon: FileStack,
             color: 'bg-slate-600',
+          },
+          {
+            path: '/trang-thong-tin-khac/lich-cong-tac-ban-tt',
+            externalUrl: LICH_CONG_TAC_BAN_TT_URL,
+            title: txt('page.externalLinksDashboard.lichCongTacBanTt'),
+            description: txt('page.externalLinksDashboard.lichCongTacBanTtDesc'),
+            icon: CalendarDays,
+            color: 'bg-emerald-600',
           },
         ],
       },

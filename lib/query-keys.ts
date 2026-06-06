@@ -64,7 +64,10 @@ export const queryKeys = {
       theLoaiIds: readonly string[];
       nguonDangIds: readonly string[];
       trangDangIds: readonly string[];
+      nguoiTaoIds: readonly string[];
     }) => ['bai-viet-danh-sach', 'page', args] as const,
+    nguoiTaoFilterOptions: (args: { scope: string; viewerDonViId: string | null }) =>
+      ['bai-viet-danh-sach', 'nguoi-tao-filter-options', args] as const,
   },
   chuongTrinhNam: {
     all: ['chuong-trinh-nam'] as const,

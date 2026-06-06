@@ -52,6 +52,7 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'otherInfoZaloOa',
       'otherInfoMatTranSo',
       'otherInfoQuanLyVanBan',
+      'otherInfoLichCongTacBanTt',
     ];
   }
   return null; // `/`, `/thong-tin-ban-quyen` → luôn hiện

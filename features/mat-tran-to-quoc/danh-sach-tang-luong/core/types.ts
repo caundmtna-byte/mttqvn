@@ -44,6 +44,8 @@ export interface MttqTangLuongListRow {
   ma_bac_moi: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /** `mttq_can_bo.cap_quan_ly` — dùng để lọc dòng cho nhân sự cấp Tỉnh. */
+  can_bo_cap_quan_ly: string[];
 }
 
 export type MttqTangLuongDetail = MttqTangLuongListRow;

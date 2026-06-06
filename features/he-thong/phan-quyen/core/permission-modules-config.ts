@@ -120,6 +120,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'trang-thong-tin-khac/zalo-oa', nameKey: 'page.externalLinksDashboard.zaloOa' },
           { id: 'trang-thong-tin-khac/mat-tran-so', nameKey: 'page.externalLinksDashboard.matTranSo' },
           { id: 'trang-thong-tin-khac/quan-ly-van-ban', nameKey: 'page.externalLinksDashboard.quanLyVanBan' },
+          { id: 'trang-thong-tin-khac/lich-cong-tac-ban-tt', nameKey: 'page.externalLinksDashboard.lichCongTacBanTt' },
         ],
       },
     ],

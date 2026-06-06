@@ -14,8 +14,8 @@ import EnumBadge from '../components/ui/EnumBadge';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Save, User as UserIcon, Mail, Shield, Camera, Key, X,
-  AtSign, Briefcase, Building2, Layers,
+  Save, User as UserIcon, Shield, Camera, Key, X,
+  Briefcase, Building2, Layers,
 } from 'lucide-react';
 import { getAvatarUrl } from '../lib/utils';
 import { canEditProfile } from '../lib/profile-permissions';
@@ -55,8 +55,6 @@ const Profile: React.FC = () => {
 
   const editable = canEditProfile(user);
   const displayName = currentEmployee?.ho_va_ten ?? user?.full_name ?? '';
-  const displayEmail = user?.email ?? '';
-  const displayUsername = currentEmployee?.ten_tai_khoan ?? user?.username ?? '';
   const displayAvatar = currentEmployee?.hinh_anh ?? user?.avatar_url ?? null;
   const trangThai = currentEmployee?.trang_thai ?? user?.trang_thai;
 
@@ -180,17 +178,6 @@ const Profile: React.FC = () => {
       />
 
       <div className="px-4 sm:px-6 space-y-4 sm:space-y-6 pb-10 pt-3 md:pt-4 max-w-full">
-        {!editable && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-amber-800 dark:text-amber-200"
-            role="status"
-          >
-            {txt('page.profile.viewOnlyBanner')}
-          </motion.div>
-        )}
-
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-stretch lg:items-start w-full">
           <motion.aside
             initial={{ opacity: 0, x: -10 }}
@@ -227,18 +214,6 @@ const Profile: React.FC = () => {
 
               <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-4 sm:pb-5">
                 <div className="grid grid-cols-2 sm:grid-cols-1 gap-2.5 sm:gap-3 text-xs sm:text-sm">
-                  {displayUsername && (
-                    <div className="flex items-center gap-2 sm:gap-3 text-muted-foreground min-w-0">
-                      <AtSign size={14} className="shrink-0" />
-                      <span className="truncate">{displayUsername}</span>
-                    </div>
-                  )}
-                  {displayEmail && (
-                    <div className="flex items-center gap-2 sm:gap-3 text-muted-foreground min-w-0">
-                      <Mail size={14} className="shrink-0" />
-                      <span className="truncate">{displayEmail}</span>
-                    </div>
-                  )}
                   {currentEmployee?.ten_phong_ban && (
                     <div className="flex items-center gap-2 sm:gap-3 text-muted-foreground">
                       <Building2 size={14} className="shrink-0" />
@@ -278,9 +253,7 @@ const Profile: React.FC = () => {
           >
             <DetailSection title={txt('employee.detail.identity')} icon={<UserIcon size={14} />} variant="primary">
               <DetailFieldGrid cols={2}>
-                <DetailField label={txt('employee.form.username')} value={displayUsername} icon={<AtSign size={12} />} emptyText={emptyText} />
                 <DetailField label={txt('employee.form.fullName')} value={displayName} icon={<UserIcon size={12} />} emptyText={emptyText} />
-                <DetailField label={txt('page.profile.email')} value={displayEmail} icon={<Mail size={12} />} emptyText={emptyText} />
                 <DetailField
                   label={txt('common.status')}
                   value={trangThai ? <EnumBadge value={trangThai} config={STATUS_BADGE_CONFIG} /> : undefined}

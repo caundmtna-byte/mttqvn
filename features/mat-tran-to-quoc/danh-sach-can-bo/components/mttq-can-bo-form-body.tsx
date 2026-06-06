@@ -3,7 +3,6 @@ import {
   Activity,
   BookOpen,
   Briefcase,
-  Binary,
   Building2,
   Calendar,
   CalendarClock,
@@ -12,6 +11,7 @@ import {
   Landmark,
   Layers,
   MapPin,
+  MapPinned,
   Phone,
   User,
 } from 'lucide-react';
@@ -21,9 +21,9 @@ import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
+import MultiSelect from '@/components/ui/MultiSelect';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
-import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { MTTQ_CAN_BO_GIOI_TINH, MTTQ_CAN_BO_TON_GIAO } from '../core/constants';
 import type { MttqCanBoFormValues } from '../core/schema';
 
@@ -41,8 +41,6 @@ export interface MttqCanBoFormBodyProps {
   departmentOptions: { label: string; value: string }[];
   optChucVu: { label: string; value: string }[];
   xaPhuongOptions: { label: string; value: string }[];
-  /** Chức vụ (id + cấp quản lý) để hiển thị cấp khi chọn chức danh. */
-  positionsForCap: { id: string; cap_quan_ly: string | null }[];
   /** Chức vụ cấp xã — bắt buộc chọn đơn vị xã/phường. */
   needsDonViXaPhuong: boolean;
 }
@@ -64,21 +62,17 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
   departmentOptions,
   optChucVu,
   xaPhuongOptions,
-  positionsForCap,
   needsDonViXaPhuong,
 }) => {
   const selectedPhongBan = watch('id_phong_ban');
-  const chucVuIdWatch = watch('chuc_vu_id');
 
-  const capQuanLyDisplay = useMemo(() => {
-    const id = String(chucVuIdWatch ?? '').trim();
-    if (!id) return '';
-    const p = positionsForCap.find((x) => String(x.id) === id);
-    const n = normalizeCapQuanLyInput(p?.cap_quan_ly);
-    if (n) return n;
-    const raw = (p?.cap_quan_ly ?? '').trim();
-    return raw || txt('matTranCanBo.form.capQuanLyChuaGan');
-  }, [chucVuIdWatch, positionsForCap]);
+  const capQuanLyOptions = useMemo(
+    () => [
+      { label: txt('position.capQuanLyTinh'), value: 'Tỉnh' },
+      { label: txt('position.capQuanLyXaPhuong'), value: 'Xã phường' },
+    ],
+    [],
+  );
 
   const gioiTinhOptions = useMemo(
     () => MTTQ_CAN_BO_GIOI_TINH.map((g) => ({ label: g, value: g })),
@@ -193,20 +187,16 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
       <FormSection title={txt('matTranCanBo.form.sectionToChuc')} icon={<Building2 size={14} />} variant="primary">
         <FormGrid>
           <Controller
-            name="to_chuc_id"
+            name="to_chuc_ids"
             control={control}
             render={({ field }) => (
-              <Combobox
+              <MultiSelect
                 label={txt('matTranCanBo.form.toChuc')}
-                icon={<Building2 size={12} />}
+                icon={Building2}
                 options={optToChuc}
-                value={field.value}
-                onChange={(v) => field.onChange(v === '' ? '' : String(v))}
-                placeholder={txt('common.select')}
-                error={errors.to_chuc_id?.message}
-                required
-                clearable={false}
-                dropdownInPortal
+                value={Array.isArray(field.value) ? field.value : []}
+                onChange={field.onChange}
+                error={(errors.to_chuc_ids as { message?: string } | undefined)?.message}
               />
             )}
           />
@@ -257,17 +247,20 @@ const MttqCanBoFormBody: React.FC<MttqCanBoFormBodyProps> = ({
               />
             )}
           />
-          <div className={FORM_GRID_SPAN_FULL}>
-            <Input
-              readOnly
-              tabIndex={-1}
-              label={txt('matTranCanBo.form.capQuanLy')}
-              icon={<Binary size={12} />}
-              value={capQuanLyDisplay.trim() ? capQuanLyDisplay : '—'}
-              className="cursor-default"
-            />
-            <p className="m-0 mt-1 text-xs text-muted-foreground">{txt('matTranCanBo.form.capQuanLyHint')}</p>
-          </div>
+          <Controller
+            name="cap_quan_ly"
+            control={control}
+            render={({ field }) => (
+              <MultiSelect
+                label={txt('matTranCanBo.form.capQuanLy')}
+                options={capQuanLyOptions}
+                value={Array.isArray(field.value) ? field.value : []}
+                onChange={field.onChange}
+                icon={MapPinned}
+                error={(errors.cap_quan_ly as { message?: string } | undefined)?.message}
+              />
+            )}
+          />
           {needsDonViXaPhuong ? (
             <Controller
               name="don_vi_id"

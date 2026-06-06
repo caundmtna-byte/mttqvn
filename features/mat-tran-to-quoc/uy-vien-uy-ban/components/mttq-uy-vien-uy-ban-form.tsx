@@ -23,6 +23,7 @@ import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
+import StatusToggle from '@/components/ui/StatusToggle';
 import CanBoCombobox from '@/features/mat-tran-to-quoc/danh-sach-can-bo/components/can-bo-combobox';
 import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDrawer';
 import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
@@ -49,6 +50,10 @@ import { useCreateMttqUyVienUyBan, useUpdateMttqUyVienUyBan } from '../hooks/use
 import { useMttqUyVienUyBanViewer } from '../hooks/use-mttq-uy-vien-uy-ban-viewer';
 import { buildUyVienCanBoOptions } from '../utils/can-bo-options-for-uy-vien';
 import { formatTenPhongBanHienThi } from '../utils/phong-ban-hien-thi';
+import {
+  MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG,
+  MTTQ_UY_VIEN_TRANG_THAM_GIA_THOI,
+} from '../core/constants';
 
 const FORM_ID = 'mttq-uy-vien-uy-ban-form';
 
@@ -649,11 +654,20 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
 
         <FormSection title={txt('matTranUyVienUyBan.form.sectionCaNhan')} icon={<Activity size={14} />}>
           <FormGrid>
-            <Input
-              label={txt('matTranUyVienUyBan.form.trangThamGia')}
-              icon={<Activity size={12} />}
-              {...register('trang_thai_tham_gia')}
-              error={errors.trang_thai_tham_gia?.message}
+            <Controller
+              name="trang_thai_tham_gia"
+              control={control}
+              render={({ field }) => (
+                <StatusToggle
+                  label={txt('matTranUyVienUyBan.form.trangThamGia')}
+                  value={field.value}
+                  onChange={field.onChange}
+                  icon={<Activity size={12} />}
+                  activeLabel={MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG}
+                  inactiveLabel={MTTQ_UY_VIEN_TRANG_THAM_GIA_THOI}
+                  error={errors.trang_thai_tham_gia?.message}
+                />
+              )}
             />
           </FormGrid>
         </FormSection>

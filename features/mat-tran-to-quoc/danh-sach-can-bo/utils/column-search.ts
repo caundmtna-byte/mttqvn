@@ -33,10 +33,13 @@ export function mttqCanBoMatchesColumnSearch(
     if (colId === 'ten_trinh_do' && trinh_do_id?.length) continue;
     if (colId === 'ten_ly_luan_chinh_tri' && ly_luan_chinh_tri_id?.length) continue;
     if (colId === 'dang_vien' && dang_vien?.length) continue;
-    const raw = (item as unknown as Record<string, unknown>)[colId];
+    const colKey = colId === 'ten_to_chuc' ? 'ten_to_chuc_arr' : colId;
+    const raw = (item as unknown as Record<string, unknown>)[colKey];
     let s: string;
     if (typeof raw === 'boolean') {
       s = raw ? '1' : '0';
+    } else if (Array.isArray(raw)) {
+      s = raw.join(' ').toLowerCase();
     } else {
       s = raw == null ? '' : String(raw).toLowerCase();
     }

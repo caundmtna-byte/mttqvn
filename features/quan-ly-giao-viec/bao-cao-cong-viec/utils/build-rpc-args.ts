@@ -79,6 +79,7 @@ export function buildTaskReportRpcArgs(filters: TaskReportFilters): TaskReportRp
     p_overdue_only: filters.overdueOnly,
     p_viewer_id: filters.viewerId,
     p_viewer_don_vi_id: filters.viewerDonViId,
+    p_viewer_phong_ban_id: filters.viewerPhongBanId,
     p_view_all: filters.viewAll,
   };
 }

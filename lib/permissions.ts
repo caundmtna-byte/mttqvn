@@ -48,6 +48,7 @@ export type AppResource =
   | 'otherInfoZaloOa'
   | 'otherInfoMatTranSo'
   | 'otherInfoQuanLyVanBan'
+  | 'otherInfoLichCongTacBanTt'
   | 'profile'
   | 'notifications'
   | '*';
@@ -95,6 +96,7 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   otherInfoZaloOa: 'trang-thong-tin-khac/zalo-oa',
   otherInfoMatTranSo: 'trang-thong-tin-khac/mat-tran-so',
   otherInfoQuanLyVanBan: 'trang-thong-tin-khac/quan-ly-van-ban',
+  otherInfoLichCongTacBanTt: 'trang-thong-tin-khac/lich-cong-tac-ban-tt',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */

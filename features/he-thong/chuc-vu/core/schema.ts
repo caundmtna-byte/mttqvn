@@ -10,13 +10,6 @@ export const positionSchema = z.object({
   cap_bac: z.string().trim().min(1, txt('position.validation.levelRequired')),
   /** FK phòng ban — bắt buộc có trong schema (Zod strip key không khai báo → mất khi submit). */
   phong_ban_id: z.string().trim().min(1, txt('position.validation.departmentRequired')),
-  cap_quan_ly: z
-    .string()
-    .trim()
-    .min(1, txt('position.validation.managementLevelRequired'))
-    .refine((v) => v === 'Tỉnh' || v === 'Xã phường', {
-      message: txt('position.validation.managementLevelInvalid'),
-    }),
   mo_ta: z.string().max(500, txt('position.validation.descMax')).optional().nullable(),
   thu_tu: z.coerce.number().int().min(0),
   trang_thai: z.enum(TRANG_THAI_HOAT_DONG, { message: txt('position.validation.statusInvalid') }),

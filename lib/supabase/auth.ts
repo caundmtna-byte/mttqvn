@@ -27,7 +27,7 @@ export interface AuthService {
 }
 
 const VAR_NHAN_VIEN_AUTH_COLUMNS =
-  'id, ten_tai_khoan, ho_va_ten, hinh_anh, id_phong_ban, id_bo_phan, id_chuc_vu, don_vi_id, trang_thai';
+  'id, ten_tai_khoan, ho_va_ten, hinh_anh, id_phong_ban, id_bo_phan, id_chuc_vu, don_vi_id, cap_quan_ly, trang_thai';
 
 export interface VarNhanVienAuthRow {
   id: string;
@@ -38,6 +38,7 @@ export interface VarNhanVienAuthRow {
   id_bo_phan: string | null;
   id_chuc_vu: string | null;
   don_vi_id?: string | null;
+  cap_quan_ly?: string[];
   /** Tên chức vụ sau khi tra `var_chuc_vu` (không có FK embed trên `var_nhan_vien`). */
   ten_chuc_vu?: string | null;
   trang_thai: 'Hoạt động' | 'Khóa';
@@ -101,6 +102,7 @@ function buildAppUser(authUser: { id: string; email?: string; user_metadata?: Re
       nhanVien?.don_vi_id != null && String(nhanVien.don_vi_id).trim() !== ''
         ? String(nhanVien.don_vi_id).trim()
         : null,
+    cap_quan_ly: Array.isArray(nhanVien?.cap_quan_ly) ? nhanVien.cap_quan_ly : [],
     trang_thai: nhanVien?.trang_thai,
   };
 }
@@ -117,6 +119,7 @@ const mockUser: User = {
   id_chuc_vu: null,
   ten_chuc_vu: null,
   don_vi_id: null,
+  cap_quan_ly: [],
   trang_thai: 'Hoạt động',
 };
 

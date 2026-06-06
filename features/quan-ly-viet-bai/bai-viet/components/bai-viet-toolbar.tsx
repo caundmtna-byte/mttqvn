@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, FolderOpen, Globe, MonitorSmartphone } from 'lucide-react';
+import { Plus, Download, FolderOpen, Globe, MonitorSmartphone, User } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -17,10 +17,10 @@ interface ChipOption {
 
 interface Props {
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
   theLoaiOptions: ChipOption[];
   nguonDangOptions: ChipOption[];
   trangDangOptions: ChipOption[];
+  nguoiTaoOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
@@ -28,10 +28,10 @@ interface Props {
 
 const BaiVietToolbar: React.FC<Props> = ({
   onPageBack,
-  tabsSlot,
   theLoaiOptions,
   nguonDangOptions,
   trangDangOptions,
+  nguoiTaoOptions,
   onAdd,
   onExport,
   onDeleteMany,
@@ -60,10 +60,12 @@ const BaiVietToolbar: React.FC<Props> = ({
         id_the_loai: filters.id_the_loai,
         id_nguon_dang: filters.id_nguon_dang,
         id_trang_dang: filters.id_trang_dang,
+        id_nguoi_tao: filters.id_nguoi_tao,
       }) +
       (filters.id_the_loai.length > 0 ? 1 : 0) +
       (filters.id_nguon_dang.length > 0 ? 1 : 0) +
-      (filters.id_trang_dang.length > 0 ? 1 : 0)
+      (filters.id_trang_dang.length > 0 ? 1 : 0) +
+      (filters.id_nguoi_tao.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -74,6 +76,7 @@ const BaiVietToolbar: React.FC<Props> = ({
     st.setFilter('id_the_loai', []);
     st.setFilter('id_nguon_dang', []);
     st.setFilter('id_trang_dang', []);
+    st.setFilter('id_nguoi_tao', []);
   };
 
   const filtersSlot = useMemo(
@@ -103,15 +106,25 @@ const BaiVietToolbar: React.FC<Props> = ({
           icon={MonitorSmartphone}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
         />
+        <FilterChipMultiSelect
+          options={nguoiTaoOptions}
+          value={filters.id_nguoi_tao}
+          onChange={(val) => setFilter('id_nguoi_tao', val)}
+          placeholder={txt('articleList.store.nguoiTaoCol')}
+          icon={User}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
       </div>
     ),
     [
       theLoaiOptions,
       nguonDangOptions,
       trangDangOptions,
+      nguoiTaoOptions,
       filters.id_the_loai,
       filters.id_nguon_dang,
       filters.id_trang_dang,
+      filters.id_nguoi_tao,
       setFilter,
     ],
   );
@@ -142,14 +155,24 @@ const BaiVietToolbar: React.FC<Props> = ({
         value: filters.id_trang_dang,
         onChange: (val: string[]) => setFilter('id_trang_dang', val),
       },
+      {
+        key: 'id_nguoi_tao',
+        label: txt('articleList.store.nguoiTaoCol'),
+        icon: User,
+        options: nguoiTaoOptions,
+        value: filters.id_nguoi_tao,
+        onChange: (val: string[]) => setFilter('id_nguoi_tao', val),
+      },
     ],
     [
       theLoaiOptions,
       nguonDangOptions,
       trangDangOptions,
+      nguoiTaoOptions,
       filters.id_the_loai,
       filters.id_nguon_dang,
       filters.id_trang_dang,
+      filters.id_nguoi_tao,
       setFilter,
     ],
   );
@@ -203,7 +226,6 @@ const BaiVietToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
-      desktopStartSlot={tabsSlot}
     />
   );
 };

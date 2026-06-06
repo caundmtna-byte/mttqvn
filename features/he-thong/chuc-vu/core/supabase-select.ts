@@ -5,7 +5,6 @@ export const VAR_CHUC_VU_ROW_COLUMNS = [
   'mo_ta',
   'phong_ban_id',
   'cap_bac',
-  'cap_quan_ly',
   'thu_tu',
   'trang_thai',
   'tg_tao',

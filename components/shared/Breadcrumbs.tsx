@@ -40,6 +40,8 @@ const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/quan-ly-giao-viec/chuong-trinh-nam': { label: t('breadcrumb.taskChuongTrinhNam'), parentPath: '/quan-ly-giao-viec' },
   '/quan-ly-giao-viec/cong-viec': { label: t('breadcrumb.taskCongViec'), parentPath: '/quan-ly-giao-viec' },
   '/quan-ly-giao-viec/bao-cao-cong-viec': { label: t('breadcrumb.taskBaoCaoCongViec'), parentPath: '/quan-ly-giao-viec' },
+  '/phan-bien-xa-hoi': { label: t('breadcrumb.phanBienXaHoi'), parentPath: '/' },
+  '/dan-toc-ton-giao': { label: t('breadcrumb.danTocTonGiao'), parentPath: '/' },
   '/trang-thong-tin-khac': { label: t('breadcrumb.trangThongTinKhac'), parentPath: '/' },
   '/he-thong': { label: t('breadcrumb.systemAdmin'), parentPath: '/' },
   '/he-thong/nhan-vien': { label: t('breadcrumb.employee'), parentPath: '/he-thong' },

@@ -40,8 +40,15 @@ export function mttqCanBoMatchesAllFilters(
 
   if (F.gioi_tinh.length > 0 && !F.gioi_tinh.includes(item.gioi_tinh)) return false;
 
-  const toKey = item.to_chuc_id ?? CHIP_FILTER_NULL;
-  if (F.to_chuc_id.length > 0 && !F.to_chuc_id.includes(toKey)) return false;
+  if (F.to_chuc_id.length > 0) {
+    const ids = Array.isArray(item.to_chuc_ids) ? item.to_chuc_ids : [];
+    const wantNull = F.to_chuc_id.includes(CHIP_FILTER_NULL);
+    if (ids.length === 0) {
+      if (!wantNull) return false;
+    } else if (!ids.some((id) => F.to_chuc_id.includes(id))) {
+      return false;
+    }
+  }
 
   if (F.phong_ban_id.length > 0) {
     const pbKey = item.phong_ban_id ?? CHIP_FILTER_NULL;

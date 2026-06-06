@@ -255,17 +255,20 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
               {item.tuoi != null ? txt('matTranCanBo.display.ageYears', { years: String(item.tuoi) }) : ec}
             </span>
           );
-        case 'gioi_tinh':
-          return (
-            <span
-              className={cn(
-                pill,
-                'border-border/80 bg-muted/40 text-foreground',
-              )}
-            >
-              {item.gioi_tinh}
-            </span>
+        case 'gioi_tinh': {
+          const gt = (item.gioi_tinh ?? '').trim();
+          const gtClass =
+            gt === 'Nam'
+              ? 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300'
+              : gt === 'Nữ'
+                ? 'border-pink-200 bg-pink-50 text-pink-800 dark:border-pink-900 dark:bg-pink-950/40 dark:text-pink-300'
+                : 'border-border/80 bg-muted/40 text-muted-foreground';
+          return gt ? (
+            <span className={cn(pill, gtClass)}>{gt}</span>
+          ) : (
+            <span className="text-body-sm text-muted-foreground italic">{txt('common.emptyCell')}</span>
           );
+        }
         case 'ten_trang_thai':
           return (
             <span
@@ -279,10 +282,20 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
             </span>
           );
         case 'ten_to_chuc':
-          return (
-            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_to_chuc ?? undefined}>
-              {item.ten_to_chuc ?? ec}
-            </span>
+          return Array.isArray(item.ten_to_chuc_arr) && item.ten_to_chuc_arr.length > 0 ? (
+            <div className="flex flex-wrap gap-1 min-w-0">
+              {item.ten_to_chuc_arr.map((ten) => (
+                <span
+                  key={ten}
+                  className="inline-flex max-w-full min-w-0 items-center truncate rounded-md border border-border/70 bg-muted/40 px-1.5 py-0.5 text-xs font-medium text-foreground"
+                  title={ten}
+                >
+                  {ten}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-body-sm text-muted-foreground italic">{ec}</span>
           );
         case 'ten_phong_ban': {
           const sub = (item.ten_bo_phan ?? '').trim();

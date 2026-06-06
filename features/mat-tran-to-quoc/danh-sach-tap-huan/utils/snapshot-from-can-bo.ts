@@ -37,7 +37,10 @@ export function tapHuanSnapshotFromCanBo(
     c
       ? {
           ten_chuc_vu: c.ten_chuc_vu,
-          ten_to_chuc: c.ten_to_chuc,
+          ten_to_chuc:
+            Array.isArray(c.ten_to_chuc_arr) && c.ten_to_chuc_arr.length > 0
+              ? c.ten_to_chuc_arr.join(', ')
+              : null,
           ten_phong_ban: c.ten_phong_ban,
           ten_bo_phan: c.ten_bo_phan,
         }
@@ -73,7 +76,10 @@ export function tapHuanCanBoThreeColFromCanBo(
     c
       ? {
           ten_chuc_vu: c.ten_chuc_vu,
-          ten_to_chuc: c.ten_to_chuc,
+          ten_to_chuc:
+            Array.isArray(c.ten_to_chuc_arr) && c.ten_to_chuc_arr.length > 0
+              ? c.ten_to_chuc_arr.join(', ')
+              : null,
           ten_phong_ban: c.ten_phong_ban,
           ten_bo_phan: c.ten_bo_phan,
         }
@@ -106,14 +112,19 @@ export function tapHuanThreeColForChiTietRow(
 /** Bản ghi `can_bo` embed từ PostgREST (dòng `mttq_lop_tap_huan_ct`). */
 export function tapHuanSnapshotSourceFromPostgrestCanBoEmbed(
   canBo: Record<string, unknown> | undefined,
+  toChucTenById?: ReadonlyMap<string, string>,
 ): TapHuanCanBoSnapshotSource | undefined {
   if (!canBo) return undefined;
   const cvEmb = pickEmbedded<{ ten_chuc_vu?: unknown }>(canBo.chuc_vu);
-  const tcEmb = pickEmbedded<{ ten?: unknown }>(canBo.to_chuc);
   const pbEmb = pickEmbedded<{ ten_phong_ban?: unknown }>(canBo.phong_ban);
+  const toChucIds = Array.isArray(canBo.to_chuc_ids) ? (canBo.to_chuc_ids as unknown[]) : [];
+  const tenToChuc =
+    toChucIds.length > 0 && toChucTenById
+      ? toChucIds.map((id) => toChucTenById.get(String(id)) ?? String(id)).join(', ')
+      : null;
   return {
     ten_chuc_vu: cvEmb?.ten_chuc_vu != null ? String(cvEmb.ten_chuc_vu) : null,
-    ten_to_chuc: tcEmb?.ten != null ? String(tcEmb.ten) : null,
+    ten_to_chuc: tenToChuc,
     ten_phong_ban: pbEmb?.ten_phong_ban != null ? String(pbEmb.ten_phong_ban) : null,
     ten_bo_phan: null,
   };

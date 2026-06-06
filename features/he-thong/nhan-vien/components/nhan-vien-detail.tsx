@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { txt } from '../../../../lib/text';
 import {
-  Edit, Trash2, User, AtSign, Building2, Briefcase, Layers, MapPin, MapPinned, Power, Calendar, Clock, RefreshCw,
+  Edit, Trash2, User, AtSign, Building2, Briefcase, Layers, MapPin, MapPinned, Power, Calendar, Clock, RefreshCw, Network,
 } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import EnumBadge from '../../../../components/ui/EnumBadge';
@@ -152,18 +152,45 @@ const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
             />
             <DetailField
               label={txt('position.store.managementLevelCol')}
-              value={data.cap_quan_ly ? <EnumBadge value={data.cap_quan_ly} config={capQuanLyBadge} shape="rounded" /> : ''}
+              value={
+                Array.isArray(data.cap_quan_ly) && data.cap_quan_ly.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {data.cap_quan_ly.map((v) => (
+                      <EnumBadge key={v} value={v} config={capQuanLyBadge} shape="rounded" />
+                    ))}
+                  </div>
+                ) : ''
+              }
               icon={<MapPinned size={12} />}
               emptyText={txt('common.emptyCell')}
             />
             <DetailField
               label={txt('employee.form.donViXaPhuong')}
               value={
-                data.cap_quan_ly === 'Tỉnh'
+                Array.isArray(data.cap_quan_ly) && data.cap_quan_ly.includes('Tỉnh') && !data.cap_quan_ly.includes('Xã phường')
                   ? '-'
                   : (data.ten_don_vi ?? txt('common.emptyCell'))
               }
               icon={<MapPin size={12} />}
+              emptyText={txt('common.emptyCell')}
+            />
+            <DetailField
+              label={txt('matTranCanBo.form.toChuc')}
+              value={
+                Array.isArray(data.ten_to_chuc_arr) && data.ten_to_chuc_arr.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {data.ten_to_chuc_arr.map((ten) => (
+                      <span
+                        key={ten}
+                        className="inline-flex items-center rounded-md border border-border/70 bg-muted/40 px-2 py-0.5 text-xs font-medium text-foreground"
+                      >
+                        {ten}
+                      </span>
+                    ))}
+                  </div>
+                ) : undefined
+              }
+              icon={<Network size={12} />}
               emptyText={txt('common.emptyCell')}
             />
           </DetailFieldGrid>

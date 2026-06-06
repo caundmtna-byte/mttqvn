@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { txt } from '@/lib/text';
+import {
+  MTTQ_UY_VIEN_TRANG_THAM_GIA,
+  MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG,
+  normalizeUyVienTrangThamGia,
+} from './constants';
 import type { MttqUyVienUyBan } from './types';
 
 const optionalText = z
@@ -23,7 +28,9 @@ export const mttqUyVienUyBanSchema = z
       message: txt('matTranUyVienUyBan.validation.nhiemKyRequired'),
     }),
     don_vi_id: z.union([z.string(), z.number(), z.literal('')]).optional(),
-    trang_thai_tham_gia: optionalText,
+    trang_thai_tham_gia: z.enum(MTTQ_UY_VIEN_TRANG_THAM_GIA, {
+      message: txt('matTranUyVienUyBan.validation.trangThamGiaInvalid'),
+    }),
     ghi_chu: optionalText,
   })
   .transform((d) => {
@@ -35,7 +42,7 @@ export const mttqUyVienUyBanSchema = z
       ma_uv: nullIfEmptyTrimmed(d.ma_uv),
       nhiem_ky_id: String(d.nhiem_ky_id).trim(),
       don_vi_id: donViStr,
-      trang_thai_tham_gia: nullIfEmptyTrimmed(d.trang_thai_tham_gia),
+      trang_thai_tham_gia: d.trang_thai_tham_gia,
       ghi_chu: nullIfEmptyTrimmed(d.ghi_chu),
     };
   });
@@ -50,7 +57,7 @@ export function mttqUyVienUyBanToFormInput(d: MttqUyVienUyBan | null): MttqUyVie
       ma_uv: undefined,
       nhiem_ky_id: '',
       don_vi_id: '',
-      trang_thai_tham_gia: undefined,
+      trang_thai_tham_gia: MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG,
       ghi_chu: undefined,
     };
   }
@@ -59,7 +66,7 @@ export function mttqUyVienUyBanToFormInput(d: MttqUyVienUyBan | null): MttqUyVie
     ma_uv: d.ma_uv ?? undefined,
     nhiem_ky_id: d.nhiem_ky_id,
     don_vi_id: d.don_vi_id ?? '',
-    trang_thai_tham_gia: d.trang_thai_tham_gia ?? undefined,
+    trang_thai_tham_gia: normalizeUyVienTrangThamGia(d.trang_thai_tham_gia),
     ghi_chu: d.ghi_chu ?? undefined,
   };
 }

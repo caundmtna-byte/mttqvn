@@ -40,8 +40,7 @@ const hinhAnhSchema = z
     return s === '' ? null : s;
   });
 
-/** Tra cứu `cap_quan_ly` theo `id_chuc_vu` (đồng bộ rule với `var_chuc_vu`). */
-export type EmployeePositionCapLookup = { id: string; cap_quan_ly?: string | null };
+const CAP_QUAN_LY_ENUM = ['Tỉnh', 'Xã phường'] as const;
 
 const employeeBaseSchema = z.object({
   ten_tai_khoan: z
@@ -51,19 +50,17 @@ const employeeBaseSchema = z.object({
   ho_va_ten: z.string().min(2, { message: txt('employee.validation.fullNameMin') }),
   hinh_anh: hinhAnhSchema,
   id_phong_ban: requiredInt8Fk(txt('employee.validation.departmentRequired')),
-  id_bo_phan: requiredInt8Fk(txt('employee.validation.unitRequired')),
+  id_bo_phan: optionalInt8Fk(),
   id_chuc_vu: requiredInt8Fk(txt('employee.validation.positionRequired')),
+  cap_quan_ly: z.array(z.enum(CAP_QUAN_LY_ENUM)).default([]),
+  to_chuc_ids: z.array(z.string()).default([]),
   don_vi_id: optionalInt8Fk(),
   trang_thai: z.enum(TRANG_THAI_NHAN_VIEN as unknown as [string, ...string[]]),
 });
 
-export function buildEmployeeSchema(positions: readonly EmployeePositionCapLookup[]) {
-  const capByChucVuId = new Map<string, string | null | undefined>(
-    positions.map((p) => [String(p.id), p.cap_quan_ly]),
-  );
+export function buildEmployeeSchema() {
   return employeeBaseSchema.superRefine((data, ctx) => {
-    const cap = capByChucVuId.get(String(data.id_chuc_vu));
-    if (cap === 'Xã phường') {
+    if (data.cap_quan_ly.includes('Xã phường')) {
       const dv = data.don_vi_id ?? '';
       if (!dv) {
         ctx.addIssue({

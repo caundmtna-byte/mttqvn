@@ -411,14 +411,22 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       {dropdownOnly && renderDropdownTrigger
         ? renderDropdownTrigger({ open: isOpen, toggle, hasValue, listboxId })
         : !dropdownOnly && (
-      <button
-        type="button"
+      /* eslint-disable-next-line jsx-a11y/interactive-supports-focus */
+      <div
+        role="button"
+        tabIndex={0}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-controls={listboxId}
         onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle();
+          }
+        }}
         className={cn(
-          "w-full flex items-center justify-between px-2 text-xs border rounded-lg transition-all",
+          "w-full flex items-center justify-between px-2 text-xs border rounded-lg transition-all cursor-pointer select-none",
           heightClass,
           isOpen ? "border-primary ring-2 ring-primary/10 bg-background" : hasValue ? "border-primary/40 bg-primary/[0.03]" : "border-border bg-background hover:bg-muted/50",
           hasValue ? "text-foreground" : "text-muted-foreground"
@@ -463,7 +471,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
           )}
           <ChevronDown size={11} className={cn("text-muted-foreground transition-transform", isOpen && "rotate-180")} />
         </div>
-      </button>
+      </div>
       )}
 
       {isOpen &&

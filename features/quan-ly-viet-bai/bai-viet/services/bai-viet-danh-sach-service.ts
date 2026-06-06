@@ -158,6 +158,18 @@ export type BaiVietPageQuery = {
   theLoaiIds: readonly string[];
   nguonDangIds: readonly string[];
   trangDangIds: readonly string[];
+  nguoiTaoIds: readonly string[];
+};
+
+export type BaiVietNguoiTaoFilterOption = {
+  id: string;
+  label: string;
+  count: number;
+};
+
+export type BaiVietNguoiTaoFilterOptionsQuery = {
+  scope: Exclude<BaiVietRpcScope, 'mine'>;
+  viewerDonViId: string | null;
 };
 
 export type BaiVietPageResult = {
@@ -183,6 +195,7 @@ function filterBaiVietMockForPage(
     theLoaiIds: readonly string[];
     nguonDangIds: readonly string[];
     trangDangIds: readonly string[];
+    nguoiTaoIds: readonly string[];
   },
 ): BaiVietDanhSach[] {
   let list = [...all];
@@ -214,6 +227,10 @@ function filterBaiVietMockForPage(
   if (opts.trangDangIds.length) {
     const set = new Set(opts.trangDangIds.map(String));
     list = list.filter((b) => set.has(String(b.id_trang_dang)));
+  }
+  if (opts.nguoiTaoIds.length) {
+    const set = new Set(opts.nguoiTaoIds.map(String));
+    list = list.filter((b) => set.has(String(b.id_nguoi_tao)));
   }
   list.sort((a, b) => b.ngay_dang.localeCompare(a.ngay_dang) || a.ten_bai.localeCompare(b.ten_bai));
   return list;
@@ -253,6 +270,9 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
   const trangNums = q.trangDangIds
     .map((x) => Number(String(x).trim()))
     .filter((n) => Number.isFinite(n));
+  const nguoiTaoNums = q.nguoiTaoIds
+    .map((x) => Number(String(x).trim()))
+    .filter((n) => Number.isFinite(n));
 
   if (!isSupabase()) {
     const all = await getBaiVietDanhSachList();
@@ -264,6 +284,7 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
       theLoaiIds: q.theLoaiIds,
       nguonDangIds: q.nguonDangIds,
       trangDangIds: q.trangDangIds,
+      nguoiTaoIds: q.nguoiTaoIds,
     });
     const slice = filtered.slice(offset, offset + fetchLimit);
     const hasNextPage = slice.length > pageSize;
@@ -285,6 +306,7 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
     p_the_loai_ids: theLoaiNums.length ? theLoaiNums : null,
     p_nguon_dang_ids: nguonNums.length ? nguonNums : null,
     p_trang_dang_ids: trangNums.length ? trangNums : null,
+    p_id_nguoi_tao: nguoiTaoNums.length ? nguoiTaoNums : null,
   } as never);
   if (error) handleSupabaseError(error);
 
@@ -296,4 +318,43 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
   const rows = ids.map((id) => byId.get(id)).filter((x): x is BaiVietDanhSach => Boolean(x));
   const totalRecords = hasNextPage ? null : offset + rows.length;
   return { rows, hasNextPage, totalRecords };
+}
+
+export async function getBaiVietNguoiTaoFilterOptions(
+  q: BaiVietNguoiTaoFilterOptionsQuery,
+): Promise<BaiVietNguoiTaoFilterOption[]> {
+  if (!isSupabase()) {
+    const all = await getBaiVietDanhSachList();
+    const filtered =
+      q.scope === 'all_don_vi' && q.viewerDonViId
+        ? all.filter((b) => String(b.id_don_vi_nguoi_tao ?? '').trim() === String(q.viewerDonViId).trim())
+        : all;
+    const map = new Map<string, { label: string; count: number }>();
+    for (const row of filtered) {
+      const id = String(row.id_nguoi_tao);
+      const label =
+        row.ho_va_ten_nguoi_tao?.trim() || row.ten_tai_khoan_nguoi_tao?.trim() || id;
+      const prev = map.get(id);
+      if (prev) prev.count += 1;
+      else map.set(id, { label, count: 1 });
+    }
+    return [...map.entries()]
+      .map(([id, v]) => ({ id, label: v.label, count: v.count }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.rpc('get_bai_viet_nguoi_tao_filter_options', {
+    p_scope: q.scope,
+    p_viewer_don_vi_id: toRpcBigint(q.viewerDonViId),
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  return ((data ?? []) as { id: number | string; label: string; cnt: number }[]).map((row) => ({
+    id: String(row.id),
+    label: row.label?.trim() || String(row.id),
+    count: Number(row.cnt) || 0,
+  }));
 }

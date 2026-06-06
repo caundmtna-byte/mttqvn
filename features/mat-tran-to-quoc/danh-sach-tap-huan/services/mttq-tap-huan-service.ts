@@ -3,6 +3,7 @@ import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import type {
   MttqLopTapHuan,
   MttqLopTapHuanCt,
@@ -101,15 +102,20 @@ function tenDonViFromXaEmbed(v: unknown): string | null {
 
 function chucVuCapQuanLyFromCanBoEmbed(canBo: Record<string, unknown> | undefined): string | null {
   if (!canBo) return null;
-  const cvEmb = pickEmbedded<{ cap_quan_ly?: unknown }>(canBo.chuc_vu);
-  const raw = cvEmb?.cap_quan_ly;
-  if (raw == null || raw === '') return null;
-  return String(raw);
+  // cap_quan_ly giờ nằm trực tiếp trên mttq_can_bo (TEXT[]) thay vì embed var_chuc_vu.
+  const raw = canBo.cap_quan_ly;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  if (raw.includes('Tỉnh')) return 'Tỉnh';
+  if (raw.includes('Xã phường')) return 'Xã phường';
+  return null;
 }
 
-export function flattenCtRow(row: Record<string, unknown>): MttqLopTapHuanCt {
+export function flattenCtRow(
+  row: Record<string, unknown>,
+  toChucTenById?: ReadonlyMap<string, string>,
+): MttqLopTapHuanCt {
   const canBo = pickEmbedded<Record<string, unknown>>(row.can_bo);
-  const src = tapHuanSnapshotSourceFromPostgrestCanBoEmbed(canBo);
+  const src = tapHuanSnapshotSourceFromPostgrestCanBoEmbed(canBo, toChucTenById);
   const three = tapHuanCanBoThreeColFromSource(src);
   const snap = tapHuanSnapshotFromSource(src);
   const cv = three.ten_chuc_vu.trim() ? three.ten_chuc_vu : null;
@@ -133,10 +139,13 @@ export function flattenCtRow(row: Record<string, unknown>): MttqLopTapHuanCt {
 }
 
 /** Dòng `mttq_lop_tap_huan_ct` + embed `lop` + `can_bo` (tab Danh sách chi tiết / Supabase). */
-export function flattenChiTietFlatRow(row: Record<string, unknown>): MttqTapHuanChiTietFlatRow {
+export function flattenChiTietFlatRow(
+  row: Record<string, unknown>,
+  toChucTenById?: ReadonlyMap<string, string>,
+): MttqTapHuanChiTietFlatRow {
   const lop = pickEmbedded<Record<string, unknown>>(row.lop);
   const nv = pickEmbedded<{ id_phong_ban?: string | number | null }>(lop?.nguoi_tao);
-  const ct = flattenCtRow(row);
+  const ct = flattenCtRow(row, toChucTenById);
   const tenDonViLop = lop ? tenDonViFromXaEmbed(lop.don_vi) : null;
 
   return {
@@ -184,21 +193,20 @@ function mockCanBoPostgrestFromMttq(
 ): Record<string, unknown> | null {
   if (!cb) return null;
   const chucVuEmb =
-    cb.ten_chuc_vu != null || cb.chuc_vu_cap_quan_ly != null
-      ? {
-          ...(cb.ten_chuc_vu != null && String(cb.ten_chuc_vu).trim() !== ''
-            ? { ten_chuc_vu: cb.ten_chuc_vu }
-            : {}),
-          ...(cb.chuc_vu_cap_quan_ly != null && String(cb.chuc_vu_cap_quan_ly).trim() !== ''
-            ? { cap_quan_ly: cb.chuc_vu_cap_quan_ly }
-            : {}),
-        }
+    cb.ten_chuc_vu != null && String(cb.ten_chuc_vu).trim() !== ''
+      ? { ten_chuc_vu: cb.ten_chuc_vu }
       : null;
+  // cap_quan_ly giờ nằm trực tiếp trên mttq_can_bo (TEXT[]).
+  const capQuanLyArr =
+    cb.chuc_vu_cap_quan_ly != null && String(cb.chuc_vu_cap_quan_ly).trim() !== ''
+      ? [cb.chuc_vu_cap_quan_ly]
+      : [];
   return {
     ho_ten: cb.ho_ten,
     don_vi_id: cb.don_vi_id,
+    cap_quan_ly: capQuanLyArr,
     don_vi: cb.ten_don_vi ? { ten: cb.ten_don_vi } : null,
-    chuc_vu: chucVuEmb && Object.keys(chucVuEmb).length > 0 ? chucVuEmb : null,
+    chuc_vu: chucVuEmb,
     to_chuc: cb.ten_to_chuc ? { ten: cb.ten_to_chuc } : null,
     phong_ban: cb.ten_phong_ban ? { ten_phong_ban: cb.ten_phong_ban } : null,
   };
@@ -250,7 +258,17 @@ function flattenListRow(row: Record<string, unknown>): MttqLopTapHuanListRow {
   };
 }
 
-export function flattenFullRow(row: Record<string, unknown>): MttqLopTapHuan {
+async function buildToChucTenByIdMap(): Promise<Map<string, string>> {
+  const all = await getMttqThietLapAll();
+  return new Map(
+    all.filter((x) => x.loai === 'to_chuc').map((x) => [String(x.id), x.ten]),
+  );
+}
+
+export function flattenFullRow(
+  row: Record<string, unknown>,
+  toChucTenById?: ReadonlyMap<string, string>,
+): MttqLopTapHuan {
   const nv = pickEmbedded<{
     ho_va_ten?: string;
     ten_tai_khoan?: string;
@@ -258,7 +276,7 @@ export function flattenFullRow(row: Record<string, unknown>): MttqLopTapHuan {
   }>(row.nguoi_tao);
   const rawCt = row.mttq_lop_tap_huan_ct;
   const chi_tiet: MttqLopTapHuanCt[] = Array.isArray(rawCt)
-    ? rawCt.map((x) => flattenCtRow(x as Record<string, unknown>))
+    ? rawCt.map((x) => flattenCtRow(x as Record<string, unknown>, toChucTenById))
     : [];
 
   const tenDonViLop = tenDonViFromXaEmbed(row.don_vi);
@@ -424,12 +442,17 @@ export async function getMttqLopTapHuanChiTietFlatList(): Promise<MttqTapHuanChi
 
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('mttq_lop_tap_huan_ct')
-    .select(MTTQ_LOP_TAP_HUAN_CT_SELECT_FLAT_LIST)
-    .order('id', { ascending: true });
+  const [{ data, error }, toChucById] = await Promise.all([
+    supabase
+      .from('mttq_lop_tap_huan_ct')
+      .select(MTTQ_LOP_TAP_HUAN_CT_SELECT_FLAT_LIST)
+      .order('id', { ascending: true }),
+    buildToChucTenByIdMap(),
+  ]);
   if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) => flattenChiTietFlatRow(row as unknown as Record<string, unknown>));
+  return (data ?? []).map((row) =>
+    flattenChiTietFlatRow(row as unknown as Record<string, unknown>, toChucById),
+  );
 }
 
 function sortTapHuanChiTietFlatByLopDesc(rows: MttqTapHuanChiTietFlatRow[]): MttqTapHuanChiTietFlatRow[] {
@@ -471,13 +494,18 @@ export async function getMttqLopTapHuanChiTietFlatListForCanBoId(canBoId: string
   const supabase = getSupabase();
   if (!supabase) return [];
   const canBoKey = /^\d+$/.test(id) ? Number(id) : id;
-  const { data, error } = await supabase
-    .from('mttq_lop_tap_huan_ct')
-    .select(MTTQ_LOP_TAP_HUAN_CT_SELECT_FLAT_LIST)
-    .eq('can_bo_id', canBoKey)
-    .order('id', { ascending: false });
+  const [{ data, error }, toChucById] = await Promise.all([
+    supabase
+      .from('mttq_lop_tap_huan_ct')
+      .select(MTTQ_LOP_TAP_HUAN_CT_SELECT_FLAT_LIST)
+      .eq('can_bo_id', canBoKey)
+      .order('id', { ascending: false }),
+    buildToChucTenByIdMap(),
+  ]);
   if (error) handleSupabaseError(error);
-  const mapped = (data ?? []).map((row) => flattenChiTietFlatRow(row as unknown as Record<string, unknown>));
+  const mapped = (data ?? []).map((row) =>
+    flattenChiTietFlatRow(row as unknown as Record<string, unknown>, toChucById),
+  );
   return sortTapHuanChiTietFlatByLopDesc(mapped);
 }
 
@@ -513,14 +541,17 @@ export async function getMttqLopTapHuanById(id: string): Promise<MttqLopTapHuan 
 
   const supabase = getSupabase();
   if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('mttq_lop_tap_huan')
-    .select(MTTQ_LOP_TAP_HUAN_SELECT_FULL)
-    .eq('id', id)
-    .maybeSingle();
+  const [{ data, error }, toChucById] = await Promise.all([
+    supabase
+      .from('mttq_lop_tap_huan')
+      .select(MTTQ_LOP_TAP_HUAN_SELECT_FULL)
+      .eq('id', id)
+      .maybeSingle(),
+    buildToChucTenByIdMap(),
+  ]);
   if (error) handleSupabaseError(error);
   if (!data) return null;
-  return normalizeFull(flattenFullRow(data as unknown as Record<string, unknown>));
+  return normalizeFull(flattenFullRow(data as unknown as Record<string, unknown>, toChucById));
 }
 
 export async function createMttqLopTapHuan(

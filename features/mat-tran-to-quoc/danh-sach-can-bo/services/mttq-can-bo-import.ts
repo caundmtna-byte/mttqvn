@@ -135,7 +135,7 @@ function thietByLoai(
 function rowToFormValues(
   row: Record<string, unknown>,
   ctx: {
-    positions: { id: string; ten_chuc_vu: string; cap_quan_ly?: string | null; phong_ban_id?: string | null }[];
+    positions: { id: string; ten_chuc_vu: string; phong_ban_id?: string | null }[];
     departments: { id: string; ten_phong_ban: string; cha_id: string | null; trang_thai: string }[];
     toChuc: { id: string; ten: string }[];
     danToc: { id: string; ten: string }[];
@@ -148,8 +148,8 @@ function rowToFormValues(
   const pb = resolveDepartmentId(row.id_phong_ban, ctx.departments);
   if ('errorKey' in pb) return { ok: false, errorKey: pb.errorKey };
 
-  const toChuc = resolveThietLapId(row.to_chuc_id, ctx.toChuc);
-  if ('errorKey' in toChuc) return { ok: false, errorKey: toChuc.errorKey };
+  const toChucResolved = resolveThietLapId(row.to_chuc_id, ctx.toChuc);
+  if ('errorKey' in toChucResolved) return { ok: false, errorKey: toChucResolved.errorKey };
 
   const danToc = resolveThietLapId(row.dan_toc_id, ctx.danToc);
   if ('errorKey' in danToc) return { ok: false, errorKey: danToc.errorKey };
@@ -185,7 +185,7 @@ function rowToFormValues(
 
   const data: MttqCanBoFormValues = {
     id_phong_ban: pb.id,
-    to_chuc_id: toChuc.id,
+    to_chuc_ids: [toChucResolved.id],
     ho_ten: hoTen,
     ngay_sinh: ngaySinh,
     gioi_tinh: parseImportGioiTinh(row.gioi_tinh) as MttqCanBoGioiTinh,
@@ -236,7 +236,6 @@ export async function importMttqCanBoRows(
 
   const posForSchema = positions.map((p) => ({
     id: String(p.id),
-    cap_quan_ly: p.cap_quan_ly ?? null,
     phong_ban_id: p.phong_ban_id ?? null,
   }));
   const deptForSchema = departments.map((d) => ({

@@ -164,17 +164,22 @@ const EmployeePage: React.FC = () => {
     return () => resetState();
   }, [resetState]);
 
-  // Đồng bộ viewing với dữ liệu server (full list); đóng drawer nếu bản ghi không còn (vd. đã xóa ngoài app).
+  // Đồng bộ viewing với dữ liệu server khi list thay đổi; đóng drawer nếu bản ghi không còn.
+  // viewingEmp KHÔNG trong deps — đọc qua ref để tránh infinite loop.
+  // Merge { ...viewing, ...row } để giữ hinh_anh (chỉ có trong detail query, không có trong list).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (!viewingEmp) return;
-    const row = employees.find((e) => e.id === viewingEmp.id);
+    const viewing = viewingEmpRef.current;
+    if (!viewing) return;
+    const row = employees.find((e) => e.id === viewing.id);
     if (!row) {
       queueMicrotask(() => setViewingEmp(null));
       return;
     }
-    const merged = mergeEmployeeChucVuFromPositions(row, positions);
-    if (merged !== viewingEmp) queueMicrotask(() => setViewingEmp(merged));
-  }, [employees, positions, viewingEmp]);
+    const patched = { ...viewing, ...row };
+    const merged = mergeEmployeeChucVuFromPositions(patched, positions);
+    if (merged !== viewing) queueMicrotask(() => setViewingEmp(merged));
+  }, [employees, positions]);
 
   const filterFn = useCallback(
     (emp: Employee, term: string, f: typeof filters) => {

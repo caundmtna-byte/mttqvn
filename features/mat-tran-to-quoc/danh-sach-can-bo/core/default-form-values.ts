@@ -3,7 +3,7 @@ import type { MttqCanBoFormValues } from './schema';
 
 export const MTTQ_CAN_BO_FORM_DEFAULT_VALUES: MttqCanBoFormValues = {
   id_phong_ban: '',
-  to_chuc_id: '',
+  to_chuc_ids: [],
   ho_ten: '',
   ngay_sinh: '',
   gioi_tinh: 'Nam',
@@ -15,6 +15,7 @@ export const MTTQ_CAN_BO_FORM_DEFAULT_VALUES: MttqCanBoFormValues = {
   ly_luan_chinh_tri_id: '',
   dien_thoai: '',
   chuc_vu_id: '',
+  cap_quan_ly: [],
   don_vi_id: '',
   ngay_tham_gia_to_chuc: '',
   trang_thai_id: '',

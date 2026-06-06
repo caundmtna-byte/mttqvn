@@ -39,6 +39,8 @@ export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/quan-ly-giao-viec/chuong-trinh-nam', nameKey: 'page.taskDashboard.yearProgram', groupKey: 'nav.commandPalette.groupTaskMgmt' },
   { path: '/quan-ly-giao-viec/cong-viec', nameKey: 'page.taskDashboard.tasks', groupKey: 'nav.commandPalette.groupTaskMgmt' },
   { path: '/quan-ly-giao-viec/bao-cao-cong-viec', nameKey: 'page.taskDashboard.taskReport', groupKey: 'nav.commandPalette.groupTaskMgmt' },
+  { path: '/phan-bien-xa-hoi', nameKey: 'nav.phanBienXaHoi', groupKey: 'nav.commandPalette.groupGeneral' },
+  { path: '/dan-toc-ton-giao', nameKey: 'nav.danTocTonGiao', groupKey: 'nav.commandPalette.groupGeneral' },
   { path: '/trang-thong-tin-khac', nameKey: 'nav.trangThongTinKhac', groupKey: 'nav.commandPalette.groupGeneral' },
   { path: '/thong-tin-ban-quyen', nameKey: 'nav.licenseInfo', groupKey: 'nav.commandPalette.groupGeneral' },
   { path: '/he-thong', nameKey: 'nav.system', groupKey: 'nav.commandPalette.groupSystem' },

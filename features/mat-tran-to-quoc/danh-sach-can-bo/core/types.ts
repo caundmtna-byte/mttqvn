@@ -20,7 +20,8 @@ export interface MttqCanBoFilters {
 /** Danh sách / chi tiết — id và FK dạng string (bigint JSON từ Supabase). */
 export interface MttqCanBo {
   id: string;
-  to_chuc_id: string | null;
+  /** Danh sách tổ chức (đa chọn, mảng bigint dưới dạng string). */
+  to_chuc_ids: string[];
   ho_ten: string;
   /** ISO date YYYY-MM-DD */
   ngay_sinh: string | null;
@@ -35,8 +36,10 @@ export interface MttqCanBo {
   chuc_vu_id: string | null;
   /** FK `var_phong_ban.id` — bộ phận nếu có, ngược lại phòng ban cha. */
   phong_ban_id: string | null;
-  /** FK `var_ssn_xa_phuong.id` — dùng khi chức vụ có `cap_quan_ly` = Xã phường. */
+  /** FK `var_ssn_xa_phuong.id` — dùng khi `cap_quan_ly` có 'Xã phường'. */
   don_vi_id: string | null;
+  /** Cấp quản lý trực tiếp trên cán bộ (lưu trong mttq_can_bo, đa chọn). */
+  cap_quan_ly: string[];
   ngay_tham_gia_to_chuc: string | null;
   trang_thai_id: string | null;
   ngay_nhap_trang_thai: string | null;
@@ -47,7 +50,8 @@ export interface MttqCanBo {
   id_nguoi_tao: string;
   tg_tao: string;
   tg_cap_nhat: string;
-  ten_to_chuc: string | null;
+  /** Tên tổ chức đã resolve (client-side, từ thietLapAll). */
+  ten_to_chuc_arr: string[];
   ten_dan_toc: string | null;
   ten_trinh_do: string | null;
   ten_ly_luan_chinh_tri: string | null;
@@ -56,7 +60,7 @@ export interface MttqCanBo {
   ten_phong_ban?: string | null;
   /** Tên bộ phận con khi `phong_ban_id` trỏ tới con (hiển thị). */
   ten_bo_phan?: string | null;
-  /** `var_chuc_vu.cap_quan_ly` từ embed — phục vụ rule đơn vị / validate. */
+  /** Resolved cap_quan_ly scalar từ mttq_can_bo.cap_quan_ly — phục vụ filter / display kế thừa. */
   chuc_vu_cap_quan_ly?: string | null;
   /** Hiển thị: tên xã — tỉnh (embed). */
   ten_don_vi: string | null;

@@ -22,6 +22,7 @@ const initialFilters: BaiVietDanhSachFilters = {
   id_the_loai: [],
   id_nguon_dang: [],
   id_trang_dang: [],
+  id_nguoi_tao: [],
 };
 
 export const useBaiVietDanhSachStore = createGenericStore<BaiVietDanhSachFilters>(initialFilters, DEFAULT_COLUMNS);

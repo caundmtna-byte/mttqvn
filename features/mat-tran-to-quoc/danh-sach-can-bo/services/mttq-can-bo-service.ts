@@ -1,6 +1,8 @@
 import { createRepository } from '@/lib/data/create-repository';
 import { isSupabase } from '@/lib/data/config';
 import { getDepartments } from '@/features/he-thong/phong-ban/services/phong-ban-service';
+import { resolveEffectiveCapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
+import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import { txt } from '@/lib/text';
 import type { MttqCanBo } from '../core/types';
 import type { MttqCanBoFormValues } from '../core/schema';
@@ -68,13 +70,6 @@ function tenFromVarChucVuEmbed(v: unknown): string | null {
   return t != null && String(t).trim() !== '' ? String(t) : null;
 }
 
-function capQuanLyRawFromChucVuEmbed(v: unknown): string | null {
-  const o = pickEmbedded<{ cap_quan_ly?: unknown }>(v);
-  const c = o?.cap_quan_ly;
-  if (c == null || c === '') return null;
-  return String(c);
-}
-
 /** Tên phòng ban / bộ phận từ embed một tầng + map `id → ten_phong_ban` (danh sách phòng ban). */
 function labelsFromPhongBanEmbed(
   v: unknown,
@@ -100,6 +95,15 @@ async function departmentTenByIdMap(): Promise<Map<string, string>> {
   return new Map(depts.map((d) => [String(d.id), d.ten_phong_ban]));
 }
 
+async function toChucTenByIdMap(): Promise<Map<string, string>> {
+  const all = await getMttqThietLapAll();
+  return new Map(
+    all
+      .filter((x) => x.loai === 'to_chuc')
+      .map((x) => [String(x.id), x.ten]),
+  );
+}
+
 /** Nhãn đơn vị (xã — tỉnh) từ embed `var_ssn_xa_phuong`. */
 function tenDonViFromXaEmbed(v: unknown): string | null {
   const o = pickEmbedded<{ ten?: unknown; var_ssn_tinh_thanh?: unknown }>(v);
@@ -117,8 +121,8 @@ function tenDonViFromXaEmbed(v: unknown): string | null {
 export function flattenMttqCanBoRow(
   row: Record<string, unknown>,
   deptTenById?: ReadonlyMap<string, string>,
+  toChucTenById?: ReadonlyMap<string, string>,
 ): MttqCanBo {
-  const toChuc = row.to_chuc_ref;
   const danToc = row.dan_toc;
   const trinhDo = row.trinh_do;
   const lyLuan = row.ly_luan_chinh_tri;
@@ -129,7 +133,6 @@ export function flattenMttqCanBoRow(
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
 
   const rest = { ...row };
-  delete rest.to_chuc_ref;
   delete rest.dan_toc;
   delete rest.trinh_do;
   delete rest.ly_luan_chinh_tri;
@@ -143,10 +146,17 @@ export function flattenMttqCanBoRow(
   const dv = r.dang_vien;
   const dangVien = dv === true || dv === 'true' || dv === 1 || dv === '1';
 
+  const rawToChucIds = Array.isArray(r.to_chuc_ids)
+    ? (r.to_chuc_ids as unknown[]).map(String)
+    : [];
+  const tenToChucArr = toChucTenById
+    ? rawToChucIds.map((id) => toChucTenById.get(id) ?? '').filter(Boolean)
+    : [];
+
   return {
     ...r,
     id: String(r.id),
-    to_chuc_id: nullableId(r.to_chuc_id),
+    to_chuc_ids: rawToChucIds,
     ho_ten: String(r.ho_ten ?? ''),
     ngay_sinh: dateOnly(r.ngay_sinh),
     gioi_tinh: String(r.gioi_tinh ?? 'Nam'),
@@ -170,7 +180,7 @@ export function flattenMttqCanBoRow(
     id_nguoi_tao: String(r.id_nguoi_tao ?? ''),
     tg_tao: String(r.tg_tao ?? ''),
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
-    ten_to_chuc: tenFromThietLap(toChuc) ?? (r.ten_to_chuc != null ? String(r.ten_to_chuc) : null),
+    ten_to_chuc_arr: tenToChucArr,
     ten_dan_toc: tenFromThietLap(danToc) ?? (r.ten_dan_toc != null ? String(r.ten_dan_toc) : null),
     ten_trinh_do: tenFromThietLap(trinhDo) ?? (r.ten_trinh_do != null ? String(r.ten_trinh_do) : null),
     ten_ly_luan_chinh_tri:
@@ -183,7 +193,8 @@ export function flattenMttqCanBoRow(
         ten_bo_phan: pair.ten_bo_phan ?? (r.ten_bo_phan != null ? String(r.ten_bo_phan) : null),
       };
     })(),
-    chuc_vu_cap_quan_ly: capQuanLyRawFromChucVuEmbed(chucVu),
+    cap_quan_ly: Array.isArray(r.cap_quan_ly) ? (r.cap_quan_ly as string[]) : [],
+    chuc_vu_cap_quan_ly: resolveEffectiveCapQuanLy(Array.isArray(r.cap_quan_ly) ? (r.cap_quan_ly as string[]) : []),
     ten_don_vi: tenDonViFromXaEmbed(donVi) ?? (r.ten_don_vi != null ? String(r.ten_don_vi) : null),
     ten_trang_thai: tenFromThietLap(trangThai) ?? (r.ten_trang_thai != null ? String(r.ten_trang_thai) : null),
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? (r.ho_va_ten_nguoi_tao != null ? String(r.ho_va_ten_nguoi_tao) : null),
@@ -193,16 +204,19 @@ export function flattenMttqCanBoRow(
 }
 
 function normalize(raw: MttqCanBo): MttqCanBo {
+  const arr = Array.isArray(raw.cap_quan_ly) ? raw.cap_quan_ly : [];
   return {
     ...raw,
     id: String(raw.id),
-    to_chuc_id: raw.to_chuc_id != null ? String(raw.to_chuc_id) : null,
+    to_chuc_ids: Array.isArray(raw.to_chuc_ids) ? raw.to_chuc_ids.map(String) : [],
     dan_toc_id: raw.dan_toc_id != null ? String(raw.dan_toc_id) : null,
     trinh_do_id: raw.trinh_do_id != null ? String(raw.trinh_do_id) : null,
     ly_luan_chinh_tri_id: raw.ly_luan_chinh_tri_id != null ? String(raw.ly_luan_chinh_tri_id) : null,
     chuc_vu_id: raw.chuc_vu_id != null ? String(raw.chuc_vu_id) : null,
     phong_ban_id: raw.phong_ban_id != null ? String(raw.phong_ban_id) : null,
     don_vi_id: raw.don_vi_id != null ? String(raw.don_vi_id) : null,
+    cap_quan_ly: arr,
+    chuc_vu_cap_quan_ly: resolveEffectiveCapQuanLy(arr),
     trang_thai_id: raw.trang_thai_id != null ? String(raw.trang_thai_id) : null,
     id_nguoi_tao: String(raw.id_nguoi_tao),
   };
@@ -211,7 +225,7 @@ function normalize(raw: MttqCanBo): MttqCanBo {
 function formToPayload(data: MttqCanBoFormValues, idNguoiTao?: string) {
   const phongBanFk = data.id_phong_ban.trim() !== '' ? data.id_phong_ban.trim() : null;
   const base = {
-    to_chuc_id: data.to_chuc_id,
+    to_chuc_ids: Array.isArray(data.to_chuc_ids) ? data.to_chuc_ids : [],
     ho_ten: data.ho_ten.trim(),
     ngay_sinh: data.ngay_sinh,
     gioi_tinh: data.gioi_tinh,
@@ -224,6 +238,7 @@ function formToPayload(data: MttqCanBoFormValues, idNguoiTao?: string) {
     dien_thoai: data.dien_thoai.trim(),
     chuc_vu_id: data.chuc_vu_id,
     phong_ban_id: phongBanFk,
+    cap_quan_ly: Array.isArray(data.cap_quan_ly) ? data.cap_quan_ly : [],
     don_vi_id: data.don_vi_id.trim() !== '' ? data.don_vi_id.trim() : null,
     ngay_tham_gia_to_chuc: data.ngay_tham_gia_to_chuc,
     trang_thai_id: data.trang_thai_id,
@@ -241,26 +256,26 @@ function formToPayload(data: MttqCanBoFormValues, idNguoiTao?: string) {
 
 export async function getMttqCanBoList(): Promise<MttqCanBo[]> {
   const list = await repoList.getAll({ orderBy: 'ho_ten', ascending: true });
-  const deptTenById = await departmentTenByIdMap();
+  const [deptTenById, toChucById] = await Promise.all([departmentTenByIdMap(), toChucTenByIdMap()]);
   return list.map((row) =>
-    normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>, deptTenById)),
+    normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>, deptTenById, toChucById)),
   );
 }
 
 /** Payload gọn cho trang báo cáo (ít cột scalar hơn LIST + embed dân tộc/trình độ). */
 export async function getMttqCanBoStatsList(): Promise<MttqCanBo[]> {
   const list = await repoStats.getAll({ orderBy: 'ho_ten', ascending: true });
-  const deptTenById = await departmentTenByIdMap();
+  const [deptTenById, toChucById] = await Promise.all([departmentTenByIdMap(), toChucTenByIdMap()]);
   return list.map((row) =>
-    normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>, deptTenById)),
+    normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>, deptTenById, toChucById)),
   );
 }
 
 export async function getMttqCanBoById(id: string): Promise<MttqCanBo | null> {
   const row = await repoFull.getById(id);
   if (!row) return null;
-  const deptTenById = await departmentTenByIdMap();
-  return normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>, deptTenById));
+  const [deptTenById, toChucById] = await Promise.all([departmentTenByIdMap(), toChucTenByIdMap()]);
+  return normalize(flattenMttqCanBoRow(row as unknown as Record<string, unknown>, deptTenById, toChucById));
 }
 
 export async function createMttqCanBo(data: MttqCanBoFormValues, idNguoiTao: string): Promise<MttqCanBo> {
@@ -272,8 +287,8 @@ export async function createMttqCanBo(data: MttqCanBoFormValues, idNguoiTao: str
   const inserted = await repoFull.insert(payload as unknown as Omit<MttqCanBo, 'id'>, {
     returningSelect: MTTQ_CAN_BO_RETURNING_FULL,
   });
-  const deptTenById = await departmentTenByIdMap();
-  return normalize(flattenMttqCanBoRow(inserted as unknown as Record<string, unknown>, deptTenById));
+  const [deptTenById, toChucById] = await Promise.all([departmentTenByIdMap(), toChucTenByIdMap()]);
+  return normalize(flattenMttqCanBoRow(inserted as unknown as Record<string, unknown>, deptTenById, toChucById));
 }
 
 export async function updateMttqCanBo(id: string, data: MttqCanBoFormValues): Promise<MttqCanBo> {
@@ -284,8 +299,8 @@ export async function updateMttqCanBo(id: string, data: MttqCanBoFormValues): Pr
   const updated = await repoFull.update(id, payload as unknown as Partial<MttqCanBo>, {
     returningSelect: MTTQ_CAN_BO_RETURNING_FULL,
   });
-  const deptTenById = await departmentTenByIdMap();
-  return normalize(flattenMttqCanBoRow(updated as unknown as Record<string, unknown>, deptTenById));
+  const [deptTenById, toChucById] = await Promise.all([departmentTenByIdMap(), toChucTenByIdMap()]);
+  return normalize(flattenMttqCanBoRow(updated as unknown as Record<string, unknown>, deptTenById, toChucById));
 }
 
 export async function deleteMttqCanBoMany(ids: string[]): Promise<void> {

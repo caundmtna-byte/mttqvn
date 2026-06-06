@@ -25,8 +25,6 @@ import {
   getGroupedPositionRowLevel,
   type GroupedPositionRow,
 } from '../utils/group-positions-by-department';
-import EnumBadge from '../../../../components/ui/EnumBadge';
-import { capQuanLyBadgeConfig } from '../utils/cap-quan-ly';
 
 interface Props {
   data: Position[];
@@ -107,11 +105,6 @@ const PositionTable = memo(function PositionTable({
     departments.forEach((d) => m.set(d.id, d));
     return m;
   }, [departments]);
-
-  const capQuanLyBadge = useMemo(
-    () => capQuanLyBadgeConfig(txt('position.capQuanLyTinh'), txt('position.capQuanLyXaPhuong')),
-    []
-  );
 
   const primaryHeaderColumnId = useMemo(() => {
     const ids = visibleColumns.map((c) => c.id);
@@ -275,12 +268,6 @@ const PositionTable = memo(function PositionTable({
             <span className="text-xs text-muted-foreground">—</span>
           );
         }
-        case 'cap_quan_ly':
-          return item.cap_quan_ly ? (
-            <EnumBadge value={item.cap_quan_ly} config={capQuanLyBadge} shape="rounded" truncate />
-          ) : (
-            <span className="text-xs text-muted-foreground">—</span>
-          );
         case 'ten_phong_ban':
           return <span className="text-xs text-muted-foreground">—</span>; // cột thường ẩn; giữ nhánh an toàn
         case 'mo_ta':
@@ -396,11 +383,6 @@ const PositionTable = memo(function PositionTable({
                   <p className="text-xs text-muted-foreground mb-1 truncate">{item.ten_phong_ban}</p>
                 ) : null}
                 <h4 className="font-semibold text-foreground truncate">{item.ten_chuc_vu}</h4>
-                {item.cap_quan_ly ? (
-                  <div className="mt-1.5 flex shrink-0">
-                    <EnumBadge value={item.cap_quan_ly} config={capQuanLyBadge} shape="rounded" truncate />
-                  </div>
-                ) : null}
               </div>
               <input
                 type="checkbox"

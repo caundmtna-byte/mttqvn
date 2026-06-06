@@ -105,6 +105,13 @@ function matchesNullableFk(rowVal: string | null | undefined, selected: string[]
   return selected.includes(id);
 }
 
+function matchesToChucIds(ids: string[] | undefined, selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  const arr = Array.isArray(ids) ? ids : [];
+  if (arr.length === 0) return selected.includes(CHIP_TRANG_THAI_NULL);
+  return arr.some((id) => selected.includes(id));
+}
+
 function matchesDangVien(row: MttqCanBoRow, selected: string[]): boolean {
   if (selected.length === 0) return true;
   const v = row.dang_vien ? 'true' : 'false';
@@ -157,7 +164,7 @@ export function filterRowsForOfficerStats(
     if (!matchesNullableFk(row.dan_toc_id, dims.dan_toc_id)) return false;
     if (!matchesNullableFk(row.trinh_do_id, dims.trinh_do_id)) return false;
     if (!matchesNullableFk(row.ly_luan_chinh_tri_id, dims.ly_luan_chinh_tri_id)) return false;
-    if (!matchesNullableFk(row.to_chuc_id, dims.to_chuc_id)) return false;
+    if (!matchesToChucIds(row.to_chuc_ids, dims.to_chuc_id)) return false;
     if (!matchesDangVien(row, dims.dang_vien)) return false;
     return true;
   });

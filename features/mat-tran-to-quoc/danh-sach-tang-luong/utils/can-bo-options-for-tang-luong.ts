@@ -13,13 +13,17 @@ function canBoSubLabel(c: MttqCanBo): string | undefined {
   return s || undefined;
 }
 
-/** Cấp Xã phường: chỉ chọn cán bộ cùng `don_vi_id` với nhân viên đăng nhập. */
+/** Cấp Xã phường: chỉ chọn cán bộ cùng `don_vi_id` với nhân viên đăng nhập.
+ *  Cấp Tỉnh: chỉ chọn cán bộ có `cap_quan_ly` chứa 'Tỉnh'. */
 export function filterCanBoForTangLuongForm(
   viewer: MttqTangLuongViewer,
   canBoList: readonly MttqCanBo[],
 ): MttqCanBo[] {
   if (isTangLuongViewUnrestricted(viewer)) {
     return [...canBoList];
+  }
+  if (viewer.chucVuCapQuanLy === 'Tỉnh') {
+    return canBoList.filter((c) => (c.cap_quan_ly ?? []).includes('Tỉnh'));
   }
   if (viewer.chucVuCapQuanLy === 'Xã phường') {
     const dv = viewer.viewerDonViId;

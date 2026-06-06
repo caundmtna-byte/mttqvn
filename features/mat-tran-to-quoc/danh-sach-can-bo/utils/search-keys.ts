@@ -13,7 +13,7 @@ export const MTTQ_CAN_BO_SEARCHABLE_KEYS: (keyof MttqCanBoRow)[] = [
   'ten_don_vi',
   'ten_phong_ban',
   'ten_bo_phan',
-  'ten_to_chuc',
+  'ten_to_chuc_arr',
   'ten_chuc_vu',
   'chuc_vu_cap_quan_ly',
   'ten_trang_thai',

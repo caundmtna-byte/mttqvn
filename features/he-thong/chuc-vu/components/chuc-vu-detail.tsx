@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { txt } from '../../../../lib/text';
-import { Edit, Trash2, Briefcase, Power, Building2, Layers, Calendar, Clock, FileText, ArrowUpFromLine, MapPinned } from 'lucide-react';
+import { Edit, Trash2, Briefcase, Power, Building2, Layers, Calendar, Clock, FileText, ArrowUpFromLine } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import EnumBadge from '../../../../components/ui/EnumBadge';
 import type { BadgeConfig } from '../../../../components/ui/EnumBadge';
@@ -14,7 +14,6 @@ import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '../../../../components/
 import DetailToolbar, { DetailToolbarAction } from '../../../../components/shared/DetailToolbar';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '../../../../lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
-import { capQuanLyBadgeConfig } from '../utils/cap-quan-ly';
 
 interface Props {
   data: Position;
@@ -32,11 +31,6 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
     'Đang hoạt động': { label: txt('position.active'), color: 'emerald' },
     'Ngừng hoạt động': { label: txt('position.inactive'), color: 'slate' },
   }), []);
-
-  const capQuanLyBadge = useMemo(
-    () => capQuanLyBadgeConfig(txt('position.capQuanLyTinh'), txt('position.capQuanLyXaPhuong')),
-    []
-  );
 
   const toolbarActions: DetailToolbarAction[] = [
     ...(onStatusChange && canEdit
@@ -115,13 +109,8 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
           title={data.ten_chuc_vu}
           badge={<EnumBadge value={data.trang_thai} config={trangThaiBadgeConfig} />}
           subtitle={
-            data.ten_phong_ban || data.cap_quan_ly ? (
-              <div className="flex min-w-0 flex-col gap-1.5">
-                {data.ten_phong_ban ? <p className="m-0 truncate text-muted-foreground">{data.ten_phong_ban}</p> : null}
-                {data.cap_quan_ly ? (
-                  <EnumBadge value={data.cap_quan_ly} config={capQuanLyBadge} shape="rounded" />
-                ) : null}
-              </div>
+            data.ten_phong_ban ? (
+              <p className="m-0 truncate text-muted-foreground">{data.ten_phong_ban}</p>
             ) : undefined
           }
         />
@@ -141,14 +130,6 @@ const PositionDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
                 ) : undefined
               }
               icon={<Layers size={12} />}
-              emptyText="—"
-            />
-            <DetailField
-              label={txt('position.detail.managementLevel')}
-              value={
-                data.cap_quan_ly ? <EnumBadge value={data.cap_quan_ly} config={capQuanLyBadge} shape="rounded" /> : undefined
-              }
-              icon={<MapPinned size={12} />}
               emptyText="—"
             />
             <DetailField label={txt('position.detail.department')} value={data.ten_phong_ban ?? '—'} icon={<Building2 size={12} />} emptyText="—" />
