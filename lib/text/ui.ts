@@ -26,7 +26,7 @@ export const ui = {
     "matTranToQuoc": "Mặt trận tổ quốc",
     "quanLyVietBai": "Quản lý viết bài",
     "quanLyGiaoViec": "Quản lý giao việc",
-    "phanBienXaHoi": "Phản biện xã hội",
+    "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
     "trangThongTinKhac": "Trang thông tin khác",
     "system": "Hệ thống",
@@ -59,7 +59,7 @@ export const ui = {
       "groupArticleMgmt": "Quản lý viết bài",
       "groupTaskMgmt": "Quản lý giao việc",
       "groupMatTranToQuoc": "Mặt trận tổ quốc",
-      "groupPhanBienXaHoi": "Phản biện xã hội"
+      "groupPhanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội"
     }
   },
   "shared": {
@@ -353,14 +353,14 @@ export const ui = {
       "backToParent": "Quay lại Mặt trận tổ quốc"
     },
     "phanBienXaHoiDashboard": {
-      "groupMain": "Phản biện xã hội",
-      "thucHien": "Thực hiện phản biện xã hội",
+      "groupMain": "Kiểm tra, giám sát, phản biện xã hội",
+      "thucHien": "Kiểm tra, GS và PBXH",
       "thucHienDesc": "Ghi nhận và theo dõi các hoạt động phản biện xã hội.",
       "thietLapDanhMuc": "Thiết lập danh mục",
       "thietLapDanhMucDesc": "Cấu hình danh mục và thiết lập cho module phản biện xã hội.",
-      "thongKe": "Thống kê phản biện xã hội",
+      "thongKe": "Thống kê kiểm tra, GS và PBXH",
       "thongKeDesc": "Báo cáo và thống kê kết quả phản biện xã hội.",
-      "backToParent": "Quay lại Phản biện xã hội"
+      "backToParent": "Quay lại Kiểm tra, giám sát, phản biện xã hội"
     },
     "pbxhThietLap": {
       "tabDoiTuong": "Đối tượng KT, GS, PBXH",
@@ -550,7 +550,7 @@ export const ui = {
     "matTranToQuoc": "Mặt trận tổ quốc",
     "quanLyVietBai": "Quản lý viết bài",
     "quanLyGiaoViec": "Quản lý giao việc",
-    "phanBienXaHoi": "Phản biện xã hội",
+    "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
     "trangThongTinKhac": "Trang thông tin khác",
     "systemAdmin": "Hệ thống",

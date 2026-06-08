@@ -5,9 +5,13 @@ import { DOI_TUONG_VALUES, TRANG_THAI_HOAT_DONG_DEFAULT } from './constants';
 import type { ThongTinCaNhanTieuBieu } from './types';
 
 const optionalText = z
-  .string()
+  .union([z.string(), z.null(), z.undefined()])
   .optional()
-  .transform((s) => (s === '' || s === undefined ? undefined : s));
+  .transform((s) => (s == null || s === '' ? undefined : s));
+
+const optionalDonViId = z
+  .union([z.string(), z.number(), z.literal(''), z.null(), z.undefined()])
+  .optional();
 
 function nullIfEmptyTrimmed(s: string | undefined | null): string | null {
   if (s === undefined || s === null) return null;
@@ -25,7 +29,7 @@ export const thongTinCaNhanTieuBieuSchema = z
     chuc_vu_vi_tri: optionalText,
     ton_giao_dan_toc: optionalText,
     dia_chi: optionalText,
-    don_vi_id: z.union([z.string(), z.number(), z.literal('')]).optional(),
+    don_vi_id: optionalDonViId,
     so_dien_thoai: optionalText,
     dong_gop_noi_bat: optionalText,
     trang_thai: z.enum(TRANG_THAI_HOAT_DONG, {
@@ -58,27 +62,27 @@ export function thongTinCaNhanTieuBieuToFormInput(d: ThongTinCaNhanTieuBieu | nu
   if (!d) {
     return {
       ho_va_ten: '',
-      ngay_sinh: undefined,
+      ngay_sinh: '',
       doi_tuong: 'Người uy tín',
-      chuc_vu_vi_tri: undefined,
-      ton_giao_dan_toc: undefined,
-      dia_chi: undefined,
+      chuc_vu_vi_tri: '',
+      ton_giao_dan_toc: '',
+      dia_chi: '',
       don_vi_id: '',
-      so_dien_thoai: undefined,
-      dong_gop_noi_bat: undefined,
+      so_dien_thoai: '',
+      dong_gop_noi_bat: '',
       trang_thai: TRANG_THAI_HOAT_DONG_DEFAULT,
     };
   }
   return {
     ho_va_ten: d.ho_va_ten,
-    ngay_sinh: d.ngay_sinh ?? undefined,
+    ngay_sinh: d.ngay_sinh ?? '',
     doi_tuong: d.doi_tuong as ThongTinCaNhanTieuBieuFormInput['doi_tuong'],
-    chuc_vu_vi_tri: d.chuc_vu_vi_tri ?? undefined,
-    ton_giao_dan_toc: d.ton_giao_dan_toc ?? undefined,
-    dia_chi: d.dia_chi ?? undefined,
+    chuc_vu_vi_tri: d.chuc_vu_vi_tri ?? '',
+    ton_giao_dan_toc: d.ton_giao_dan_toc ?? '',
+    dia_chi: d.dia_chi ?? '',
     don_vi_id: d.don_vi_id ?? '',
-    so_dien_thoai: d.so_dien_thoai ?? undefined,
-    dong_gop_noi_bat: d.dong_gop_noi_bat ?? undefined,
+    so_dien_thoai: d.so_dien_thoai ?? '',
+    dong_gop_noi_bat: d.dong_gop_noi_bat ?? '',
     trang_thai: d.trang_thai,
   };
 }

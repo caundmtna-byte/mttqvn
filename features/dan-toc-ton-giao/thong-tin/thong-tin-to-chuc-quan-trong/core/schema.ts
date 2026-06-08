@@ -5,9 +5,13 @@ import { LOAI_HINH_VALUES, TRANG_THAI_HOAT_DONG_DEFAULT } from './constants';
 import type { ThongTinToChucQuanTrong } from './types';
 
 const optionalText = z
-  .string()
+  .union([z.string(), z.null(), z.undefined()])
   .optional()
-  .transform((s) => (s === '' || s === undefined ? undefined : s));
+  .transform((s) => (s == null || s === '' ? undefined : s));
+
+const optionalDonViId = z
+  .union([z.string(), z.number(), z.literal(''), z.null(), z.undefined()])
+  .optional();
 
 function nullIfEmptyTrimmed(s: string | undefined | null): string | null {
   if (s === undefined || s === null) return null;
@@ -24,7 +28,7 @@ export const thongTinToChucQuanTrongSchema = z
     chu_tri: optionalText,
     lich_su_hinh_thanh: optionalText,
     cong_tac_an_sinh: optionalText,
-    don_vi_id: z.union([z.string(), z.number(), z.literal('')]).optional(),
+    don_vi_id: optionalDonViId,
     dia_chi: optionalText,
     so_dien_thoai: optionalText,
     trang_thai: z.enum(TRANG_THAI_HOAT_DONG, {
@@ -58,24 +62,24 @@ export function thongTinToChucQuanTrongToFormInput(
     return {
       loai_hinh: 'Chùa',
       ten_co_so: '',
-      chu_tri: undefined,
-      lich_su_hinh_thanh: undefined,
-      cong_tac_an_sinh: undefined,
+      chu_tri: '',
+      lich_su_hinh_thanh: '',
+      cong_tac_an_sinh: '',
       don_vi_id: '',
-      dia_chi: undefined,
-      so_dien_thoai: undefined,
+      dia_chi: '',
+      so_dien_thoai: '',
       trang_thai: TRANG_THAI_HOAT_DONG_DEFAULT,
     };
   }
   return {
     loai_hinh: d.loai_hinh as ThongTinToChucQuanTrongFormInput['loai_hinh'],
     ten_co_so: d.ten_co_so,
-    chu_tri: d.chu_tri ?? undefined,
-    lich_su_hinh_thanh: d.lich_su_hinh_thanh ?? undefined,
-    cong_tac_an_sinh: d.cong_tac_an_sinh ?? undefined,
+    chu_tri: d.chu_tri ?? '',
+    lich_su_hinh_thanh: d.lich_su_hinh_thanh ?? '',
+    cong_tac_an_sinh: d.cong_tac_an_sinh ?? '',
     don_vi_id: d.don_vi_id ?? '',
-    dia_chi: d.dia_chi ?? undefined,
-    so_dien_thoai: d.so_dien_thoai ?? undefined,
+    dia_chi: d.dia_chi ?? '',
+    so_dien_thoai: d.so_dien_thoai ?? '',
     trang_thai: d.trang_thai,
   };
 }

@@ -1,7 +1,7 @@
-/** Thống kê phản biện xã hội */
+/** Thống kê kiểm tra, GS và PBXH */
 export const pbxhThongKe = {
-  title: 'Thống kê phản biện xã hội',
-  noViewPermission: 'Bạn không có quyền xem thống kê phản biện xã hội.',
+  title: 'Thống kê kiểm tra, GS và PBXH',
+  noViewPermission: 'Bạn không có quyền xem Thống kê kiểm tra, GS và PBXH.',
   noDetailPermission: 'Bạn không có quyền xem chi tiết hoạt động phản biện xã hội.',
   loading: 'Đang tải thống kê…',
   noData: 'Không có dữ liệu trong khoảng và bộ lọc đã chọn.',
@@ -66,7 +66,7 @@ export const pbxhThongKe = {
     },
   },
   report: {
-    title: 'Báo cáo thống kê phản biện xã hội',
+    title: 'Báo cáo thống kê kiểm tra, GS và PBXH',
     period: 'Khoảng thời gian',
     exportDate: 'Ngày xuất',
     indicator: 'Chỉ số',
@@ -75,7 +75,7 @@ export const pbxhThongKe = {
     byDonViChuTriSheet: 'Theo đơn vị chủ trì',
     byLoaiHinhSheet: 'Theo loại hình',
     detailSheet: 'Chi tiết',
-    pdfTitle: 'BÁO CÁO THỐNG KÊ PHẢN BIỆN XÃ HỘI',
+    pdfTitle: 'BÁO CÁO THỐNG KÊ KIỂM TRA, GS VÀ PBXH',
     pdfPeriod: 'Khoảng thời gian:',
     pdfExportDate: 'Xuất ngày:',
   },
