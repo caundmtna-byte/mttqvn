@@ -33,7 +33,9 @@ export function useKhoNhapXuatKhoViewer(): KhoNhapXuatKhoViewer {
   const chucVuCapQuanLy = usePermissionGrantStore((s) => s.chucVuCapQuanLy);
 
   return useMemo(() => {
-    const moduleId = APP_RESOURCE_TO_MODULE.matTranReliefStockTransactions;
+    const moduleId =
+      APP_RESOURCE_TO_MODULE.matTranReliefStockTransactions ??
+      'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||
