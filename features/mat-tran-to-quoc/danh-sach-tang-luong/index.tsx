@@ -54,6 +54,7 @@ import {
 import { getTangLuongLoaiKyLabel } from './utils/display-format';
 import { filterRowsForStats } from './utils/aggregate-tang-luong-stats';
 import { CHIP_FILTER_NULL } from '../danh-sach-can-bo/core/constants';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import MttqTangLuongToolbar from './components/mttq-tang-luong-toolbar';
 import MttqTangLuongTable from './components/mttq-tang-luong-table';
 import MttqTangLuongKeHoachPanel from './components/mttq-tang-luong-ke-hoach-panel';
@@ -163,11 +164,15 @@ const DanhSachTangLuongPage: React.FC = () => {
       if (!matchesSearchTerm(item as unknown as Record<string, unknown>, term, [...MTTQ_TANG_LUONG_SEARCHABLE_KEYS])) {
         return false;
       }
-      if (!tangLuongMatchesColumnSearch(item, f.columnSearch)) return false;
+      if (!tangLuongMatchesColumnSearch(item, f.columnSearch, f)) return false;
       if (f.loai_ky?.length && !f.loai_ky.includes(item.loai_ky)) return false;
       if (f.phong_ban_id?.length) {
         const pb = item.phong_ban_id ?? CHIP_FILTER_NULL;
         if (!f.phong_ban_id.includes(pb)) return false;
+      }
+      if (f.chuc_vu_id?.length) {
+        const cv = item.chuc_vu_id ?? CHIP_FILTER_NULL;
+        if (!f.chuc_vu_id.includes(cv)) return false;
       }
       if (f.don_vi_id?.length) {
         const dv = item.don_vi_id ?? CHIP_FILTER_NULL;
@@ -208,11 +213,12 @@ const DanhSachTangLuongPage: React.FC = () => {
       countTangLuongColumnSearchActive(cs) > 0 ||
       (filters.loai_ky?.length ?? 0) > 0 ||
       (filters.phong_ban_id?.length ?? 0) > 0 ||
+      (filters.chuc_vu_id?.length ?? 0) > 0 ||
       (filters.don_vi_id?.length ?? 0) > 0 ||
       (filters.to_chuc_id?.length ?? 0) > 0 ||
       Boolean(sort.column)
     );
-  }, [searchTerm, filters.columnSearch, filters.loai_ky, filters.phong_ban_id, filters.don_vi_id, filters.to_chuc_id, sort.column]);
+  }, [searchTerm, filters.columnSearch, filters.loai_ky, filters.phong_ban_id, filters.chuc_vu_id, filters.don_vi_id, filters.to_chuc_id, sort.column]);
 
   const viewingRow = useMemo(
     () => (viewingId ? viewableRows.find((r) => r.id === viewingId) ?? null : null),
@@ -232,6 +238,8 @@ const DanhSachTangLuongPage: React.FC = () => {
   const exportColumns = useMemo(
     () => [
       { key: 'ho_ten', label: txt('matTranTangLuong.store.canBoCol') },
+      { key: 'ten_chuc_vu', label: txt('matTranTangLuong.store.chucVuCol') },
+      { key: 'ten_don_vi', label: txt('matTranTangLuong.store.donViCol') },
       { key: 'ngay_nang_luong', label: txt('matTranTangLuong.store.ngayNangCol') },
       { key: 'loai_ky', label: txt('matTranTangLuong.store.loaiKyCol') },
       { key: 'ngach_bac_moi', label: txt('matTranTangLuong.store.ngachMoiCol') },
@@ -245,12 +253,14 @@ const DanhSachTangLuongPage: React.FC = () => {
   const exportMapFn = useCallback(
     (item: MttqTangLuongListRow) => ({
       ho_ten: item.ho_ten_can_bo,
+      ten_chuc_vu: item.ten_chuc_vu ?? '',
+      ten_don_vi: formatTenDonViCongTacDisplay(item.chuc_vu_cap_quan_ly, item.ten_don_vi),
       ngay_nang_luong: item.ngay_nang_luong,
       loai_ky: getTangLuongLoaiKyLabel(item.loai_ky),
       ngach_bac_moi: [item.ten_ngach_moi, item.ma_bac_moi].filter(Boolean).join(' · '),
       luong: item.luong > 0 ? formatCurrency(item.luong) : '',
       phong_ban: item.ten_phong_ban ?? '',
-      don_vi: item.ten_don_vi ?? '',
+      don_vi: formatTenDonViCongTacDisplay(item.chuc_vu_cap_quan_ly, item.ten_don_vi),
     }),
     [],
   );
@@ -453,6 +463,7 @@ const DanhSachTangLuongPage: React.FC = () => {
           <div className="flex-1 min-h-0 flex flex-col overflow-auto p-3 sm:p-4">
             <MttqTangLuongTable
               data={sorted}
+              optionRows={enrichedRows}
               isLoading={isListLoading}
               onView={handleView}
               onEdit={handleEdit}

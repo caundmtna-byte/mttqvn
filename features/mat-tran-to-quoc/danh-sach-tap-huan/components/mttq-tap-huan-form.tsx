@@ -202,7 +202,7 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
   }, [xaPhuongList, tinhById]);
 
   useEffect(() => {
-    if (watchedCap === 'Cấp tỉnh') {
+    if (watchedCap !== 'Cấp xã') {
       setValue('don_vi_id', '');
     }
   }, [watchedCap, setValue]);

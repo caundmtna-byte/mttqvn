@@ -6,8 +6,8 @@
  * - CT_FLAT_LIST: dùng cho tab "Chi tiết" — mỗi row = 1 line + master snapshot.
  */
 
-const KHO_XUAT = 'kho_xuat:kho_danh_sach_kho!kho_nhap_xuat_kho_kho_xuat_id_fkey(id,ten_kho)';
-const KHO_NHAP = 'kho_nhap:kho_danh_sach_kho!kho_nhap_xuat_kho_kho_nhap_id_fkey(id,ten_kho)';
+const KHO_XUAT = 'kho_xuat:kho_danh_sach_kho!kho_nhap_xuat_kho_kho_xuat_id_fkey(id,ten_kho,don_vi_id)';
+const KHO_NHAP = 'kho_nhap:kho_danh_sach_kho!kho_nhap_xuat_kho_kho_nhap_id_fkey(id,ten_kho,don_vi_id)';
 const DON_VI = 'don_vi:kho_don_vi_cuu_tro!kho_nhap_xuat_kho_don_vi_cuu_tro_id_fkey(id,ten)';
 const DOT = 'dot:kho_dot_cuu_tro!kho_nhap_xuat_kho_dot_cuu_tro_id_fkey(id,ten)';
 

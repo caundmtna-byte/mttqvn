@@ -97,12 +97,17 @@ const UyVienUyBanPage: React.FC = () => {
     columns,
   } = useMttqUyVienUyBanStore();
 
-  const { data: rows = [], isLoading } = useMttqUyVienUyBanList({ enabled: canView });
+  const viewer = useMttqUyVienUyBanViewer();
+  const scopeDonViId =
+    !viewer.canViewAll && viewer.chucVuCapQuanLy === 'Xã phường' ? viewer.viewerDonViId : null;
+
+  const { data: rows = [], isLoading } = useMttqUyVienUyBanList({
+    enabled: canView,
+    donViId: scopeDonViId,
+  });
   const { data: viewingData } = useMttqUyVienUyBanDetail(viewingId);
   const deleteMutation = useDeleteMttqUyVienUyBanMany();
   const importMutation = useImportMttqUyVienUyBan(() => setShowImport(false));
-
-  const viewer = useMttqUyVienUyBanViewer();
 
   /** Lọc theo viewer trước khi mọi tính toán hiển thị (chip / search / export / sort). */
   const viewableRows = useMemo(

@@ -28,6 +28,8 @@ export const matTranUyVienUyBan = {
     nhiemKyRequired: 'Chọn nhiệm kỳ.',
     hoVaTenRequired: 'Nhập họ và tên.',
     canBoRequired: 'Chọn cán bộ từ Danh sách cán bộ.',
+    canBoDuplicateNhiemKy: 'Cán bộ này đã là ủy viên trong nhiệm kỳ đã chọn.',
+    maUvDuplicateNhiemKy: 'Mã UV này đã được dùng trong nhiệm kỳ đã chọn.',
     importCanBoRequired: 'Cần can_bo_id (số) hoặc cặp họ tên + ngày sinh khớp một cán bộ.',
     trangThamGiaInvalid: 'Chọn trạng thái tham gia: Đang tham gia hoặc Thôi tham gia.',
   },

@@ -6,7 +6,7 @@ import { MTTQ_TANG_LUONG_SEARCHABLE_KEYS } from './search-keys';
 
 export type TangLuongChipFilterKey = keyof Pick<
   MttqTangLuongFilters,
-  'loai_ky' | 'phong_ban_id' | 'don_vi_id' | 'to_chuc_id'
+  'loai_ky' | 'phong_ban_id' | 'chuc_vu_id' | 'don_vi_id' | 'to_chuc_id'
 >;
 
 export function omitTangLuongChipFilter(
@@ -27,11 +27,15 @@ export function tangLuongMatchesAllFilters(
     [...MTTQ_TANG_LUONG_SEARCHABLE_KEYS],
   );
   if (!matchesSearch) return false;
-  if (!tangLuongMatchesColumnSearch(item, f.columnSearch)) return false;
+  if (!tangLuongMatchesColumnSearch(item, f.columnSearch, f)) return false;
   if (f.loai_ky?.length && !f.loai_ky.includes(item.loai_ky)) return false;
   if (f.phong_ban_id?.length) {
     const pb = item.phong_ban_id ?? CHIP_FILTER_NULL;
     if (!f.phong_ban_id.includes(pb)) return false;
+  }
+  if (f.chuc_vu_id?.length) {
+    const cv = item.chuc_vu_id ?? CHIP_FILTER_NULL;
+    if (!f.chuc_vu_id.includes(cv)) return false;
   }
   if (f.don_vi_id?.length) {
     const dv = item.don_vi_id ?? CHIP_FILTER_NULL;

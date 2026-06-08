@@ -73,6 +73,12 @@ function nameFromEmbed(v: unknown, key: 'ten_kho' | 'ten' | 'ten_hang_hoa'): str
   return t != null && String(t).trim() !== '' ? String(t) : null;
 }
 
+function donViIdFromKhoEmbed(v: unknown): string | null {
+  const o = pickEmbedded<Record<string, unknown>>(v);
+  if (!o) return null;
+  return nullableStr(o.don_vi_id);
+}
+
 // ---------------------------------------------------------------------------
 // Flatten helpers
 // ---------------------------------------------------------------------------
@@ -86,8 +92,10 @@ export function flattenListRow(row: Record<string, unknown>): NhapXuatKhoListRow
     ngay_phieu: dateOnly(row.ngay_phieu),
     kho_xuat_id: nullableStr(row.kho_xuat_id),
     ten_kho_xuat: nameFromEmbed(row.kho_xuat, 'ten_kho'),
+    kho_xuat_don_vi_id: donViIdFromKhoEmbed(row.kho_xuat),
     kho_nhap_id: nullableStr(row.kho_nhap_id),
     ten_kho_nhap: nameFromEmbed(row.kho_nhap, 'ten_kho'),
+    kho_nhap_don_vi_id: donViIdFromKhoEmbed(row.kho_nhap),
     don_vi_cuu_tro_id: nullableStr(row.don_vi_cuu_tro_id),
     ten_don_vi_cuu_tro: nameFromEmbed(row.don_vi, 'ten'),
     dot_cuu_tro_id: nullableStr(row.dot_cuu_tro_id),
@@ -141,8 +149,10 @@ export function flattenCtFlatRow(row: Record<string, unknown>): NhapXuatKhoCtFla
     ngay_phieu: dateOnly(phieu?.ngay_phieu),
     kho_xuat_id: nullableStr(phieu?.kho_xuat_id),
     ten_kho_xuat: nameFromEmbed(phieu?.kho_xuat, 'ten_kho'),
+    kho_xuat_don_vi_id: donViIdFromKhoEmbed(phieu?.kho_xuat),
     kho_nhap_id: nullableStr(phieu?.kho_nhap_id),
     ten_kho_nhap: nameFromEmbed(phieu?.kho_nhap, 'ten_kho'),
+    kho_nhap_don_vi_id: donViIdFromKhoEmbed(phieu?.kho_nhap),
     don_vi_cuu_tro_id: nullableStr(phieu?.don_vi_cuu_tro_id),
     ten_don_vi_cuu_tro: nameFromEmbed(phieu?.don_vi, 'ten'),
     dot_cuu_tro_id: nullableStr(phieu?.dot_cuu_tro_id),
@@ -199,8 +209,10 @@ function mockMasterFromForm(
     ngay_phieu: data.ngay_phieu,
     kho_xuat_id: data.kho_xuat_id?.trim() || null,
     ten_kho_xuat: data.kho_xuat_id?.trim() ? `Kho #${data.kho_xuat_id.trim()} (mock)` : null,
+    kho_xuat_don_vi_id: data.kho_xuat_id?.trim() ? data.kho_xuat_id.trim() : null,
     kho_nhap_id: data.kho_nhap_id?.trim() || null,
     ten_kho_nhap: data.kho_nhap_id?.trim() ? `Kho #${data.kho_nhap_id.trim()} (mock)` : null,
+    kho_nhap_don_vi_id: data.kho_nhap_id?.trim() ? data.kho_nhap_id.trim() : null,
     don_vi_cuu_tro_id: data.don_vi_cuu_tro_id?.trim() || null,
     ten_don_vi_cuu_tro: data.don_vi_cuu_tro_id?.trim() ? `Đơn vị #${data.don_vi_cuu_tro_id.trim()} (mock)` : null,
     dot_cuu_tro_id: data.dot_cuu_tro_id?.trim() || null,
@@ -310,8 +322,10 @@ export async function getNhapXuatKhoCtFlatList(): Promise<NhapXuatKhoCtFlatRow[]
           ngay_phieu: m.ngay_phieu,
           kho_xuat_id: m.kho_xuat_id,
           ten_kho_xuat: m.ten_kho_xuat,
+          kho_xuat_don_vi_id: m.kho_xuat_don_vi_id,
           kho_nhap_id: m.kho_nhap_id,
           ten_kho_nhap: m.ten_kho_nhap,
+          kho_nhap_don_vi_id: m.kho_nhap_don_vi_id,
           don_vi_cuu_tro_id: m.don_vi_cuu_tro_id,
           ten_don_vi_cuu_tro: m.ten_don_vi_cuu_tro,
           dot_cuu_tro_id: m.dot_cuu_tro_id,
@@ -336,6 +350,51 @@ export async function getNhapXuatKhoCtFlatList(): Promise<NhapXuatKhoCtFlatRow[]
     .order('id', { ascending: false });
   if (error) handleSupabaseError(error);
   return (data ?? []).map((row) => flattenCtFlatRow(row as unknown as Record<string, unknown>));
+}
+
+/** Đơn giá gần nhất theo hang_hoa_id — lấy từ lần nhập gần nhất (ngay_phieu DESC). */
+export async function getLastDonGiaMap(): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+
+  if (!isSupabase()) {
+    const rows: { hang_hoa_id: string; don_gia: number; ngay_phieu: string }[] = [];
+    for (const l of mockLines) {
+      const m = mockMaster.find((p) => p.id === l.phieu_id);
+      if (!m) continue;
+      rows.push({
+        hang_hoa_id: l.hang_hoa_id,
+        don_gia: l.don_gia,
+        ngay_phieu: m.ngay_phieu,
+      });
+    }
+    rows.sort((a, b) => b.ngay_phieu.localeCompare(a.ngay_phieu));
+    for (const r of rows) {
+      if (!map.has(r.hang_hoa_id) && r.don_gia > 0) {
+        map.set(r.hang_hoa_id, r.don_gia);
+      }
+    }
+    return map;
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) return map;
+
+  const { data, error } = await supabase
+    .from('kho_nhap_xuat_kho_ct')
+    .select('hang_hoa_id,don_gia,phieu:kho_nhap_xuat_kho!inner(ngay_phieu)')
+    .order('ngay_phieu', { ascending: false, referencedTable: 'phieu' });
+
+  if (error) handleSupabaseError(error);
+
+  for (const row of data ?? []) {
+    const r = row as Record<string, unknown>;
+    const hangHoaId = String(r.hang_hoa_id ?? '');
+    if (!hangHoaId || map.has(hangHoaId)) continue;
+    const donGia = toNumber(r.don_gia);
+    if (donGia > 0) map.set(hangHoaId, donGia);
+  }
+
+  return map;
 }
 
 export async function getKhoTonKhoByKho(khoId: string | null): Promise<KhoTonKhoRow[]> {

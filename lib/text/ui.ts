@@ -349,6 +349,19 @@ export const ui = {
       "salarySetupDesc": "Cấu hình ngạch lương, bậc B1–B9 và mức lương cơ sở.",
       "backToParent": "Quay lại Mặt trận tổ quốc"
     },
+    "danTocTonGiaoDashboard": {
+      "groupThamHoi": "Thăm hỏi",
+      "groupThongTin": "Thông tin",
+      "thamHoiToChuc": "Thăm hỏi tổ chức",
+      "thamHoiToChucDesc": "Ghi nhận và theo dõi các lượt thăm hỏi tổ chức dân tộc, tôn giáo.",
+      "thamHoiCaNhan": "Thăm hỏi cá nhân",
+      "thamHoiCaNhanDesc": "Ghi nhận và theo dõi các lượt thăm hỏi cá nhân tiêu biểu.",
+      "thongTinToChucQuanTrong": "Thông tin tổ chức quan trọng",
+      "thongTinToChucQuanTrongDesc": "Danh mục và hồ sơ các tổ chức dân tộc, tôn giáo quan trọng.",
+      "thongTinCaNhanTieuBieu": "Thông tin cá nhân tiêu biểu",
+      "thongTinCaNhanTieuBieuDesc": "Danh sách cá nhân tiêu biểu trong cộng đồng dân tộc, tôn giáo.",
+      "backToParent": "Quay lại Dân tộc, tôn giáo"
+    },
     "matTranThietLap": {
       "tabCapQuanLy": "Cấp quản lý",
       "tabToChuc": "Tổ chức",

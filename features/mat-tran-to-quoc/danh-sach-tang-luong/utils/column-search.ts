@@ -1,4 +1,5 @@
 import type { MttqTangLuongListRow } from '../core/types';
+import type { MttqTangLuongFilters } from '../core/types';
 
 export function countTangLuongColumnSearchActive(columnSearch: Record<string, string> | undefined): number {
   if (!columnSearch) return 0;
@@ -12,11 +13,14 @@ export function countTangLuongColumnSearchActive(columnSearch: Record<string, st
 export function tangLuongMatchesColumnSearch(
   row: MttqTangLuongListRow & { loai_ky_label?: string },
   columnSearch: Record<string, string> | undefined,
+  chipFilters?: Pick<MttqTangLuongFilters, 'chuc_vu_id' | 'don_vi_id'>,
 ): boolean {
   if (!columnSearch) return true;
   for (const [colId, q] of Object.entries(columnSearch)) {
     const trimmed = q.trim();
     if (!trimmed) continue;
+    if (colId === 'ten_chuc_vu' && chipFilters?.chuc_vu_id?.length) continue;
+    if (colId === 'ten_don_vi' && chipFilters?.don_vi_id?.length) continue;
     let haystack = '';
     switch (colId) {
       case 'ngay_nang_luong':
@@ -24,6 +28,12 @@ export function tangLuongMatchesColumnSearch(
         break;
       case 'ho_ten_can_bo':
         haystack = row.ho_ten_can_bo ?? '';
+        break;
+      case 'ten_chuc_vu':
+        haystack = row.ten_chuc_vu ?? '';
+        break;
+      case 'ten_don_vi':
+        haystack = row.ten_don_vi ?? '';
         break;
       case 'loai_ky':
         haystack = row.loai_ky_label ?? row.loai_ky ?? '';

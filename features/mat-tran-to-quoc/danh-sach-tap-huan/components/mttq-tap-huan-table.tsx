@@ -8,7 +8,7 @@ import { useMttqLopTapHuanStore } from '../store/useMttqLopTapHuanStore';
 import GenericTable from '@/components/shared/GenericTable';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateTimeShort } from '@/lib/utils';
-import { getTapHuanCapBadgeConfig } from '../utils/display-format';
+import { formatLopTenDonViDisplay, getTapHuanCapBadgeConfig } from '../utils/display-format';
 import {
   ColumnHeaderFilter,
   ColumnHeaderSortMenu,
@@ -170,17 +170,14 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
           return (
             <EnumBadge value={item.cap_tap_huan} config={capBadgeConfig} truncate shape="pill" />
           );
-        case 'ten_don_vi':
+        case 'ten_don_vi': {
+          const donViLabel = formatLopTenDonViDisplay(item.ten_don_vi);
           return (
-            <span
-              className="text-body-sm text-muted-foreground truncate"
-              title={item.ten_don_vi ?? undefined}
-            >
-              {item.cap_tap_huan === 'Cấp xã'
-                ? (item.ten_don_vi ?? txt('common.emptyCell'))
-                : txt('common.emptyCell')}
+            <span className="text-body-sm text-muted-foreground truncate" title={donViLabel}>
+              {donViLabel}
             </span>
           );
+        }
         case 'so_dong':
           return (
             <span className="text-body-sm tabular-nums text-muted-foreground">
@@ -270,11 +267,9 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
               {item.cap_tap_huan ? (
                 <EnumBadge value={item.cap_tap_huan} config={capBadgeConfig} shape="pill" truncate />
               ) : null}
-              {item.cap_tap_huan === 'Cấp xã' && item.ten_don_vi?.trim() ? (
-                <span className="truncate max-w-[12rem]" title={item.ten_don_vi}>
-                  · {item.ten_don_vi}
-                </span>
-              ) : null}
+              <span className="truncate max-w-[12rem]" title={formatLopTenDonViDisplay(item.ten_don_vi)}>
+                · {formatLopTenDonViDisplay(item.ten_don_vi)}
+              </span>
               {item.so_dong != null ? (
                 <span className="tabular-nums shrink-0">· {item.so_dong} người</span>
               ) : null}

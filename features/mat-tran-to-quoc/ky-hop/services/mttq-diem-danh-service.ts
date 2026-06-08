@@ -181,13 +181,39 @@ export async function getDiemDanhSummariesForKyHopIds(kyHopIds: string[]): Promi
   return m;
 }
 
+function mapUyVienDiemDanhSummaryRows(
+  rows: readonly Record<string, unknown>[],
+  uniq: string[],
+): Map<string, MttqUyVienDiemDanhSummary> {
+  const m = new Map<string, MttqUyVienDiemDanhSummary>();
+  for (const row of rows) {
+    const vid = String(row.uy_vien_id ?? '');
+    m.set(vid, {
+      uy_vien_id: vid,
+      so_ky_hop: Number(row.so_ky_hop ?? 0),
+      co_mat: Number(row.co_mat ?? 0),
+      vang_mat: Number(row.vang_mat ?? 0),
+      chua_diem_danh: Number(row.chua_diem_danh ?? 0),
+    });
+  }
+  for (const id of uniq) {
+    if (!m.has(id)) {
+      m.set(id, { uy_vien_id: id, so_ky_hop: 0, co_mat: 0, vang_mat: 0, chua_diem_danh: 0 });
+    }
+  }
+  return m;
+}
+
 /** Tóm tắt điểm danh theo nhiều ủy viên (view hoặc mock). */
 export async function getUyVienDiemDanhSummariesForIds(
   uyVienIds: string[],
+  donViId?: string | null,
 ): Promise<Map<string, MttqUyVienDiemDanhSummary>> {
   const uniq = [...new Set(uyVienIds.map((x) => x.trim()).filter(Boolean))];
   const empty = new Map<string, MttqUyVienDiemDanhSummary>();
   if (uniq.length === 0) return empty;
+
+  const scopedDonViId = donViId?.toString().trim() || null;
 
   if (!isSupabase()) {
     const m = new Map<string, MttqUyVienDiemDanhSummary>();
@@ -198,7 +224,11 @@ export async function getUyVienDiemDanhSummariesForIds(
         continue;
       }
       const nk = uv.nhiem_ky_id;
-      const khList = MTTQ_KY_HOP_MOCK.filter((k) => String(k.nhiem_ky_id) === nk);
+      const khList = MTTQ_KY_HOP_MOCK.filter((k) => {
+        if (String(k.nhiem_ky_id) !== nk) return false;
+        if (scopedDonViId) return String(k.don_vi_id ?? '') === scopedDonViId;
+        return true;
+      });
       let co = 0;
       let vang = 0;
       for (const kh of khList) {
@@ -221,30 +251,20 @@ export async function getUyVienDiemDanhSummariesForIds(
   const supabase = getSupabase();
   if (!supabase) return empty;
 
+  if (scopedDonViId) {
+    const { data, error } = await supabase.rpc('get_uy_vien_diem_danh_summary_for_don_vi', {
+      p_uy_vien_ids: uniq.map(Number),
+      p_don_vi_id: Number(scopedDonViId),
+    });
+    if (error) handleSupabaseError(error);
+    return mapUyVienDiemDanhSummaryRows((data ?? []) as Record<string, unknown>[], uniq);
+  }
+
   const { data, error } = await supabase
     .from('v_diem_danh_uy_vien_summary')
     .select('uy_vien_id, so_ky_hop, co_mat, vang_mat, chua_diem_danh')
     .in('uy_vien_id', uniq);
 
   if (error) handleSupabaseError(error);
-
-  const m = new Map<string, MttqUyVienDiemDanhSummary>();
-  for (const row of data ?? []) {
-    const r = row as Record<string, unknown>;
-    const vid = String(r.uy_vien_id ?? '');
-    m.set(vid, {
-      uy_vien_id: vid,
-      so_ky_hop: Number(r.so_ky_hop ?? 0),
-      co_mat: Number(r.co_mat ?? 0),
-      vang_mat: Number(r.vang_mat ?? 0),
-      chua_diem_danh: Number(r.chua_diem_danh ?? 0),
-    });
-  }
-
-  for (const id of uniq) {
-    if (!m.has(id)) {
-      m.set(id, { uy_vien_id: id, so_ky_hop: 0, co_mat: 0, vang_mat: 0, chua_diem_danh: 0 });
-    }
-  }
-  return m;
+  return mapUyVienDiemDanhSummaryRows((data ?? []) as Record<string, unknown>[], uniq);
 }

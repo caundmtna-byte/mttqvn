@@ -1,3 +1,4 @@
+import { txt } from '@/lib/text';
 import type { MttqLopTapHuanListRow, MttqTapHuanChiTietFlatRow } from '../core/types';
 
 const DON_VI_EMPTY_KEY = '__none__';
@@ -62,7 +63,7 @@ export function aggregateTapHuanTopDonViLop(rows: MttqLopTapHuanListRow[], topN:
   return [...map.entries()]
     .map(([id, value]) => ({
       id,
-      label: id === DON_VI_EMPTY_KEY ? '—' : id,
+      label: id === DON_VI_EMPTY_KEY ? txt('matTranTapHuan.tinhCapDefault') : id,
       value,
     }))
     .sort((a, b) => b.value - a.value)
@@ -144,7 +145,7 @@ export function aggregateTapHuanTopDonViLopFromFlat(
   return [...map.entries()]
     .map(([id, value]) => ({
       id,
-      label: id === DON_VI_EMPTY_KEY ? '—' : id,
+      label: id === DON_VI_EMPTY_KEY ? txt('matTranTapHuan.tinhCapDefault') : id,
       value,
     }))
     .sort((a, b) => b.value - a.value)

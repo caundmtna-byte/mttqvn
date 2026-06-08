@@ -17,6 +17,7 @@ import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { txt } from '@/lib/text';
 import { getErrorMessage, getLanguage } from '@/lib/utils';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
+import { formatLopTenDonViDisplay } from './utils/display-format';
 import { matchesSearchTerm } from '@/lib/searchUtils';
 import { useListWithFilter } from '@/lib/hooks';
 import TabGroup from '@/components/ui/TabGroup';
@@ -49,6 +50,7 @@ import {
 } from './utils/column-search';
 import { getMttqLopTapHuanById } from './services/mttq-tap-huan-service';
 import {
+  canViewLopTapHuanRow,
   canViewTapHuanUngVienRow,
   isTapHuanUngVienScopedToXaPhuong,
   useMttqLopTapHuanViewer,
@@ -154,8 +156,11 @@ const DanhSachTapHuanPage: React.FC = () => {
 
   const viewer = useMttqLopTapHuanViewer();
 
-  /** Tab Lớp: ai có quyền xem module thì thấy hết lớp. */
-  const viewableRows = rows;
+  /** Tab Lớp: Tỉnh / bypass xem hết; Xã phường chỉ lớp cấp tỉnh/TW + cùng `don_vi_id`. */
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewLopTapHuanRow(viewer, r)),
+    [rows, viewer],
+  );
 
   /**
    * Tab Danh sách CT + Thống kê: Tỉnh / cap_bac=1 / quan_tri xem hết ứng viên;
@@ -165,6 +170,15 @@ const DanhSachTapHuanPage: React.FC = () => {
     () => chiTietFlatRows.filter((r) => canViewTapHuanUngVienRow(viewer, r)),
     [chiTietFlatRows, viewer],
   );
+
+  /** Drawer chi tiết: đóng + báo nếu viewer không đủ quyền (vd. đoán id lớp xã khác). */
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewLopTapHuanRow(viewer, viewingData)) {
+      toast.error(txt('matTranTapHuan.noViewPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, viewer]);
 
   useEffect(() => {
     if (mainTab === 'lop') resetChiTietListState();
@@ -303,7 +317,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     for (const f of flatUnderFilteredLop) {
       const raw = (f.ten_don_vi_lop ?? '').trim();
       const value = raw || '__empty__';
-      const label = raw || txt('common.emptyCell');
+      const label = formatLopTenDonViDisplay(raw || null);
       const cur = map.get(value);
       if (cur) cur.count += 1;
       else map.set(value, { label, count: 1 });
@@ -472,7 +486,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     const map = new Map<string, { label: string; count: number }>();
     for (const r of viewableRows) {
       const value = r.don_vi_id?.trim() || '__empty__';
-      const label = r.ten_don_vi?.trim() || txt('matTranTapHuan.stats.donViNone');
+      const label = formatLopTenDonViDisplay(r.ten_don_vi);
       const cur = map.get(value);
       if (cur) cur.count += 1;
       else map.set(value, { label, count: 1 });
@@ -555,7 +569,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       ten_lop_tap_huan: item.ten_lop_tap_huan,
       nam_tap_huan: String(item.nam_tap_huan ?? ''),
       cap_tap_huan: item.cap_tap_huan,
-      ten_don_vi: item.cap_tap_huan === 'Cấp xã' ? (item.ten_don_vi ?? '') : '',
+      ten_don_vi: formatLopTenDonViDisplay(item.ten_don_vi),
       so_dong: String(item.so_dong),
       ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? '',
     }),
@@ -572,7 +586,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       ten_lop_tap_huan: item.ten_lop_tap_huan,
       nam_tap_huan: String(item.nam_tap_huan ?? ''),
       cap_tap_huan: item.cap_tap_huan,
-      ten_don_vi_lop: item.cap_tap_huan === 'Cấp xã' ? (item.ten_don_vi_lop ?? '') : '',
+      ten_don_vi_lop: formatLopTenDonViDisplay(item.ten_don_vi_lop),
       ten_can_bo: item.ten_can_bo ?? '',
       ten_to_chuc: item.ten_to_chuc ?? '',
       ten_phong_ban: item.ten_phong_ban ?? '',

@@ -8,7 +8,7 @@ import React, {
   Suspense,
   startTransition,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,6 +35,10 @@ import {
   useNhapXuatKhoCtFlatList,
   useDeleteNhapXuatKhoMany,
 } from './hooks/use-kho-nhap-xuat-kho';
+import {
+  useKhoNhapXuatKhoViewer,
+  canViewNhapXuatKhoRow,
+} from './hooks/use-kho-nhap-xuat-kho-viewer';
 import { getNhapXuatKhoById } from './services/kho-nhap-xuat-kho-service';
 import { useNhapXuatKhoStore } from './store/useNhapXuatKhoStore';
 import { useNhapXuatKhoCtFlatStore } from './store/useNhapXuatKhoCtFlatStore';
@@ -81,6 +85,7 @@ type FormOrigin = 'list' | 'detail';
 
 const NhapXuatKhoPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
@@ -125,6 +130,17 @@ const NhapXuatKhoPage: React.FC = () => {
   const [showExportList, setShowExportList] = useState(false);
   const [showExportCt, setShowExportCt] = useState(false);
 
+  /** Mở drawer chi tiết khi quay lại từ trang in phiếu (`?open=<phieuId>`). */
+  useEffect(() => {
+    if (!canView || activeTab !== TAB_LIST) return;
+    const raw = searchParams.get('open')?.trim();
+    if (!raw) return;
+    startTransition(() => setViewingId(raw));
+    const next = new URLSearchParams(searchParams);
+    next.delete('open');
+    setSearchParams(next, { replace: true });
+  }, [canView, activeTab, searchParams, setSearchParams]);
+
   const {
     searchTerm: listSearch,
     filters: listFilters,
@@ -148,6 +164,16 @@ const NhapXuatKhoPage: React.FC = () => {
 
   const { data: rows = [], isLoading: listLoading } = useNhapXuatKhoList({ enabled: listQueryEnabled });
   const { data: ctRows = [], isLoading: ctLoading } = useNhapXuatKhoCtFlatList({ enabled: listQueryEnabled });
+  const viewer = useKhoNhapXuatKhoViewer();
+
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewNhapXuatKhoRow(viewer, r)),
+    [rows, viewer],
+  );
+  const viewableCtRows = useMemo(
+    () => ctRows.filter((r) => canViewNhapXuatKhoRow(viewer, r)),
+    [ctRows, viewer],
+  );
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useNhapXuatKhoDetail(viewingId, { enabled: detailEnabled });
   const isListTabLoading = listLoading || waitingMatrixHydrate;
@@ -196,8 +222,8 @@ const NhapXuatKhoPage: React.FC = () => {
     [],
   );
 
-  const filtered = useListWithFilter(rows, listSearch, listFilters, filterList);
-  const filteredCt = useListWithFilter(ctRows, ctSearch, ctFilters, filterCt);
+  const filtered = useListWithFilter(viewableRows, listSearch, listFilters, filterList);
+  const filteredCt = useListWithFilter(viewableCtRows, ctSearch, ctFilters, filterCt);
 
   const sorted = useMemo(() => sortNhapXuatKhoList(filtered, listSort), [filtered, listSort]);
   const sortedCt = useMemo(() => sortNhapXuatKhoCtFlat(filteredCt, ctSort), [filteredCt, ctSort]);
@@ -336,42 +362,42 @@ const NhapXuatKhoPage: React.FC = () => {
 
   const listEmptyTitle = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('common.noResults')
         : txt('matTranNhapXuatKho.emptyTitleList'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   const listEmptyDescription = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('matTranNhapXuatKho.emptyFilteredHint')
         : txt('matTranNhapXuatKho.emptyHintList'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   const ctEmptyTitle = useMemo(
     () =>
-      sortedCt.length === 0 && ctRows.length > 0 && hasCtFilters
+      sortedCt.length === 0 && viewableCtRows.length > 0 && hasCtFilters
         ? txt('common.noResults')
         : txt('matTranNhapXuatKho.emptyTitleCt'),
-    [sortedCt.length, ctRows.length, hasCtFilters],
+    [sortedCt.length, viewableCtRows.length, hasCtFilters],
   );
 
   const ctEmptyDescription = useMemo(
     () =>
-      sortedCt.length === 0 && ctRows.length > 0 && hasCtFilters
+      sortedCt.length === 0 && viewableCtRows.length > 0 && hasCtFilters
         ? txt('matTranNhapXuatKho.emptyFilteredHint')
         : txt('matTranNhapXuatKho.emptyHintCt'),
-    [sortedCt.length, ctRows.length, hasCtFilters],
+    [sortedCt.length, viewableCtRows.length, hasCtFilters],
   );
 
   useEffect(() => {
     if (!viewingId) return;
-    if (!rows.some((r) => r.id === viewingId)) {
+    if (!viewableRows.some((r) => r.id === viewingId)) {
       setViewingId(null);
     }
-  }, [rows, viewingId]);
+  }, [viewableRows, viewingId]);
 
   const tabs = useMemo(
     () => [
@@ -518,7 +544,7 @@ const NhapXuatKhoPage: React.FC = () => {
               }}
               onExport={handleExportList}
               onDeleteMany={handleDeleteMany}
-              items={rows}
+              items={viewableRows}
             />
             <div className="flex-1 min-h-0">
               <NhapXuatKhoTable
@@ -538,7 +564,7 @@ const NhapXuatKhoPage: React.FC = () => {
               desktopStartSlot={tabSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               onExport={handleExportCt}
-              items={ctRows}
+              items={viewableCtRows}
             />
             <div className="flex-1 min-h-0">
               <NhapXuatKhoCtFlatTable

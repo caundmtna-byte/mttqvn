@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { TrendingUp, Plus, BarChart3, Building2, MapPin, Landmark, Calendar, Download } from 'lucide-react';
+import { TrendingUp, Plus, BarChart3, Building2, MapPin, Landmark, Calendar, Download, Briefcase } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericToolbar from '@/components/shared/GenericToolbar';
@@ -7,11 +7,9 @@ import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import FilterChipSingleSelect from '@/components/shared/FilterChipSingleSelect';
 import { BTN_ADD } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
-import { CHIP_FILTER_NULL } from '../../danh-sach-can-bo/core/constants';
-import { MTTQ_TANG_LUONG_LOAI_KY_OPTIONS } from '../core/constants';
 import { useMttqTangLuongStore } from '../store/useMttqTangLuongStore';
 import { countTangLuongColumnSearchActive } from '../utils/column-search';
-import { useTangLuongFilterCounts } from '../hooks/use-tang-luong-filter-counts';
+import { useTangLuongChipOptions } from '../hooks/use-tang-luong-chip-options';
 import type { MttqTangLuongKeHoachGroupMode, MttqTangLuongListRow } from '../core/types';
 import type { TangLuongMainTab } from '../core/constants';
 
@@ -67,62 +65,13 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
     setSort,
   } = useMttqTangLuongStore();
 
-  const loaiKyCountsRaw = useTangLuongFilterCounts(itemRows, searchTerm, filters);
+  const loaiKyCountsRaw = useTangLuongChipOptions(itemRows, searchTerm, filters);
 
-  const loaiKyOptions = useMemo(
-    () =>
-      MTTQ_TANG_LUONG_LOAI_KY_OPTIONS.map((o) => ({
-        label: o.label,
-        value: o.value,
-        count: loaiKyCountsRaw.loaiKyCounts[o.value] ?? 0,
-      })),
-    [loaiKyCountsRaw.loaiKyCounts],
-  );
-
-  const phongBanOptions = useMemo(() => {
-    const labels = new Map<string, string>();
-    for (const r of itemRows) {
-      const value = r.phong_ban_id?.trim() ? r.phong_ban_id : CHIP_FILTER_NULL;
-      if (!labels.has(value)) labels.set(value, (r.ten_phong_ban ?? '').trim() || txt('common.emptyCell'));
-    }
-    return [...labels.entries()]
-      .map(([value, label]) => ({
-        value,
-        label,
-        count: loaiKyCountsRaw.phongBanCounts[value] ?? 0,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [itemRows, loaiKyCountsRaw.phongBanCounts]);
-
-  const donViOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of itemRows) {
-      const value = r.don_vi_id?.trim() ? r.don_vi_id : CHIP_FILTER_NULL;
-      if (!map.has(value)) map.set(value, (r.ten_don_vi ?? '').trim() || txt('common.emptyCell'));
-    }
-    return [...map.entries()]
-      .map(([value, label]) => ({
-        value,
-        label,
-        count: loaiKyCountsRaw.donViCounts[value] ?? 0,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [itemRows, loaiKyCountsRaw.donViCounts]);
-
-  const toChucOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of itemRows) {
-      const value = r.to_chuc_id?.trim() ? r.to_chuc_id : CHIP_FILTER_NULL;
-      if (!map.has(value)) map.set(value, (r.ten_to_chuc ?? '').trim() || txt('common.emptyCell'));
-    }
-    return [...map.entries()]
-      .map(([value, label]) => ({
-        value,
-        label,
-        count: loaiKyCountsRaw.toChucCounts[value] ?? 0,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [itemRows, loaiKyCountsRaw.toChucCounts]);
+  const loaiKyOptions = loaiKyCountsRaw.loaiKy;
+  const phongBanOptions = loaiKyCountsRaw.phongBan;
+  const chucVuOptions = loaiKyCountsRaw.chucVu;
+  const donViOptions = loaiKyCountsRaw.donVi;
+  const toChucOptions = loaiKyCountsRaw.toChuc;
 
   const statsYearOptions = useMemo(() => {
     const cur = new Date().getFullYear();
@@ -203,6 +152,7 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
       countTangLuongColumnSearchActive(filters.columnSearch ?? {}) +
       (filters.loai_ky?.length ? 1 : 0) +
       (filters.phong_ban_id?.length ? 1 : 0) +
+      (filters.chuc_vu_id?.length ? 1 : 0) +
       (filters.don_vi_id?.length ? 1 : 0) +
       (filters.to_chuc_id?.length ? 1 : 0)
     );
@@ -224,6 +174,7 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
     setFilter('columnSearch', {});
     setFilter('loai_ky', []);
     setFilter('phong_ban_id', []);
+    setFilter('chuc_vu_id', []);
     setFilter('don_vi_id', []);
     setFilter('to_chuc_id', []);
     setSort(null, null);
@@ -248,6 +199,14 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
         onChange: (vals: string[]) => setFilter('phong_ban_id', vals),
       },
       {
+        key: 'chuc_vu_id',
+        label: txt('matTranTangLuong.filterChucVu'),
+        icon: Briefcase,
+        options: chucVuOptions,
+        value: filters.chuc_vu_id ?? [],
+        onChange: (vals: string[]) => setFilter('chuc_vu_id', vals),
+      },
+      {
         key: 'don_vi_id',
         label: txt('matTranTangLuong.filterDonVi'),
         icon: MapPin,
@@ -267,10 +226,12 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
     [
       loaiKyOptions,
       phongBanOptions,
+      chucVuOptions,
       donViOptions,
       toChucOptions,
       filters.loai_ky,
       filters.phong_ban_id,
+      filters.chuc_vu_id,
       filters.don_vi_id,
       filters.to_chuc_id,
       setFilter,
@@ -394,6 +355,14 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
             className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[240px]"
           />
           <FilterChipMultiSelect
+            options={chucVuOptions}
+            value={filters.chuc_vu_id ?? []}
+            onChange={(vals) => setFilter('chuc_vu_id', vals)}
+            placeholder={txt('matTranTangLuong.filterChucVu')}
+            icon={Briefcase}
+            className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[240px]"
+          />
+          <FilterChipMultiSelect
             options={donViOptions}
             value={filters.don_vi_id ?? []}
             onChange={(vals) => setFilter('don_vi_id', vals)}
@@ -445,7 +414,9 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
     }
     return null;
   }, [
+    chucVuOptions,
     donViOptions,
+    filters.chuc_vu_id,
     filters.don_vi_id,
     filters.loai_ky,
     filters.phong_ban_id,

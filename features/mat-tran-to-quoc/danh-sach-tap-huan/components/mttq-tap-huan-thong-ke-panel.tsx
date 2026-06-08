@@ -72,7 +72,7 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
     () =>
       topDonVi.map((r) => ({
         id: r.id,
-        label: r.id === DON_VI_NONE_ID ? txt('matTranTapHuan.stats.donViNone') : r.label,
+        label: r.id === DON_VI_NONE_ID ? txt('matTranTapHuan.tinhCapDefault') : r.label,
         value: r.value,
       })),
     [topDonVi],

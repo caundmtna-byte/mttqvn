@@ -1,0 +1,1 @@
+const a=["nhap_ngoai","xuat_ngoai","chuyen_kho"];function o(n){switch(n){case"nhap_ngoai":return"Nhập từ ngoài";case"xuat_ngoai":return"Xuất ra ngoài";case"chuyen_kho":return"Chuyển kho"}}export{a as N,o as l};

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
-import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
+import { transactionalCrudListQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import type { NhapXuatKhoFormValues } from '../core/schema';
 import type { NhapXuatKhoCtFlatRow, NhapXuatKhoDetail, NhapXuatKhoListRow } from '../core/types';
@@ -10,6 +10,7 @@ import {
   createNhapXuatKho,
   deleteNhapXuatKhoMany,
   getKhoTonKhoByKho,
+  getLastDonGiaMap,
   getNhapXuatKhoById,
   getNhapXuatKhoCtFlatList,
   getNhapXuatKhoList,
@@ -18,6 +19,7 @@ import {
 
 const listKey = queryKeys.khoNhapXuatKho.all;
 const ctFlatKey = queryKeys.khoNhapXuatKho.chiTietFlatList;
+const lastDonGiaKey = queryKeys.khoNhapXuatKho.lastDonGia;
 
 export function useNhapXuatKhoList(options?: { enabled?: boolean }) {
   return useQuery({
@@ -58,6 +60,15 @@ export function useTonKhoByKho(khoId: string | null, options?: { enabled?: boole
   });
 }
 
+export function useLastDonGiaMap(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: lastDonGiaKey,
+    queryFn: getLastDonGiaMap,
+    enabled: options?.enabled !== false,
+    ...masterDataQueryOptions,
+  });
+}
+
 function listRowFromDetail(d: NhapXuatKhoDetail): NhapXuatKhoListRow {
   return {
     id: d.id,
@@ -92,6 +103,7 @@ function patchListAfterMutation(
   });
   queryClient.setQueryData<NhapXuatKhoDetail>(queryKeys.khoNhapXuatKho.detail(full.id), full);
   void queryClient.invalidateQueries({ queryKey: ctFlatKey, refetchType: 'none' });
+  void queryClient.invalidateQueries({ queryKey: lastDonGiaKey, refetchType: 'none' });
   void queryClient.invalidateQueries({
     queryKey: ['kho-nhap-xuat-kho', 'ton-kho-by-kho'],
     refetchType: 'active',

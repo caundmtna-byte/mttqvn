@@ -4,15 +4,23 @@ import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';
 import GenericTable from '@/components/shared/GenericTable';
 import { formatDateShort, formatCurrency } from '@/lib/utils';
-import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
+import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
+import {
+  ColumnHeaderFilter,
+  ColumnHeaderSortMenu,
+  ColumnHeaderSearch,
+} from '@/components/shared/column-header';
 import EnumBadge from '@/components/ui/EnumBadge';
 import type { MttqTangLuongListRow } from '../core/types';
 import { useMttqTangLuongStore } from '../store/useMttqTangLuongStore';
 import { getTangLuongLoaiKyBadgeConfig, formatNgachBacLabel } from '../utils/display-format';
 import { MttqTangLuongTableRowActions } from './mttq-tang-luong-table-row-actions';
+import { useTangLuongChipOptions } from '../hooks/use-tang-luong-chip-options';
 
 interface Props {
   data: MttqTangLuongListRow[];
+  /** Dòng nguồn cho filter header cột (trước client filter); mặc định = `data`. */
+  optionRows?: MttqTangLuongListRow[];
   isLoading: boolean;
   onView: (item: MttqTangLuongListRow) => void;
   onEdit: (item: MttqTangLuongListRow) => void;
@@ -22,9 +30,11 @@ interface Props {
 }
 
 const loaiKyBadge = getTangLuongLoaiKyBadgeConfig();
+const ec = txt('common.emptyCell');
 
 const MttqTangLuongTable = memo(function MttqTangLuongTable({
   data,
+  optionRows,
   isLoading,
   onView,
   onEdit,
@@ -45,8 +55,13 @@ const MttqTangLuongTable = memo(function MttqTangLuongTable({
     resizeColumn,
     filters,
     setFilter,
+    searchTerm,
   } = useMttqTangLuongStore();
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null);
+
+  const headerChipOptions = useTangLuongChipOptions(optionRows ?? data, searchTerm, filters);
+  const chucVuHeaderOptions = headerChipOptions.chucVu;
+  const donViHeaderOptions = headerChipOptions.donVi;
 
   const renderColumnHeaderAccessory = useCallback(
     (col: ColumnConfig) => {
@@ -65,18 +80,50 @@ const MttqTangLuongTable = memo(function MttqTangLuongTable({
           ariaLabel={`${col.label} — ${txt('common.search')}`}
         />
       );
-      return (
-        <ColumnHeaderSortMenu
-          ariaLabel={col.label}
-          sortColumnId={col.id}
-          sort={sort}
-          setSort={setSort}
-          columnSearch={columnSearchEl}
-          columnSearchActive={Boolean(cs[col.id]?.trim())}
-        />
-      );
+
+      switch (col.id) {
+        case 'ten_chuc_vu':
+          return (
+            <ColumnHeaderFilter
+              options={chucVuHeaderOptions}
+              value={filters.chuc_vu_id ?? []}
+              onChange={(v) => setFilter('chuc_vu_id', v)}
+              ariaLabel={txt('matTranTangLuong.store.chucVuCol')}
+              sortColumnId="ten_chuc_vu"
+              sort={sort}
+              setSort={setSort}
+              columnSearch={columnSearchEl}
+              columnSearchActive={Boolean(cs[col.id]?.trim())}
+            />
+          );
+        case 'ten_don_vi':
+          return (
+            <ColumnHeaderFilter
+              options={donViHeaderOptions}
+              value={filters.don_vi_id ?? []}
+              onChange={(v) => setFilter('don_vi_id', v)}
+              ariaLabel={txt('matTranTangLuong.store.donViCol')}
+              sortColumnId="ten_don_vi"
+              sort={sort}
+              setSort={setSort}
+              columnSearch={columnSearchEl}
+              columnSearchActive={Boolean(cs[col.id]?.trim())}
+            />
+          );
+        default:
+          return (
+            <ColumnHeaderSortMenu
+              ariaLabel={col.label}
+              sortColumnId={col.id}
+              sort={sort}
+              setSort={setSort}
+              columnSearch={columnSearchEl}
+              columnSearchActive={Boolean(cs[col.id]?.trim())}
+            />
+          );
+      }
     },
-    [filters.columnSearch, setFilter, setSort, sort],
+    [chucVuHeaderOptions, donViHeaderOptions, filters.chuc_vu_id, filters.don_vi_id, filters.columnSearch, setFilter, setSort, sort],
   );
 
   const renderCell = useCallback(
@@ -94,6 +141,20 @@ const MttqTangLuongTable = memo(function MttqTangLuongTable({
               {item.ho_ten_can_bo}
             </span>
           );
+        case 'ten_chuc_vu':
+          return (
+            <span className="text-sm text-muted-foreground truncate block min-w-0" title={item.ten_chuc_vu ?? undefined}>
+              {item.ten_chuc_vu?.trim() || ec}
+            </span>
+          );
+        case 'ten_don_vi': {
+          const display = formatTenDonViCongTacDisplay(item.chuc_vu_cap_quan_ly, item.ten_don_vi);
+          return (
+            <span className="text-sm text-muted-foreground truncate block min-w-0" title={display}>
+              {display}
+            </span>
+          );
+        }
         case 'loai_ky':
           return <EnumBadge value={item.loai_ky} config={loaiKyBadge} truncate />;
         case 'ten_ngach_moi':
@@ -181,6 +242,11 @@ const MttqTangLuongTable = memo(function MttqTangLuongTable({
               <EnumBadge value={item.loai_ky} config={loaiKyBadge} shape="pill" truncate />
             </div>
             <p className="text-xs text-muted-foreground truncate">
+              {[item.ten_chuc_vu, formatTenDonViCongTacDisplay(item.chuc_vu_cap_quan_ly, item.ten_don_vi)]
+                .filter((s) => s && s !== ec && s !== '-')
+                .join(' · ')}
+            </p>
+            <p className="text-xs text-muted-foreground truncate mt-1">
               {formatNgachBacLabel(item.ten_ngach_moi, item.ma_bac_moi)}
               {item.luong > 0 ? ` · ${formatCurrency(item.luong)}` : ''}
             </p>

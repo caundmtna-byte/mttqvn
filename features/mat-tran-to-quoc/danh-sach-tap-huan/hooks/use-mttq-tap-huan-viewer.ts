@@ -16,7 +16,10 @@ export interface MttqLopTapHuanViewer {
 /**
  * Tổng hợp viewer cho module Tập huấn.
  *
- * Tab **Lớp tập huấn**: ai có quyền `xem` module thì thấy hết lớp (không lọc dòng lớp).
+ * Tab **Lớp tập huấn** (`canViewLopTapHuanRow`):
+ * - `canViewAll` / **Tỉnh** → hết lớp
+ * - **Xã phường** → lớp cấp tỉnh/TW (`don_vi_id` null) + lớp cùng `don_vi_id` NV
+ * - `cap_quan_ly` null → hết
  *
  * **Ứng viên / dòng CT** (detail lớp, tab Danh sách CT, tab Thống kê):
  * - `canViewAll` (cap_bac=1, quan_tri, admin, legacy) hoặc `cap_quan_ly` = **Tỉnh** → hết
@@ -75,6 +78,27 @@ export function canViewTapHuanUngVienRow(
     if (!viewer.viewerDonViId) return false;
     const rowDv = row.can_bo_don_vi_id?.toString().trim();
     return Boolean(rowDv) && rowDv === viewer.viewerDonViId;
+  }
+  return true;
+}
+
+export type LopTapHuanRowForViewGate = {
+  /** FK `mttq_lop_tap_huan.don_vi_id` — null = cấp tỉnh / TW. */
+  don_vi_id?: string | null;
+};
+
+/** Gate lớp tập huấn — áp cho tab Lớp trong index.tsx và drawer chi tiết. */
+export function canViewLopTapHuanRow(
+  viewer: MttqLopTapHuanViewer,
+  row: LopTapHuanRowForViewGate,
+): boolean {
+  if (viewer.canViewAll) return true;
+  if (viewer.chucVuCapQuanLy === 'Tỉnh') return true;
+  if (viewer.chucVuCapQuanLy === 'Xã phường') {
+    const rowDv = row.don_vi_id?.toString().trim();
+    if (!rowDv) return true;
+    if (!viewer.viewerDonViId) return false;
+    return rowDv === viewer.viewerDonViId;
   }
   return true;
 }

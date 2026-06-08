@@ -51,7 +51,7 @@ import { useKhoDanhSachHangHoaList } from '@/features/mat-tran-to-quoc/hang-hoa/
 import { nhapXuatKhoFormSchema, type NhapXuatKhoCtLineFormValues, type NhapXuatKhoFormValues } from '../core/schema';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 import type { NhapXuatKhoDetail } from '../core/types';
-import { useCreateNhapXuatKho, useUpdateNhapXuatKho, useTonKhoByKho } from '../hooks/use-kho-nhap-xuat-kho';
+import { useCreateNhapXuatKho, useUpdateNhapXuatKho, useTonKhoByKho, useLastDonGiaMap } from '../hooks/use-kho-nhap-xuat-kho';
 import NhapXuatKhoCtLineDrawer, {
   NHAP_XUAT_KHO_CT_EMPTY_LINE,
   type NhapXuatKhoLineHangHoaOption,
@@ -105,6 +105,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
   const { data: dviRows = [] } = useKhoDonViCuuTroList({ enabled: canViewDvi });
   const { data: dotRows = [] } = useKhoDotCuuTroList({ enabled: canViewDot });
   const { data: hhRows = [] } = useKhoDanhSachHangHoaList({ enabled: canViewHh });
+  const { data: lastDonGiaMap } = useLastDonGiaMap();
 
   const [lineDrawer, setLineDrawer] = useState<LineDrawerState>(null);
 
@@ -674,6 +675,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
           mode={lineDrawer.mode}
           initialLine={lineDrawerInitial}
           hangHoaOptions={hangHoaOptions}
+          lastDonGia={lastDonGiaMap}
           needCheckTonKho={needCheckTonKho}
           getTonInfo={getTonInfoForLine}
           tonKhoLoading={tonKhoQuery.isLoading}

@@ -28,8 +28,10 @@ export interface NhapXuatKhoListRow {
   ngay_phieu: string;
   kho_xuat_id: string | null;
   ten_kho_xuat: string | null;
+  kho_xuat_don_vi_id: string | null;
   kho_nhap_id: string | null;
   ten_kho_nhap: string | null;
+  kho_nhap_don_vi_id: string | null;
   don_vi_cuu_tro_id: string | null;
   ten_don_vi_cuu_tro: string | null;
   dot_cuu_tro_id: string | null;
@@ -69,8 +71,10 @@ export interface NhapXuatKhoCtFlatRow {
   ngay_phieu: string;
   kho_xuat_id: string | null;
   ten_kho_xuat: string | null;
+  kho_xuat_don_vi_id: string | null;
   kho_nhap_id: string | null;
   ten_kho_nhap: string | null;
+  kho_nhap_don_vi_id: string | null;
   don_vi_cuu_tro_id: string | null;
   ten_don_vi_cuu_tro: string | null;
   dot_cuu_tro_id: string | null;

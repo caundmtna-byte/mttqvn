@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -15,6 +16,7 @@ import {
   ListOrdered,
   Package,
   Plus,
+  Printer,
   Ruler,
   StickyNote,
   Trash2,
@@ -24,6 +26,7 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
+import DetailToolbar, { type DetailToolbarAction } from '@/components/shared/DetailToolbar';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
@@ -41,7 +44,7 @@ import type { NhapXuatKhoDetail, NhapXuatKhoCtRow } from '../core/types';
 import type { NhapXuatKhoCtLineFormValues } from '../core/schema';
 import { nhapXuatKhoFormSchema } from '../core/schema';
 import type { NhapXuatKhoLoaiPhieu } from '../core/constants';
-import { useUpdateNhapXuatKho, useTonKhoByKho } from '../hooks/use-kho-nhap-xuat-kho';
+import { useUpdateNhapXuatKho, useTonKhoByKho, useLastDonGiaMap } from '../hooks/use-kho-nhap-xuat-kho';
 import {
   chiTietToLineForm,
   nhapXuatKhoChiTietCellClass,
@@ -66,6 +69,8 @@ type LineDrawerState = null | { mode: 'add' } | { mode: 'edit'; index: number };
 
 type ChiTietDetailRow = NhapXuatKhoCtRow & { rowIndex: number; tenHangHoa: string };
 
+const IN_PHIEU_PATH_PREFIX = '/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho';
+
 function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
   switch (loai) {
     case 'nhap_ngoai':
@@ -78,11 +83,13 @@ function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
 }
 
 const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
+  const navigate = useNavigate();
   const { canEdit, canDelete } = useResourcePermissions('matTranReliefStockTransactions');
   const confirm = useConfirmStore((s) => s.confirm);
   const updateMutation = useUpdateNhapXuatKho();
   const canViewHh = useCan('view', 'matTranReliefGoods');
   const { data: hhRows = [] } = useKhoDanhSachHangHoaList({ enabled: canViewHh });
+  const { data: lastDonGiaMap } = useLastDonGiaMap();
 
   const [lineDrawer, setLineDrawer] = useState<LineDrawerState>(null);
   const [viewLineIndex, setViewLineIndex] = useState<number | null>(null);
@@ -269,6 +276,18 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
 
   const HeaderIcon = loaiPhieuIcon(data.loai_phieu);
 
+  const toolbarActions: DetailToolbarAction[] = useMemo(
+    () => [
+      {
+        label: txt('matTranNhapXuatKho.detail.toolbarPrint'),
+        icon: <Printer size={16} />,
+        variant: 'info',
+        onClick: () => navigate(`${IN_PHIEU_PATH_PREFIX}/${data.id}/in-phieu`),
+      },
+    ],
+    [data.id, navigate],
+  );
+
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
       <Button
@@ -341,6 +360,11 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
               </p>
             }
             badge={<EnumBadge value={data.loai_phieu} config={loaiBadge} shape="pill" truncate />}
+          />
+
+          <DetailToolbar
+            actions={toolbarActions}
+            className="bg-card rounded-xl border border-border"
           />
 
           <DetailSection
@@ -634,6 +658,7 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
           mode={lineDrawer.mode}
           initialLine={lineDrawerInitial}
           hangHoaOptions={hangHoaOptions}
+          lastDonGia={lastDonGiaMap}
           needCheckTonKho={needCheckTonKho}
           getTonInfo={getTonInfoForLine}
           tonKhoLoading={tonKhoQuery.isLoading}

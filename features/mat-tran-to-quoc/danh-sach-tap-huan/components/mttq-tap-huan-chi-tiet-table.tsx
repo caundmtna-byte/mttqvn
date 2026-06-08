@@ -9,7 +9,11 @@ import GenericTable from '@/components/shared/GenericTable';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateTimeShort } from '@/lib/utils';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
-import { getTapHuanCapBadgeConfig, getTapHuanThuocDienBadgeConfig } from '../utils/display-format';
+import {
+  formatLopTenDonViDisplay,
+  getTapHuanCapBadgeConfig,
+  getTapHuanThuocDienBadgeConfig,
+} from '../utils/display-format';
 import {
   ColumnHeaderFilter,
   ColumnHeaderSortMenu,
@@ -173,17 +177,14 @@ const MttqTapHuanChiTietTable = memo(function MttqTapHuanChiTietTable({
           return (
             <EnumBadge value={item.cap_tap_huan} config={capBadgeConfig} truncate shape="pill" />
           );
-        case 'ten_don_vi_lop':
+        case 'ten_don_vi_lop': {
+          const donViLopLabel = formatLopTenDonViDisplay(item.ten_don_vi_lop);
           return (
-            <span
-              className="text-body-sm text-muted-foreground truncate"
-              title={item.ten_don_vi_lop ?? undefined}
-            >
-              {item.cap_tap_huan === 'Cấp xã'
-                ? (item.ten_don_vi_lop ?? txt('common.emptyCell'))
-                : txt('common.emptyCell')}
+            <span className="text-body-sm text-muted-foreground truncate" title={donViLopLabel}>
+              {donViLopLabel}
             </span>
           );
+        }
         case 'ten_can_bo':
           return (
             <div className="flex min-w-0 items-center gap-2">
@@ -302,11 +303,12 @@ const MttqTapHuanChiTietTable = memo(function MttqTapHuanChiTietTable({
               {item.cap_tap_huan ? (
                 <EnumBadge value={item.cap_tap_huan} config={capBadgeConfig} shape="pill" truncate />
               ) : null}
-              {item.cap_tap_huan === 'Cấp xã' && item.ten_don_vi_lop?.trim() ? (
-                <span className="truncate max-w-[12rem]" title={item.ten_don_vi_lop}>
-                  · {item.ten_don_vi_lop}
-                </span>
-              ) : null}
+              <span
+                className="truncate max-w-[12rem]"
+                title={formatLopTenDonViDisplay(item.ten_don_vi_lop)}
+              >
+                · {formatLopTenDonViDisplay(item.ten_don_vi_lop)}
+              </span>
             </div>
             <div className="flex justify-end pt-2 border-t border-border">
               <MttqTapHuanChiTietTableRowActions

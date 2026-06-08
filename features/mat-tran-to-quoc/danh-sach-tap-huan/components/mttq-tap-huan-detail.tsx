@@ -26,6 +26,7 @@ import Button from '@/components/ui/Button';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDateTimeShort } from '@/lib/utils';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
+import { formatLopTenDonViDisplay } from '../utils/display-format';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import { DRAWER_WIDTH_DETAIL_SMALL } from '@/lib/dialog-sizes';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
@@ -370,18 +371,15 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, viewer, onClose, onEdit, 
                 value={<EnumBadge value={data.cap_tap_huan} config={capBadgeConfig} shape="pill" />}
                 icon={<Tag size={12} />}
               />
-              {data.cap_tap_huan === 'Cấp xã' ? (
-                <DetailField
-                  label={txt('matTranTapHuan.form.donVi')}
-                  value={
-                    data.ten_don_vi?.trim() ? (
-                      <span className="text-body-sm text-foreground">{data.ten_don_vi}</span>
-                    ) : undefined
-                  }
-                  icon={<MapPin size={12} />}
-                  emptyText={txt('common.emptyCell')}
-                />
-              ) : null}
+              <DetailField
+                label={txt('matTranTapHuan.form.donVi')}
+                value={
+                  <span className="text-body-sm text-foreground">
+                    {formatLopTenDonViDisplay(data.ten_don_vi)}
+                  </span>
+                }
+                icon={<MapPin size={12} />}
+              />
               <DetailField
                 className={DETAIL_FIELD_SPAN_FULL}
                 label={txt('matTranTapHuan.form.ghiChu')}

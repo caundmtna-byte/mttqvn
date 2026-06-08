@@ -21,6 +21,8 @@ export const matTranTangLuong = {
   store: {
     ngayNangCol: 'Ngày nâng lương',
     canBoCol: 'Cán bộ',
+    chucVuCol: 'Chức vụ',
+    donViCol: 'Đơn vị',
     loaiKyCol: 'Loại kỳ',
     ngachMoiCol: 'Ngạch · Bậc mới',
     luongCol: 'Lương',
@@ -120,6 +122,7 @@ export const matTranTangLuong = {
   searchPlaceholder: 'Tìm cán bộ, ngạch, bậc, lương, ghi chú…',
   filterLoaiKy: 'Loại kỳ',
   filterPhongBan: 'Phòng ban',
+  filterChucVu: 'Chức vụ',
   filterDonVi: 'Đơn vị (xã/phường)',
   filterToChuc: 'Tổ chức',
 };

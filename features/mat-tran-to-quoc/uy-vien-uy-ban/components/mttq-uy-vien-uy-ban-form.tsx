@@ -46,9 +46,14 @@ import {
   type MttqUyVienUyBanFormValues,
 } from '../core/schema';
 import type { MttqUyVienUyBan } from '../core/types';
-import { useCreateMttqUyVienUyBan, useUpdateMttqUyVienUyBan } from '../hooks/use-mttq-uy-vien-uy-ban';
+import {
+  useCreateMttqUyVienUyBan,
+  useMttqUyVienUyBanListForNhiemKy,
+  useUpdateMttqUyVienUyBan,
+} from '../hooks/use-mttq-uy-vien-uy-ban';
 import { useMttqUyVienUyBanViewer } from '../hooks/use-mttq-uy-vien-uy-ban-viewer';
 import { buildUyVienCanBoOptions } from '../utils/can-bo-options-for-uy-vien';
+import { validateUyVienUniqueness } from '../utils/uy-vien-conflict';
 import { formatTenPhongBanHienThi } from '../utils/phong-ban-hien-thi';
 import {
   MTTQ_UY_VIEN_TRANG_THAM_GIA_DANG,
@@ -237,17 +242,6 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     return m;
   }, [canBoList]);
 
-  const canBoOptions = useMemo(
-    () =>
-      buildUyVienCanBoOptions({
-        viewer,
-        canBoList,
-        ensureCanBoId: initialData?.can_bo_id,
-        ensureCanBoLabel: initialData?.ho_va_ten,
-      }),
-    [viewer, canBoList, initialData?.can_bo_id, initialData?.ho_va_ten],
-  );
-
   const defaultValues = useMemo(() => {
     const base = mttqUyVienUyBanToFormInput(initialData ?? null);
     let next = base;
@@ -266,11 +260,39 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     handleSubmit,
     reset,
     setValue,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<MttqUyVienUyBanFormInput, unknown, MttqUyVienUyBanFormValues>({
     defaultValues,
     resolver: zodResolver(mttqUyVienUyBanSchema) as Resolver<MttqUyVienUyBanFormInput, unknown, MttqUyVienUyBanFormValues>,
   });
+
+  const watchedNhiemKyId = useWatch({ control, name: 'nhiem_ky_id' });
+  const nhiemKyIdTrim = String(watchedNhiemKyId ?? defaultNhiemKyId ?? '').trim();
+  const { data: uyVienInNhiemKy = [] } = useMttqUyVienUyBanListForNhiemKy(nhiemKyIdTrim || null);
+
+  const excludeCanBoIds = useMemo(() => {
+    const set = new Set<string>();
+    const selfId = isEdit && initialData ? String(initialData.id) : '';
+    for (const r of uyVienInNhiemKy) {
+      if (selfId && String(r.id) === selfId) continue;
+      const cb = String(r.can_bo_id).trim();
+      if (cb) set.add(cb);
+    }
+    return set;
+  }, [uyVienInNhiemKy, isEdit, initialData]);
+
+  const canBoOptions = useMemo(
+    () =>
+      buildUyVienCanBoOptions({
+        viewer,
+        canBoList,
+        excludeCanBoIds,
+        ensureCanBoId: initialData?.can_bo_id,
+        ensureCanBoLabel: initialData?.ho_va_ten,
+      }),
+    [viewer, canBoList, excludeCanBoIds, initialData?.can_bo_id, initialData?.ho_va_ten],
+  );
 
   const watchedCanBoId = useWatch({ control, name: 'can_bo_id' });
   const snap = useMemo(
@@ -317,6 +339,13 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
     else if (viewerDonViId) setValue('don_vi_id', viewerDonViId);
   }, [watchedCanBoId, lockDonViToViewer, canBoMap, viewerDonViId, setValue]);
 
+  const ensureCanBoId = isEdit && initialData ? String(initialData.can_bo_id).trim() : '';
+  useEffect(() => {
+    const cb = String(watchedCanBoId ?? '').trim();
+    if (!cb || cb === ensureCanBoId) return;
+    if (excludeCanBoIds.has(cb)) setValue('can_bo_id', '');
+  }, [watchedNhiemKyId, excludeCanBoIds, watchedCanBoId, ensureCanBoId, setValue]);
+
   const persistCanBoIfNeeded = useCallback(
     async (canBoId: string) => {
       const editor = canBoEditorRef.current;
@@ -330,6 +359,15 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
   );
 
   const onSubmit: SubmitHandler<MttqUyVienUyBanFormValues> = async (data) => {
+    const uniquenessErr = validateUyVienUniqueness(data, {
+      uyVienInNhiemKy,
+      excludeId: isEdit && initialData ? initialData.id : undefined,
+    });
+    if (uniquenessErr) {
+      setError(uniquenessErr.field, { type: 'manual', message: uniquenessErr.message });
+      return;
+    }
+
     const cbId = String(data.can_bo_id).trim();
     if (canEditCanBo && canBoRowForEditor && cbId) {
       const ok = await persistCanBoIfNeeded(cbId);

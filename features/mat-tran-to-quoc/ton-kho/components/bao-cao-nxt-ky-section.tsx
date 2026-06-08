@@ -4,6 +4,7 @@ import { useKhoDanhSachKhoList } from '../../danh-sach-kho/hooks/use-kho-danh-sa
 import { useKhoDanhSachHangHoaList } from '../../hang-hoa/hooks/use-kho-danh-sach-hang-hoa';
 import { useKhoDanhMucHangHoaList } from '../../hang-hoa/hooks/use-kho-danh-muc-hang-hoa';
 import { useNXTByPeriod, isNXTDateRangeValid } from '../hooks/use-kho-ton-kho';
+import { useKhoTonKhoViewer, getViewerKhoIds } from '../hooks/use-kho-ton-kho-viewer';
 import { useTonKhoNxtStore } from '../store/useTonKhoNxtStore';
 import type { NXTFilters } from '../core/types';
 import { exportNXTToExcel } from '../utils/export-ton-kho';
@@ -19,7 +20,9 @@ interface Props {
 
 const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
   const { canExport } = useResourcePermissions('matTranReliefInventory');
+  const viewer = useKhoTonKhoViewer();
   const { data: khoList = [] } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
+  const viewerKhoIds = useMemo(() => getViewerKhoIds(viewer, khoList), [viewer, khoList]);
   const { data: hangHoaList = [] } = useKhoDanhSachHangHoaList({ enabled: listQueryEnabled });
   const { data: danhMucList = [] } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });
   const clearNxtFilters = useTonKhoNxtStore((s) => s.clearNxtFilters);
@@ -31,16 +34,32 @@ const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
   const nxtHangHoaIds = useTonKhoNxtStore((s) => s.nxtHangHoaIds);
   const nxtCategoryIds = useTonKhoNxtStore((s) => s.nxtCategoryIds);
 
+  const viewableKhoList = useMemo(
+    () =>
+      viewerKhoIds
+        ? khoList.filter((k) => viewerKhoIds.includes(k.id))
+        : khoList,
+    [khoList, viewerKhoIds],
+  );
+
+  const effectiveWarehouseIds = useMemo(() => {
+    if (!viewerKhoIds) return nxtWarehouseIds;
+    if (nxtWarehouseIds.length > 0) {
+      return nxtWarehouseIds.filter((id) => viewerKhoIds.includes(id));
+    }
+    return viewerKhoIds;
+  }, [viewerKhoIds, nxtWarehouseIds]);
+
   const filters: NXTFilters = useMemo(
     () => ({
       dateFrom: nxtDateFrom,
       dateTo: nxtDateTo,
-      warehouseIds: nxtWarehouseIds,
+      warehouseIds: effectiveWarehouseIds,
       loaiPhieu: nxtLoaiPhieu,
       hangHoaIds: nxtHangHoaIds,
       categoryIds: nxtCategoryIds,
     }),
-    [nxtDateFrom, nxtDateTo, nxtWarehouseIds, nxtLoaiPhieu, nxtHangHoaIds, nxtCategoryIds]
+    [nxtDateFrom, nxtDateTo, effectiveWarehouseIds, nxtLoaiPhieu, nxtHangHoaIds, nxtCategoryIds]
   );
 
   const rangeOk = isNXTDateRangeValid(filters);
@@ -67,7 +86,7 @@ const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
     <div className="flex flex-col flex-1 min-h-0 gap-2 mt-1.5">
       <div className="shrink-0 print:hidden">
         <BaoCaoNxtToolbar
-          khoList={khoList}
+          khoList={viewableKhoList}
           danhMucList={danhMucList}
           hangHoaList={hangHoaList}
           onExportExcel={onExport}

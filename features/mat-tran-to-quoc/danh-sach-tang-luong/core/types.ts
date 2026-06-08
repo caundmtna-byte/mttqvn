@@ -6,6 +6,7 @@ export interface MttqTangLuongFilters {
   loai_ky: string[];
   can_bo_id: string[];
   phong_ban_id: string[];
+  chuc_vu_id: string[];
   don_vi_id: string[];
   to_chuc_id: string[];
 }
@@ -31,6 +32,10 @@ export interface MttqTangLuongListRow {
   /** Embed cán bộ */
   ho_ten_can_bo: string;
   phong_ban_id: string | null;
+  chuc_vu_id: string | null;
+  ten_chuc_vu: string | null;
+  /** `var_chuc_vu.cap_quan_ly` sau chuẩn hoá — hiển thị đơn vị (Tỉnh → `-`). */
+  chuc_vu_cap_quan_ly?: string | null;
   don_vi_id: string | null;
   to_chuc_id: string | null;
   ten_phong_ban: string | null;

@@ -15,15 +15,21 @@ import {
   getMttqUyVienUyBanStatsList,
   importMttqUyVienUyBan,
   updateMttqUyVienUyBan,
+  UyVienUyBanConflictError,
 } from '../services/mttq-uy-vien-uy-ban-service';
+
+function uyVienMutationErrorMessage(e: unknown): string {
+  if (e instanceof UyVienUyBanConflictError) return e.message;
+  return getErrorMessage(e);
+}
 
 const listKey = queryKeys.mttqUyVienUyBan.all;
 const statsListKey = queryKeys.mttqUyVienUyBan.stats;
 
-export const useMttqUyVienUyBanList = (options?: { enabled?: boolean }) =>
+export const useMttqUyVienUyBanList = (options?: { enabled?: boolean; donViId?: string | null }) =>
   useQuery({
-    queryKey: listKey,
-    queryFn: getMttqUyVienUyBanList,
+    queryKey: [...listKey, options?.donViId ?? 'all'] as const,
+    queryFn: () => getMttqUyVienUyBanList(options?.donViId),
     enabled: options?.enabled !== false,
     ...listQueryOptions,
   });
@@ -65,7 +71,7 @@ export const useCreateMttqUyVienUyBan = (onSuccess?: () => void) => {
       toast.success(txt('matTranUyVienUyBan.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
+    onError: (e: unknown) => toast.error(uyVienMutationErrorMessage(e)),
   });
 };
 
@@ -81,7 +87,7 @@ export const useUpdateMttqUyVienUyBan = (onSuccess?: () => void) => {
       toast.success(txt('matTranUyVienUyBan.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
+    onError: (e: unknown) => toast.error(uyVienMutationErrorMessage(e)),
   });
 };
 

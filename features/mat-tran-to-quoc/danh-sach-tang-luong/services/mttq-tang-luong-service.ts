@@ -3,6 +3,7 @@ import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { resolveEffectiveCapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import type { MttqTangLuongListRow } from '../core/types';
 import type { MttqTangLuongFormValues } from '../core/schema';
@@ -66,13 +67,22 @@ function tenDonViFromXaEmbed(v: unknown): string | null {
   return xa || tinh || null;
 }
 
+function tenFromVarChucVuEmbed(v: unknown): string | null {
+  const o = pickEmbedded<{ ten_chuc_vu?: unknown; ten?: unknown }>(v);
+  const t = o?.ten_chuc_vu ?? o?.ten;
+  return t != null && String(t).trim() !== '' ? String(t) : null;
+}
+
 export function flattenMttqTangLuongRow(
   row: Record<string, unknown>,
   toChucTenById?: ReadonlyMap<string, string>,
+  chucVuTenById?: ReadonlyMap<string, string>,
 ): MttqTangLuongListRow {
   const canBo = pickEmbedded<{
     ho_ten?: unknown;
     phong_ban_id?: unknown;
+    chuc_vu_id?: unknown;
+    chuc_vu?: unknown;
     don_vi_id?: unknown;
     to_chuc_ids?: unknown;
     cap_quan_ly?: unknown;
@@ -110,6 +120,17 @@ export function flattenMttqTangLuongRow(
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_ten_can_bo: String(canBo?.ho_ten ?? ''),
     phong_ban_id: nullableId(canBo?.phong_ban_id),
+    chuc_vu_id: nullableId(canBo?.chuc_vu_id),
+    ten_chuc_vu: (() => {
+      const fromEmbed = tenFromVarChucVuEmbed(canBo?.chuc_vu);
+      if (fromEmbed) return fromEmbed;
+      const cvId = nullableId(canBo?.chuc_vu_id);
+      if (cvId && chucVuTenById) return chucVuTenById.get(cvId) ?? null;
+      return null;
+    })(),
+    chuc_vu_cap_quan_ly: resolveEffectiveCapQuanLy(
+      Array.isArray(canBo?.cap_quan_ly) ? canBo.cap_quan_ly.map(String) : [],
+    ),
     don_vi_id: nullableId(canBo?.don_vi_id),
     to_chuc_id: (() => {
       const ids = Array.isArray(canBo?.to_chuc_ids) ? (canBo.to_chuc_ids as unknown[]) : [];
@@ -194,16 +215,28 @@ async function buildToChucTenByIdMap(): Promise<Map<string, string>> {
   );
 }
 
+async function buildChucVuTenByIdMap(): Promise<Map<string, string>> {
+  if (!isSupabase()) return new Map();
+  const supabase = getSupabase();
+  if (!supabase) return new Map();
+  const { data, error } = await supabase.from('var_chuc_vu').select('id,ten_chuc_vu');
+  if (error) handleSupabaseError(error);
+  return new Map(
+    (data ?? []).map((r) => [String(r.id), String(r.ten_chuc_vu ?? '').trim()]).filter(([, ten]) => ten !== ''),
+  );
+}
+
 export async function getMttqTangLuongList(): Promise<MttqTangLuongListRow[]> {
   if (!isSupabase()) {
     return [...mockRows].sort((a, b) => b.ngay_nang_luong.localeCompare(a.ngay_nang_luong));
   }
-  const [list, toChucById] = await Promise.all([
+  const [list, toChucById, chucVuById] = await Promise.all([
     repo.getAll({ orderBy: 'ngay_nang_luong', ascending: false }),
     buildToChucTenByIdMap(),
+    buildChucVuTenByIdMap(),
   ]);
   return list.map((row) =>
-    flattenMttqTangLuongRow(row as unknown as Record<string, unknown>, toChucById),
+    flattenMttqTangLuongRow(row as unknown as Record<string, unknown>, toChucById, chucVuById),
   );
 }
 
@@ -220,8 +253,8 @@ export async function getMttqTangLuongById(id: string): Promise<MttqTangLuongLis
     .maybeSingle();
   if (error) handleSupabaseError(error);
   if (!data) return null;
-  const toChucById = await buildToChucTenByIdMap();
-  return flattenMttqTangLuongRow(data as unknown as Record<string, unknown>, toChucById);
+  const [toChucById, chucVuById] = await Promise.all([buildToChucTenByIdMap(), buildChucVuTenByIdMap()]);
+  return flattenMttqTangLuongRow(data as unknown as Record<string, unknown>, toChucById, chucVuById);
 }
 
 export async function getMttqTangLuongByCanBo(canBoId: string, limit = 20): Promise<MttqTangLuongListRow[]> {
@@ -235,7 +268,7 @@ export async function getMttqTangLuongByCanBo(canBoId: string, limit = 20): Prom
   }
   const supabase = getSupabase();
   if (!supabase) return [];
-  const [{ data, error }, toChucById] = await Promise.all([
+  const [{ data, error }, toChucById, chucVuById] = await Promise.all([
     supabase
       .from('mttq_tang_luong')
       .select(MTTQ_TANG_LUONG_SELECT_LIST)
@@ -243,10 +276,11 @@ export async function getMttqTangLuongByCanBo(canBoId: string, limit = 20): Prom
       .order('ngay_nang_luong', { ascending: false })
       .limit(limit),
     buildToChucTenByIdMap(),
+    buildChucVuTenByIdMap(),
   ]);
   if (error) handleSupabaseError(error);
   return (data ?? []).map((row) =>
-    flattenMttqTangLuongRow(row as unknown as Record<string, unknown>, toChucById),
+    flattenMttqTangLuongRow(row as unknown as Record<string, unknown>, toChucById, chucVuById),
   );
 }
 

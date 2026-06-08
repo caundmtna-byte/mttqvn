@@ -31,6 +31,8 @@ export function filterCanBoForUyVienForm(
 export type BuildUyVienCanBoOptionsParams = {
   viewer: MttqUyVienUyBanViewer;
   canBoList: readonly MttqCanBo[];
+  /** Cán bộ đã là ủy viên trong nhiệm kỳ đang chọn — ẩn khỏi combobox (trừ `ensureCanBoId`). */
+  excludeCanBoIds?: ReadonlySet<string> | readonly string[];
   /** Giữ hiển thị Combobox khi sửa ủy viên gắn cán bộ không còn trong danh sách đã lọc. */
   ensureCanBoId?: string | null;
   /** Fallback label khi cán bộ không có trong `canBoList` (cache flatten). */
@@ -40,11 +42,16 @@ export type BuildUyVienCanBoOptionsParams = {
 export function buildUyVienCanBoOptions({
   viewer,
   canBoList,
+  excludeCanBoIds,
   ensureCanBoId,
   ensureCanBoLabel,
 }: BuildUyVienCanBoOptionsParams): UyVienCanBoComboboxOption[] {
   const filtered = filterCanBoForUyVienForm(viewer, canBoList);
   const ensure = String(ensureCanBoId ?? '').trim();
+  const excludeSet =
+    excludeCanBoIds instanceof Set
+      ? excludeCanBoIds
+      : new Set((excludeCanBoIds ?? []).map((id) => String(id).trim()).filter(Boolean));
   const byId = new Map<string, MttqCanBo>();
   for (const c of canBoList) byId.set(String(c.id), c);
 
@@ -72,6 +79,7 @@ export function buildUyVienCanBoOptions({
   for (const c of sorted) {
     const id = String(c.id);
     if (seen.has(id)) continue;
+    if (excludeSet.has(id) && id !== ensure) continue;
     seen.add(id);
     out.push({ label: c.ho_ten, value: id, subLabel: canBoSubLabel(c) });
   }

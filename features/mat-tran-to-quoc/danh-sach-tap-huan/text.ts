@@ -1,4 +1,6 @@
 export const matTranTapHuan = {
+  /** Nhãn đơn vị lớp khi `don_vi_id` / tên xã trống (cấp tỉnh, TW, …). */
+  tinhCapDefault: 'CQMTTQ tỉnh',
   noViewPermission: 'Bạn không có quyền xem tập huấn.',
   noEmployeeBanner:
     'Tài khoản chưa gắn hồ sơ nhân viên — không thể ghi nhận người tạo lớp tập huấn.',

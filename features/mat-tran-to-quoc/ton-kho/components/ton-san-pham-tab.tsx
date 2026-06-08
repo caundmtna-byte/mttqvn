@@ -4,6 +4,7 @@ import { Package, Warehouse, FolderOpen } from 'lucide-react';
 import { useKhoDanhSachKhoList } from '../../danh-sach-kho/hooks/use-kho-danh-sach-kho';
 import { useKhoDanhMucHangHoaList } from '../../hang-hoa/hooks/use-kho-danh-muc-hang-hoa';
 import { useTonKhoDisplay } from '../hooks/use-kho-ton-kho';
+import { useKhoTonKhoViewer, getViewerKhoIds } from '../hooks/use-kho-ton-kho-viewer';
 import { aggregateTonKhoByProduct } from '../utils/aggregate-ton-kho-by-product';
 import { exportTonKhoByProductToExcel } from '../utils/export-ton-kho';
 import type { TonKhoByProductFilters, TonKhoProductAgg } from '../core/types';
@@ -28,7 +29,9 @@ const TonSanPhamTab: React.FC<{
   waitingMatrixHydrate: boolean;
 }> = ({ onBack, listQueryEnabled, waitingMatrixHydrate }) => {
   const { canExport } = useResourcePermissions('matTranReliefInventory');
+  const viewer = useKhoTonKhoViewer();
   const { data: khoList = [] } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
+  const viewerKhoIds = useMemo(() => getViewerKhoIds(viewer, khoList), [viewer, khoList]);
   const { data: danhMucList = [] } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });
   const {
     data: displayRows = [],
@@ -53,8 +56,16 @@ const TonSanPhamTab: React.FC<{
   const reorderColumns = useTonKhoByProductStore((s) => s.reorderColumns);
   const resetColumns = useTonKhoByProductStore((s) => s.resetColumns);
 
+  const viewableDisplayRows = useMemo(
+    () =>
+      viewerKhoIds
+        ? displayRows.filter((r) => viewerKhoIds.includes(String(r.kho_id)))
+        : displayRows,
+    [displayRows, viewerKhoIds],
+  );
+
   const flatFiltered = useMemo(() => {
-    let r = displayRows;
+    let r = viewableDisplayRows;
     if ((filters.warehouseIds?.length ?? 0) > 0) {
       const wh = new Set(filters.warehouseIds!.map(String));
       r = r.filter((x) => wh.has(String(x.kho_id)));
@@ -64,7 +75,7 @@ const TonSanPhamTab: React.FC<{
       r = r.filter((x) => x.id_danh_muc && cat.has(String(x.id_danh_muc)));
     }
     return r;
-  }, [displayRows, filters.warehouseIds, filters.categoryIds]);
+  }, [viewableDisplayRows, filters.warehouseIds, filters.categoryIds]);
 
   const aggregated = useMemo(() => aggregateTonKhoByProduct(flatFiltered), [flatFiltered]);
 
@@ -90,14 +101,22 @@ const TonSanPhamTab: React.FC<{
       .catch(() => toast.error(txt('matTranTonKho.export.error')));
   }, [filteredList]);
 
+  const viewableKhoList = useMemo(
+    () =>
+      viewerKhoIds
+        ? khoList.filter((k) => viewerKhoIds.includes(k.id))
+        : khoList,
+    [khoList, viewerKhoIds],
+  );
+
   const khoOptions = useMemo(
     () =>
-      khoList.map((k) => ({
+      viewableKhoList.map((k) => ({
         value: k.id,
         label: k.ten_kho,
-        count: displayRows.filter((r) => String(r.kho_id) === String(k.id)).length || 0,
+        count: viewableDisplayRows.filter((r) => String(r.kho_id) === String(k.id)).length || 0,
       })),
-    [khoList, displayRows]
+    [viewableKhoList, viewableDisplayRows]
   );
 
   const categoryOptions = useMemo(
@@ -105,9 +124,9 @@ const TonSanPhamTab: React.FC<{
       danhMucList.map((d) => ({
         value: d.id,
         label: d.ten_danh_muc,
-        count: displayRows.filter((r) => String(r.id_danh_muc) === String(d.id)).length || 0,
+        count: viewableDisplayRows.filter((r) => String(r.id_danh_muc) === String(d.id)).length || 0,
       })),
-    [danhMucList, displayRows]
+    [danhMucList, viewableDisplayRows]
   );
 
   const activeFilterCount = (filters.warehouseIds?.length ?? 0) + (filters.categoryIds?.length ?? 0);

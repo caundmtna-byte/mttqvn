@@ -19,12 +19,28 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 1,
   },
   {
+    id: 'ten_chuc_vu',
+    label: txt('matTranTangLuong.store.chucVuCol'),
+    visible: true,
+    minWidth: 120,
+    maxWidth: 180,
+    order: 2,
+  },
+  {
+    id: 'ten_don_vi',
+    label: txt('matTranTangLuong.store.donViCol'),
+    visible: true,
+    minWidth: 140,
+    maxWidth: 220,
+    order: 3,
+  },
+  {
     id: 'loai_ky',
     label: txt('matTranTangLuong.store.loaiKyCol'),
     visible: true,
     minWidth: 120,
     maxWidth: 180,
-    order: 2,
+    order: 4,
   },
   {
     id: 'ten_ngach_moi',
@@ -32,7 +48,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 140,
     maxWidth: 220,
-    order: 3,
+    order: 5,
   },
   {
     id: 'luong',
@@ -40,7 +56,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 110,
     maxWidth: 140,
-    order: 4,
+    order: 6,
   },
   {
     id: 'ten_ngach_cu',
@@ -48,7 +64,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 200,
-    order: 5,
+    order: 7,
   },
   {
     id: 'ghi_chu',
@@ -56,7 +72,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 280,
-    order: 6,
+    order: 8,
   },
   {
     id: 'actions',
@@ -64,7 +80,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 96,
     maxWidth: 120,
-    order: 7,
+    order: 9,
   },
 ];
 
@@ -73,6 +89,7 @@ export interface MttqTangLuongTableFilters {
   loai_ky: string[];
   can_bo_id: string[];
   phong_ban_id: string[];
+  chuc_vu_id: string[];
   don_vi_id: string[];
   to_chuc_id: string[];
 }
@@ -82,6 +99,7 @@ const initialFilters: MttqTangLuongTableFilters = {
   loai_ky: [],
   can_bo_id: [],
   phong_ban_id: [],
+  chuc_vu_id: [],
   don_vi_id: [],
   to_chuc_id: [],
 };

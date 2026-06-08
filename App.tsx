@@ -43,10 +43,17 @@ const KhoDonViCuuTroPage = lazy(() => import('./features/mat-tran-to-quoc/don-vi
 const KhoDotCuuTroPage = lazy(() => import('./features/mat-tran-to-quoc/dot-cuu-tro/index'));
 const HangHoaPage = lazy(() => import('./features/mat-tran-to-quoc/hang-hoa/index'));
 const NhapXuatKhoPage = lazy(() => import('./features/mat-tran-to-quoc/nhap-xuat-kho/index'));
+const KhoNhapXuatKhoInPhieuPage = lazy(
+  () => import('./features/mat-tran-to-quoc/nhap-xuat-kho/pages/kho-nhap-xuat-kho-in-phieu-page'),
+);
 const TonKhoPage = lazy(() => import('./features/mat-tran-to-quoc/ton-kho/index'));
 const KhoBaoCaoHoTroPage = lazy(() => import('./features/mat-tran-to-quoc/bao-cao-ho-tro/index'));
 const ThietLapLuongPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-luong/index'));
 const DanhSachTangLuongPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tang-luong/index'));
+const DtTgThamHoiToChucPage = lazy(() => import('./features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/index'));
+const DtTgThamHoiCaNhanPage = lazy(() => import('./features/dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan/index'));
+const DtTgThongTinToChucQuanTrongPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/index'));
+const DtTgThongTinCaNhanTieuBieuPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import {
@@ -118,6 +125,10 @@ const App = () => {
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<KhoDotCuuTroPage />} />
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<HangHoaPage />} />
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho" element={<NhapXuatKhoPage />} />
+          <Route
+            path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho/:phieuId/in-phieu"
+            element={<KhoNhapXuatKhoInPhieuPage />}
+          />
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/ton-kho" element={<TonKhoPage />} />
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
           <Route
@@ -146,6 +157,10 @@ const App = () => {
           <Route path="/quan-ly-giao-viec/bao-cao-cong-viec" element={<BaoCaoCongViecPage />} />
           <Route path="/phan-bien-xa-hoi" element={<PhanBienXaHoiDashboard />} />
           <Route path="/dan-toc-ton-giao" element={<DanTocTonGiaoDashboard />} />
+          <Route path="/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc" element={<DtTgThamHoiToChucPage />} />
+          <Route path="/dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan" element={<DtTgThamHoiCaNhanPage />} />
+          <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong" element={<DtTgThongTinToChucQuanTrongPage />} />
+          <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu" element={<DtTgThongTinCaNhanTieuBieuPage />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
           <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 

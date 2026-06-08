@@ -43,6 +43,8 @@ interface Props {
   mode: 'add' | 'edit';
   initialLine: NhapXuatKhoCtLineFormValues;
   hangHoaOptions: NhapXuatKhoLineHangHoaOption[];
+  /** Đơn giá gần nhất theo hang_hoa_id (lần nhập gần nhất). */
+  lastDonGia?: Map<string, number>;
   /** Khi loại phiếu = xuất ra ngoài hoặc chuyển kho — kiểm tra tồn kho của kho xuất. */
   needCheckTonKho: boolean;
   /** Lookup tồn kho theo hang_hoa_id (đã trừ usedByOtherLines). Trả null khi chưa biết. */
@@ -62,6 +64,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
   mode,
   initialLine,
   hangHoaOptions,
+  lastDonGia,
   needCheckTonKho,
   getTonInfo,
   tonKhoLoading = false,
@@ -99,6 +102,15 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
   const watchedHangHoaId = watch('hang_hoa_id');
   const watchedSoLuong = watch('so_luong');
   const watchedDonGia = watch('don_gia');
+
+  const autoFilledDonGia = useMemo(() => {
+    const id = (watchedHangHoaId ?? '').trim();
+    if (!id || !lastDonGia) return false;
+    const last = lastDonGia.get(id);
+    if (last == null || last <= 0) return false;
+    const current = watchedDonGia.trim() === '' ? 0 : Number(watchedDonGia);
+    return Number.isFinite(current) && current === last;
+  }, [watchedHangHoaId, watchedDonGia, lastDonGia]);
 
   const thanhTien = useMemo(() => {
     const sl = Number(watchedSoLuong);
@@ -177,6 +189,13 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
                       field.onChange(id);
                       const opt = hangHoaOptions.find((o) => o.value === id);
                       if (opt) setValue('don_vi_tinh', opt.don_vi_tinh, { shouldDirty: true, shouldValidate: true });
+                      const currentDonGia = watch('don_gia');
+                      if ((currentDonGia ?? '').trim() === '' && lastDonGia) {
+                        const last = lastDonGia.get(id);
+                        if (last != null && last > 0) {
+                          setValue('don_gia', String(last), { shouldDirty: true, shouldValidate: true });
+                        }
+                      }
                     }}
                     error={errors.hang_hoa_id?.message}
                     icon={<Package size={12} />}
@@ -224,14 +243,21 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
               name="don_gia"
               control={control}
               render={({ field }) => (
-                <CurrencyInput
-                  label={txt('matTranNhapXuatKho.form.donGia')}
-                  icon={<Coins size={12} />}
-                  suffix=""
-                  value={field.value === '' ? 0 : Number(field.value)}
-                  onChange={(n) => field.onChange(n === 0 ? '' : String(n))}
-                  error={errors.don_gia?.message}
-                />
+                <div>
+                  <CurrencyInput
+                    label={txt('matTranNhapXuatKho.form.donGia')}
+                    icon={<Coins size={12} />}
+                    suffix=""
+                    value={field.value === '' ? 0 : Number(field.value)}
+                    onChange={(n) => field.onChange(n === 0 ? '' : String(n))}
+                    error={errors.don_gia?.message}
+                  />
+                  {autoFilledDonGia ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {txt('matTranNhapXuatKho.form.donGiaAutoHint')}
+                    </p>
+                  ) : null}
+                </div>
               )}
             />
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/40 text-sm">

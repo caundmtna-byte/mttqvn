@@ -37,12 +37,15 @@ export function useTangLuongFilterCounts(
     const phongBanCounts = countByKey(rows, searchTerm, filters, 'phong_ban_id', (r) =>
       r.phong_ban_id?.trim() ? r.phong_ban_id : CHIP_FILTER_NULL,
     );
+    const chucVuCounts = countByKey(rows, searchTerm, filters, 'chuc_vu_id', (r) =>
+      r.chuc_vu_id?.trim() ? r.chuc_vu_id : CHIP_FILTER_NULL,
+    );
     const donViCounts = countByKey(rows, searchTerm, filters, 'don_vi_id', (r) =>
       r.don_vi_id?.trim() ? r.don_vi_id : CHIP_FILTER_NULL,
     );
     const toChucCounts = countByKey(rows, searchTerm, filters, 'to_chuc_id', (r) =>
       r.to_chuc_id?.trim() ? r.to_chuc_id : CHIP_FILTER_NULL,
     );
-    return { loaiKyCounts, phongBanCounts, donViCounts, toChucCounts };
+    return { loaiKyCounts, phongBanCounts, chucVuCounts, donViCounts, toChucCounts };
   }, [rows, searchTerm, filters]);
 }
