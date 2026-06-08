@@ -221,9 +221,12 @@ async function buildChucVuTenByIdMap(): Promise<Map<string, string>> {
   if (!supabase) return new Map();
   const { data, error } = await supabase.from('var_chuc_vu').select('id,ten_chuc_vu');
   if (error) handleSupabaseError(error);
-  return new Map(
-    (data ?? []).map((r) => [String(r.id), String(r.ten_chuc_vu ?? '').trim()]).filter(([, ten]) => ten !== ''),
-  );
+  const entries: [string, string][] = [];
+  for (const r of data ?? []) {
+    const ten = String(r.ten_chuc_vu ?? '').trim();
+    if (ten !== '') entries.push([String(r.id), ten]);
+  }
+  return new Map(entries);
 }
 
 export async function getMttqTangLuongList(): Promise<MttqTangLuongListRow[]> {
@@ -325,6 +328,12 @@ export async function createMttqTangLuong(
       ...payload,
       loai_ky: payload.loai_ky as MttqTangLuongListRow['loai_ky'],
       ho_ten_can_bo: 'Mock cán bộ',
+      phong_ban_id: null,
+      chuc_vu_id: null,
+      ten_chuc_vu: null,
+      don_vi_id: null,
+      to_chuc_id: null,
+      can_bo_cap_quan_ly: [],
       ten_phong_ban: null,
       ten_bo_phan: null,
       ten_don_vi: null,

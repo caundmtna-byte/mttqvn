@@ -138,7 +138,7 @@ const LuongBacToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
-      desktopStartSlot={tabsSlot}
+      tabSlot={tabsSlot}
       onAdd={canCreate && onAdd ? onAdd : undefined}
     />
   );

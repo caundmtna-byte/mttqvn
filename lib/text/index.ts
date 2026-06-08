@@ -34,6 +34,14 @@ import { matTranTonKho } from '../../features/mat-tran-to-quoc/ton-kho/text';
 import { matTranReliefSupportReport } from '../../features/mat-tran-to-quoc/bao-cao-ho-tro/text';
 import { matTranThietLapLuong } from '../../features/mat-tran-to-quoc/thiet-lap-luong/text';
 import { matTranTangLuong } from '../../features/mat-tran-to-quoc/danh-sach-tang-luong/text';
+import { danTocCaNhanTieuBieu } from '../../features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/text';
+import { danTocToChucQuanTrong } from '../../features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/text';
+import { danTocThamHoiToChuc } from '../../features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/text';
+import { danTocThamHoiCaNhan } from '../../features/dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan/text';
+import { dttgThongKeThamHoi } from '../../features/dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi/text';
+import { pbxhThucHien } from '../../features/phan-bien-xa-hoi/thuc-hien-phan-bien-xa-hoi/text';
+import { pbxhThietLap } from '../../features/phan-bien-xa-hoi/thiet-lap-danh-muc/text';
+import { pbxhThongKe } from '../../features/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi/text';
 import { diaBan } from '../../features/he-thong/danh-sach-tinh-thanh/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
@@ -84,6 +92,14 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('matTranReliefSupportReport', matTranReliefSupportReport),
   ...flatten('matTranThietLapLuong', matTranThietLapLuong),
   ...flatten('matTranTangLuong', matTranTangLuong),
+  ...flatten('danTocCaNhanTieuBieu', danTocCaNhanTieuBieu),
+  ...flatten('danTocToChucQuanTrong', danTocToChucQuanTrong),
+  ...flatten('danTocThamHoiToChuc', danTocThamHoiToChuc),
+  ...flatten('danTocThamHoiCaNhan', danTocThamHoiCaNhan),
+  ...flatten('dttgThongKeThamHoi', dttgThongKeThamHoi),
+  ...flatten('pbxhThucHien', pbxhThucHien),
+  ...flatten('pbxhThietLap', pbxhThietLap),
+  ...flatten('pbxhThongKe', pbxhThongKe),
   ...flatten('tenure', tenure),
   ...flatten('taiLieu', taiLieu),
   ...flatten('diaBan', diaBan),

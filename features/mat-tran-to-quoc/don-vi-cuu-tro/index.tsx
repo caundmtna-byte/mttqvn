@@ -25,11 +25,13 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import ExportDialog from '@/components/shared/ExportDialog';
+import ImportDialog from '@/components/shared/ImportDialog';
 import ErrorState from '@/components/shared/ErrorState';
 import {
   useKhoDonViCuuTroList,
   useKhoDonViCuuTroDetail,
   useDeleteKhoDonViCuuTroMany,
+  useImportKhoDonViCuuTro,
 } from './hooks/use-kho-don-vi-cuu-tro';
 import { useKhoDonViCuuTroStore } from './store/useKhoDonViCuuTroStore';
 import type { KhoDonViCuuTroListRow } from './core/types';
@@ -96,6 +98,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const {
     searchTerm,
@@ -119,6 +122,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
   const { data: viewingData } = useKhoDonViCuuTroDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteKhoDonViCuuTroMany();
+  const importMutation = useImportKhoDonViCuuTro(() => setShowImport(false));
 
   useEffect(() => {
     return () => resetState();
@@ -153,6 +157,18 @@ const KhoDonViCuuTroPage: React.FC = () => {
       { key: 'ghi_chu', label: txt('matTranDonViCuuTro.store.ghiChuCol') },
       { key: 'tg_tao', label: txt('matTranDonViCuuTro.store.tgTaoCol') },
       { key: 'tg_cap_nhat', label: txt('matTranDonViCuuTro.store.tgCapNhatCol') },
+    ],
+    [],
+  );
+
+  const IMPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'loai', label: txt('matTranDonViCuuTro.form.loai'), required: true },
+      { key: 'ten', label: txt('matTranDonViCuuTro.form.ten'), required: true },
+      { key: 'dia_chi', label: txt('matTranDonViCuuTro.form.diaChi') },
+      { key: 'dien_thoai', label: txt('matTranDonViCuuTro.form.dienThoai') },
+      { key: 'email', label: txt('matTranDonViCuuTro.form.email') },
+      { key: 'ghi_chu', label: txt('matTranDonViCuuTro.form.ghiChu') },
     ],
     [],
   );
@@ -274,6 +290,11 @@ const KhoDonViCuuTroPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const handleImportData = useCallback(
+    async (data: Record<string, unknown>[]) => importMutation.mutateAsync(data),
+    [importMutation],
+  );
+
   const handleCloseForm = () => {
     setShowForm(false);
     setEditing(null);
@@ -313,6 +334,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
             });
           }}
           onExport={handleExport}
+          onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
           items={rows}
         />
@@ -373,6 +395,18 @@ const KhoDonViCuuTroPage: React.FC = () => {
             selectedData={selectedExportData}
             fileName={txt('matTranDonViCuuTro.exportFileName')}
             visibleColumnKeys={visibleColumnKeys}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImport && (
+          <ImportDialog
+            open={showImport}
+            onClose={() => setShowImport(false)}
+            columns={IMPORT_COLUMNS}
+            onImport={handleImportData}
+            templateFileName={txt('matTranDonViCuuTro.import.templateName')}
           />
         )}
       </AnimatePresence>

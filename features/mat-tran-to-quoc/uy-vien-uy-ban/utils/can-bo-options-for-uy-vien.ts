@@ -51,7 +51,9 @@ export function buildUyVienCanBoOptions({
   const excludeSet =
     excludeCanBoIds instanceof Set
       ? excludeCanBoIds
-      : new Set((excludeCanBoIds ?? []).map((id) => String(id).trim()).filter(Boolean));
+      : new Set(
+          (Array.isArray(excludeCanBoIds) ? excludeCanBoIds : []).map((id) => String(id).trim()).filter(Boolean),
+        );
   const byId = new Map<string, MttqCanBo>();
   for (const c of canBoList) byId.set(String(c.id), c);
 

@@ -82,6 +82,7 @@ describe('buildTaskReportRpcArgs', () => {
     overdueOnly: false,
     viewerId: null,
     viewerDonViId: null,
+    viewerPhongBanId: null,
     viewAll: false,
   };
 

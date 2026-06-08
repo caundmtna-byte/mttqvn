@@ -13,7 +13,7 @@ import { countDanhMucColumnSearchActive } from '../utils/column-search';
 import type { KhoDanhMucHangHoaListRow } from '../core/types';
 
 interface Props {
-  desktopStartSlot: ReactNode;
+  tabSlot: ReactNode;
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
@@ -22,7 +22,7 @@ interface Props {
 }
 
 const KhoDanhMucHangHoaToolbar: React.FC<Props> = ({
-  desktopStartSlot,
+  tabSlot,
   onPageBack,
   onAdd,
   onExport,
@@ -200,11 +200,7 @@ const KhoDanhMucHangHoaToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
-      desktopStartSlot={
-        <div className="min-w-0 max-w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-px">
-          {desktopStartSlot}
-        </div>
-      }
+      tabSlot={tabSlot}
     />
   );
 };

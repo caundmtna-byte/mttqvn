@@ -253,7 +253,7 @@ const TonSanPhamTab: React.FC<{
       <div className="flex-1 flex items-center justify-center p-6">
         <ErrorState
           title={txt('common.error')}
-          description={error instanceof Error ? error.message : txt('matTranTonKho.listLoadErrorHint')}
+          message={error instanceof Error ? error.message : txt('matTranTonKho.listLoadErrorHint')}
           onRetry={() => void refetch()}
         />
       </div>

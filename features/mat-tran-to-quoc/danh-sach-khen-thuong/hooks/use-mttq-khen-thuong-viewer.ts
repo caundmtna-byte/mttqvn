@@ -60,9 +60,22 @@ export function useMttqKhenThuongViewer(): MttqKhenThuongViewer {
   ]);
 }
 
-/** Dữ liệu tối thiểu để gate xem danh sách QĐ / tab Chi tiết phẳng. */
+/**
+ * Dữ liệu tối thiểu để gate xem tab Danh sách QĐ.
+ * - `MttqKhenThuongListRow` → dùng `rewarded_can_bo_don_vi_ids`
+ * - `MttqKhenThuong` (full detail) → dùng `chi_tiet[].can_bo_don_vi_id`
+ */
 export type KhenThuongRowForViewGate = {
-  id_nguoi_tao?: string | null;
+  /** Từ `MttqKhenThuongListRow` — tập `don_vi_id` cán bộ được khen trong QĐ. */
+  rewarded_can_bo_don_vi_ids?: string[];
+  /** Từ `MttqKhenThuong` (full detail) — fallback khi không có `rewarded_can_bo_don_vi_ids`. */
+  chi_tiet?: Array<{ can_bo_don_vi_id?: string | null }>;
+};
+
+/** Dữ liệu tối thiểu để gate xem tab Chi tiết phẳng. */
+export type KhenThuongChiTietFlatRowForViewGate = {
+  /** `mttq_can_bo.don_vi_id` cán bộ được khen trên dòng CT. */
+  can_bo_don_vi_id?: string | null;
 };
 
 /** Dòng bảng con trong drawer detail. */
@@ -72,29 +85,43 @@ export type KhenThuongDetailChiTietLineForViewGate = {
   can_bo_id_nguoi_tao?: string | null;
 };
 
-function isKhenThuongModuleViewUnrestricted(viewer: MttqKhenThuongViewer): boolean {
-  return (
-    viewer.canViewAll ||
-    viewer.chucVuCapQuanLy === 'Tỉnh' ||
-    viewer.chucVuCapQuanLy === 'Xã phường'
-  );
+function isKhenThuongViewUnrestricted(viewer: MttqKhenThuongViewer): boolean {
+  return viewer.canViewAll || viewer.chucVuCapQuanLy === 'Tỉnh';
 }
 
-/** Tab Danh sách QĐ — ai có quyền module và cap Tỉnh / Xã phường xem hết QĐ. */
+/**
+ * Tab Danh sách QĐ — Xã phường chỉ thấy QĐ có ít nhất một cán bộ cùng `don_vi_id`.
+ * Bypass: `canViewAll` hoặc `cap_quan_ly` = Tỉnh.
+ */
 export function canViewKhenThuongRow(
   viewer: MttqKhenThuongViewer,
-  _row: KhenThuongRowForViewGate,
+  row: KhenThuongRowForViewGate,
 ): boolean {
-  if (isKhenThuongModuleViewUnrestricted(viewer)) return true;
+  if (isKhenThuongViewUnrestricted(viewer)) return true;
+  if (viewer.chucVuCapQuanLy === 'Xã phường') {
+    if (!viewer.viewerDonViId) return false;
+    const ids: Array<string | null | undefined> =
+      row.rewarded_can_bo_don_vi_ids ??
+      (row.chi_tiet ?? []).map((c) => c.can_bo_don_vi_id);
+    return ids.some((dv) => dv != null && dv.toString().trim() === viewer.viewerDonViId);
+  }
   return false;
 }
 
-/** Tab Chi tiết phẳng — cùng phạm vi với tab Danh sách QĐ. */
+/**
+ * Tab Chi tiết phẳng — Xã phường chỉ thấy dòng có `can_bo_don_vi_id` trùng đơn vị NV.
+ * Bypass: `canViewAll` hoặc `cap_quan_ly` = Tỉnh.
+ */
 export function canViewKhenThuongChiTietRow(
   viewer: MttqKhenThuongViewer,
-  _row: KhenThuongRowForViewGate,
+  row: KhenThuongChiTietFlatRowForViewGate,
 ): boolean {
-  return canViewKhenThuongRow(viewer, _row);
+  if (isKhenThuongViewUnrestricted(viewer)) return true;
+  if (viewer.chucVuCapQuanLy === 'Xã phường') {
+    if (!viewer.viewerDonViId) return false;
+    return row.can_bo_don_vi_id?.toString().trim() === viewer.viewerDonViId;
+  }
+  return false;
 }
 
 /** Bảng con trong drawer detail — Xã phường lọc theo cán bộ. */

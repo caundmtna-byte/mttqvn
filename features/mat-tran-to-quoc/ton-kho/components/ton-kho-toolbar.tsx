@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Download } from 'lucide-react';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import type { ColumnConfig } from '@/store/createGenericStore';
 import GenericToolbar from '@/components/shared/GenericToolbar';
@@ -44,7 +45,7 @@ const TonKhoToolbar: React.FC<Props> = ({
   const mobileActions = useMemo(
     () =>
       canExport && onExport
-        ? [{ id: 'export', label: txt('matTranTonKho.toolbar.export'), onClick: onExport }]
+        ? [{ key: 'export', label: txt('matTranTonKho.toolbar.export'), icon: Download, onClick: onExport }]
         : undefined,
     [canExport, onExport]
   );

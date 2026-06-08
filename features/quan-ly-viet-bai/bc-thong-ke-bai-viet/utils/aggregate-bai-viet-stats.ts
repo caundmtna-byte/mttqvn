@@ -1,8 +1,11 @@
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import type { BaiVietDanhSach } from '../../bai-viet/core/types';
-
-dayjs.extend(isoWeek);
+import {
+  isDateInStandardRange,
+  resolveStandardDateRange,
+  STANDARD_DATE_RANGE_PRESET_IDS,
+  type StandardResolvedDateRange,
+} from '@/lib/date-range-presets';
 
 export interface ArticleStatsDimensionFilters {
   idTheLoai: string[];
@@ -11,18 +14,9 @@ export interface ArticleStatsDimensionFilters {
   idNguoiTao: string[];
 }
 
-export interface ResolvedDateRange {
-  start: string;
-  end: string;
-}
+export type ResolvedDateRange = StandardResolvedDateRange;
 
-export const ARTICLE_STATS_PRESET_IDS = [
-  'thisWeek',
-  'thisMonth',
-  'thisQuarter',
-  'thisYear',
-  'custom',
-] as const;
+export const ARTICLE_STATS_PRESET_IDS = STANDARD_DATE_RANGE_PRESET_IDS;
 
 export type ArticleStatsPresetId = (typeof ARTICLE_STATS_PRESET_IDS)[number];
 
@@ -33,39 +27,7 @@ export function resolveArticleStatsDateRange(
   customEnd: string,
   now: Date = new Date(),
 ): ResolvedDateRange {
-  const d = dayjs(now);
-  const end = d.format('YYYY-MM-DD');
-
-  switch (preset) {
-    case 'thisWeek': {
-      const start = d.startOf('isoWeek').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisMonth': {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisQuarter': {
-      const m = d.month();
-      const qStartMonth = Math.floor(m / 3) * 3;
-      const start = d.month(qStartMonth).startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisYear': {
-      const start = d.startOf('year').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'custom': {
-      const s = (customStart || end).slice(0, 10);
-      const e = (customEnd || end).slice(0, 10);
-      if (s <= e) return { start: s, end: e };
-      return { start: e, end: s };
-    }
-    default: {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-  }
+  return resolveStandardDateRange(preset, customStart, customEnd, now);
 }
 
 /** Ngày YYYY-MM-DD cho lọc & biểu đồ — luôn theo `tg_tao` (ngày tạo). */
@@ -75,10 +37,8 @@ export function getArticleStatsDateFromCreatedAt(item: BaiVietDanhSach): string 
   return dayjs(raw).format('YYYY-MM-DD');
 }
 
-export function isDateInRange(dateStr: string, start: string, end: string): boolean {
-  if (!dateStr) return false;
-  const d = dateStr.slice(0, 10);
-  return d >= start.slice(0, 10) && d <= end.slice(0, 10);
+export function isDateInRange(dateStr: string, range: ResolvedDateRange): boolean {
+  return isDateInStandardRange(dateStr, range);
 }
 
 export function filterArticlesForStats(
@@ -88,7 +48,7 @@ export function filterArticlesForStats(
 ): BaiVietDanhSach[] {
   return items.filter((item) => {
     const d = getArticleStatsDateFromCreatedAt(item);
-    if (!isDateInRange(d, range.start, range.end)) return false;
+    if (!range.allTime && !isDateInRange(d, range)) return false;
     if (dims.idTheLoai.length > 0 && !dims.idTheLoai.includes(String(item.id_the_loai))) return false;
     if (dims.idNguonDang.length > 0 && !dims.idNguonDang.includes(String(item.id_nguon_dang))) return false;
     if (dims.idTrangDang.length > 0 && !dims.idTrangDang.includes(String(item.id_trang_dang))) return false;

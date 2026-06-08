@@ -34,7 +34,7 @@ interface Props {
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
   /** Sau nút Back: TabGroup hoặc nội dung tương tự. */
-  desktopStartSlot?: React.ReactNode;
+  tabSlot?: React.ReactNode;
   /** Tab Thống kê: ẩn tìm kiếm, export, thêm, xóa nhiều, cột — vẫn giữ chip lọc. */
   hideListControls?: boolean;
   /** Khi `hideListControls`: vẫn hiện nút xuất nếu user có quyền export (đồng bộ tab Lớp). */
@@ -59,7 +59,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
   onAdd,
   onExport,
   onDeleteMany,
-  desktopStartSlot,
+  tabSlot,
   hideListControls,
   showExportWhenListHidden,
   extraFiltersSlot,
@@ -229,7 +229,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
 
   return (
     <GenericToolbar
-      desktopStartSlot={desktopStartSlot}
+      tabSlot={tabSlot}
       selectedCount={selectedCount}
       searchTerm={hideListControls ? '' : searchTerm}
       onSearchChange={hideListControls ? noopSearch : setSearchTerm}

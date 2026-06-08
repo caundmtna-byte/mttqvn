@@ -20,7 +20,7 @@ interface Props {
   hinhThucOptions: ChipOption[];
   danhHieuOptions: ChipOption[];
   phongBanNguoiTaoOptions: ChipOption[];
-  desktopStartSlot?: React.ReactNode;
+  tabSlot?: React.ReactNode;
 }
 
 const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
@@ -31,7 +31,7 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
   hinhThucOptions,
   danhHieuOptions,
   phongBanNguoiTaoOptions,
-  desktopStartSlot,
+  tabSlot,
 }) => {
   const {
     searchTerm,
@@ -220,7 +220,7 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
 
   return (
     <GenericToolbar
-      desktopStartSlot={desktopStartSlot}
+      tabSlot={tabSlot}
       selectedCount={selectedCount}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}

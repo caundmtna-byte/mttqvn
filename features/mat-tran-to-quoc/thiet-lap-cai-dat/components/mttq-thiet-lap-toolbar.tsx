@@ -16,7 +16,7 @@ interface Props {
   /** Danh sách theo tab loại — luôn chuẩn hóa mảng trong component (tránh lỗi khi `undefined`/null). */
   items?: MttqThietLap[] | null;
   /** Sau nút Back — TabGroup (chuẩn Tỉnh thành – xã phường). */
-  desktopStartSlot: ReactNode;
+  tabSlot: ReactNode;
   onPageBack?: () => void;
   onAdd: () => void;
   onExport: () => void;
@@ -26,7 +26,7 @@ interface Props {
 const MttqThietLapToolbar: React.FC<Props> = ({
   store,
   items,
-  desktopStartSlot,
+  tabSlot,
   onPageBack,
   onAdd,
   onExport,
@@ -159,7 +159,7 @@ const MttqThietLapToolbar: React.FC<Props> = ({
       actions={renderActions}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      desktopStartSlot={desktopStartSlot}
+      tabSlot={tabSlot}
       filters={filtersSlot}
       filterGroups={filterGroups}
       searchPlaceholder={txt('common.searchPlaceholder')}

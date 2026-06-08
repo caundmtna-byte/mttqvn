@@ -73,6 +73,13 @@ interface GenericToolbarProps {
     /** Sau nút Back (desktop + mobile): vd. TabGroup — luôn đứng bên phải nút Back. */
     desktopStartSlot?: React.ReactNode;
 
+    /**
+     * TabGroup slot: trên mobile render thành hàng riêng cuộn ngang phía TRÊN hàng toolbar;
+     * trên desktop render vào vị trí desktopStartSlot (sau nút Back).
+     * Ưu tiên cao hơn desktopStartSlot khi cả hai được truyền vào cùng lúc ở desktop.
+     */
+    tabSlot?: React.ReactNode;
+
     /** Số chip lọc tối đa hiển thị trên desktop; phần còn lại gom vào nút … */
     maxVisibleFilterChips?: number;
 
@@ -109,11 +116,13 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
     onAdd,
     searchTrailing,
     desktopStartSlot,
+    tabSlot,
     maxVisibleFilterChips,
     filtersDesktopSeparateScroll = false,
     filtersMobileBelowSearchScroll = false,
     secondaryRow,
 }) => {
+    const resolvedDesktopStartSlot = tabSlot ?? desktopStartSlot;
     const resolvedSearchPlaceholder = searchPlaceholder ?? txt('common.searchPlaceholder');
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [showMobileActions, setShowMobileActions] = useState(false);
@@ -206,6 +215,15 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
         <div className="sticky top-0 z-30 bg-card border-b border-border/40 px-3 sm:px-4 py-2 space-y-2 shrink-0 [touch-action:manipulation]">
 
             {/* ======================================================== */}
+            {/* MOBILE TAB ROW (< sm): tabSlot cuộn ngang phía trên toolbar */}
+            {/* ======================================================== */}
+            {tabSlot && !hasSelection && (
+                <div className="sm:hidden overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-0.5">
+                    {tabSlot}
+                </div>
+            )}
+
+            {/* ======================================================== */}
             {/* MOBILE TOOLBAR (< sm): 1 hàng duy nhất                   */}
             {/* ======================================================== */}
             <div className="sm:hidden">
@@ -277,18 +295,11 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                 </button>
                             )}
 
-                            {desktopStartSlot ? (
-                                <div className="shrink-0 min-w-0 flex items-center max-w-[min(100%,28rem)]">
-                                    {desktopStartSlot}
-                                </div>
-                            ) : null}
-
-                            {/* Search — phân nhóm sau Back / Tab (mobile) */}
+                            {/* Search — phân nhóm sau Back (mobile) */}
                             {!hideSearch ? (
                                 <div
                                     className={cn(
                                         'relative flex-1 min-w-0 max-w-[21rem]',
-                                        desktopStartSlot && 'border-l border-border pl-3 ml-1',
                                     )}
                                 >
                                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -449,13 +460,13 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                 </button>
                             )}
 
-                            {desktopStartSlot}
+                            {resolvedDesktopStartSlot}
 
                             {(filters || (activeFilterCount > 0 && onClearAllFilters)) && (
                                 <div
                                     className={cn(
                                         'flex min-w-0 flex-1 flex-wrap items-center gap-2 py-0.5',
-                                        (showBack || desktopStartSlot) && 'border-l border-border pl-3 ml-0.5',
+                                        (showBack || resolvedDesktopStartSlot) && 'border-l border-border pl-3 ml-0.5',
                                     )}
                                 >
                                     <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
@@ -564,10 +575,10 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                 </button>
                             )}
 
-                            {desktopStartSlot}
+                            {resolvedDesktopStartSlot}
 
                             {(filters || (activeFilterCount > 0 && onClearAllFilters)) &&
-                            (showBack || desktopStartSlot) ? (
+                            (showBack || resolvedDesktopStartSlot) ? (
                                 <div className="border-l border-border pl-3 ml-1 flex items-center gap-2 flex-wrap min-w-0">
                                     <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                                     {activeFilterCount > 0 && onClearAllFilters && (

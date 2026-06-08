@@ -109,6 +109,30 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
     ],
   },
   {
+    id: 'phan-bien-xa-hoi',
+    nameKey: 'nav.phanBienXaHoi',
+    color: 'orange',
+    groups: [
+      {
+        groupTitleKey: 'page.phanBienXaHoiDashboard.groupMain',
+        modules: [
+          {
+            id: 'phan-bien-xa-hoi/thuc-hien-phan-bien-xa-hoi',
+            nameKey: 'page.phanBienXaHoiDashboard.thucHien',
+          },
+          {
+            id: 'phan-bien-xa-hoi/thiet-lap-danh-muc',
+            nameKey: 'page.phanBienXaHoiDashboard.thietLapDanhMuc',
+          },
+          {
+            id: 'phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi',
+            nameKey: 'page.phanBienXaHoiDashboard.thongKe',
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: 'trang-thong-tin-khac',
     nameKey: 'nav.trangThongTinKhac',
     color: 'teal',
@@ -121,6 +145,43 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'trang-thong-tin-khac/mat-tran-so', nameKey: 'page.externalLinksDashboard.matTranSo' },
           { id: 'trang-thong-tin-khac/quan-ly-van-ban', nameKey: 'page.externalLinksDashboard.quanLyVanBan' },
           { id: 'trang-thong-tin-khac/lich-cong-tac-ban-tt', nameKey: 'page.externalLinksDashboard.lichCongTacBanTt' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'dan-toc-ton-giao',
+    nameKey: 'nav.danTocTonGiao',
+    color: 'indigo',
+    groups: [
+      {
+        groupTitleKey: 'page.danTocTonGiaoDashboard.groupThamHoi',
+        modules: [
+          {
+            id: 'dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc',
+            nameKey: 'page.danTocTonGiaoDashboard.thamHoiToChuc',
+          },
+          {
+            id: 'dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan',
+            nameKey: 'page.danTocTonGiaoDashboard.thamHoiCaNhan',
+          },
+          {
+            id: 'dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi',
+            nameKey: 'page.danTocTonGiaoDashboard.thongKeThamHoi',
+          },
+        ],
+      },
+      {
+        groupTitleKey: 'page.danTocTonGiaoDashboard.groupThongTin',
+        modules: [
+          {
+            id: 'dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong',
+            nameKey: 'page.danTocTonGiaoDashboard.thongTinToChucQuanTrong',
+          },
+          {
+            id: 'dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu',
+            nameKey: 'page.danTocTonGiaoDashboard.thongTinCaNhanTieuBieu',
+          },
         ],
       },
     ],

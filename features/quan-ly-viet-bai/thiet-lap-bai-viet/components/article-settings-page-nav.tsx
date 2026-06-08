@@ -19,7 +19,7 @@ const ArticleSettingsPageNav: React.FC<Props> = ({ onBack, tabsSlot }) => (
     showBack
     onBack={onBack}
     hideSearch
-    desktopStartSlot={tabsSlot}
+    tabSlot={tabsSlot}
   />
 );
 

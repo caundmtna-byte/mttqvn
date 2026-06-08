@@ -1,10 +1,13 @@
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import type { MttqUyVienUyBan } from '../../uy-vien-uy-ban/core/types';
+import {
+  isDateInStandardRange,
+  resolveStandardDateRange,
+  type StandardResolvedDateRange,
+} from '@/lib/date-range-presets';
 import { isUyVienTrangThamGia } from '../../uy-vien-uy-ban/core/constants';
+import { donViDisplayLabel } from '../../uy-vien-uy-ban/utils/column-search';
 import { CHIP_TRANG_THAI_NULL } from '../../danh-sach-can-bo/core/constants';
-
-dayjs.extend(isoWeek);
 
 export type MttqUyVienStatsRow = MttqUyVienUyBan & { tuoi?: number };
 
@@ -16,10 +19,7 @@ export interface UyVienStatsDimensionFilters {
   dang_vien: string[];
 }
 
-export interface ResolvedDateRange {
-  start: string;
-  end: string;
-}
+export type ResolvedDateRange = StandardResolvedDateRange;
 
 export function resolveUyVienStatsDateRange(
   preset: string,
@@ -27,39 +27,30 @@ export function resolveUyVienStatsDateRange(
   customEnd: string,
   now: Date = new Date(),
 ): ResolvedDateRange {
-  const d = dayjs(now);
-  const end = d.format('YYYY-MM-DD');
+  return resolveStandardDateRange(preset, customStart, customEnd, now);
+}
 
-  switch (preset) {
-    case 'thisWeek': {
-      const start = d.startOf('isoWeek').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisMonth': {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisQuarter': {
-      const m = d.month();
-      const qStartMonth = Math.floor(m / 3) * 3;
-      const start = d.month(qStartMonth).startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisYear': {
-      const start = d.startOf('year').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'custom': {
-      const s = (customStart || end).slice(0, 10);
-      const e = (customEnd || end).slice(0, 10);
-      if (s <= e) return { start: s, end: e };
-      return { start: e, end: s };
-    }
-    default: {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
+export function resolveUyVienStatsTrendChartRange(
+  range: ResolvedDateRange,
+  items: MttqUyVienUyBan[],
+): ResolvedDateRange {
+  if (!range.allTime) {
+    return { start: range.start, end: range.end };
   }
+  let min = '';
+  let max = '';
+  for (const item of items) {
+    const d = getUyVienStatsDateFromCreatedAt(item);
+    if (!d) continue;
+    const day = d.slice(0, 10);
+    if (!min || day < min) min = day;
+    if (!max || day > max) max = day;
+  }
+  const today = dayjs().format('YYYY-MM-DD');
+  if (!min || !max) {
+    return { start: today, end: today };
+  }
+  return { start: min, end: max };
 }
 
 export function getUyVienStatsDateFromCreatedAt(item: MttqUyVienUyBan): string {
@@ -68,10 +59,8 @@ export function getUyVienStatsDateFromCreatedAt(item: MttqUyVienUyBan): string {
   return dayjs(raw).format('YYYY-MM-DD');
 }
 
-export function isDateInRange(dateStr: string, start: string, end: string): boolean {
-  if (!dateStr) return false;
-  const d = dateStr.slice(0, 10);
-  return d >= start.slice(0, 10) && d <= end.slice(0, 10);
+export function isDateInRange(dateStr: string, range: ResolvedDateRange): boolean {
+  return isDateInStandardRange(dateStr, range);
 }
 
 function matchesNullableFk(rowVal: string | null | undefined, selected: string[]): boolean {
@@ -99,8 +88,10 @@ export function filterRowsForUyVienStats(
   dims: UyVienStatsDimensionFilters,
 ): MttqUyVienUyBan[] {
   return items.filter((row) => {
-    const d = getUyVienStatsDateFromCreatedAt(row);
-    if (!isDateInRange(d, range.start, range.end)) return false;
+    if (!range.allTime) {
+      const d = getUyVienStatsDateFromCreatedAt(row);
+      if (!isDateInRange(d, range)) return false;
+    }
     if (!matchesNullableFk(row.nhiem_ky_id, dims.nhiem_ky_id)) return false;
     if (!matchesNullableFk(row.don_vi_id, dims.don_vi_id)) return false;
     if (dims.gioi_tinh.length > 0 && !dims.gioi_tinh.includes(String(row.gioi_tinh))) return false;
@@ -196,6 +187,7 @@ export function aggregateUyVienTopCounts(
   filtered: MttqUyVienUyBan[],
   mode: 'don_vi' | 'nhiem_ky' | 'chuc_vu_don_vi',
   topN: number,
+  tinhCapLabel: string,
 ): LabelCountRow[] {
   const tally = new Map<string, { label: string; count: number }>();
   for (const row of filtered) {
@@ -204,7 +196,7 @@ export function aggregateUyVienTopCounts(
     switch (mode) {
       case 'don_vi': {
         id = row.don_vi_id?.trim() ? String(row.don_vi_id) : CHIP_TRANG_THAI_NULL;
-        label = row.ten_don_vi?.trim() || (id === CHIP_TRANG_THAI_NULL ? '—' : id);
+        label = donViDisplayLabel(row, tinhCapLabel);
         break;
       }
       case 'nhiem_ky': {
@@ -260,6 +252,7 @@ export function sortUyVienLookupRows(
   sortKey: UyVienLookupSortKey,
   direction: 'asc' | 'desc',
   getLanguage: () => string,
+  tinhCapLabel: string,
 ): MttqUyVienStatsRow[] {
   const dir = direction === 'asc' ? 1 : -1;
   const sorted = [...rows];
@@ -270,7 +263,7 @@ export function sortUyVienLookupRows(
         cmp = (Number(a.tuoi) || 0) - (Number(b.tuoi) || 0);
         break;
       case 'ten_don_vi':
-        cmp = String(a.ten_don_vi ?? '').localeCompare(String(b.ten_don_vi ?? ''), getLanguage());
+        cmp = donViDisplayLabel(a, tinhCapLabel).localeCompare(donViDisplayLabel(b, tinhCapLabel), getLanguage());
         break;
       case 'ten_nhiem_ky':
         cmp = String(a.ten_nhiem_ky ?? '').localeCompare(String(b.ten_nhiem_ky ?? ''), getLanguage());

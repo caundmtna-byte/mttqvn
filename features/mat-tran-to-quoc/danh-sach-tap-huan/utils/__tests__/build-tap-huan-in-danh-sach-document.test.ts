@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { txt } from '@/lib/text';
+import { DEFAULT_COMPANY_INFO } from '@/store/useStore';
 import type { MttqLopTapHuan } from '../../core/types';
 import type { MttqLopTapHuanViewer } from '../../hooks/use-mttq-tap-huan-viewer';
 import {
@@ -34,7 +35,7 @@ describe('build-tap-huan-in-danh-sach-document', () => {
   it('includes signed date and meta don_vi for Cấp xã', () => {
     const model = buildTapHuanInDanhSachDocumentModel(
       lop({}),
-      { companyName: 'UB MTTQ', address: 'Số 1', phone: '090', appLogo: null },
+      { ...DEFAULT_COMPANY_INFO, companyName: 'UB MTTQ', address: 'Số 1', phone: '090', appLogo: null },
       viewerAll,
     );
     expect(model.companyName).toBe('UB MTTQ');

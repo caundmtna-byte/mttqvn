@@ -14,7 +14,7 @@ import type { NhapXuatKhoListRow } from '../core/types';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 
 interface Props {
-  desktopStartSlot: ReactNode;
+  tabSlot: ReactNode;
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
@@ -23,7 +23,7 @@ interface Props {
 }
 
 const NhapXuatKhoToolbar: React.FC<Props> = ({
-  desktopStartSlot,
+  tabSlot,
   onPageBack,
   onAdd,
   onExport,
@@ -292,11 +292,7 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
-      desktopStartSlot={
-        <div className="min-w-0 max-w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-px">
-          {desktopStartSlot}
-        </div>
-      }
+      tabSlot={tabSlot}
     />
   );
 };

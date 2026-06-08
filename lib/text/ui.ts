@@ -58,7 +58,8 @@ export const ui = {
       "groupAccount": "Tài khoản",
       "groupArticleMgmt": "Quản lý viết bài",
       "groupTaskMgmt": "Quản lý giao việc",
-      "groupMatTranToQuoc": "Mặt trận tổ quốc"
+      "groupMatTranToQuoc": "Mặt trận tổ quốc",
+      "groupPhanBienXaHoi": "Phản biện xã hội"
     }
   },
   "shared": {
@@ -96,7 +97,9 @@ export const ui = {
       "missingRequiredColumns": "Chưa mapping cột bắt buộc: {{columns}}",
       "rowEmptyField": "Dòng {{row}}: \"{{column}}\" không được để trống",
       "importError": "Lỗi khi import dữ liệu",
-      "importRows": "Import {{count}} dòng"
+      "importRows": "Import {{count}} dòng",
+      "errorColumnLabel": "Lỗi",
+      "downloadErrors": "Tải {{count}} dòng lỗi (.xlsx)"
     },
     "empty": {
       "title": "Không có dữ liệu",
@@ -349,6 +352,42 @@ export const ui = {
       "salarySetupDesc": "Cấu hình ngạch lương, bậc B1–B9 và mức lương cơ sở.",
       "backToParent": "Quay lại Mặt trận tổ quốc"
     },
+    "phanBienXaHoiDashboard": {
+      "groupMain": "Phản biện xã hội",
+      "thucHien": "Thực hiện phản biện xã hội",
+      "thucHienDesc": "Ghi nhận và theo dõi các hoạt động phản biện xã hội.",
+      "thietLapDanhMuc": "Thiết lập danh mục",
+      "thietLapDanhMucDesc": "Cấu hình danh mục và thiết lập cho module phản biện xã hội.",
+      "thongKe": "Thống kê phản biện xã hội",
+      "thongKeDesc": "Báo cáo và thống kê kết quả phản biện xã hội.",
+      "backToParent": "Quay lại Phản biện xã hội"
+    },
+    "pbxhThietLap": {
+      "tabDoiTuong": "Đối tượng KT, GS, PBXH",
+      "tabDonViChuTri": "Đơn vị chủ trì",
+      "tabHinhThuc": "Hình thức thực hiện",
+      "addItem": "Thêm mục",
+      "editItem": "Sửa mục",
+      "formCreateSubtitle": "Thêm danh mục",
+      "formEditSubtitle": "Cập nhật danh mục",
+      "detailTitle": "Chi tiết danh mục",
+      "empty": "Chưa có mục danh mục",
+      "deleteTitle": "Xóa mục",
+      "deleteMessage": "Bạn có chắc muốn xóa mục này? Hành động không hoàn tác.",
+      "bulkDeleteTitle": "Xóa nhiều mục",
+      "bulkDeleteMessage": "Bạn có chắc muốn xóa {{count}} mục đã chọn? Hành động không hoàn tác.",
+      "filterMoTaChipPlaceholder": "Mô tả",
+      "filterMoTaHas": "Có mô tả",
+      "filterMoTaEmpty": "Không mô tả",
+      "toast": {
+        "create": "Đã thêm mục",
+        "update": "Đã cập nhật mục",
+        "delete": "Đã xóa {{count}} mục"
+      },
+      "validation": {
+        "tenRequired": "Nhập tên"
+      }
+    },
     "danTocTonGiaoDashboard": {
       "groupThamHoi": "Thăm hỏi",
       "groupThongTin": "Thông tin",
@@ -356,8 +395,10 @@ export const ui = {
       "thamHoiToChucDesc": "Ghi nhận và theo dõi các lượt thăm hỏi tổ chức dân tộc, tôn giáo.",
       "thamHoiCaNhan": "Thăm hỏi cá nhân",
       "thamHoiCaNhanDesc": "Ghi nhận và theo dõi các lượt thăm hỏi cá nhân tiêu biểu.",
-      "thongTinToChucQuanTrong": "Thông tin tổ chức quan trọng",
-      "thongTinToChucQuanTrongDesc": "Danh mục và hồ sơ các tổ chức dân tộc, tôn giáo quan trọng.",
+      "thongKeThamHoi": "Thống kê thăm hỏi",
+      "thongKeThamHoiDesc": "Tổng hợp thống kê lượt thăm hỏi tổ chức và cá nhân.",
+      "thongTinToChucQuanTrong": "Thông tin tổ chức tôn giáo",
+      "thongTinToChucQuanTrongDesc": "Danh mục và hồ sơ các tổ chức tôn giáo.",
       "thongTinCaNhanTieuBieu": "Thông tin cá nhân tiêu biểu",
       "thongTinCaNhanTieuBieuDesc": "Danh sách cá nhân tiêu biểu trong cộng đồng dân tộc, tôn giáo.",
       "backToParent": "Quay lại Dân tộc, tôn giáo"
@@ -611,6 +652,18 @@ export const ui = {
     "clearFilter": "Xóa bộ lọc",
     "clearFilters": "Xóa {{count}} bộ lọc",
     "moreFilters": "Thêm bộ lọc",
+    "dateRangePreset": {
+      "all": "Tất cả",
+      "thisWeek": "Tuần này",
+      "lastWeek": "Tuần trước",
+      "thisMonth": "Tháng này",
+      "lastMonth": "Tháng trước",
+      "thisQuarter": "Quý này",
+      "lastQuarter": "Quý trước",
+      "thisYear": "Năm nay",
+      "lastYear": "Năm trước",
+      "custom": "Tùy chọn"
+    },
     "columnDisplay": "Cột hiển thị",
     "columnOptions": "Tùy chọn cột",
     "saveChanges": "Lưu",

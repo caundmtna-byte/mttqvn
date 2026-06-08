@@ -32,7 +32,9 @@ export function mttqCanBoRowToFormValues(
     ly_luan_chinh_tri_id: toFormFk(initialData.ly_luan_chinh_tri_id),
     dien_thoai: initialData.dien_thoai ?? '',
     chuc_vu_id: toFormFk(initialData.chuc_vu_id),
-    cap_quan_ly: Array.isArray(initialData.cap_quan_ly) ? initialData.cap_quan_ly : [],
+    cap_quan_ly: (Array.isArray(initialData.cap_quan_ly)
+      ? initialData.cap_quan_ly
+      : []) as MttqCanBoFormValues['cap_quan_ly'],
     don_vi_id: toFormFk(initialData.don_vi_id),
     ngay_tham_gia_to_chuc: toFormDate(initialData.ngay_tham_gia_to_chuc),
     trang_thai_id: toFormFk(initialData.trang_thai_id),

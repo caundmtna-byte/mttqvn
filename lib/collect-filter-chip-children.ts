@@ -54,11 +54,13 @@ export function collectFilterChipChildren(node: React.ReactNode): CollectedFilte
       }
 
       if (child.type === React.Fragment) {
-        walk(child.props.children);
+        walk((child.props as { children?: React.ReactNode }).children);
         return;
       }
 
-      const nested = collectFilterChipChildren(child.props.children);
+      const nested = collectFilterChipChildren(
+        (child.props as { children?: React.ReactNode }).children,
+      );
 
       if (nested.chips.length > 0 && nested.prefixNodes.length === 0) {
         chips.push(...nested.chips);
@@ -71,7 +73,12 @@ export function collectFilterChipChildren(node: React.ReactNode): CollectedFilte
       }
 
       prefixNodes.push(
-        React.cloneElement(child, child.props, ...nested.prefixNodes, ...nested.chips),
+        React.cloneElement(
+          child,
+          child.props as Record<string, unknown>,
+          ...nested.prefixNodes,
+          ...nested.chips,
+        ),
       );
     });
   };

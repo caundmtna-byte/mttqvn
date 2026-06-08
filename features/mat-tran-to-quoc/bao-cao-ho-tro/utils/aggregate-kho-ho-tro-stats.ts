@@ -1,6 +1,9 @@
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import type { NhapXuatKhoCtFlatRow } from '../../nhap-xuat-kho/core/types';
+import {
+  resolveStandardDateRange,
+  STANDARD_DATE_RANGE_PRESET_IDS,
+} from '@/lib/date-range-presets';
 import type { NhapXuatKhoLoaiPhieu } from '../../nhap-xuat-kho/core/constants';
 import { loaiPhieuLabel } from '../../nhap-xuat-kho/core/constants';
 import type { TonKhoRecord } from '../../ton-kho/core/types';
@@ -16,16 +19,7 @@ import type {
   ResolvedReliefDateRange,
 } from '../core/types';
 
-dayjs.extend(isoWeek);
-
-export const RELIEF_STATS_PRESET_IDS = [
-  'all',
-  'thisWeek',
-  'thisMonth',
-  'thisQuarter',
-  'thisYear',
-  'custom',
-] as const;
+export const RELIEF_STATS_PRESET_IDS = STANDARD_DATE_RANGE_PRESET_IDS;
 
 export function resolveReliefStatsDateRange(
   preset: string,
@@ -33,41 +27,7 @@ export function resolveReliefStatsDateRange(
   customEnd: string,
   now: Date = new Date(),
 ): ResolvedReliefDateRange {
-  const d = dayjs(now);
-  const end = d.format('YYYY-MM-DD');
-
-  switch (preset) {
-    case 'all':
-      return { start: '', end: '', allTime: true };
-    case 'thisWeek': {
-      const start = d.startOf('isoWeek').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisMonth': {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisQuarter': {
-      const m = d.month();
-      const qStartMonth = Math.floor(m / 3) * 3;
-      const start = d.month(qStartMonth).startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisYear': {
-      const start = d.startOf('year').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'custom': {
-      const s = (customStart || end).slice(0, 10);
-      const e = (customEnd || end).slice(0, 10);
-      if (s <= e) return { start: s, end: e };
-      return { start: e, end: s };
-    }
-    default: {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-  }
+  return resolveStandardDateRange(preset, customStart, customEnd, now);
 }
 
 function isDateInRange(dateStr: string, start: string, end: string): boolean {

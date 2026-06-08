@@ -1,10 +1,12 @@
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import type { MttqCanBoRow } from '../../danh-sach-can-bo/core/types';
+import {
+  resolveStandardDateRange,
+  STANDARD_DATE_RANGE_PRESET_IDS,
+  type StandardResolvedDateRange,
+} from '@/lib/date-range-presets';
 import { CHIP_FILTER_NULL, CHIP_TRANG_THAI_NULL } from '../../danh-sach-can-bo/core/constants';
 import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
-
-dayjs.extend(isoWeek);
 
 export interface OfficerStatsDimensionFilters {
   trang_thai_id: string[];
@@ -22,21 +24,9 @@ export interface OfficerStatsDimensionFilters {
   dang_vien: string[];
 }
 
-export interface ResolvedDateRange {
-  start: string;
-  end: string;
-  /** Preset «Tất cả» — không lọc theo ngày tạo (`tg_tao`). */
-  allTime?: boolean;
-}
+export type ResolvedDateRange = StandardResolvedDateRange;
 
-export const OFFICER_STATS_PRESET_IDS = [
-  'all',
-  'thisWeek',
-  'thisMonth',
-  'thisQuarter',
-  'thisYear',
-  'custom',
-] as const;
+export const OFFICER_STATS_PRESET_IDS = STANDARD_DATE_RANGE_PRESET_IDS;
 
 export function resolveOfficerStatsDateRange(
   preset: string,
@@ -44,41 +34,7 @@ export function resolveOfficerStatsDateRange(
   customEnd: string,
   now: Date = new Date(),
 ): ResolvedDateRange {
-  const d = dayjs(now);
-  const end = d.format('YYYY-MM-DD');
-
-  switch (preset) {
-    case 'all':
-      return { start: '', end: '', allTime: true };
-    case 'thisWeek': {
-      const start = d.startOf('isoWeek').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisMonth': {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisQuarter': {
-      const m = d.month();
-      const qStartMonth = Math.floor(m / 3) * 3;
-      const start = d.month(qStartMonth).startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisYear': {
-      const start = d.startOf('year').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'custom': {
-      const s = (customStart || end).slice(0, 10);
-      const e = (customEnd || end).slice(0, 10);
-      if (s <= e) return { start: s, end: e };
-      return { start: e, end: s };
-    }
-    default: {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-  }
+  return resolveStandardDateRange(preset, customStart, customEnd, now);
 }
 
 export function getOfficerStatsDateFromCreatedAt(item: MttqCanBoRow): string {

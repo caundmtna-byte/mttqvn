@@ -49,6 +49,14 @@ export type AppResource =
   | 'otherInfoMatTranSo'
   | 'otherInfoQuanLyVanBan'
   | 'otherInfoLichCongTacBanTt'
+  | 'phanBienThucHien'
+  | 'phanBienThietLapDanhMuc'
+  | 'phanBienThongKe'
+  | 'danTocCaNhanTieuBieu'
+  | 'danTocToChucQuanTrong'
+  | 'danTocThamHoiToChuc'
+  | 'danTocThamHoiCaNhan'
+  | 'danTocThamHoiThongKe'
   | 'profile'
   | 'notifications'
   | '*';
@@ -97,6 +105,14 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   otherInfoMatTranSo: 'trang-thong-tin-khac/mat-tran-so',
   otherInfoQuanLyVanBan: 'trang-thong-tin-khac/quan-ly-van-ban',
   otherInfoLichCongTacBanTt: 'trang-thong-tin-khac/lich-cong-tac-ban-tt',
+  phanBienThucHien: 'phan-bien-xa-hoi/thuc-hien-phan-bien-xa-hoi',
+  phanBienThietLapDanhMuc: 'phan-bien-xa-hoi/thiet-lap-danh-muc',
+  phanBienThongKe: 'phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi',
+  danTocCaNhanTieuBieu: 'dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu',
+  danTocToChucQuanTrong: 'dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong',
+  danTocThamHoiToChuc: 'dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc',
+  danTocThamHoiCaNhan: 'dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan',
+  danTocThamHoiThongKe: 'dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */

@@ -702,7 +702,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
         {mainTab === 'danh_sach' ? (
           <>
             <MttqKhenThuongToolbar
-              desktopStartSlot={tabsSlot}
+              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               trangThaiOptions={trangThaiChipOptions}
               namKhenThuongOptions={namKhenThuongChipOptions}
@@ -733,7 +733,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
         ) : mainTab === 'chi_tiet' ? (
           <>
             <MttqKhenThuongChiTietToolbar
-              desktopStartSlot={tabsSlot}
+              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               trangThaiOptions={trangThaiChipOptionsChiTiet}
               namKhenThuongOptions={namKhenThuongChipOptionsChiTiet}
@@ -760,7 +760,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
         ) : (
           <>
             <MttqKhenThuongToolbar
-              desktopStartSlot={tabsSlot}
+              tabSlot={tabsSlot}
               hideListControls
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               trangThaiOptions={trangThaiChipOptions}

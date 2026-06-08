@@ -118,7 +118,8 @@ function mergeDisplayFromMockCanBo(canBoId: string): Pick<
     so_dien_thoai: c.dien_thoai,
     trinh_do_cm: c.ten_trinh_do,
     trinh_do_llct: c.ten_ly_luan_chinh_tri,
-    ten_to_chuc: c.ten_to_chuc,
+    ten_to_chuc:
+      Array.isArray(c.ten_to_chuc_arr) && c.ten_to_chuc_arr.length > 0 ? c.ten_to_chuc_arr.join(', ') : null,
     ten_phong_ban_hien_thi: formatTenPhongBanHienThi(c.ten_phong_ban, c.ten_bo_phan),
     ten_don_vi_can_bo: c.ten_don_vi,
     dia_chi_can_bo: c.dia_chi ?? null,

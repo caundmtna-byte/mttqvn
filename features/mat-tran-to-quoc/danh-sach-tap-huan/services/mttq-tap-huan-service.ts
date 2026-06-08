@@ -207,7 +207,10 @@ function mockCanBoPostgrestFromMttq(
     cap_quan_ly: capQuanLyArr,
     don_vi: cb.ten_don_vi ? { ten: cb.ten_don_vi } : null,
     chuc_vu: chucVuEmb,
-    to_chuc: cb.ten_to_chuc ? { ten: cb.ten_to_chuc } : null,
+    to_chuc:
+      Array.isArray(cb.ten_to_chuc_arr) && cb.ten_to_chuc_arr.length > 0
+        ? { ten: cb.ten_to_chuc_arr.join(', ') }
+        : null,
     phong_ban: cb.ten_phong_ban ? { ten_phong_ban: cb.ten_phong_ban } : null,
   };
 }

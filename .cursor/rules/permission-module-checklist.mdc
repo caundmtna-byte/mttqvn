@@ -157,6 +157,25 @@ Ngoài `can('view', 'matTranTrainingList')`: tab **Lớp tập huấn** hiển t
 
 **Xã phường (chỉ xem):** chỉ dòng CT có `can_bo_don_vi_id` trùng `user.don_vi_id` (tab CT, detail, thống kê đếm theo flat đã lọc); không có `don_vi_id` NV → không dòng CT nào.
 
+## Khen thưởng — lọc xem (client)
+
+Ngoài `can('view', 'matTranRewardList')`: `useMttqKhenThuongViewer` + hàm gate tương ứng theo từng surface.
+
+**Bypass (xem hết):** `chucVuCapBac === 1`, grant **admin/all** (quan_tri), `user.role === 'admin'`, ma trận tắt, hoặc `cap_quan_ly` = **Tỉnh**.
+
+**Tab Danh sách QĐ** (`canViewKhenThuongRow`):
+- Bypass/Tỉnh → hết QĐ.
+- **Xã phường** → chỉ QĐ có ít nhất một dòng CT với `can_bo.don_vi_id` trùng `user.don_vi_id` (kiểm tra qua `MttqKhenThuongListRow.rewarded_can_bo_don_vi_ids[]`; fallback qua `chi_tiet[].can_bo_don_vi_id` khi dùng full detail). Không có `don_vi_id` NV → không QĐ nào.
+- `cap_quan_ly` null và không bypass → không QĐ nào.
+
+**Tab Chi tiết phẳng** (`canViewKhenThuongChiTietRow`):
+- Bypass/Tỉnh → hết dòng.
+- **Xã phường** → chỉ dòng `MttqKhenThuongChiTietFlatRow.can_bo_don_vi_id` trùng `user.don_vi_id`. Không có `don_vi_id` NV → không dòng nào.
+
+**Drawer detail — bảng con** (`canViewKhenThuongDetailChiTietLine`): Xã phường chỉ dòng do mình tạo (`mttq_can_bo.id_nguoi_tao`) **hoặc** `can_bo.don_vi_id` trùng NV.
+
+**Select list** đã embed `can_bo(don_vi_id)` trên từng CT line (`MTTQ_KHEN_THUONG_SELECT_LIST`); không cần thêm field hay migration.
+
 ## Danh sách tăng lương (`matTranSalaryIncreaseList`)
 
 **Luật module (lớp 1–4, `lib/permissions.ts` → `can()`):**

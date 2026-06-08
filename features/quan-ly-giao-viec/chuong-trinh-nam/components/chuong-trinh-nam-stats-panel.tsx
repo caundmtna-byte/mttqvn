@@ -35,6 +35,10 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import {
+  buildStandardDateRangePresets,
+  isStandardDateRangeNonDefault,
+} from '@/lib/date-range-presets';
 import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
 import { chartFillFromBadgeConfig } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -109,16 +113,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [showExport, setShowExport] = useState(false);
 
-  const presets = useMemo(
-    () => [
-      { id: 'thisWeek', label: txt('chuongTrinhNam.stats.preset.thisWeek') },
-      { id: 'thisMonth', label: txt('chuongTrinhNam.stats.preset.thisMonth') },
-      { id: 'thisQuarter', label: txt('chuongTrinhNam.stats.preset.thisQuarter') },
-      { id: 'thisYear', label: txt('chuongTrinhNam.stats.preset.thisYear') },
-      { id: CUSTOM_PRESET, label: txt('chuongTrinhNam.stats.preset.custom') },
-    ],
-    [],
-  );
+  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const resolvedRange = useMemo(
     () =>
@@ -283,12 +278,10 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
     ],
   );
 
-  const isNonDefaultDateRange = useMemo(() => {
-    if (dateRange.preset === 'custom') {
-      return Boolean(dateRange.customStart && dateRange.customEnd);
-    }
-    return dateRange.preset !== 'thisMonth';
-  }, [dateRange]);
+  const isNonDefaultDateRange = useMemo(
+    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    [dateRange],
+  );
 
   const activeFilterCount = useMemo(() => {
     let n = 0;

@@ -1,5 +1,7 @@
 import { txt } from '@/lib/text';
+import type { Position } from '@/features/he-thong/chuc-vu/core/types';
 import { getPositions } from '@/features/he-thong/chuc-vu/services/chuc-vu-service';
+import type { Department } from '@/features/he-thong/phong-ban/core/types';
 import { getDepartments } from '@/features/he-thong/phong-ban/services/phong-ban-service';
 import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import type { MttqThietLapLoai } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/core/types';
@@ -135,8 +137,8 @@ function thietByLoai(
 function rowToFormValues(
   row: Record<string, unknown>,
   ctx: {
-    positions: { id: string; ten_chuc_vu: string; phong_ban_id?: string | null }[];
-    departments: { id: string; ten_phong_ban: string; cha_id: string | null; trang_thai: string }[];
+    positions: Pick<Position, 'id' | 'ten_chuc_vu' | 'phong_ban_id' | 'trang_thai'>[];
+    departments: Pick<Department, 'id' | 'ten_phong_ban' | 'cha_id' | 'trang_thai'>[];
     toChuc: { id: string; ten: string }[];
     danToc: { id: string; ten: string }[];
     trinhDo: { id: string; ten: string }[];
@@ -197,6 +199,7 @@ function rowToFormValues(
     ly_luan_chinh_tri_id: lyLuan.id,
     dien_thoai: trimCell(row.dien_thoai),
     chuc_vu_id: cv.id,
+    cap_quan_ly: [],
     don_vi_id: resolveDonVi(row.don_vi_id, ctx.xa),
     ngay_tham_gia_to_chuc: ngayThamGia,
     trang_thai_id: tt.id,

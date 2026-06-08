@@ -127,7 +127,8 @@ function canBoDisplayFromCanBo(c: MttqCanBo | undefined): CanBoSnap {
     dang_vien: c.dang_vien,
     dien_thoai: (c.dien_thoai ?? '').trim(),
     dia_chi: (c.dia_chi ?? '').trim(),
-    ten_to_chuc: (c.ten_to_chuc ?? '').trim(),
+    ten_to_chuc:
+      Array.isArray(c.ten_to_chuc_arr) && c.ten_to_chuc_arr.length > 0 ? c.ten_to_chuc_arr.join(', ') : '',
     ten_phong_ban: formatTenPhongBanHienThi(c.ten_phong_ban, c.ten_bo_phan)?.trim() ?? '',
     ten_chuc_vu: (c.ten_chuc_vu ?? '').trim(),
     ten_don_vi: (c.ten_don_vi ?? '').trim(),

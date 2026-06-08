@@ -8,7 +8,8 @@ export type ColoredBarProps = Omit<BarProps, 'fill'> & {
 };
 
 /**
- * Recharts Bar với màu riêng từng cột qua Cell.
+ * Recharts Bar — mỗi cột một màu qua `<Cell fill={…}>`.
+ * Bắt buộc truyền `getFill`; chuẩn: `chartFillForCategoricalBar` / `chartFillFromBadgeConfig`.
  * ChartTooltip đọc fill per segment từ payload.
  */
 const ColoredBar: React.FC<ColoredBarProps> = ({ data, getFill, children, ...barProps }) => (

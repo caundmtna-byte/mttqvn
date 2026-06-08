@@ -6,6 +6,7 @@ import {
   User,
   Star,
   MessageSquareHeart,
+  BarChart3,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -41,6 +42,13 @@ const DanTocTonGiaoDashboard: React.FC = () => {
             description: txt('page.danTocTonGiaoDashboard.thamHoiCaNhanDesc'),
             icon: User,
             color: 'bg-sky-500',
+          },
+          {
+            path: '/dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi',
+            title: txt('page.danTocTonGiaoDashboard.thongKeThamHoi'),
+            description: txt('page.danTocTonGiaoDashboard.thongKeThamHoiDesc'),
+            icon: BarChart3,
+            color: 'bg-violet-500',
           },
         ],
       },

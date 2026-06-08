@@ -1,22 +1,22 @@
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import type { TaskReportFilters, TaskReportRpcArgs, ResolvedDateRange } from '../core/types';
-
-dayjs.extend(isoWeek);
+import {
+  isStandardDateRangeNonDefault,
+  resolveStandardDateRange,
+  STANDARD_DATE_RANGE_PRESET_IDS,
+  type StandardDateRangePresetId,
+} from '@/lib/date-range-presets';
 
 /** Ngày bắt đầu preset "Tất cả" — đủ sớm để gom mọi `tg_tao` trong DB. */
 export const TASK_REPORT_ALL_RANGE_START = '1970-01-01';
 
-export const TASK_REPORT_PRESET_IDS = [
-  'all',
-  'thisWeek',
-  'thisMonth',
-  'thisQuarter',
-  'thisYear',
-  'custom',
-] as const;
+export const TASK_REPORT_PRESET_IDS = STANDARD_DATE_RANGE_PRESET_IDS;
 
-export type TaskReportPresetId = (typeof TASK_REPORT_PRESET_IDS)[number];
+export type TaskReportPresetId = StandardDateRangePresetId;
+
+function isKnownTaskReportPreset(preset: string): boolean {
+  return preset === 'custom' || TASK_REPORT_PRESET_IDS.includes(preset as TaskReportPresetId);
+}
 
 /** Giải khoảng ngày YYYY-MM-DD cho preset (mặc định UI: `all`). */
 export function resolveTaskReportDateRange(
@@ -25,30 +25,15 @@ export function resolveTaskReportDateRange(
   customEnd: string,
   now: Date = new Date(),
 ): ResolvedDateRange {
-  const d = dayjs(now);
-  const end = d.format('YYYY-MM-DD');
-
-  switch (preset) {
-    case 'all':
-      return { start: TASK_REPORT_ALL_RANGE_START, end };
-    case 'thisWeek':
-      return { start: d.startOf('isoWeek').format('YYYY-MM-DD'), end };
-    case 'thisMonth':
-      return { start: d.startOf('month').format('YYYY-MM-DD'), end };
-    case 'thisQuarter': {
-      const qStartMonth = Math.floor(d.month() / 3) * 3;
-      return { start: d.month(qStartMonth).startOf('month').format('YYYY-MM-DD'), end };
-    }
-    case 'thisYear':
-      return { start: d.startOf('year').format('YYYY-MM-DD'), end };
-    case 'custom': {
-      const s = (customStart || end).slice(0, 10);
-      const e = (customEnd || end).slice(0, 10);
-      return s <= e ? { start: s, end: e } : { start: e, end: s };
-    }
-    default:
-      return { start: TASK_REPORT_ALL_RANGE_START, end };
+  const end = dayjs(now).format('YYYY-MM-DD');
+  if (!isKnownTaskReportPreset(preset)) {
+    return { start: TASK_REPORT_ALL_RANGE_START, end };
   }
+  const r = resolveStandardDateRange(preset, customStart, customEnd, now);
+  if (r.allTime) {
+    return { start: TASK_REPORT_ALL_RANGE_START, end: r.end || end };
+  }
+  return { start: r.start, end: r.end };
 }
 
 /** Mảng rỗng → null để Postgres bỏ qua filter (NULL OR ... = TRUE). */
@@ -85,11 +70,12 @@ export function buildTaskReportRpcArgs(filters: TaskReportFilters): TaskReportRp
 }
 
 /** True khi date range khác preset mặc định (`all`) — dùng cho activeFilterCount. */
-export function isNonDefaultTaskReportDateRange(value: { preset: string; customStart: string; customEnd: string }): boolean {
-  if (value.preset === 'custom') {
-    return Boolean(value.customStart && value.customEnd);
-  }
-  return value.preset !== 'all';
+export function isNonDefaultTaskReportDateRange(value: {
+  preset: string;
+  customStart: string;
+  customEnd: string;
+}): boolean {
+  return isStandardDateRangeNonDefault(value, 'all');
 }
 
 /** Khóa cache ổn định cho TanStack Query (không sort khoá). */

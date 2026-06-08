@@ -427,7 +427,7 @@ const HangHoaPage: React.FC = () => {
         {activeTab === TAB_DM ? (
           <>
             <KhoDanhMucHangHoaToolbar
-              desktopStartSlot={tabSlot}
+              tabSlot={tabSlot}
               onPageBack={goBack}
               onAdd={() => {
                 startTransition(() => {
@@ -465,7 +465,7 @@ const HangHoaPage: React.FC = () => {
         ) : (
           <>
             <KhoDanhSachHangHoaToolbar
-              desktopStartSlot={tabSlot}
+              tabSlot={tabSlot}
               onPageBack={goBack}
               onAdd={() => {
                 if (dmRows.length === 0) {

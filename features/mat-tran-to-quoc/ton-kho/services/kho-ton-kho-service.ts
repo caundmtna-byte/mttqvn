@@ -78,14 +78,16 @@ export async function getTonKhoMatrix(): Promise<TonKhoRecord[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
   const rows = await fetchAllPages<TonKhoViewRow>((from, to) =>
-    supabase
-      .from(VIEW_TON)
-      .select('kho_id,hang_hoa_id,ton_kho')
-      .range(from, to)
-      .then(({ data, error }) => {
-        if (error) handleSupabaseError(error);
-        return (data ?? []) as TonKhoViewRow[];
-      })
+    Promise.resolve(
+      supabase
+        .from(VIEW_TON)
+        .select('kho_id,hang_hoa_id,ton_kho')
+        .range(from, to)
+        .then(({ data, error }) => {
+          if (error) handleSupabaseError(error);
+          return (data ?? []) as TonKhoViewRow[];
+        }),
+    )
   );
   return rows.map(rowToTonKho).filter((r) => r.ton_kho !== 0);
 }

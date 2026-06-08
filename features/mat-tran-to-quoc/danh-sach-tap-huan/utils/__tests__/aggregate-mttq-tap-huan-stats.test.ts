@@ -51,6 +51,7 @@ describe('aggregate-mttq-tap-huan-stats', () => {
         ten_phong_ban: null,
         chuc_vu: null,
         ten_don_vi_can_bo: null,
+        can_bo_don_vi_id: null,
         thuoc_dien: 'Biên chế',
       },
     ];

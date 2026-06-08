@@ -12,6 +12,8 @@ export interface ArticleAllTabViewer {
   chucVuCapQuanLy: CapQuanLy | null;
   /** `var_nhan_vien.don_vi_id` — lọc tab Tất cả khi cấp Xã phường. */
   viewerDonViId: string | null;
+  /** `var_nhan_vien.id` — lọc bài của mình khi không có quyền xem hết. */
+  viewerNhanVienId: string | null;
 }
 
 function grantsHaveAdminOrAll(allowed: readonly string[]): boolean {
@@ -23,7 +25,7 @@ function grantsHaveAdminOrAll(allowed: readonly string[]): boolean {
  *
  * - Bypass `viewAll`: admin, `!matrixActive`, `cap_bac === 1`, grant admin/all, **`cap_quan_ly === 'Tỉnh'`**
  * - **Xã phường:** chỉ bài có `id_don_vi_nguoi_tao` trùng `viewerDonViId`
- * - **Còn lại** (`cap_quan_ly` null): xem hết (chỉ cần quyền module)
+ * - **Còn lại** (`cap_quan_ly` null): chỉ bài `id_nguoi_tao === viewerNhanVienId`
  */
 export function useArticleAllTabViewer(): ArticleAllTabViewer {
   const user = useAuthStore((s) => s.user);
@@ -48,14 +50,17 @@ export function useArticleAllTabViewer(): ArticleAllTabViewer {
       cap === 'Tỉnh';
 
     const dv = user?.don_vi_id?.toString().trim();
+    const nv = user?.nhan_vien_id?.toString().trim();
     return {
       viewAll,
       chucVuCapQuanLy: cap,
       viewerDonViId: dv ? dv : null,
+      viewerNhanVienId: nv ? nv : null,
     };
   }, [
     user?.role,
     user?.don_vi_id,
+    user?.nhan_vien_id,
     matrixActive,
     grantsByModule,
     chucVuCapBac,
@@ -70,20 +75,19 @@ export function rowVisibleOnArticleAllTab(viewer: ArticleAllTabViewer, row: BaiV
     const rowDv = row.id_don_vi_nguoi_tao?.toString().trim();
     return Boolean(rowDv) && rowDv === viewer.viewerDonViId;
   }
-  return true;
+  if (!viewer.viewerNhanVienId) return false;
+  return String(row.id_nguoi_tao) === viewer.viewerNhanVienId;
 }
 
 /** RPC scope cho tab "Tất cả" (server-side lọc khi Xã phường). */
-export function resolveBaiVietAllTabRpcScope(
-  viewer: ArticleAllTabViewer,
-): Exclude<BaiVietRpcScope, 'mine'> {
+export function resolveBaiVietAllTabRpcScope(viewer: ArticleAllTabViewer): BaiVietRpcScope {
   if (viewer.viewAll) return 'all';
   if (viewer.chucVuCapQuanLy === 'Xã phường' && viewer.viewerDonViId) return 'all_don_vi';
-  return 'all';
+  return 'mine';
 }
 
 export function canLoadArticleAllTab(viewer: ArticleAllTabViewer): boolean {
   if (viewer.viewAll) return true;
   if (viewer.chucVuCapQuanLy === 'Xã phường') return Boolean(viewer.viewerDonViId);
-  return true;
+  return Boolean(viewer.viewerNhanVienId);
 }

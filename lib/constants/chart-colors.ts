@@ -1,4 +1,4 @@
-import type { BadgeColor, BadgeConfig } from '@/components/ui/EnumBadge';
+import type { BadgeColor, BadgeConfig, BadgeConfigItem } from '@/components/ui/EnumBadge';
 
 /** Bảng màu đa dạng cho biểu đồ (dùng chung các tab Thống kê, Báo cáo) */
 export const CHART_COLORS = [
@@ -60,12 +60,60 @@ export function chartFillByIndexHsl(index: number): string {
   return CHART_COLORS_HSL[index % CHART_COLORS_HSL.length] ?? CHART_COLORS_HSL[0];
 }
 
+/** Legacy BadgeConfig dùng `variant` thay vì `color` (info, success, …) */
+const VARIANT_TO_BADGE_COLOR: Record<string, BadgeColor> = {
+  primary: 'primary',
+  info: 'sky',
+  neutral: 'slate',
+  success: 'emerald',
+  warning: 'amber',
+  danger: 'rose',
+  secondary: 'slate',
+};
+
+type BadgeConfigItemLike = BadgeConfigItem & { variant?: string };
+
+function resolveBadgeItemColor(item: BadgeConfigItemLike | undefined): BadgeColor {
+  if (!item) return 'slate';
+  if (item.color) return item.color;
+  if (item.variant) return VARIANT_TO_BADGE_COLOR[item.variant] ?? 'slate';
+  return 'slate';
+}
+
 export function chartFillFromBadgeConfig(
   config: BadgeConfig<string | number>,
   key: string | number | undefined | null,
 ): string {
   if (key == null || key === '' || key === '—') return CHART_FILL_FALLBACK;
-  const item = config[key];
+  const item = config[key] as BadgeConfigItemLike | undefined;
   if (!item) return CHART_FILL_FALLBACK;
-  return BADGE_COLOR_TO_CHART_FILL[item.color] ?? CHART_FILL_FALLBACK;
+  return BADGE_COLOR_TO_CHART_FILL[resolveBadgeItemColor(item)] ?? CHART_FILL_FALLBACK;
+}
+
+type ChartBarRow = Record<string, unknown>;
+
+/**
+ * Chuẩn màu cột BarChart phân loại (mỗi cột một màu).
+ * - Có `badgeConfig` + nhãn cột → màu khớp EnumBadge.
+ * - Không có badge → palette `CHART_COLORS` theo index (đảm bảo không trùng màu liên tiếp).
+ */
+export function chartFillForCategoricalBar(
+  row: unknown,
+  index: number,
+  options?: {
+    badgeConfig?: BadgeConfig<string | number>;
+    /** Tên field nhãn trên row, mặc định `label` */
+    labelKey?: string;
+  },
+): string {
+  const labelKey = options?.labelKey ?? 'label';
+  const label =
+    row != null && typeof row === 'object'
+      ? (row as ChartBarRow)[labelKey]
+      : undefined;
+
+  if (options?.badgeConfig != null && label != null && label !== '') {
+    return chartFillFromBadgeConfig(options.badgeConfig, label as string | number);
+  }
+  return chartFillByIndex(index);
 }

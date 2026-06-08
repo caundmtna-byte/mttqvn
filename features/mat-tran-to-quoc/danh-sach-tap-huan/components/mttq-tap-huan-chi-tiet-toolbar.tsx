@@ -24,7 +24,7 @@ interface Props {
   namOptions: ChipOption[];
   lopOptions: ChipOption[];
   thuocDienOptions: ChipOption[];
-  desktopStartSlot?: React.ReactNode;
+  tabSlot?: React.ReactNode;
 }
 
 const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
@@ -35,7 +35,7 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
   namOptions,
   lopOptions,
   thuocDienOptions,
-  desktopStartSlot,
+  tabSlot,
 }) => {
   const { canExport, canEdit } = useResourcePermissions('matTranTrainingList');
   const {
@@ -221,7 +221,7 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
 
   return (
     <GenericToolbar
-      desktopStartSlot={desktopStartSlot}
+      tabSlot={tabSlot}
       actions={renderActions}
       mobileActions={mobileActions}
       selectedCount={selectedCount}

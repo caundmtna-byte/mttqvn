@@ -29,7 +29,8 @@ export function useKhoTonKhoViewer(): KhoTonKhoViewer {
   const chucVuCapQuanLy = usePermissionGrantStore((s) => s.chucVuCapQuanLy);
 
   return useMemo(() => {
-    const moduleId = APP_RESOURCE_TO_MODULE.matTranReliefInventory;
+    const moduleId =
+      APP_RESOURCE_TO_MODULE.matTranReliefInventory ?? 'mat-tran-to-quoc/kho-cuu-tro/ton-kho';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||

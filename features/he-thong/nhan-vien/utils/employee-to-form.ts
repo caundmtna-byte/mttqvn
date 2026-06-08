@@ -1,3 +1,4 @@
+import { isCapQuanLy } from '../../chuc-vu/utils/cap-quan-ly';
 import type { Employee } from '../core/types';
 import type { EmployeeFormValues } from '../core/schema';
 
@@ -31,7 +32,7 @@ export function employeeToFormValues(emp: Employee): EmployeeFormValues {
     id_phong_ban: fkToFormString(emp.id_phong_ban),
     id_bo_phan: fkToFormString(emp.id_bo_phan),
     id_chuc_vu: fkToFormString(emp.id_chuc_vu),
-    cap_quan_ly: Array.isArray(emp.cap_quan_ly) ? emp.cap_quan_ly : [],
+    cap_quan_ly: Array.isArray(emp.cap_quan_ly) ? emp.cap_quan_ly.filter(isCapQuanLy) : [],
     to_chuc_ids: Array.isArray(emp.to_chuc_ids) ? emp.to_chuc_ids : [],
     don_vi_id: fkToFormString(emp.don_vi_id),
     trang_thai: emp.trang_thai,

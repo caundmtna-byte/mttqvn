@@ -287,7 +287,7 @@ const PositionTable = memo(function PositionTable({
           return <span className="text-xs text-muted-foreground">—</span>;
       }
     },
-    [deptById, capQuanLyBadge]
+    [deptById]
   );
 
   const renderHierarchyCell = useCallback(
@@ -441,7 +441,7 @@ const PositionTable = memo(function PositionTable({
         </div>
       </div>
     ),
-    [handlePositionOpen, onEdit, onDelete, onStatusChange, rowMenuOpenId, toggleSelection, capQuanLyBadge]
+    [handlePositionOpen, onEdit, onDelete, onStatusChange, rowMenuOpenId, toggleSelection]
   );
 
   if (isLoading) {

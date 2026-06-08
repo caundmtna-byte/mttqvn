@@ -10,7 +10,8 @@ import {
   partitionFilterChips,
 } from '../../lib/collect-filter-chip-children';
 
-export const DEFAULT_MAX_VISIBLE_FILTER_CHIPS = 5;
+/** Đồng bộ listview (`GenericToolbar` maxVisibleFilterChips={2}). */
+export const DEFAULT_MAX_VISIBLE_FILTER_CHIPS = 2;
 
 export interface FilterChipOverflowRowProps {
   children: React.ReactNode;

@@ -3,7 +3,7 @@ import { txt } from '../../lib/text';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, X, AlertCircle, CheckCircle2, Download, ArrowRight } from 'lucide-react';
 import Button from '../ui/Button';
-import { cn, getErrorMessage } from '../../lib/utils';
+import { cn, getErrorMessage, getTodayISODate } from '../../lib/utils';
 import Combobox, { type Option } from '../ui/Combobox';
 import { DIALOG_SIZE } from '../../lib/dialog-sizes';
 
@@ -19,17 +19,40 @@ export interface ImportTemplateSheet {
   rows: (string | number | null)[][];
 }
 
+export type ImportErrorRow = {
+  rowNum: number;
+  data: Record<string, unknown>;
+  message: string;
+};
+
+export type ImportBatchResult = {
+  created?: number;
+  errors?: string[];
+  errorRows?: ImportErrorRow[];
+};
+
+/** Metadata attached to each parsed row — stripped by import services before insert. */
+export const IMPORT_ROW_NUM_KEY = '__import_row_num';
+
 interface ImportDialogProps {
   open: boolean;
   onClose: () => void;
   columns: ImportColumn[];
-  onImport: (data: Record<string, unknown>[]) => Promise<void>;
+  onImport: (data: Record<string, unknown>[]) => Promise<ImportBatchResult | void>;
   templateFileName?: string;
   /** Extra reference sheets appended after the main Template sheet in the downloaded file. */
   templateSheets?: ImportTemplateSheet[];
 }
 
 type Step = 'upload' | 'mapping' | 'result';
+
+type ImportResultState = {
+  success: number;
+  errors: string[];
+  errorRows: ImportErrorRow[];
+};
+
+const emptyResult = (): ImportResultState => ({ success: 0, errors: [], errorRows: [] });
 
 const ImportDialog: React.FC<ImportDialogProps> = ({
   open, onClose, columns, onImport, templateFileName = 'template', templateSheets,
@@ -40,7 +63,7 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
   const [sheetData, setSheetData] = useState<unknown[][]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<ImportResultState | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +90,17 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
     onClose();
   };
 
+  const buildOriginalRowData = useCallback(
+    (row: unknown[]): Record<string, unknown> => {
+      const data: Record<string, unknown> = {};
+      sheetHeaders.forEach((h, i) => {
+        data[h] = row[i] ?? '';
+      });
+      return data;
+    },
+    [sheetHeaders],
+  );
+
   const parseFile = useCallback(async (f: File) => {
     setFile(f);
     try {
@@ -78,7 +112,7 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       const json = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
 
       if (json.length < 2) {
-        setResult({ success: 0, errors: [txt('shared.import.noDataOrHeader')] });
+        setResult({ ...emptyResult(), errors: [txt('shared.import.noDataOrHeader')] });
         setStep('result');
         return;
       }
@@ -105,7 +139,7 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       setMapping(autoMap);
       setStep('mapping');
     } catch {
-      setResult({ success: 0, errors: [txt('shared.import.cannotReadFile')] });
+      setResult({ ...emptyResult(), errors: [txt('shared.import.cannotReadFile')] });
       setStep('result');
     }
   }, [columns]);
@@ -125,18 +159,25 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
   const handleImport = async () => {
     setImporting(true);
     const errors: string[] = [];
+    const errorRows: ImportErrorRow[] = [];
     const parsed: Record<string, unknown>[] = [];
 
     // Validate required columns are mapped
     const unmapped = columns.filter(c => c.required && !mapping[c.key]);
     if (unmapped.length > 0) {
-      setResult({ success: 0, errors: [txt('shared.import.missingRequiredColumns', { columns: unmapped.map(c => c.label).join(', ') })] });
+      setResult({
+        success: 0,
+        errors: [txt('shared.import.missingRequiredColumns', { columns: unmapped.map(c => c.label).join(', ') })],
+        errorRows: [],
+      });
       setStep('result');
       setImporting(false);
       return;
     }
 
     sheetData.forEach((row, rowIdx) => {
+      const rowNum = rowIdx + 2;
+      const originalData = buildOriginalRowData(row);
       const record: Record<string, unknown> = {};
       let hasError = false;
 
@@ -148,21 +189,49 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
         const value = row[colIdx];
 
         if (col.required && (value === null || value === undefined || value === '')) {
-          errors.push(txt('shared.import.rowEmptyField', { row: rowIdx + 2, column: col.label }));
+          const errMsg = txt('shared.import.rowEmptyField', { row: rowNum, column: col.label });
+          errors.push(errMsg);
+          errorRows.push({ rowNum, data: originalData, message: errMsg });
           hasError = true;
           return;
         }
         record[col.key] = value ?? '';
       });
 
-      if (!hasError) parsed.push(record);
+      if (!hasError) {
+        parsed.push({ ...record, [IMPORT_ROW_NUM_KEY]: rowNum });
+      }
     });
 
     try {
-      if (parsed.length > 0) await onImport(parsed);
-      setResult({ success: parsed.length, errors: errors.slice(0, 10) });
+      let successCount = parsed.length;
+      let mergedErrors = errors;
+      let mergedErrorRows = errorRows;
+
+      if (parsed.length > 0) {
+        const importResult = await onImport(parsed);
+        if (importResult) {
+          successCount = importResult.created ?? parsed.length;
+          if (importResult.errors?.length) {
+            mergedErrors = [...mergedErrors, ...importResult.errors];
+          }
+          if (importResult.errorRows?.length) {
+            mergedErrorRows = [...mergedErrorRows, ...importResult.errorRows];
+          }
+        }
+      }
+
+      setResult({
+        success: successCount,
+        errors: mergedErrors.slice(0, 10),
+        errorRows: mergedErrorRows,
+      });
     } catch (err: unknown) {
-      setResult({ success: 0, errors: [getErrorMessage(err) || txt('shared.import.importError')] });
+      setResult({
+        success: 0,
+        errors: [getErrorMessage(err) || txt('shared.import.importError')],
+        errorRows,
+      });
     }
     setStep('result');
     setImporting(false);
@@ -181,6 +250,25 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       }
     }
     XLSX.writeFile(wb, `${templateFileName}.xlsx`);
+  };
+
+  const downloadErrorRows = async () => {
+    if (!result || result.errorRows.length === 0) return;
+    const mod = await import('xlsx');
+    const XLSX = mod.default ?? mod;
+    const headers = [...sheetHeaders, txt('shared.import.errorColumnLabel')];
+    const rows = result.errorRows.map((er) => [
+      ...sheetHeaders.map((h) => {
+        const colKey = Object.entries(mapping).find(([, v]) => v === h)?.[0];
+        const val = colKey != null ? er.data[colKey] : er.data[h];
+        return val != null && val !== '' ? String(val) : '';
+      }),
+      er.message,
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Lỗi');
+    XLSX.writeFile(wb, `loi-import_${templateFileName}_${getTodayISODate()}.xlsx`);
   };
 
   if (!open) return null;
@@ -383,6 +471,16 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                         <p key={i} className="text-xs text-destructive py-0.5">{err}</p>
                       ))}
                     </div>
+                  )}
+                  {result.errorRows.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => void downloadErrorRows()}
+                      className="text-xs text-destructive hover:underline flex items-center gap-1.5 mt-3 mx-auto"
+                    >
+                      <Download size={13} />
+                      {txt('shared.import.downloadErrors', { count: result.errorRows.length })}
+                    </button>
                   )}
                 </motion.div>
               )}

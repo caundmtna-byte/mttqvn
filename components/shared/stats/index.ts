@@ -7,6 +7,16 @@
  * - StatsKpiGrid (các thẻ KPI: icon, label, value, pct, delta)
  * - StatsCard / StatsTableCard (biểu đồ hoặc bảng 2 cột)
  *
+ * BarChart phân loại (mỗi cột một màu):
+ * - Luôn dùng `ColoredBar` + `getFill` (không dùng `<Bar fill="…">` một màu).
+ * - Có EnumBadge: `getFill={(row, i) => chartFillForCategoricalBar(row, i, { badgeConfig, labelKey: 'label' })}`
+ * - Không badge: `getFill={(row, i) => chartFillForCategoricalBar(row, i)}` hoặc `chartFillByIndex(i)`.
+ * - Helper: `@/lib/constants/chart-colors` (`chartFillForCategoricalBar`, `chartFillFromBadgeConfig`).
+ *
+ * Khoảng thời gian & filter chip:
+ * - Preset ngày: `buildStandardDateRangePresets()` + `resolveStandardDateRange()` từ `@/lib/date-range-presets`.
+ * - Nhiều chip dimension: `DashboardToolbar` + `FilterChipOverflowRow` (mặc định 2 chip + nút …).
+ *
  * Types: StatsKpiCardItem, StatsTableRow, StatsTableCardProps (xem types.ts).
  */
 

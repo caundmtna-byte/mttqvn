@@ -15,6 +15,7 @@ import Tooltip from '@/components/ui/Tooltip';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import { buildStandardDateRangePresets } from '@/lib/date-range-presets';
 import StatsKpiGrid from '@/components/shared/stats/StatsKpiGrid';
 import StatsCard from '@/components/shared/stats/StatsCard';
 import StatsTableCard from '@/components/shared/stats/StatsTableCard';
@@ -83,21 +84,11 @@ const HoaHongVietBaiPage: React.FC = () => {
   const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: canOpenPage });
   const allTabViewer = useCommissionAllTabViewer();
 
-  const presets = useMemo(
-    () => [
-      { id: 'all', label: txt('articleCommission.presetAll') },
-      { id: 'thisWeek', label: txt('articleStats.preset.thisWeek') },
-      { id: 'thisMonth', label: txt('articleStats.preset.thisMonth') },
-      { id: 'thisQuarter', label: txt('articleStats.preset.thisQuarter') },
-      { id: 'thisYear', label: txt('articleStats.preset.thisYear') },
-      { id: CUSTOM_PRESET, label: txt('articleStats.preset.custom') },
-    ],
-    [],
-  );
+  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const { dateFrom, dateTo } = useMemo(() => {
-    if (dateRange.preset === 'all') return { dateFrom: null as string | null, dateTo: null as string | null };
     const r = resolveArticleStatsDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd);
+    if (r.allTime) return { dateFrom: null as string | null, dateTo: null as string | null };
     return { dateFrom: r.start, dateTo: r.end };
   }, [dateRange]);
 

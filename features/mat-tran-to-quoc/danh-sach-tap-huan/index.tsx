@@ -789,7 +789,7 @@ const DanhSachTapHuanPage: React.FC = () => {
         {mainTab === 'lop' ? (
           <>
             <MttqLopTapHuanToolbar
-              desktopStartSlot={tabsSlot}
+              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               capOptions={capChipOptions}
               namOptions={namChipOptions}
@@ -818,7 +818,7 @@ const DanhSachTapHuanPage: React.FC = () => {
         ) : mainTab === 'chi_tiet' ? (
           <>
             <MttqTapHuanChiTietToolbar
-              desktopStartSlot={tabsSlot}
+              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               onExport={handleExport}
               onAdd={handleChiTietAdd}
@@ -842,7 +842,7 @@ const DanhSachTapHuanPage: React.FC = () => {
         ) : (
           <>
             <MttqLopTapHuanToolbar
-              desktopStartSlot={tabsSlot}
+              tabSlot={tabsSlot}
               hideListControls
               showExportWhenListHidden
               extraFiltersSlot={thongKeExtraFiltersSlot}

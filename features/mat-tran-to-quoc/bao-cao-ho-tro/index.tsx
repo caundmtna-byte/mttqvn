@@ -42,6 +42,10 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import {
+  buildStandardDateRangePresets,
+  isStandardDateRangeNonDefault,
+} from '@/lib/date-range-presets';
 import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
 import { CHART_FILL_FALLBACK } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -190,17 +194,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
     [stats.filtered, sortKey, sortDir],
   );
 
-  const presets = useMemo(
-    () => [
-      { id: 'all', label: txt('matTranReliefSupportReport.preset.all') },
-      { id: 'thisWeek', label: txt('matTranReliefSupportReport.preset.thisWeek') },
-      { id: 'thisMonth', label: txt('matTranReliefSupportReport.preset.thisMonth') },
-      { id: 'thisQuarter', label: txt('matTranReliefSupportReport.preset.thisQuarter') },
-      { id: 'thisYear', label: txt('matTranReliefSupportReport.preset.thisYear') },
-      { id: CUSTOM_PRESET, label: txt('matTranReliefSupportReport.preset.custom') },
-    ],
-    [],
-  );
+  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const khoOptions = useMemo(() => {
     const m = new Map<string, { label: string; count: number }>();
@@ -335,12 +329,10 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
     [dims, khoOptions, loaiOptions, donViOptions, dotOptions, hangOptions, danhMucOptions],
   );
 
-  const isNonDefaultDateRange = useMemo(() => {
-    if (dateRange.preset === 'custom') {
-      return Boolean(dateRange.customStart && dateRange.customEnd);
-    }
-    return dateRange.preset !== initialDateRange.preset;
-  }, [dateRange]);
+  const isNonDefaultDateRange = useMemo(
+    () => isStandardDateRangeNonDefault(dateRange, initialDateRange.preset as 'thisMonth'),
+    [dateRange],
+  );
 
   const activeFilterCount = useMemo(() => {
     let n = 0;
@@ -501,8 +493,10 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
           ngay_phieu: listRow.ngay_phieu,
           kho_xuat_id: listRow.kho_xuat_id,
           ten_kho_xuat: listRow.ten_kho_xuat,
+          kho_xuat_don_vi_id: listRow.kho_xuat_don_vi_id,
           kho_nhap_id: listRow.kho_nhap_id,
           ten_kho_nhap: listRow.ten_kho_nhap,
+          kho_nhap_don_vi_id: listRow.kho_nhap_don_vi_id,
           don_vi_cuu_tro_id: listRow.don_vi_cuu_tro_id,
           ten_don_vi_cuu_tro: listRow.ten_don_vi_cuu_tro,
           dot_cuu_tro_id: listRow.dot_cuu_tro_id,
@@ -752,31 +746,35 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
                     <tr className="text-left text-muted-foreground">
                       {(
                         [
-                          ['ngay_phieu', txt('matTranReliefSupportReport.tableColNgay')],
-                          ['so_phieu', txt('matTranReliefSupportReport.tableColSoPhieu')],
-                          ['loai_phieu', txt('matTranReliefSupportReport.tableColLoai')],
-                          ['kho_label', txt('matTranReliefSupportReport.tableColKho')],
-                          ['nguon_dich_label', txt('matTranReliefSupportReport.tableColNguonDich')],
-                          ['ten_hang_hoa', txt('matTranReliefSupportReport.tableColHang')],
-                          ['so_luong', txt('matTranReliefSupportReport.tableColSl')],
-                          ['don_vi_tinh', txt('matTranReliefSupportReport.tableColDvt')],
-                          ['thanh_tien', txt('matTranReliefSupportReport.tableColTien')],
+                          ['ngay_phieu', txt('matTranReliefSupportReport.tableColNgay'), true],
+                          ['so_phieu', txt('matTranReliefSupportReport.tableColSoPhieu'), true],
+                          ['loai_phieu', txt('matTranReliefSupportReport.tableColLoai'), true],
+                          ['kho_label', txt('matTranReliefSupportReport.tableColKho'), true],
+                          ['nguon_dich_label', txt('matTranReliefSupportReport.tableColNguonDich'), true],
+                          ['ten_hang_hoa', txt('matTranReliefSupportReport.tableColHang'), true],
+                          ['so_luong', txt('matTranReliefSupportReport.tableColSl'), true],
+                          ['don_vi_tinh', txt('matTranReliefSupportReport.tableColDvt'), false],
+                          ['thanh_tien', txt('matTranReliefSupportReport.tableColTien'), true],
                         ] as const
-                      ).map(([key, label]) => (
+                      ).map(([key, label, sortable]) => (
                         <th key={key} className="py-2 pr-3 font-medium whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => toggleSort(key)}
-                            className={cn(
-                              'inline-flex items-center gap-1 hover:text-foreground',
-                              sortKey === key && 'text-foreground',
-                            )}
-                          >
-                            {label}
-                            {sortKey === key && (
-                              <span className="text-[10px]">{sortDir === 'asc' ? '▲' : '▼'}</span>
-                            )}
-                          </button>
+                          {sortable ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleSort(key as ReliefSupportLookupSortKey)}
+                              className={cn(
+                                'inline-flex items-center gap-1 hover:text-foreground',
+                                sortKey === key && 'text-foreground',
+                              )}
+                            >
+                              {label}
+                              {sortKey === key && (
+                                <span className="text-[10px]">{sortDir === 'asc' ? '▲' : '▼'}</span>
+                              )}
+                            </button>
+                          ) : (
+                            <span>{label}</span>
+                          )}
                         </th>
                       ))}
                     </tr>

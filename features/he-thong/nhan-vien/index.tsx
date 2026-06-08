@@ -37,9 +37,11 @@ import { useListWithFilter } from '../../../lib/hooks';
 import { matchesSearchTerm } from '../../../lib/searchUtils';
 import { employeeMatchesColumnSearch } from './utils/column-search';
 import { mergeEmployeeChucVuFromPositions } from './utils/merge-employee-chuc-vu-from-positions';
+import ToggleSwitch from '@/components/ui/ToggleSwitch';
 
 const EmployeeForm = lazy(() => import('./components/nhan-vien-form'));
 const EmployeeDetail = lazy(() => import('./components/nhan-vien-detail'));
+const EmployeeStatusChangeDialog = lazy(() => import('./components/nhan-vien-status-change-dialog'));
 
 /** Chọn trạng thái Hoạt động / Khóa trong dialog xác nhận (có state để switch hiển thị đúng). */
 const EmployeeStatusSwitchPicker: React.FC<{

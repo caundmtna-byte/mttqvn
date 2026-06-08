@@ -10,7 +10,7 @@ import { useTinhThanhStore } from '../store/useTinhThanhStore';
 import { countColumnSearchActive } from '../utils/column-search';
 
 interface Props {
-  desktopStartSlot?: React.ReactNode;
+  tabSlot?: React.ReactNode;
   /** Đếm theo danh sách tỉnh đầy đủ (trước lọc chip) — đồng bộ số trong dropdown. */
   soXaCounts: { has: number; none: number };
   onAdd: () => void;
@@ -20,7 +20,7 @@ interface Props {
 }
 
 const TinhThanhToolbar: React.FC<Props> = ({
-  desktopStartSlot,
+  tabSlot,
   soXaCounts,
   onAdd,
   onExport,
@@ -169,7 +169,7 @@ const TinhThanhToolbar: React.FC<Props> = ({
       onReorderColumns={reorderColumns}
       onResetColumns={resetColumns}
       showBack
-      desktopStartSlot={desktopStartSlot}
+      tabSlot={tabSlot}
     />
   );
 };

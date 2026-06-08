@@ -37,6 +37,10 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import {
+  buildStandardDateRangePresets,
+  isStandardDateRangeNonDefault,
+} from '@/lib/date-range-presets';
 import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
 import { CHART_FILL_FALLBACK, GIOI_TINH_CHART_COLORS } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -54,12 +58,14 @@ import { useMttqBaoCaoUyVienViewer } from './hooks/use-mttq-bao-cao-uy-vien-view
 import type { MttqUyVienUyBan } from '../uy-vien-uy-ban/core/types';
 import { computeAgeFromBirthDate } from '../danh-sach-can-bo/utils/age';
 import { formatUyVienPhoneDisplay } from '../uy-vien-uy-ban/utils/display-format';
+import { donViDisplayLabel } from '../uy-vien-uy-ban/utils/column-search';
 import { buildUyVienTrangThamGiaChipOptions } from '../uy-vien-uy-ban/utils/trang-tham-gia-options';
 import { CHIP_TRANG_THAI_NULL } from '../danh-sach-can-bo/core/constants';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import {
   type UyVienStatsDimensionFilters,
   resolveUyVienStatsDateRange,
+  resolveUyVienStatsTrendChartRange,
   filterRowsForUyVienStats,
   computeUyVienStatsKpis,
   pickTrendBucket,
@@ -122,6 +128,7 @@ function buildDimOptions(
 const BaoCaoUyVienPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const tinhCapLabel = txt('matTranUyVienUyBan.tinhCap');
   /** Giống Báo cáo cán bộ: chỉ `view` trên resource module báo cáo. */
   const canView = useCan('view', 'matTranCommitteeMemberStats');
   const { canExport } = useResourcePermissions('matTranCommitteeMemberStats');
@@ -170,16 +177,7 @@ const BaoCaoUyVienPage: React.FC = () => {
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [rowsEnriched, viewing, uyVienViewer]);
 
-  const presets = useMemo(
-    () => [
-      { id: 'thisWeek', label: txt('matTranCommitteeMemberStats.preset.thisWeek') },
-      { id: 'thisMonth', label: txt('matTranCommitteeMemberStats.preset.thisMonth') },
-      { id: 'thisQuarter', label: txt('matTranCommitteeMemberStats.preset.thisQuarter') },
-      { id: 'thisYear', label: txt('matTranCommitteeMemberStats.preset.thisYear') },
-      { id: CUSTOM_PRESET, label: txt('matTranCommitteeMemberStats.preset.custom') },
-    ],
-    [],
-  );
+  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const resolvedRange = useMemo(
     () => resolveUyVienStatsDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
@@ -193,32 +191,36 @@ const BaoCaoUyVienPage: React.FC = () => {
 
   const kpis = useMemo(() => computeUyVienStatsKpis(filtered), [filtered]);
 
-  const bucket = useMemo(() => pickTrendBucket(resolvedRange.start, resolvedRange.end), [resolvedRange]);
+  const chartRange = useMemo(
+    () => resolveUyVienStatsTrendChartRange(resolvedRange, rowsEnriched),
+    [resolvedRange, rowsEnriched],
+  );
+  const bucket = useMemo(() => pickTrendBucket(chartRange.start, chartRange.end), [chartRange]);
   const trendSeries = useMemo(
-    () => buildUyVienTrendSeries(filtered, resolvedRange, bucket),
-    [filtered, resolvedRange, bucket],
+    () => buildUyVienTrendSeries(filtered, chartRange, bucket),
+    [filtered, chartRange, bucket],
   );
 
   const topDonVi = useMemo(() => {
-    const rowsTop = aggregateUyVienTopCounts(filtered, 'don_vi', 10);
+    const rowsTop = aggregateUyVienTopCounts(filtered, 'don_vi', 10, tinhCapLabel);
     return rowsTop.map((r) => ({ id: r.id, label: r.label, value: r.value }));
-  }, [filtered]);
+  }, [filtered, tinhCapLabel]);
 
   const topNhiemKy = useMemo(() => {
-    const rowsTop = aggregateUyVienTopCounts(filtered, 'nhiem_ky', 10);
+    const rowsTop = aggregateUyVienTopCounts(filtered, 'nhiem_ky', 10, tinhCapLabel);
     return rowsTop.map((r) => ({ id: r.id, label: r.label, value: r.value }));
-  }, [filtered]);
+  }, [filtered, tinhCapLabel]);
 
   const topChucVu = useMemo(() => {
-    const rowsTop = aggregateUyVienTopCounts(filtered, 'chuc_vu_don_vi', 10);
+    const rowsTop = aggregateUyVienTopCounts(filtered, 'chuc_vu_don_vi', 10, tinhCapLabel);
     return rowsTop.map((r) => ({ id: r.id, label: r.label, value: r.value }));
-  }, [filtered]);
+  }, [filtered, tinhCapLabel]);
 
   const gioiTinhBar = useMemo(() => buildUyVienGioiTinhBarData(filtered), [filtered]);
 
   const sortedLookupBase = useMemo(
-    () => sortUyVienLookupRows(filtered, sortKey, sortDir, getLanguage),
-    [filtered, sortKey, sortDir],
+    () => sortUyVienLookupRows(filtered, sortKey, sortDir, getLanguage, tinhCapLabel),
+    [filtered, sortKey, sortDir, tinhCapLabel],
   );
 
   const nhiemKyOptions = useMemo(
@@ -234,9 +236,9 @@ const BaoCaoUyVienPage: React.FC = () => {
     () =>
       buildDimOptions(rowsEnriched, (r) => ({
         id: r.don_vi_id?.trim() ? String(r.don_vi_id) : CHIP_TRANG_THAI_NULL,
-        label: r.ten_don_vi?.trim() || '—',
+        label: donViDisplayLabel(r, tinhCapLabel),
       })),
-    [rowsEnriched],
+    [rowsEnriched, tinhCapLabel],
   );
 
   const gioiTinhOptions = useMemo(
@@ -315,12 +317,10 @@ const BaoCaoUyVienPage: React.FC = () => {
     [nhiemKyOptions, donViOptions, gioiTinhOptions, trangThamGiaOptions, dangVienOptions, dims],
   );
 
-  const isNonDefaultDateRange = useMemo(() => {
-    if (dateRange.preset === 'custom') {
-      return Boolean(dateRange.customStart && dateRange.customEnd);
-    }
-    return dateRange.preset !== 'thisMonth';
-  }, [dateRange]);
+  const isNonDefaultDateRange = useMemo(
+    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    [dateRange],
+  );
 
   const activeFilterCount = useMemo(() => {
     let n = 0;
@@ -359,7 +359,7 @@ const BaoCaoUyVienPage: React.FC = () => {
     (item: MttqUyVienStatsRow) => ({
       ho_va_ten: item.ho_va_ten,
       ten_nhiem_ky: item.ten_nhiem_ky ?? '',
-      ten_don_vi: item.ten_don_vi ?? '',
+      ten_don_vi: donViDisplayLabel(item, tinhCapLabel),
       chuc_vu_don_vi: item.chuc_vu_don_vi ?? '',
       gioi_tinh: item.gioi_tinh ?? '',
       trang_thai_tham_gia: item.trang_thai_tham_gia ?? '',
@@ -369,7 +369,7 @@ const BaoCaoUyVienPage: React.FC = () => {
       range_start: resolvedRange.start,
       range_end: resolvedRange.end,
     }),
-    [resolvedRange.start, resolvedRange.end],
+    [resolvedRange.start, resolvedRange.end, tinhCapLabel],
   );
 
   const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
@@ -675,7 +675,9 @@ const BaoCaoUyVienPage: React.FC = () => {
                       >
                         <td className="py-2 pr-3 max-w-[200px] truncate font-medium">{row.ho_va_ten}</td>
                         <td className="py-2 pr-3 max-w-[160px] truncate">{row.ten_nhiem_ky ?? '—'}</td>
-                        <td className="py-2 pr-3 max-w-[160px] truncate">{row.ten_don_vi ?? '—'}</td>
+                        <td className="py-2 pr-3 max-w-[160px] truncate" title={donViDisplayLabel(row, tinhCapLabel)}>
+                          {donViDisplayLabel(row, tinhCapLabel)}
+                        </td>
                         <td className="py-2 pr-3 max-w-[140px] truncate">{row.chuc_vu_don_vi ?? '—'}</td>
                         <td className="py-2 pr-3">{row.trang_thai_tham_gia ?? '—'}</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">

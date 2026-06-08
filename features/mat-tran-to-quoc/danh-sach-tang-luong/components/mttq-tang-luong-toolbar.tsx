@@ -493,7 +493,7 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
       onResetColumns={hideListControls ? undefined : resetColumns}
       showBack
       onBack={onPageBack}
-      desktopStartSlot={tabsSlot}
+      tabSlot={tabsSlot}
       hideSearch={hideListControls}
       searchTrailing={searchTrailing}
       onAdd={canCreate && onAdd && mainTab === 'lich_su' ? onAdd : undefined}

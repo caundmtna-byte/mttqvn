@@ -27,6 +27,7 @@ import { txt } from '@/lib/text';
 import { cn, formatDateShort } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import { buildStandardDateRangePresets } from '@/lib/date-range-presets';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
@@ -187,17 +188,7 @@ const BaoCaoCongViecPage: React.FC = () => {
   const [viewing, setViewing] = useState<TaskReportLookupRow | null>(null);
   const [showExport, setShowExport] = useState(false);
 
-  const presets = useMemo(
-    () => [
-      { id: 'all', label: txt('taskReport.preset.all') },
-      { id: 'thisWeek', label: txt('taskReport.preset.thisWeek') },
-      { id: 'thisMonth', label: txt('taskReport.preset.thisMonth') },
-      { id: 'thisQuarter', label: txt('taskReport.preset.thisQuarter') },
-      { id: 'thisYear', label: txt('taskReport.preset.thisYear') },
-      { id: CUSTOM_PRESET, label: txt('taskReport.preset.custom') },
-    ],
-    [],
-  );
+  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const resolvedRange = useMemo(
     () =>

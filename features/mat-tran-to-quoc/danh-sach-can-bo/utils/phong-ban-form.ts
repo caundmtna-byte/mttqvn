@@ -4,7 +4,7 @@
  */
 export function rootPhongBanIdForForm(
   phong_ban_id: string | null | undefined,
-  departments: { id: string; cha_id: string | null }[],
+  departments: readonly { id: string; cha_id: string | null }[],
 ): string {
   const id = phong_ban_id != null && String(phong_ban_id).trim() !== '' ? String(phong_ban_id).trim() : '';
   if (!id) return '';

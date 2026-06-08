@@ -246,7 +246,7 @@ const ChuongTrinhNamToolbar: React.FC<Props> = ({
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
-      desktopStartSlot={tabsSlot}
+      tabSlot={tabsSlot}
       filtersDesktopSeparateScroll
       maxVisibleFilterChips={2}
     />

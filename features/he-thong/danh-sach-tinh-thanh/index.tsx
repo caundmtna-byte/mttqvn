@@ -589,7 +589,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
         {tab === TAB_TINH ? (
           <>
             <TinhThanhToolbar
-              desktopStartSlot={tabGroup}
+              tabSlot={tabGroup}
               soXaCounts={tinhSoXaCounts}
               onAdd={openAddTinh}
               onExport={canExport ? handleExportOpen : undefined}
@@ -612,7 +612,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
         ) : (
           <>
             <XaPhuongToolbar
-              desktopStartSlot={tabGroup}
+              tabSlot={tabGroup}
               tinhOptions={tinhOptions}
               selectedTinhId={selectedTinhId}
               onTinhChange={onTinhFilterChange}

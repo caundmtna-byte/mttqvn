@@ -24,6 +24,7 @@ interface MultiSelectProps {
   onChange: (value: string[]) => void;
   placeholder?: string;
   label?: string;
+  error?: string;
   className?: string;
   icon?: React.ElementType;
   size?: 'sm' | 'md';
@@ -60,6 +61,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   onChange,
   placeholder = "Chọn...",
   label,
+  error,
   className,
   icon: Icon,
   size = 'sm',
@@ -428,7 +430,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         className={cn(
           "w-full flex items-center justify-between px-2 text-xs border rounded-lg transition-all cursor-pointer select-none",
           heightClass,
-          isOpen ? "border-primary ring-2 ring-primary/10 bg-background" : hasValue ? "border-primary/40 bg-primary/[0.03]" : "border-border bg-background hover:bg-muted/50",
+          error ? "border-destructive ring-2 ring-destructive/10 bg-background" : isOpen ? "border-primary ring-2 ring-primary/10 bg-background" : hasValue ? "border-primary/40 bg-primary/[0.03]" : "border-border bg-background hover:bg-muted/50",
           hasValue ? "text-foreground" : "text-muted-foreground"
         )}
       >
@@ -507,6 +509,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             document.body,
           )
         ) : null)}
+      {error && <p className="text-xs font-medium text-destructive mt-1.5 ml-1">{error}</p>}
     </div>
   );
 };

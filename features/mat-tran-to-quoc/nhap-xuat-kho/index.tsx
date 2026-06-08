@@ -533,7 +533,7 @@ const NhapXuatKhoPage: React.FC = () => {
         {activeTab === TAB_LIST ? (
           <>
             <NhapXuatKhoToolbar
-              desktopStartSlot={tabSlot}
+              tabSlot={tabSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               onAdd={() => {
                 startTransition(() => {
@@ -561,7 +561,7 @@ const NhapXuatKhoPage: React.FC = () => {
         ) : (
           <>
             <NhapXuatKhoCtFlatToolbar
-              desktopStartSlot={tabSlot}
+              tabSlot={tabSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               onExport={handleExportCt}
               items={viewableCtRows}

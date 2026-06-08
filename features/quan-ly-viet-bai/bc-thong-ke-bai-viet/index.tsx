@@ -28,6 +28,10 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import {
+  buildStandardDateRangePresets,
+  isStandardDateRangeNonDefault,
+} from '@/lib/date-range-presets';
 import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
 import { chartFillByIndex } from '@/lib/constants/chart-colors';
 import type { StatsTableRow } from '@/components/shared/stats/types';
@@ -137,16 +141,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [rows, viewing]);
 
-  const presets = useMemo(
-    () => [
-      { id: 'thisWeek', label: txt('articleStats.preset.thisWeek') },
-      { id: 'thisMonth', label: txt('articleStats.preset.thisMonth') },
-      { id: 'thisQuarter', label: txt('articleStats.preset.thisQuarter') },
-      { id: 'thisYear', label: txt('articleStats.preset.thisYear') },
-      { id: CUSTOM_PRESET, label: txt('articleStats.preset.custom') },
-    ],
-    [],
-  );
+  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const resolvedRange = useMemo(
     () => resolveArticleStatsDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
@@ -245,12 +240,10 @@ const BcThongKeBaiVietPage: React.FC = () => {
     [theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, dims.idTheLoai, dims.idNguonDang, dims.idTrangDang, dims.idNguoiTao],
   );
 
-  const isNonDefaultDateRange = useMemo(() => {
-    if (dateRange.preset === 'custom') {
-      return Boolean(dateRange.customStart && dateRange.customEnd);
-    }
-    return dateRange.preset !== 'thisMonth';
-  }, [dateRange]);
+  const isNonDefaultDateRange = useMemo(
+    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    [dateRange],
+  );
 
   const activeFilterCount = useMemo(() => {
     let n = 0;

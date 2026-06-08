@@ -1,13 +1,53 @@
 ---
-description: Trang module list — Back + TabGroup trên GenericToolbar; tránh tách Back/Tab lên DashboardToolbar
-globs: "**/features/**/index.tsx,**/components/shared/GenericToolbar.tsx"
+description: Trang module list — Back + TabGroup trên GenericToolbar; chuẩn mobile tabSlot; tránh tách Back/Tab lên DashboardToolbar
+globs: "**/features/**/index.tsx,**/components/shared/GenericToolbar.tsx,**/components/**/*toolbar*.tsx"
 alwaysApply: false
 ---
 
 # Module list: nút Back và TabGroup
 
-- Trang có **TabGroup** trong cùng module và có **GenericToolbar** (search, cột, bulk…): dùng **một hàng** `GenericToolbar` với `showBack`, `onBack`, `desktopStartSlot={<TabGroup ... />}` — thứ tự cố định: **Back → TabGroup →** filter/search/actions. Không để thiếu Back trên toolbar list.
-- `desktopStartSlot` được render **sau nút Back** trên cả desktop và mobile (trong `GenericToolbar`).
-- Tránh gắn Back + TabGroup riêng trên `DashboardToolbar` phía trên card nếu mục tiêu là đồng bộ với toolbar danh sách.
-- Tab không có toolbar list (chỉ cần Back + tab): dùng `GenericToolbar` với `hideSearch`, `showBack`, `onBack`, `desktopStartSlot` (mẫu `ArticleSettingsPageNav` trong `quan-ly-viet-bai/thiet-lap-bai-viet`).
-- Cùng trang có **nhiều bảng con** (vd. Trang đăng / Nguồn đăng): tiêu đề từng bảng đặt trong `desktopStartSlot` của toolbar bảng đó (cùng hàng với search), không tách `h3` phía trên card.
+## Quy chuẩn `tabSlot` (mobile: hàng riêng cuộn ngang phía trên toolbar)
+
+- Trang có **TabGroup** và **GenericToolbar** (search, cột, bulk…): dùng prop **`tabSlot`** thay vì `desktopStartSlot` để truyền `<TabGroup />`.
+  - **Mobile**: `tabSlot` được render thành hàng riêng, cuộn ngang (overflow-x-auto, ẩn scrollbar), **phía trên** hàng toolbar chính — tách biệt với Back/Search/Filter/Add.
+  - **Desktop**: `tabSlot` render vào vị trí sau nút Back (giống hành vi cũ của `desktopStartSlot`).
+  - Thứ tự desktop cố định: **Back → TabGroup → chip lọc → Search → Actions**.
+- Không bọc `TabGroup` trong `div overflow-x-auto` ở caller — `GenericToolbar` tự xử lý wrapper đó khi nhận `tabSlot`.
+- `tabSlot` **ẩn** khi đang ở chế độ chọn nhiều (`hasSelection`) trên mobile.
+
+## Luồng truyền `tabSlot` chuẩn
+
+```
+index.tsx
+  → tạo tabsSlot = <TabGroup ... />
+  → truyền vào *-list-panel.tsx / *-toolbar.tsx qua prop tabSlot
+  → *-toolbar.tsx truyền tabSlot={tabSlot} vào <GenericToolbar>
+```
+
+## Khi nào dùng `desktopStartSlot` (giữ nguyên)
+
+- Nội dung **không phải TabGroup**: tiêu đề bảng con, section title, v.v. — dùng `desktopStartSlot` (render trong hàng toolbar trên cả desktop và mobile).
+- Toolbar không liên quan đến tab điều hướng trang.
+
+## Tab không có toolbar list (chỉ Back + tab)
+
+Dùng `GenericToolbar` với `hideSearch`, `showBack`, `onBack`, `tabSlot={tabsSlot}` — mẫu `ArticleSettingsPageNav` trong `quan-ly-viet-bai/thiet-lap-bai-viet`.
+
+## Các module đã áp dụng chuẩn `tabSlot`
+
+- `phan-bien-xa-hoi/thiet-lap-danh-muc`
+- `mat-tran-to-quoc/thiet-lap-cai-dat`
+- `he-thong/danh-sach-tinh-thanh` (TinhThanhToolbar + XaPhuongToolbar)
+- `mat-tran-to-quoc/danh-sach-tap-huan`
+- `mat-tran-to-quoc/danh-sach-khen-thuong`
+- `mat-tran-to-quoc/danh-sach-tang-luong`
+- `mat-tran-to-quoc/thiet-lap-luong` (LuongNgachToolbar + LuongBacToolbar)
+- `mat-tran-to-quoc/nhap-xuat-kho`
+- `mat-tran-to-quoc/hang-hoa`
+- `quan-ly-giao-viec/cong-viec`
+- `quan-ly-giao-viec/chuong-trinh-nam`
+- `quan-ly-viet-bai/thiet-lap-bai-viet` (ArticleTheLoaiToolbar + ArticleSettingsPageNav)
+
+## DashboardToolbar (ngoài phạm vi quy chuẩn này)
+
+`DashboardToolbar` dùng `desktopStartSlot` riêng theo layout analytics — không áp dụng `tabSlot`.

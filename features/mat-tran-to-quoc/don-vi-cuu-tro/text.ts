@@ -10,6 +10,11 @@ export const matTranDonViCuuTro = {
     create: 'Đã tạo bản ghi.',
     update: 'Đã cập nhật bản ghi.',
     delete: 'Đã xóa {{count}} bản ghi.',
+    importSuccess: 'Đã nhập {{count}} đơn vị hỗ trợ',
+  },
+  import: {
+    templateName: 'don-vi-cuu-tro',
+    rowError: 'Dòng {{row}}: {{message}}',
   },
   service: {
     notFound: 'Không tìm thấy bản ghi.',

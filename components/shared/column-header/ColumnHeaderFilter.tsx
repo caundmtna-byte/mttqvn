@@ -18,6 +18,8 @@ export function ColumnHeaderFilter({
   sortColumnId,
   sort,
   setSort,
+  columnSearch,
+  columnSearchActive,
 }: {
   options?: Option[] | null;
   value?: string[] | null;
@@ -26,6 +28,8 @@ export function ColumnHeaderFilter({
   sortColumnId: string;
   sort: SortState;
   setSort: (column: string | null, direction: 'asc' | 'desc' | null) => void;
+  columnSearch?: React.ReactNode;
+  columnSearchActive?: boolean;
 }) {
   const safeOptions = options ?? [];
   const selectedValues = value ?? [];
@@ -35,7 +39,7 @@ export function ColumnHeaderFilter({
   const isDescActive = sort.column === sortColumnId && sort.direction === 'desc';
   const sortActive = isAscActive || isDescActive;
   const hasFilter = selectedValues.length > 0;
-  const triggerActive = hasFilter || sortActive;
+  const triggerActive = hasFilter || sortActive || !!columnSearchActive;
 
   return (
     <MultiSelect
@@ -47,7 +51,10 @@ export function ColumnHeaderFilter({
       onChange={onChange}
       placeholder={ariaLabel}
       dropdownTopContent={({ close }) => (
-        <ColumnHeaderSortButtons sortColumnId={sortColumnId} sort={sort} setSort={setSort} close={close} />
+        <div className="flex flex-col gap-2">
+          <ColumnHeaderSortButtons sortColumnId={sortColumnId} sort={sort} setSort={setSort} close={close} />
+          {columnSearch ? <div className="pt-1.5 border-t border-border/70">{columnSearch}</div> : null}
+        </div>
       )}
       renderDropdownTrigger={({ open, toggle, listboxId }) => (
         <button

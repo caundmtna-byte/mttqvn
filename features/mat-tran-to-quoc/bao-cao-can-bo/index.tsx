@@ -33,6 +33,10 @@ import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import {
+  buildStandardDateRangePresets,
+  isStandardDateRangeNonDefault,
+} from '@/lib/date-range-presets';
 import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
 import { CHART_FILL_FALLBACK, GIOI_TINH_CHART_COLORS } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -173,17 +177,7 @@ const BaoCaoCanBoPage: React.FC = () => {
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [viewableRowsEnriched, viewing, viewer]);
 
-  const presets = useMemo(
-    () => [
-      { id: 'all', label: txt('matTranOfficerStats.preset.all') },
-      { id: 'thisWeek', label: txt('matTranOfficerStats.preset.thisWeek') },
-      { id: 'thisMonth', label: txt('matTranOfficerStats.preset.thisMonth') },
-      { id: 'thisQuarter', label: txt('matTranOfficerStats.preset.thisQuarter') },
-      { id: 'thisYear', label: txt('matTranOfficerStats.preset.thisYear') },
-      { id: CUSTOM_PRESET, label: txt('matTranOfficerStats.preset.custom') },
-    ],
-    [],
-  );
+  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const resolvedRange = useMemo(
     () => resolveOfficerStatsDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
@@ -452,12 +446,10 @@ const BaoCaoCanBoPage: React.FC = () => {
     ],
   );
 
-  const isNonDefaultDateRange = useMemo(() => {
-    if (dateRange.preset === 'custom') {
-      return Boolean(dateRange.customStart && dateRange.customEnd);
-    }
-    return dateRange.preset !== 'all';
-  }, [dateRange]);
+  const isNonDefaultDateRange = useMemo(
+    () => isStandardDateRangeNonDefault(dateRange, 'all'),
+    [dateRange],
+  );
 
   const activeFilterCount = useMemo(() => {
     let n = 0;

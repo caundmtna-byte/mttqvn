@@ -99,7 +99,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       pageSize: pagination.pageSize,
       search: searchTerm,
       scope: rpcScope,
-      viewerNhanVienId: null,
+      viewerNhanVienId: rpcScope === 'mine' ? allTabViewer.viewerNhanVienId : null,
       viewerDonViId: rpcScope === 'all_don_vi' ? allTabViewer.viewerDonViId : null,
       theLoaiIds: filters.id_the_loai,
       nguonDangIds: filters.id_nguon_dang,
@@ -112,6 +112,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       searchTerm,
       rpcScope,
       allTabViewer.viewerDonViId,
+      allTabViewer.viewerNhanVienId,
       filters.id_the_loai,
       filters.id_nguon_dang,
       filters.id_trang_dang,
@@ -125,9 +126,9 @@ const BaiVietDanhSachPage: React.FC = () => {
   });
 
   const { data: nguoiTaoFilterRows = [] } = useBaiVietNguoiTaoFilterOptions({
-    scope: rpcScope,
+    scope: rpcScope === 'mine' ? 'all' : rpcScope,
     viewerDonViId: rpcScope === 'all_don_vi' ? allTabViewer.viewerDonViId : null,
-    enabled: pageQueryEnabled,
+    enabled: pageQueryEnabled && rpcScope !== 'mine',
   });
 
   const rows = pageData?.rows ?? [];

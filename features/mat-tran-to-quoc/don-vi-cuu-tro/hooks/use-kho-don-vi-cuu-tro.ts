@@ -11,6 +11,7 @@ import {
   deleteKhoDonViCuuTroMany,
   getKhoDonViCuuTroById,
   getKhoDonViCuuTroList,
+  importKhoDonViCuuTro,
   updateKhoDonViCuuTro,
 } from '../services/kho-don-vi-cuu-tro-service';
 
@@ -95,6 +96,24 @@ export function useDeleteKhoDonViCuuTroMany() {
         queryClient.removeQueries({ queryKey: queryKeys.khoDonViCuuTro.detail(id) });
       }
       toast.success(txt('matTranDonViCuuTro.toast.delete', { count: ids.length }));
+    },
+    onError: (err: unknown) => toast.error(getErrorMessage(err)),
+  });
+}
+
+export function useImportKhoDonViCuuTro(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: Record<string, unknown>[]) => importKhoDonViCuuTro(rows),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: listKey });
+      if (result.created > 0) {
+        toast.success(txt('matTranDonViCuuTro.toast.importSuccess', { count: result.created }));
+      }
+      if (result.errors.length > 0) {
+        toast.warning(result.errors.slice(0, 3).join('; '));
+      }
+      onSuccess?.();
     },
     onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });

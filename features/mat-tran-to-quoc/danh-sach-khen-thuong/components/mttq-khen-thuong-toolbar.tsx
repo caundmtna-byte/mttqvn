@@ -28,7 +28,7 @@ interface Props {
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
   /** Tab Danh sách / Thống kê — đặt sau nút Back. */
-  desktopStartSlot?: React.ReactNode;
+  tabSlot?: React.ReactNode;
   /** Tab Thống kê: ẩn tìm kiếm, export, thêm, xóa nhiều, cột — vẫn giữ chip lọc. */
   hideListControls?: boolean;
 }
@@ -46,7 +46,7 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
   onAdd,
   onExport,
   onDeleteMany,
-  desktopStartSlot,
+  tabSlot,
   hideListControls,
 }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranRewardList');
@@ -275,7 +275,7 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
 
   return (
     <GenericToolbar
-      desktopStartSlot={desktopStartSlot}
+      tabSlot={tabSlot}
       selectedCount={selectedCount}
       searchTerm={hideListControls ? '' : searchTerm}
       onSearchChange={hideListControls ? noopSearch : setSearchTerm}

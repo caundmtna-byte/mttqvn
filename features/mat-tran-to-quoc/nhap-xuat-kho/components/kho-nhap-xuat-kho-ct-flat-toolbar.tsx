@@ -14,13 +14,13 @@ import type { NhapXuatKhoCtFlatRow } from '../core/types';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 
 interface Props {
-  desktopStartSlot: ReactNode;
+  tabSlot: ReactNode;
   onPageBack: () => void;
   onExport: () => void;
   items?: NhapXuatKhoCtFlatRow[] | null;
 }
 
-const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ desktopStartSlot, onPageBack, onExport, items }) => {
+const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ tabSlot, onPageBack, onExport, items }) => {
   const { canExport } = useResourcePermissions('matTranReliefStockTransactions');
   const itemRows = Array.isArray(items) ? items : [];
 
@@ -221,11 +221,7 @@ const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ desktopStartSlot, onPageBac
       onResetColumns={resetColumns}
       showBack
       onBack={onPageBack}
-      desktopStartSlot={
-        <div className="min-w-0 max-w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-px">
-          {desktopStartSlot}
-        </div>
-      }
+      tabSlot={tabSlot}
     />
   );
 };

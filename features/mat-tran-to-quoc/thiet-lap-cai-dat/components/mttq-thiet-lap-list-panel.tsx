@@ -206,11 +206,7 @@ export function MttqThietLapListPanel({ loai, items, isLoading, store, tabGroup,
       <MttqThietLapToolbar
         store={store}
         items={items}
-        desktopStartSlot={
-          <div className="min-w-0 max-w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-px">
-            {tabGroup}
-          </div>
-        }
+        tabSlot={tabGroup}
         onPageBack={onPageBack}
         onExport={handleExport}
         onDeleteMany={handleDeleteMany}

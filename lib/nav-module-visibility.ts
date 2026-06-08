@@ -55,6 +55,18 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'otherInfoLichCongTacBanTt',
     ];
   }
+  if (path === '/phan-bien-xa-hoi') {
+    return ['phanBienThucHien', 'phanBienThietLapDanhMuc', 'phanBienThongKe'];
+  }
+  if (path === '/dan-toc-ton-giao') {
+    return [
+      'danTocCaNhanTieuBieu',
+      'danTocToChucQuanTrong',
+      'danTocThamHoiToChuc',
+      'danTocThamHoiCaNhan',
+      'danTocThamHoiThongKe',
+    ];
+  }
   return null; // `/`, `/thong-tin-ban-quyen` → luôn hiện
 }
 

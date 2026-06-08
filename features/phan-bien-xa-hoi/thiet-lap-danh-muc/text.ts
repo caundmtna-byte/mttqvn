@@ -1,0 +1,26 @@
+export const pbxhThietLap = {
+  noViewPermission: 'Bạn không có quyền xem module Thiết lập danh mục.',
+  listLoadErrorHint: 'Không tải được danh mục. Thử tải lại.',
+  searchPlaceholder: 'Tìm theo tên, mô tả…',
+  empty: 'Chưa có mục danh mục',
+  deleteTitle: 'Xóa mục',
+  deleteMessage: 'Bạn có chắc muốn xóa mục này? Hành động không hoàn tác.',
+  bulkDeleteTitle: 'Xóa nhiều mục',
+  bulkDeleteMessage: 'Bạn có chắc muốn xóa {{count}} mục đã chọn? Hành động không hoàn tác.',
+  detailTitle: 'Chi tiết danh mục',
+  addItem: 'Thêm mục',
+  editItem: 'Sửa mục',
+  formCreateSubtitle: 'Thêm danh mục',
+  formEditSubtitle: 'Cập nhật danh mục',
+  filterMoTaChipPlaceholder: 'Mô tả',
+  filterMoTaHas: 'Có mô tả',
+  filterMoTaEmpty: 'Không mô tả',
+  toast: {
+    create: 'Đã thêm mục',
+    update: 'Đã cập nhật mục',
+    delete: 'Đã xóa {{count}} mục',
+  },
+  validation: {
+    tenRequired: 'Nhập tên',
+  },
+};

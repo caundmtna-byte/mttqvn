@@ -7,7 +7,9 @@ import { ArrowLeft, Filter, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import MobileFilterSheet from '../ui/MobileFilterSheet';
 import type { FilterGroup } from '../ui/MobileFilterSheet';
-import FilterChipOverflowRow from './FilterChipOverflowRow';
+import FilterChipOverflowRow, {
+  DEFAULT_MAX_VISIBLE_FILTER_CHIPS,
+} from './FilterChipOverflowRow';
 
 interface DashboardToolbarProps {
   /** Desktop filter chips (MultiSelect, etc.) */
@@ -46,6 +48,8 @@ interface DashboardToolbarProps {
   desktopToolbarWrap?: boolean;
   /** Class thêm vào wrapper bọc `filters` (vd. `flex-1 min-w-0`). */
   filtersWrapperClassName?: string;
+  /** Số chip lọc hiển thị trước nút … — mặc định 2 (giống listview). */
+  maxVisibleFilterChips?: number;
 }
 
 const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
@@ -66,6 +70,7 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
   innerWrapperClassName,
   desktopToolbarWrap = false,
   filtersWrapperClassName,
+  maxVisibleFilterChips = DEFAULT_MAX_VISIBLE_FILTER_CHIPS,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -181,7 +186,7 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
               filtersWrapperClassName,
             )}
           >
-            <FilterChipOverflowRow>{filters}</FilterChipOverflowRow>
+            <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
             {activeFilterCount > 0 && onClearFilters && (
               <button
                 onClick={onClearFilters}
@@ -209,7 +214,7 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
           row2ContentMobileOnly ? "sm:hidden" : "hidden sm:block"
         )}>
           <div className="flex flex-wrap items-center gap-2">
-          <FilterChipOverflowRow>{row2Content}</FilterChipOverflowRow>
+          <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{row2Content}</FilterChipOverflowRow>
           </div>
         </div>
       )}

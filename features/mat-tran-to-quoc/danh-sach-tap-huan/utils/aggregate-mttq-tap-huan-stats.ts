@@ -157,13 +157,13 @@ export function aggregateTapHuanTopTenLopFromFlat(
   flatRows: MttqTapHuanChiTietFlatRow[],
   topN: number,
 ): TopTenLopRow[] {
-  const map = new Map<string, { label: string; value: number }>();
+  const map = new Map<string, TopTenLopRow>();
   for (const r of flatRows) {
     const id = r.id_lop_tap_huan;
     const label = r.ten_lop_tap_huan?.trim() ? r.ten_lop_tap_huan : '—';
     const cur = map.get(id);
     if (cur) cur.value += 1;
-    else map.set(id, { label, value: 1 });
+    else map.set(id, { id, label, value: 1 });
   }
   return [...map.values()].sort((a, b) => b.value - a.value).slice(0, topN);
 }

@@ -13,7 +13,7 @@ import { useXaPhuongStore } from '../store/useXaPhuongStore';
 import { countColumnSearchActive } from '../utils/column-search';
 
 interface Props {
-  desktopStartSlot?: React.ReactNode;
+  tabSlot?: React.ReactNode;
   tinhOptions: Option[];
   selectedTinhId: string;
   onTinhChange: (id: string) => void;
@@ -24,7 +24,7 @@ interface Props {
 }
 
 const XaPhuongToolbar: React.FC<Props> = ({
-  desktopStartSlot,
+  tabSlot,
   tinhOptions,
   selectedTinhId,
   onTinhChange,
@@ -176,7 +176,7 @@ const XaPhuongToolbar: React.FC<Props> = ({
       onReorderColumns={reorderColumns}
       onResetColumns={resetColumns}
       showBack
-      desktopStartSlot={desktopStartSlot}
+      tabSlot={tabSlot}
     />
   );
 };

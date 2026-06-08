@@ -1,10 +1,12 @@
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import type { ChuongTrinhNamListRow } from '../core/types';
+import {
+  isDateInStandardRange,
+  resolveStandardDateRange,
+  type StandardResolvedDateRange,
+} from '@/lib/date-range-presets';
 import { CHUONG_TRINH_NAM_TRANG_THAI } from '../core/constants';
 import { chuongTrinhNamTienDoSortKey, getChuongTrinhNamTienDoFilterId } from './ngay-ket-thuc-tien-do';
-
-dayjs.extend(isoWeek);
 
 /** Khớp sentinel lọc phòng ban trong list module */
 export const CHUONG_TRINH_STATS_PHONG_BAN_NONE = '__none__';
@@ -16,10 +18,7 @@ export interface ChuongTrinhNamStatsDimensionFilters {
   tien_do: string[];
 }
 
-export interface ResolvedDateRange {
-  start: string;
-  end: string;
-}
+export type ResolvedDateRange = StandardResolvedDateRange;
 
 export function resolveChuongTrinhNamStatsDateRange(
   preset: string,
@@ -27,39 +26,7 @@ export function resolveChuongTrinhNamStatsDateRange(
   customEnd: string,
   now: Date = new Date(),
 ): ResolvedDateRange {
-  const d = dayjs(now);
-  const end = d.format('YYYY-MM-DD');
-
-  switch (preset) {
-    case 'thisWeek': {
-      const start = d.startOf('isoWeek').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisMonth': {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisQuarter': {
-      const m = d.month();
-      const qStartMonth = Math.floor(m / 3) * 3;
-      const start = d.month(qStartMonth).startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'thisYear': {
-      const start = d.startOf('year').format('YYYY-MM-DD');
-      return { start, end };
-    }
-    case 'custom': {
-      const s = (customStart || end).slice(0, 10);
-      const e = (customEnd || end).slice(0, 10);
-      if (s <= e) return { start: s, end: e };
-      return { start: e, end: s };
-    }
-    default: {
-      const start = d.startOf('month').format('YYYY-MM-DD');
-      return { start, end };
-    }
-  }
+  return resolveStandardDateRange(preset, customStart, customEnd, now);
 }
 
 export function getChuongTrinhNamStatsDateFromTgTao(item: ChuongTrinhNamListRow): string {
@@ -68,10 +35,8 @@ export function getChuongTrinhNamStatsDateFromTgTao(item: ChuongTrinhNamListRow)
   return dayjs(raw).format('YYYY-MM-DD');
 }
 
-export function isDateInChuongTrinhRange(dateStr: string, start: string, end: string): boolean {
-  if (!dateStr) return false;
-  const d = dateStr.slice(0, 10);
-  return d >= start.slice(0, 10) && d <= end.slice(0, 10);
+export function isDateInChuongTrinhRange(dateStr: string, range: ResolvedDateRange): boolean {
+  return isDateInStandardRange(dateStr, range);
 }
 
 function yearFromNgayBatDau(d: string | null | undefined): string | null {
@@ -87,7 +52,7 @@ export function filterRowsForChuongTrinhNamStats(
 ): ChuongTrinhNamListRow[] {
   return items.filter((row) => {
     const d = getChuongTrinhNamStatsDateFromTgTao(row);
-    if (!isDateInChuongTrinhRange(d, range.start, range.end)) return false;
+    if (!range.allTime && !isDateInChuongTrinhRange(d, range)) return false;
     if (dims.trang_thai.length > 0 && !dims.trang_thai.includes(row.trang_thai)) return false;
     if (dims.id_phong_ban.length > 0) {
       const pb = row.id_phong_ban?.trim() ? String(row.id_phong_ban) : CHUONG_TRINH_STATS_PHONG_BAN_NONE;
