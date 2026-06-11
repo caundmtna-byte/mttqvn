@@ -47,6 +47,7 @@ import ChartTooltip from '@/components/ui/ChartTooltip';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { tienDoThamHoiBadge } from '../tham-hoi-to-chuc/core/display-badges';
 import { useThamHoiToChucList } from '../tham-hoi-to-chuc/hooks/use-tham-hoi-to-chuc';
+import { useDipThamHoiOptions } from '../dip-tham-hoi/hooks/use-dip-tham-hoi';
 import { useThamHoiCaNhanList } from '../tham-hoi-ca-nhan/hooks/use-tham-hoi-ca-nhan';
 import { formatThoiGianDuKienDisplay } from '../tham-hoi-ca-nhan/utils/thoi-gian-du-kien';
 import {
@@ -121,6 +122,7 @@ const ThongKeThamHoiPage: React.FC = () => {
 
   const { data: toChucRows = [], isLoading: loadingToChuc } = useThamHoiToChucList({ enabled: canView });
   const { data: caNhanRows = [], isLoading: loadingCaNhan } = useThamHoiCaNhanList({ enabled: canView });
+  const { data: dipList = [] } = useDipThamHoiOptions({ enabled: canView });
   const isLoading = loadingToChuc || loadingCaNhan;
 
   const allRows = useMemo(
@@ -205,14 +207,20 @@ const ThongKeThamHoiPage: React.FC = () => {
     }));
   }, [allRows]);
 
-  const dipOptions = useMemo(
-    () =>
-      buildDimOptions(allRows, (r) => ({
-        id: r.dip_tham_hoi,
-        label: r.dip_tham_hoi,
-      })),
-    [allRows],
-  );
+  const dipOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of allRows) {
+      const key = r.dip_tham_hoi_id ?? r.dip_tham_hoi;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return dipList
+      .map((d) => ({
+        value: d.id,
+        label: d.ten_dip,
+        count: counts.get(d.id) ?? 0,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [allRows, dipList]);
 
   const filterGroups = useMemo<FilterGroup[]>(
     () => [
@@ -272,6 +280,7 @@ const ThongKeThamHoiPage: React.FC = () => {
       { key: 'don_vi_tham_hoi', label: txt('dttgThongKeThamHoi.stats.tableColDonViThamHoi') },
       { key: 'tinh_trang', label: txt('dttgThongKeThamHoi.stats.tableColTinhTrang') },
       { key: 'thoi_gian_du_kien', label: txt('dttgThongKeThamHoi.stats.tableColThoiGianDuKien') },
+      { key: 'thoi_gian_thuc_te', label: txt('dttgThongKeThamHoi.stats.tableColThoiGianThucTe') },
       { key: 'tg_tao', label: txt('dttgThongKeThamHoi.stats.tableColTgTao') },
       { key: 'range_start', label: txt('dttgThongKeThamHoi.exportRangeFrom') },
       { key: 'range_end', label: txt('dttgThongKeThamHoi.exportRangeTo') },
@@ -294,6 +303,7 @@ const ThongKeThamHoiPage: React.FC = () => {
       thoi_gian_du_kien: item.thoi_gian_du_kien
         ? formatThoiGianDuKienDisplay(item.thoi_gian_du_kien)
         : '',
+      thoi_gian_thuc_te: item.thoi_gian_thuc_te ?? '',
       tg_tao: item.tg_tao ? item.tg_tao.slice(0, 10) : '',
       range_start: resolvedRange.start,
       range_end: resolvedRange.end,
@@ -578,6 +588,7 @@ const ThongKeThamHoiPage: React.FC = () => {
                           ['don_vi_tham_hoi', txt('dttgThongKeThamHoi.stats.tableColDonViThamHoi')],
                           ['tinh_trang', txt('dttgThongKeThamHoi.stats.tableColTinhTrang')],
                           ['thoi_gian_du_kien', txt('dttgThongKeThamHoi.stats.tableColThoiGianDuKien')],
+                          ['thoi_gian_thuc_te', txt('dttgThongKeThamHoi.stats.tableColThoiGianThucTe')],
                           ['tg_tao', txt('dttgThongKeThamHoi.stats.tableColTgTao')],
                         ] as const
                       ).map(([key, label]) => (
@@ -617,6 +628,9 @@ const ThongKeThamHoiPage: React.FC = () => {
                           {row.thoi_gian_du_kien
                             ? formatThoiGianDuKienDisplay(row.thoi_gian_du_kien)
                             : '—'}
+                        </td>
+                        <td className="py-2 pr-3 whitespace-nowrap tabular-nums">
+                          {row.thoi_gian_thuc_te ?? '—'}
                         </td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">
                           {row.tg_tao ? row.tg_tao.slice(0, 10) : '—'}

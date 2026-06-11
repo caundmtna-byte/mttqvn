@@ -1,5 +1,6 @@
 import type { SortState } from '@/store/createGenericStore';
 import type { ThamHoiToChuc } from '../core/types';
+import { formatDonViThamHoiDisplay } from '../core/display-don-vi';
 
 function compareStr(a: string | null | undefined, b: string | null | undefined): number {
   return (a ?? '').localeCompare(b ?? '', 'vi');
@@ -22,7 +23,7 @@ export function sortThamHoiToChucList(rows: ThamHoiToChuc[], sort: SortState): T
         cmp = compareStr(a.thoi_gian_du_kien, b.thoi_gian_du_kien);
         break;
       case 'don_vi_tham_hoi':
-        cmp = compareStr(a.don_vi_tham_hoi, b.don_vi_tham_hoi);
+        cmp = compareStr(formatDonViThamHoiDisplay(a), formatDonViThamHoiDisplay(b));
         break;
       case 'tien_do':
         cmp = compareStr(a.tien_do, b.tien_do);

@@ -136,6 +136,60 @@
           if (mime) el.type = mime;
           else el.removeAttribute('type');
         }
+        function isCloudinaryUrl(url) {
+          return url.indexOf('res.cloudinary.com') !== -1;
+        }
+        function cloudinaryPwaIconUrl(url, size) {
+          if (!isCloudinaryUrl(url)) return url;
+          try {
+            var parsed = new URL(url);
+            var parts = parsed.pathname.split('/');
+            var uploadIdx = parts.indexOf('upload');
+            if (uploadIdx === -1) return url;
+            var transform = size === 512 ? 'w_512,h_512,c_pad,f_png' : 'w_192,h_192,c_pad,f_png';
+            var next = parts[uploadIdx + 1];
+            if (next && (next.indexOf('w_') !== -1 || next.indexOf('c_') !== -1)) {
+              parts[uploadIdx + 1] = transform;
+            } else {
+              parts.splice(uploadIdx + 1, 0, transform);
+            }
+            parsed.pathname = parts.join('/');
+            return parsed.toString();
+          } catch (e) {
+            return url;
+          }
+        }
+        function setManifestFromBranding(name, desc, logo) {
+          var icon192 = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 192) : logo;
+          var icon512 = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 512) : logo;
+          var icons = [
+            { src: icon192, sizes: '192x192', purpose: 'any' },
+            { src: icon512, sizes: '512x512', purpose: 'any maskable' }
+          ];
+          var m192 = guessMime(icon192);
+          var m512 = guessMime(icon512);
+          if (m192) icons[0].type = m192;
+          if (m512) icons[1].type = m512;
+          var manifest = {
+            name: name,
+            short_name: name.slice(0, 12),
+            description: desc || name,
+            start_url: '/',
+            scope: '/',
+            display: 'standalone',
+            theme_color: '#ffffff',
+            background_color: '#ffffff',
+            icons: icons
+          };
+          var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+          var manifestEl = document.querySelector('link[rel="manifest"]');
+          if (!manifestEl) {
+            manifestEl = document.createElement('link');
+            manifestEl.rel = 'manifest';
+            document.head.appendChild(manifestEl);
+          }
+          manifestEl.href = URL.createObjectURL(blob);
+        }
         try {
           var raw = localStorage.getItem('ui-storage');
           var ci = null;
@@ -155,6 +209,7 @@
           setMeta('og:description', desc || name, false);
           setMeta('og:image', logo, false);
           setMeta('description', desc || name, true);
+          setManifestFromBranding(name, desc, logo);
         } catch (e) {}
       })();
     </script>

@@ -53,11 +53,13 @@ const TonKhoPage = lazy(() => import('./features/mat-tran-to-quoc/ton-kho/index'
 const KhoBaoCaoHoTroPage = lazy(() => import('./features/mat-tran-to-quoc/bao-cao-ho-tro/index'));
 const ThietLapLuongPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-luong/index'));
 const DanhSachTangLuongPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tang-luong/index'));
+const DtTgDipThamHoiPage = lazy(() => import('./features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/index'));
 const DtTgThamHoiToChucPage = lazy(() => import('./features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/index'));
 const DtTgThamHoiCaNhanPage = lazy(() => import('./features/dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan/index'));
 const DtTgThongKeThamHoiPage = lazy(() => import('./features/dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi/index'));
 const DtTgThongTinToChucQuanTrongPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/index'));
 const DtTgThongTinCaNhanTieuBieuPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/index'));
+const DtTgThongKeToChucCaNhanPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import {
@@ -164,11 +166,13 @@ const App = () => {
           <Route path="/phan-bien-xa-hoi/thiet-lap-danh-muc" element={<ThietLapDanhMucPbxhPage />} />
           <Route path="/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi" element={<ThongKePhanBienXaHoiPage />} />
           <Route path="/dan-toc-ton-giao" element={<DanTocTonGiaoDashboard />} />
+          <Route path="/dan-toc-ton-giao/tham-hoi/dip-tham-hoi" element={<DtTgDipThamHoiPage />} />
           <Route path="/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc" element={<DtTgThamHoiToChucPage />} />
           <Route path="/dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan" element={<DtTgThamHoiCaNhanPage />} />
           <Route path="/dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi" element={<DtTgThongKeThamHoiPage />} />
           <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong" element={<DtTgThongTinToChucQuanTrongPage />} />
           <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu" element={<DtTgThongTinCaNhanTieuBieuPage />} />
+          <Route path="/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan" element={<DtTgThongKeToChucCaNhanPage />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
           <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 

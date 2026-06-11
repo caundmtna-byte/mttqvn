@@ -76,6 +76,7 @@ const initialFilters: ThamHoiToChucFilters = {
   columnSearch: {},
   tien_do_filter: [],
   to_chuc_filter: [],
+  dip_tham_hoi_filter: [],
 };
 
 export const useThamHoiToChucStore = createGenericStore<ThamHoiToChucFilters>(initialFilters, DEFAULT_COLUMNS);

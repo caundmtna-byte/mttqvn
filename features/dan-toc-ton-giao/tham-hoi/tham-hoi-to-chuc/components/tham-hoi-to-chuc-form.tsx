@@ -21,14 +21,18 @@ import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
+import { useTinhThanhList, useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import { useThongTinToChucQuanTrongList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/hooks/use-thong-tin-to-chuc-quan-trong';
+import { useDipThamHoiOptions } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-tham-hoi';
+import { useDipChildFormPrefill } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-child-form-prefill';
+import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
 import {
   thamHoiToChucSchema,
   thamHoiToChucToFormInput,
   type ThamHoiToChucFormInput,
   type ThamHoiToChucFormValues,
 } from '../core/schema';
-import { TIEN_DO_VALUES } from '../core/constants';
+import { TIEN_DO_VALUES, DON_VI_THAM_HOI_TINH_VALUE } from '../core/constants';
 import type { ThamHoiToChuc } from '../core/types';
 import { useCreateThamHoiToChuc, useUpdateThamHoiToChuc } from '../hooks/use-tham-hoi-to-chuc';
 
@@ -36,17 +40,64 @@ const FORM_ID = 'dttg-tham-hoi-to-chuc-form';
 
 interface Props {
   initialData?: ThamHoiToChuc | null;
+  defaultDipId?: string;
   onClose: () => void;
 }
 
-const ThamHoiToChucForm: React.FC<Props> = ({ initialData, onClose }) => {
+const ThamHoiToChucForm: React.FC<Props> = ({ initialData, defaultDipId, onClose }) => {
   const isEdit = Boolean(initialData);
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
 
   const { data: orgList = [] } = useThongTinToChucQuanTrongList();
+  const { data: dipOptions = [] } = useDipThamHoiOptions();
+  const { data: departments = [] } = useDepartments();
+  const { data: tinhList = [] } = useTinhThanhList();
+  const { data: xaList = [] } = useXaPhuongForTab(true, '');
   const createMutation = useCreateThamHoiToChuc(onClose);
   const updateMutation = useUpdateThamHoiToChuc(onClose);
+
+  const tinhMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const t of tinhList) m.set(t.id, t.ten);
+    return m;
+  }, [tinhList]);
+
+  const donViThamHoiOptions = useMemo(() => {
+    const tinhCap = {
+      label: txt('danTocThamHoiToChuc.store.donViThamHoiTinhCap'),
+      value: DON_VI_THAM_HOI_TINH_VALUE,
+    };
+    const rest = [...xaList]
+      .sort((a, b) => {
+        const ta = tinhMap.get(a.id_tinh_thanh) ?? '';
+        const tb = tinhMap.get(b.id_tinh_thanh) ?? '';
+        if (ta !== tb) return ta.localeCompare(tb, 'vi');
+        return a.ten.localeCompare(b.ten, 'vi');
+      })
+      .map((x) => ({
+        label: x.ten,
+        value: String(x.id),
+        subLabel: tinhMap.get(x.id_tinh_thanh),
+      }));
+    return [tinhCap, ...rest];
+  }, [xaList, tinhMap]);
+
+  const dipThamHoiOptions = useMemo(
+    () =>
+      [...dipOptions]
+        .sort((a, b) => a.ten_dip.localeCompare(b.ten_dip, 'vi'))
+        .map((d) => ({ label: d.ten_dip, value: d.id })),
+    [dipOptions],
+  );
+
+  const phongBanOptions = useMemo(
+    () =>
+      [...departments]
+        .sort((a, b) => a.ten_phong_ban.localeCompare(b.ten_phong_ban, 'vi'))
+        .map((d) => ({ label: d.ten_phong_ban, value: d.id })),
+    [departments],
+  );
 
   const toChucOptions = useMemo(
     () =>
@@ -70,6 +121,8 @@ const ThamHoiToChucForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ThamHoiToChucFormInput>({
     defaultValues: thamHoiToChucToFormInput(null),
@@ -77,8 +130,21 @@ const ThamHoiToChucForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   useEffect(() => {
-    reset(thamHoiToChucToFormInput(initialData ?? null));
-  }, [initialData, reset]);
+    const base = thamHoiToChucToFormInput(initialData ?? null);
+    if (!initialData && defaultDipId?.trim()) {
+      base.dip_tham_hoi_id = defaultDipId.trim();
+    }
+    reset(base);
+  }, [initialData, defaultDipId, reset]);
+
+  useDipChildFormPrefill({
+    isEdit,
+    dipOptions,
+    control,
+    setValue,
+    getValues,
+    prefillThoiGianDuKien: true,
+  });
 
   const onSubmit: SubmitHandler<ThamHoiToChucFormInput> = (data) => {
     const parsed = thamHoiToChucSchema.parse(data) as ThamHoiToChucFormValues;
@@ -137,12 +203,23 @@ const ThamHoiToChucForm: React.FC<Props> = ({ initialData, onClose }) => {
                 )}
               />
             </div>
-            <Input
-              label={txt('danTocThamHoiToChuc.form.dipThamHoi')}
-              required
-              icon={Calendar}
-              {...register('dip_tham_hoi')}
-              error={errors.dip_tham_hoi?.message}
+            <Controller
+              name="dip_tham_hoi_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={dipThamHoiOptions}
+                  value={field.value === '' ? null : field.value}
+                  onChange={(v) => field.onChange(v === '' || v == null ? '' : String(v))}
+                  label={txt('danTocThamHoiToChuc.form.dipThamHoi')}
+                  placeholder={txt('danTocThamHoiToChuc.form.dipThamHoiPlaceholder')}
+                  required
+                  icon={<Calendar size={14} />}
+                  error={errors.dip_tham_hoi_id?.message}
+                  dropdownInPortal
+                  clearable={false}
+                />
+              )}
             />
             <div className="space-y-1.5">
               <Input
@@ -151,13 +228,59 @@ const ThamHoiToChucForm: React.FC<Props> = ({ initialData, onClose }) => {
                 {...register('thoi_gian_du_kien')}
                 error={errors.thoi_gian_du_kien?.message}
               />
-              <p className="text-xs text-muted-foreground m-0">{txt('danTocThamHoiToChuc.form.thoiGianDuKienHint')}</p>
+              <p className="text-xs text-muted-foreground">{txt('danTocThamHoiToChuc.form.thoiGianDuKienHint')}</p>
             </div>
             <Input
-              label={txt('danTocThamHoiToChuc.form.donViThamHoi')}
-              icon={Building2}
-              {...register('don_vi_tham_hoi')}
-              error={errors.don_vi_tham_hoi?.message}
+              label={txt('danTocThamHoiToChuc.form.thoiGianThucTe')}
+              icon={Calendar}
+              type="date"
+              {...register('thoi_gian_thuc_te')}
+              error={errors.thoi_gian_thuc_te?.message}
+            />
+            <Controller
+              name="phong_ban_tham_muu_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={phongBanOptions}
+                  value={field.value === '' ? null : field.value}
+                  onChange={(v) => field.onChange(v === '' || v == null ? '' : String(v))}
+                  label={txt('danTocThamHoiToChuc.form.phongBanThamMuu')}
+                  placeholder={txt('danTocThamHoiToChuc.form.phongBanPlaceholder')}
+                  icon={<Users size={14} />}
+                  error={errors.phong_ban_tham_muu_id?.message}
+                  dropdownInPortal
+                  clearable
+                />
+              )}
+            />
+            <Controller
+              name="don_vi_tham_hoi_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={donViThamHoiOptions}
+                  value={
+                    field.value === '' || field.value === undefined
+                      ? DON_VI_THAM_HOI_TINH_VALUE
+                      : field.value
+                  }
+                  onChange={(v) => {
+                    if (v === '' || v == null || v === DON_VI_THAM_HOI_TINH_VALUE) {
+                      field.onChange(DON_VI_THAM_HOI_TINH_VALUE);
+                    } else {
+                      field.onChange(String(v));
+                    }
+                  }}
+                  label={txt('danTocThamHoiToChuc.form.donViThamHoi')}
+                  placeholder={txt('danTocThamHoiToChuc.form.donViThamHoiPlaceholder')}
+                  icon={<Building2 size={14} />}
+                  error={errors.don_vi_tham_hoi_id?.message}
+                  dropdownInPortal
+                  clearable={false}
+                  searchPlaceholder={txt('employee.form.donViXaPhuongSearch')}
+                />
+              )}
             />
             <Controller
               name="tien_do"

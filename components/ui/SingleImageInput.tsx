@@ -1,22 +1,34 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ImagePlus, Trash2, Camera, Image, Loader2, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactDOM from 'react-dom';
 import { cn } from '../../lib/utils';
+import { isSupabase } from '@/lib/data/config';
+import {
+  uploadImageFromFile,
+  CLOUDINARY_FOLDERS,
+  avatarCloudinaryFilename,
+} from '@/lib/cloudinary/upload-image';
+import { resolveImageDisplaySrcSync, isLegacySupabaseAvatarPath } from '@/lib/cloudinary/resolve-image-display-src';
 
 export interface SingleImageInputProps {
   label?: string;
   icon?: React.ReactNode;
   required?: boolean;
   error?: string;
-  /** Giá trị form: data URL, path Storage (`nhan-vien/...`), hoặc URL ngoài. */
+  /** Giá trị form: HTTPS URL (Cloudinary), legacy path Storage, hoặc data URL (mock). */
   value?: string | null;
   /**
-   * URL hiển thị preview (vd. signed URL cho bucket private). Khi có và `value`
-   * không phải data URL → `<img src={displaySrc}>`.
+   * URL hiển thị preview cho legacy Supabase path (signed URL từ parent).
    */
   displaySrc?: string | null;
   onChange: (value: string | null) => void;
+  /** Folder Cloudinary — mặc định `mttqvn/uploads` khi Supabase. */
+  cloudinaryFolder?: string;
+  /** public_id cố định (ghi đè), vd. logo tổ chức */
+  cloudinaryPublicId?: string;
+  /** Phần unique của public_id trong folder, vd. timestamp avatar */
+  cloudinaryFilename?: string;
   /** MIME types cho input file, default: "image/*" */
   accept?: string;
   /** Giới hạn dung lượng (MB), default: 2 */
@@ -41,6 +53,9 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
   value,
   displaySrc,
   onChange,
+  cloudinaryFolder = CLOUDINARY_FOLDERS.uploads,
+  cloudinaryPublicId,
+  cloudinaryFilename,
   accept = 'image/*',
   maxSizeMB = 2,
   placeholder = 'Kéo thả, dán (Ctrl+V) hoặc nhấn để chọn',
@@ -53,6 +68,7 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sizeError, setSizeError] = useState('');
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -66,8 +82,16 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
       ? 'rounded-xl'
       : 'rounded-lg';
 
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
+
+  const useCloudinary = isSupabase();
+
   // ── File processing ──
-  const processFile = useCallback((file: File) => {
+  const processFile = useCallback(async (file: File) => {
     setSizeError('');
     if (!file.type.startsWith('image/')) {
       setSizeError('File không phải ảnh');
@@ -77,18 +101,57 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
       setSizeError(`Ảnh vượt quá ${maxSizeMB}MB`);
       return;
     }
+
+    if (!useCloudinary) {
+      setIsLoading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onChange(reader.result as string);
+        setIsLoading(false);
+      };
+      reader.onerror = () => {
+        setSizeError('Không thể đọc file');
+        setIsLoading(false);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const blobUrl = URL.createObjectURL(file);
+    setLocalPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return blobUrl;
+    });
     setIsLoading(true);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onChange(reader.result as string);
+
+    try {
+      const secureUrl = await uploadImageFromFile(file, {
+        folder: cloudinaryFolder,
+        publicId: cloudinaryPublicId,
+        filename: cloudinaryFilename ?? avatarCloudinaryFilename(),
+      });
+      onChange(secureUrl);
+      setLocalPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    } catch (e) {
+      setSizeError(e instanceof Error ? e.message : 'Upload ảnh thất bại');
+      setLocalPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    } finally {
       setIsLoading(false);
-    };
-    reader.onerror = () => {
-      setSizeError('Không thể đọc file');
-      setIsLoading(false);
-    };
-    reader.readAsDataURL(file);
-  }, [maxSizeMB, onChange]);
+    }
+  }, [
+    maxSizeMB,
+    onChange,
+    useCloudinary,
+    cloudinaryFolder,
+    cloudinaryPublicId,
+    cloudinaryFilename,
+  ]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -142,6 +205,10 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
   const handleRemove = () => {
     onChange(null);
     setSizeError('');
+    setLocalPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   };
 
   const openPicker = () => {
@@ -163,12 +230,15 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
 
   const v = String(value ?? '').trim();
   const previewImgSrc = (() => {
+    if (localPreviewUrl) return localPreviewUrl;
     if (!v) return '';
-    if (v.startsWith('data:image/')) return v;
-    if (v.startsWith('http') && !v.includes('.supabase.co')) return v;
-    // Path Storage / URL Supabase: chỉ dùng `displaySrc` (signed URL) từ parent — tránh `<img src="nhan-vien/...">`.
-    return displaySrc?.trim() ?? '';
+    const direct = resolveImageDisplaySrcSync(v);
+    if (direct) return direct;
+    if (isLegacySupabaseAvatarPath(v)) return displaySrc?.trim() ?? '';
+    return displaySrc?.trim() ?? v;
   })();
+
+  const hasPreview = Boolean(previewImgSrc || (isLoading && localPreviewUrl));
 
   return (
     <div className={cn('w-full', className)} onPaste={handlePaste}>
@@ -188,14 +258,14 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
       {/* ── Image area ── */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- file drop target + empty-state affordance; filled state uses actions below */}
       <div
-        role={value ? undefined : 'button'}
-        tabIndex={value || disabled ? -1 : 0}
+        role={hasPreview ? undefined : 'button'}
+        tabIndex={hasPreview || disabled ? -1 : 0}
         className={cn(
           'relative overflow-hidden border-2 transition-all duration-200 mx-auto',
           shapeClass,
           disabled && 'opacity-50 cursor-not-allowed',
           value ? 'border-transparent' : 'border-dashed cursor-pointer',
-          !value && (
+          !hasPreview && (
             isDragging
               ? 'border-primary bg-primary/5 scale-[1.01]'
               : displayError
@@ -204,9 +274,9 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
           ),
         )}
         style={{ aspectRatio }}
-        onClick={() => !value && openPicker()}
+        onClick={() => !hasPreview && openPicker()}
         onKeyDown={(e) => {
-          if (value || disabled) return;
+          if (hasPreview || disabled) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             openPicker();
@@ -228,7 +298,7 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
             >
               <Loader2 className="w-6 h-6 text-primary animate-spin" />
             </motion.div>
-          ) : value ? (
+          ) : hasPreview ? (
             <motion.div
               key="preview"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -273,7 +343,7 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
       </div>
 
       {/* ── Action buttons BELOW image ── */}
-      {value && !disabled && (
+      {hasPreview && !disabled && (
         <div className="flex items-center justify-center gap-3 mt-2 whitespace-nowrap">
           <button
             type="button"

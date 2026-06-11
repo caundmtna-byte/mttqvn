@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  ArrowRightLeft,
   Building2,
   Calendar,
   Edit,
@@ -21,10 +22,13 @@ import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/De
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
+import DetailToolbar, { type DetailToolbarAction } from '@/components/shared/DetailToolbar';
+import ThamHoiToChucChangeStatusDialog from './tham-hoi-to-chuc-change-status-dialog';
 import { formatDateTimeShort } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { tienDoThamHoiBadge } from '../core/display-badges';
+import { formatDonViThamHoiDisplay } from '../core/display-don-vi';
 import type { ThamHoiToChuc } from '../core/types';
 
 interface Props {
@@ -36,7 +40,18 @@ interface Props {
 
 const ThamHoiToChucDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('danTocThamHoiToChuc');
+  const [changeStatusOpen, setChangeStatusOpen] = useState(false);
   const emptyCell = txt('common.emptyCell');
+
+  const toolbarActions: DetailToolbarAction[] = [];
+  if (canEdit) {
+    toolbarActions.push({
+      label: txt('danTocThamHoiToChuc.detail.actionChangeStatus'),
+      icon: <ArrowRightLeft size={16} />,
+      variant: 'info',
+      onClick: () => setChangeStatusOpen(true),
+    });
+  }
 
   const loaiHinhBadge = useMemo(
     () => ({
@@ -122,6 +137,10 @@ const ThamHoiToChucDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete 
           }
         />
 
+        {toolbarActions.length > 0 ? (
+          <DetailToolbar actions={toolbarActions} className="bg-card rounded-xl border border-border" />
+        ) : null}
+
         <DetailSection title={txt('danTocThamHoiToChuc.detail.sectionMain')}>
           <DetailFieldGrid>
             <DetailField
@@ -144,10 +163,21 @@ const ThamHoiToChucDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete 
               emptyText={emptyCell}
             />
             <DetailField
+              label={txt('danTocThamHoiToChuc.form.thoiGianThucTe')}
+              icon={<Calendar size={12} />}
+              value={data.thoi_gian_thuc_te}
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('danTocThamHoiToChuc.form.phongBanThamMuu')}
+              icon={<Users size={12} />}
+              value={data.ten_phong_ban}
+              emptyText={emptyCell}
+            />
+            <DetailField
               label={txt('danTocThamHoiToChuc.form.donViThamHoi')}
               icon={<Building2 size={12} />}
-              value={data.don_vi_tham_hoi}
-              emptyText={emptyCell}
+              value={formatDonViThamHoiDisplay(data)}
             />
             <DetailField
               label={txt('danTocThamHoiToChuc.form.tienDo')}
@@ -240,6 +270,13 @@ const ThamHoiToChucDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete 
           </DetailFieldGrid>
         </DetailSection>
       </div>
+      {changeStatusOpen ? (
+        <ThamHoiToChucChangeStatusDialog
+          open={changeStatusOpen}
+          item={data}
+          onClose={() => setChangeStatusOpen(false)}
+        />
+      ) : null}
     </GenericDrawer>
   );
 };

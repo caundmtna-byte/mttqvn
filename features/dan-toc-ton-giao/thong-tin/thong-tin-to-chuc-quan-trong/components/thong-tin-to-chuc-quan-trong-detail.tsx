@@ -31,6 +31,7 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useCan } from '@/hooks/use-can';
 import { useThamHoiToChucByToChucId } from '@/features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/hooks/use-tham-hoi-to-chuc';
 import { tienDoThamHoiBadge } from '@/features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/core/display-badges';
+import { formatDonViThamHoiDisplay } from '@/features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/core/display-don-vi';
 import type { ThamHoiToChuc } from '@/features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/core/types';
 import type { ThongTinToChucQuanTrong } from '../core/types';
 
@@ -302,11 +303,14 @@ const ThongTinToChucQuanTrongDetail: React.FC<Props> = ({
                     header: txt('danTocThamHoiToChuc.store.donViThamHoiCol'),
                     headerClassName: 'max-w-[140px]',
                     cellClassName: 'max-w-[140px]',
-                    renderCell: (row) => (
-                      <span className="line-clamp-2 text-xs text-muted-foreground" title={row.don_vi_tham_hoi ?? undefined}>
-                        {row.don_vi_tham_hoi ?? '—'}
-                      </span>
-                    ),
+                    renderCell: (row) => {
+                      const label = formatDonViThamHoiDisplay(row);
+                      return (
+                        <span className="line-clamp-2 text-xs text-muted-foreground" title={label}>
+                          {label}
+                        </span>
+                      );
+                    },
                   },
                 ]}
                 actionsColumn={{

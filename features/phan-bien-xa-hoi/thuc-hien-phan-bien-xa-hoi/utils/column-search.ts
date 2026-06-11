@@ -1,4 +1,5 @@
 import type { ThucHienPhanBien } from '../core/types';
+import { getThucHienColumnDisplayValue } from './column-display';
 
 export function countThucHienColumnSearchActive(columnSearch: Record<string, string>): number {
   let n = 0;
@@ -15,7 +16,7 @@ export function thucHienMatchesColumnSearch(
   for (const [colId, term] of Object.entries(columnSearch)) {
     const t = term?.trim();
     if (!t) continue;
-    const val = String((item as unknown as Record<string, unknown>)[colId] ?? '').toLowerCase();
+    const val = getThucHienColumnDisplayValue(item, colId).toLowerCase();
     if (!val.includes(t.toLowerCase())) return false;
   }
   return true;

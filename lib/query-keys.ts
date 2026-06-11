@@ -163,15 +163,22 @@ export const queryKeys = {
     all: ['dttg-thong-tin-to-chuc-quan-trong'] as const,
     detail: (id: string) => ['dttg-thong-tin-to-chuc-quan-trong', 'detail', id] as const,
   },
+  danTocDipThamHoi: {
+    all: ['dttg-dip-tham-hoi'] as const,
+    options: ['dttg-dip-tham-hoi', 'options'] as const,
+    detail: (id: string) => ['dttg-dip-tham-hoi', 'detail', id] as const,
+  },
   danTocThamHoiToChuc: {
     all: ['dttg-tham-hoi-to-chuc'] as const,
     detail: (id: string) => ['dttg-tham-hoi-to-chuc', 'detail', id] as const,
     byToChuc: (toChucId: string) => ['dttg-tham-hoi-to-chuc', 'by-to-chuc', toChucId] as const,
+    byDip: (dipId: string) => ['dttg-tham-hoi-to-chuc', 'by-dip', dipId] as const,
   },
   danTocThamHoiCaNhan: {
     all: ['dttg-tham-hoi-ca-nhan'] as const,
     detail: (id: string) => ['dttg-tham-hoi-ca-nhan', 'detail', id] as const,
     byCaNhan: (caNhanId: string) => ['dttg-tham-hoi-ca-nhan', 'by-ca-nhan', caNhanId] as const,
+    byDip: (dipId: string) => ['dttg-tham-hoi-ca-nhan', 'by-dip', dipId] as const,
   },
   pbxhThucHien: {
     all: ['pbxh-thuc-hien'] as const,

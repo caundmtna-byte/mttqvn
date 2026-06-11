@@ -10,6 +10,8 @@ import {
   Users,
   ListChecks,
   Percent,
+  ClipboardList,
+  CheckCircle2,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
@@ -22,14 +24,15 @@ import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
 import { usePbxhThietLapAll } from '@/features/phan-bien-xa-hoi/thiet-lap-danh-muc/hooks/use-pbxh-thiet-lap';
 import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
-import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import { useXaPhuongForTab, useTinhThanhList } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import {
   thucHienPhanBienSchema,
   thucHienPhanBienToFormInput,
+  phanTramFromFormValues,
   type ThucHienPhanBienFormInput,
   type ThucHienPhanBienFormValues,
 } from '../core/schema';
-import { CAP_THUC_HIEN_VALUES, LOAI_HINH_VALUES, TINH_TRANG_VALUES } from '../core/constants';
+import { CAP_THUC_HIEN_VALUES, LOAI_HINH_VALUES, TINH_TRANG_VALUES, PBXH_DON_VI_THUC_HIEN_TINH_VALUE } from '../core/constants';
 import type { ThucHienPhanBien } from '../core/types';
 import { useCreateThucHienPhanBien, useUpdateThucHienPhanBien } from '../hooks/use-thuc-hien-phan-bien';
 
@@ -48,6 +51,7 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
   const { data: thietLapAll = [] } = usePbxhThietLapAll();
   const { data: departments = [] } = useDepartments();
   const { data: xaPhuongAll = [] } = useXaPhuongForTab(true, '');
+  const { data: tinhList = [] } = useTinhThanhList();
 
   const createMutation = useCreateThucHienPhanBien(onClose);
   const updateMutation = useUpdateThucHienPhanBien(onClose);
@@ -77,10 +81,31 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
     () => departments.map((d) => ({ label: d.ten_phong_ban, value: d.id })),
     [departments],
   );
-  const xaPhuongOptions = useMemo(
-    () => xaPhuongAll.map((x) => ({ label: x.ten, value: x.id })),
-    [xaPhuongAll],
-  );
+  const tinhMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const t of tinhList) m.set(t.id, t.ten);
+    return m;
+  }, [tinhList]);
+
+  const xaPhuongOptions = useMemo(() => {
+    const tinhCap = {
+      label: txt('pbxhThucHien.store.donViThucHienTinhCap'),
+      value: PBXH_DON_VI_THUC_HIEN_TINH_VALUE,
+    };
+    const rest = [...xaPhuongAll]
+      .sort((a, b) => {
+        const ta = tinhMap.get(a.id_tinh_thanh) ?? '';
+        const tb = tinhMap.get(b.id_tinh_thanh) ?? '';
+        if (ta !== tb) return ta.localeCompare(tb, 'vi');
+        return a.ten.localeCompare(b.ten, 'vi');
+      })
+      .map((x) => ({
+        label: x.ten,
+        value: String(x.id),
+        subLabel: tinhMap.get(x.id_tinh_thanh),
+      }));
+    return [tinhCap, ...rest];
+  }, [xaPhuongAll, tinhMap]);
 
   const capOptions = useMemo(() => CAP_THUC_HIEN_VALUES.map((v) => ({ label: v, value: v })), []);
   const loaiHinhOptions = useMemo(() => LOAI_HINH_VALUES.map((v) => ({ label: v, value: v })), []);
@@ -91,6 +116,7 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ThucHienPhanBienFormInput>({
     defaultValues: thucHienPhanBienToFormInput(null),
@@ -100,6 +126,13 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
   useEffect(() => {
     reset(thucHienPhanBienToFormInput(initialData ?? null));
   }, [initialData, reset]);
+
+  const soLanHoanThanh = watch('so_lan_hoan_thanh');
+  const soLanKhaoSat = watch('so_lan_khao_sat');
+  const phanTramPreview = phanTramFromFormValues({
+    so_lan_hoan_thanh: Number(soLanHoanThanh) || 0,
+    so_lan_khao_sat: Number(soLanKhaoSat) || 0,
+  });
 
   const onSubmit: SubmitHandler<ThucHienPhanBienFormInput> = (data) => {
     const parsed = thucHienPhanBienSchema.parse(data) as ThucHienPhanBienFormValues;
@@ -222,13 +255,27 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
               )}
             />
             <Input
-              label={txt('pbxhThucHien.store.phanTramCol')}
+              label={txt('pbxhThucHien.store.soLanHoanThanhCol')}
               type="number"
               min={0}
-              max={100}
+              icon={CheckCircle2}
+              {...register('so_lan_hoan_thanh', { valueAsNumber: true })}
+              error={errors.so_lan_hoan_thanh?.message}
+            />
+            <Input
+              label={txt('pbxhThucHien.store.soLanKhaoSatCol')}
+              type="number"
+              min={0}
+              icon={ClipboardList}
+              {...register('so_lan_khao_sat', { valueAsNumber: true })}
+              error={errors.so_lan_khao_sat?.message}
+            />
+            <Input
+              label={txt('pbxhThucHien.store.phanTramCol')}
+              type="text"
+              readOnly
               icon={Percent}
-              {...register('phan_tram_hoan_thanh', { valueAsNumber: true })}
-              error={errors.phan_tram_hoan_thanh?.message}
+              value={`${phanTramPreview}%`}
             />
           </FormGrid>
         </FormSection>
@@ -296,8 +343,20 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
                   label={txt('pbxhThucHien.store.donViThucHienCol')}
                   icon={Building2}
                   options={xaPhuongOptions}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
+                  value={
+                    field.value === '' || field.value === undefined
+                      ? PBXH_DON_VI_THUC_HIEN_TINH_VALUE
+                      : field.value === PBXH_DON_VI_THUC_HIEN_TINH_VALUE
+                        ? PBXH_DON_VI_THUC_HIEN_TINH_VALUE
+                        : field.value
+                  }
+                  onChange={(v) => {
+                    if (v === '' || v == null || v === PBXH_DON_VI_THUC_HIEN_TINH_VALUE) {
+                      field.onChange('');
+                    } else {
+                      field.onChange(String(v));
+                    }
+                  }}
                   placeholder={txt('common.select')}
                 />
               )}

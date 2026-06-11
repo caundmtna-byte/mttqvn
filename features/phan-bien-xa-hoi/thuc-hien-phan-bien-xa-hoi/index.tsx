@@ -40,6 +40,7 @@ import {
 } from './utils/column-search';
 import { sortThucHienPhanBienList } from './utils/sort';
 import { tinhTienDo } from './core/display-tien-do';
+import { formatTenDonViThucHien } from './utils/display-don-vi-thuc-hien';
 import ThucHienPhanBienToolbar from './components/thuc-hien-phan-bien-toolbar';
 import ThucHienPhanBienTable from './components/thuc-hien-phan-bien-table';
 
@@ -118,7 +119,10 @@ const ThucHienPhanBienPage: React.FC = () => {
 
   const filterFn = useCallback((item: ThucHienPhanBien, term: string, f: typeof filters) => {
     const matchesSearch = matchesSearchTerm(
-      item as unknown as Record<string, unknown>,
+      {
+        ...(item as unknown as Record<string, unknown>),
+        ten_don_vi_thuc_hien: formatTenDonViThucHien(item),
+      },
       term,
       [...THUC_HIEN_PHAN_BIEN_SEARCH_KEYS],
     );
@@ -140,19 +144,24 @@ const ThucHienPhanBienPage: React.FC = () => {
     () => [
       { key: 'cap_thuc_hien', label: txt('pbxhThucHien.store.capThucHienCol') },
       { key: 'loai_hinh', label: txt('pbxhThucHien.store.loaiHinhCol') },
+      { key: 'don_vi_thuc_hien', label: txt('pbxhThucHien.store.donViThucHienCol') },
       { key: 'noi_dung', label: txt('pbxhThucHien.store.noiDungCol') },
       { key: 'ten_doi_tuong', label: txt('pbxhThucHien.store.doiTuongCol') },
       { key: 'ten_hinh_thuc', label: txt('pbxhThucHien.store.hinhThucCol') },
       { key: 'ngay_bat_dau', label: txt('pbxhThucHien.store.ngayBatDauCol') },
       { key: 'ngay_ket_thuc', label: txt('pbxhThucHien.store.ngayKetThucCol') },
+      { key: 'mo_ta_thoi_gian', label: txt('pbxhThucHien.store.moTaThoiGianCol') },
       { key: 'tien_do', label: txt('pbxhThucHien.store.tienDoCol') },
       { key: 'tinh_trang', label: txt('pbxhThucHien.store.tinhTrangCol') },
       { key: 'ten_don_vi_chu_tri', label: txt('pbxhThucHien.store.donViChuTriCol') },
       { key: 'ten_phong_ban', label: txt('pbxhThucHien.store.phongBanCol') },
-      { key: 'ten_don_vi_thuc_hien', label: txt('pbxhThucHien.store.donViThucHienCol') },
       { key: 'ket_qua_kien_nghi', label: txt('pbxhThucHien.store.ketQuaCol') },
+      { key: 'so_lan_hoan_thanh', label: txt('pbxhThucHien.store.soLanHoanThanhCol') },
+      { key: 'so_lan_khao_sat', label: txt('pbxhThucHien.store.soLanKhaoSatCol') },
       { key: 'phan_tram_hoan_thanh', label: txt('pbxhThucHien.store.phanTramCol') },
       { key: 'link_ket_qua', label: txt('pbxhThucHien.store.linkKetQuaCol') },
+      { key: 'ho_va_ten_nguoi_tao', label: txt('pbxhThucHien.store.nguoiTaoCol') },
+      { key: 'tg_cap_nhat', label: txt('pbxhThucHien.store.tgCapNhatCol') },
     ],
     [],
   );
@@ -161,19 +170,25 @@ const ThucHienPhanBienPage: React.FC = () => {
     (item: ThucHienPhanBien) => ({
       cap_thuc_hien: item.cap_thuc_hien,
       loai_hinh: item.loai_hinh,
+      don_vi_thuc_hien: formatTenDonViThucHien(item),
       noi_dung: item.noi_dung,
       ten_doi_tuong: item.ten_doi_tuong ?? '',
       ten_hinh_thuc: item.ten_hinh_thuc ?? '',
       ngay_bat_dau: item.ngay_bat_dau ?? '',
       ngay_ket_thuc: item.ngay_ket_thuc ?? '',
+      mo_ta_thoi_gian: item.mo_ta_thoi_gian ?? '',
       tien_do: tinhTienDo(item.ngay_ket_thuc) ?? item.mo_ta_thoi_gian ?? '',
       tinh_trang: item.tinh_trang,
       ten_don_vi_chu_tri: item.ten_don_vi_chu_tri ?? '',
       ten_phong_ban: item.ten_phong_ban ?? '',
-      ten_don_vi_thuc_hien: item.ten_don_vi_thuc_hien ?? '',
       ket_qua_kien_nghi: item.ket_qua_kien_nghi ?? '',
+      so_lan_hoan_thanh: item.so_lan_hoan_thanh,
+      so_lan_khao_sat: item.so_lan_khao_sat,
       phan_tram_hoan_thanh: item.phan_tram_hoan_thanh,
       link_ket_qua: item.link_ket_qua ?? '',
+      ho_va_ten_nguoi_tao:
+        item.ho_va_ten_nguoi_tao?.trim() || item.ten_tai_khoan_nguoi_tao?.trim() || '',
+      tg_cap_nhat: item.tg_cap_nhat,
     }),
     [],
   );

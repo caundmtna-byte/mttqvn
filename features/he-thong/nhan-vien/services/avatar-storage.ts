@@ -97,11 +97,8 @@ export async function createSignedAvatarUrl(
 }
 
 /**
- * Upload base64 data URL lên bucket `avatars` (private), trả về **path** trong bucket
- * (`nhan-vien/{employeeId}/{timestamp}.{ext}`) để lưu vào `var_nhan_vien.hinh_anh`.
- *
- * Nếu giá trị không phải data URL (đã là path / URL cũ) → trả về nguyên trạng.
- * Mock mode (không Supabase) → giữ base64.
+ * @deprecated Upload mới dùng Cloudinary — xem `lib/cloudinary/upload-image.ts`.
+ * Giữ signed URL helpers cho avatar legacy trong Supabase Storage.
  */
 export async function uploadEmployeeAvatarIfDataUrl(
   value: string | null | undefined,

@@ -20,6 +20,8 @@ const LIST_COLS = [
   'phong_ban_tham_muu_id',
   'don_vi_thuc_hien_id',
   'ket_qua_kien_nghi',
+  'so_lan_hoan_thanh',
+  'so_lan_khao_sat',
   'phan_tram_hoan_thanh',
   'link_ket_qua',
   'id_nguoi_tao',

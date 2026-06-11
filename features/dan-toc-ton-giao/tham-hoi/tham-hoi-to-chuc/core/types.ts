@@ -4,6 +4,7 @@ export interface ThamHoiToChucFilters {
   columnSearch: Record<string, string>;
   tien_do_filter: string[];
   to_chuc_filter: string[];
+  dip_tham_hoi_filter: string[];
 }
 
 export interface ThamHoiToChuc {
@@ -11,9 +12,15 @@ export interface ThamHoiToChuc {
   to_chuc_id: string;
   ten_co_so: string | null;
   loai_hinh: string | null;
+  dip_tham_hoi_id: string;
   dip_tham_hoi: string;
+  ten_dip_tham_hoi: string | null;
   thoi_gian_du_kien: string | null;
-  don_vi_tham_hoi: string | null;
+  thoi_gian_thuc_te: string | null;
+  don_vi_tham_hoi_id: string | null;
+  ten_don_vi_tham_hoi: string | null;
+  phong_ban_tham_muu_id: string | null;
+  ten_phong_ban: string | null;
   noi_dung_tham_hoi: string | null;
   thanh_phan_doan: string | null;
   qua_tang: string | null;

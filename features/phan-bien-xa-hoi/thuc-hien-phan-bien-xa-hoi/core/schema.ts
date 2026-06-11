@@ -7,6 +7,7 @@ import {
   TINH_TRANG_VALUES,
 } from './constants';
 import type { ThucHienPhanBien } from './types';
+import { computePhanTramHoanThanh } from './compute-phan-tram';
 
 const optionalLink = z
   .string()
@@ -56,11 +57,24 @@ export const thucHienPhanBienSchema = z.object({
   phong_ban_tham_muu_id: optionalFk,
   don_vi_thuc_hien_id: optionalFk,
   ket_qua_kien_nghi: optionalText,
-  phan_tram_hoan_thanh: z.coerce.number().int().min(0).max(100),
+  so_lan_hoan_thanh: z.coerce.number().int().min(0),
+  so_lan_khao_sat: z.coerce.number().int().min(0),
   link_ket_qua: optionalLink,
+}).superRefine((data, ctx) => {
+  if (data.so_lan_khao_sat > 0 && data.so_lan_hoan_thanh > data.so_lan_khao_sat) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: txt('pbxhThucHien.validation.soLanHoanThanhMax'),
+      path: ['so_lan_hoan_thanh'],
+    });
+  }
 });
 
 export type ThucHienPhanBienFormValues = z.infer<typeof thucHienPhanBienSchema>;
+
+export function phanTramFromFormValues(data: Pick<ThucHienPhanBienFormValues, 'so_lan_hoan_thanh' | 'so_lan_khao_sat'>): number {
+  return computePhanTramHoanThanh(data.so_lan_hoan_thanh, data.so_lan_khao_sat);
+}
 
 export type ThucHienPhanBienFormInput = {
   cap_thuc_hien: string;
@@ -76,7 +90,8 @@ export type ThucHienPhanBienFormInput = {
   phong_ban_tham_muu_id?: string;
   don_vi_thuc_hien_id?: string;
   ket_qua_kien_nghi?: string;
-  phan_tram_hoan_thanh: number;
+  so_lan_hoan_thanh: number;
+  so_lan_khao_sat: number;
   link_ket_qua?: string;
 };
 
@@ -96,7 +111,8 @@ export function thucHienPhanBienToFormInput(row: ThucHienPhanBien | null): ThucH
       phong_ban_tham_muu_id: '',
       don_vi_thuc_hien_id: '',
       ket_qua_kien_nghi: '',
-      phan_tram_hoan_thanh: 0,
+      so_lan_hoan_thanh: 0,
+      so_lan_khao_sat: 0,
       link_ket_qua: '',
     };
   }
@@ -114,7 +130,8 @@ export function thucHienPhanBienToFormInput(row: ThucHienPhanBien | null): ThucH
     phong_ban_tham_muu_id: row.phong_ban_tham_muu_id ?? '',
     don_vi_thuc_hien_id: row.don_vi_thuc_hien_id ?? '',
     ket_qua_kien_nghi: row.ket_qua_kien_nghi ?? '',
-    phan_tram_hoan_thanh: row.phan_tram_hoan_thanh ?? 0,
+    so_lan_hoan_thanh: row.so_lan_hoan_thanh ?? 0,
+    so_lan_khao_sat: row.so_lan_khao_sat ?? 0,
     link_ket_qua: row.link_ket_qua ?? '',
   };
 }

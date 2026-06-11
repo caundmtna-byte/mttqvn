@@ -17,6 +17,8 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   BarChart,
+  Bar,
+  Legend,
 } from 'recharts';
 import {
   Megaphone,
@@ -33,6 +35,9 @@ import {
   FileText,
   Gauge,
   MapPin,
+  Trophy,
+  User,
+  ClipboardList,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -50,8 +55,6 @@ import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/component
 import { chartFillForCategoricalBar } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
-import ExportDialog from '@/components/shared/ExportDialog';
-import { useExportData } from '@/lib/useExportData';
 import { useAuthStore } from '@/store/useStore';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { AnimatePresence } from 'framer-motion';
@@ -85,10 +88,16 @@ import {
   aggregatePbxhTopDonViChuTri,
   aggregatePbxhByDonViChuTriTable,
   aggregatePbxhLoaiHinhMatrix,
+  aggregatePbxhByNguoiTaoTable,
+  aggregatePbxhTopNguoiTaoByTyLe,
+  aggregatePbxhTopHoatDongByPhanTram,
+  buildPbxhAvgPhanTramByLoaiHinhBarData,
+  buildPbxhAvgPhanTramTrendSeries,
   sortPbxhLookupRows,
   formatPbxhTienDoLabel,
   getPbxhTienDoFilterId,
 } from './utils/aggregate-pbxh-thong-ke-stats';
+import { exportPbxhThongKeReportToExcel } from './utils/export-pbxh-thong-ke-report';
 
 const ThucHienPhanBienDetail = lazy(
   () => import('../thuc-hien-phan-bien-xa-hoi/components/thuc-hien-phan-bien-detail'),
@@ -110,7 +119,7 @@ const initialDims: PbxhThongKeDimensionFilters = {
   tien_do: [],
 };
 
-const EXPORT_PAGINATION = { page: 1, pageSize: 100_000 };
+const TOP_N = 10;
 
 const DrawerLazyFallback: React.FC = () => (
   <div
@@ -171,7 +180,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   const [sortKey, setSortKey] = useState<PbxhLookupSortKey>('noi_dung');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [viewing, setViewing] = useState<ThucHienPhanBien | null>(null);
-  const [showExport, setShowExport] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
@@ -198,9 +207,17 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   const tinhTrangBar = useMemo(() => buildPbxhTinhTrangBarData(filtered), [filtered]);
   const loaiHinhBar = useMemo(() => buildPbxhLoaiHinhBarData(filtered), [filtered]);
   const capBar = useMemo(() => buildPbxhCapThucHienBarData(filtered), [filtered]);
-  const topDonVi = useMemo(() => aggregatePbxhTopDonViChuTri(filtered, 10), [filtered]);
+  const topDonVi = useMemo(() => aggregatePbxhTopDonViChuTri(filtered, TOP_N), [filtered]);
   const donViTable = useMemo(() => aggregatePbxhByDonViChuTriTable(filtered), [filtered]);
   const matrixRows = useMemo(() => aggregatePbxhLoaiHinhMatrix(filtered), [filtered]);
+  const nguoiTaoTable = useMemo(() => aggregatePbxhByNguoiTaoTable(filtered), [filtered]);
+  const topNguoiTao = useMemo(() => aggregatePbxhTopNguoiTaoByTyLe(filtered, TOP_N), [filtered]);
+  const topHoatDong = useMemo(() => aggregatePbxhTopHoatDongByPhanTram(filtered, TOP_N), [filtered]);
+  const avgPhanTramLoaiHinh = useMemo(() => buildPbxhAvgPhanTramByLoaiHinhBarData(filtered), [filtered]);
+  const avgPhanTramTrend = useMemo(
+    () => buildPbxhAvgPhanTramTrendSeries(filtered, chartRange, bucket),
+    [filtered, chartRange, bucket],
+  );
 
   const sortedLookupBase = useMemo(
     () => sortPbxhLookupRows(filtered, sortKey, sortDir, getLanguage),
@@ -344,47 +361,44 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     setDateRange(initialDateRange);
   }, []);
 
-  const exportColumns = useMemo(
-    () => [
-      { key: 'noi_dung', label: txt('pbxhThongKe.stats.tableColNoiDung') },
-      { key: 'loai_hinh', label: txt('pbxhThongKe.stats.tableColLoaiHinh') },
-      { key: 'tinh_trang', label: txt('pbxhThongKe.stats.tableColTinhTrang') },
-      { key: 'ten_don_vi_chu_tri', label: txt('pbxhThongKe.stats.tableColDonViChuTri') },
-      { key: 'tien_do', label: txt('pbxhThongKe.stats.tableColTienDo') },
-      { key: 'phan_tram_hoan_thanh', label: txt('pbxhThongKe.stats.tableColPhanTram') },
-      { key: 'ngay_bat_dau', label: txt('pbxhThucHien.store.ngayBatDauCol') },
-      { key: 'ngay_ket_thuc', label: txt('pbxhThongKe.stats.tableColNgayKetThuc') },
-      { key: 'range_start', label: txt('pbxhThongKe.exportRangeFrom') },
-      { key: 'range_end', label: txt('pbxhThongKe.exportRangeTo') },
-    ],
-    [],
-  );
-
-  const exportMapFn = useCallback(
-    (item: ThucHienPhanBien) => ({
-      noi_dung: item.noi_dung,
-      loai_hinh: item.loai_hinh,
-      tinh_trang: item.tinh_trang,
-      ten_don_vi_chu_tri: item.ten_don_vi_chu_tri ?? '',
-      tien_do: formatPbxhTienDoLabel(item),
-      phan_tram_hoan_thanh: item.phan_tram_hoan_thanh,
-      ngay_bat_dau: item.ngay_bat_dau ?? '',
-      ngay_ket_thuc: item.ngay_ket_thuc ?? '',
-      range_start: resolvedRange.start,
-      range_end: resolvedRange.end,
-    }),
-    [resolvedRange.start, resolvedRange.end],
-  );
-
-  const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } =
-    useExportData({
-      data: sortedLookupBase,
-      isOpen: showExport,
-      mapFn: exportMapFn,
-      pagination: EXPORT_PAGINATION,
-      selectedIds: new Set(),
-      keyExtractor: (r) => r.id,
-    });
+  const handleExportReport = useCallback(async () => {
+    if (filtered.length === 0) {
+      toast.warning(txt('pbxhThongKe.noExportData'));
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportPbxhThongKeReportToExcel({
+        kpis,
+        donViRows: donViTable,
+        nguoiTaoRows: nguoiTaoTable,
+        topHoatDongRows: topHoatDong,
+        loaiHinhRows: loaiHinhBar,
+        avgPhanTramLoaiHinhRows: avgPhanTramLoaiHinh,
+        matrixRows,
+        lookupRows: sortedLookupBase,
+        range: resolvedRange,
+      });
+      toast.success(txt('pbxhThongKe.stats.exportSuccess'), {
+        description: txt('pbxhThongKe.stats.exportSuccessDesc'),
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : txt('pbxhThongKe.stats.exportError'));
+    } finally {
+      setExporting(false);
+    }
+  }, [
+    filtered.length,
+    kpis,
+    donViTable,
+    nguoiTaoTable,
+    topHoatDong,
+    loaiHinhBar,
+    avgPhanTramLoaiHinh,
+    matrixRows,
+    sortedLookupBase,
+    resolvedRange,
+  ]);
 
   const kpiItems = useMemo(
     () => [
@@ -442,23 +456,54 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
         color: 'text-violet-600 dark:text-violet-400',
         delta: null,
       },
+      {
+        id: 'tyle',
+        label: txt('pbxhThongKe.stats.kpiTyLeThucTe'),
+        value: `${kpis.tyLeThucTe}%`,
+        icon: Trophy,
+        bg: 'bg-amber-500/10',
+        color: 'text-amber-600 dark:text-amber-400',
+        delta: null,
+      },
+      {
+        id: 'sumht',
+        label: txt('pbxhThongKe.stats.kpiSumLanHoanThanh'),
+        value: kpis.sumSoLanHoanThanh,
+        icon: CheckCircle2,
+        bg: 'bg-emerald-500/10',
+        color: 'text-emerald-600 dark:text-emerald-400',
+        delta: null,
+      },
+      {
+        id: 'sumks',
+        label: txt('pbxhThongKe.stats.kpiSumLanKhaoSat'),
+        value: kpis.sumSoLanKhaoSat,
+        icon: ClipboardList,
+        bg: 'bg-sky-500/10',
+        color: 'text-sky-600 dark:text-sky-400',
+        delta: null,
+      },
     ],
     [kpis],
   );
 
-  const handleExportLookup = () => {
-    if (sortedLookupBase.length === 0) {
-      toast.warning(txt('pbxhThongKe.noExportData'));
-      return;
-    }
-    setShowExport(true);
-  };
+  const topNguoiTaoChartData = useMemo(
+    () =>
+      [...topNguoiTao]
+        .map((r) => ({
+          name: r.label.length > 18 ? `${r.label.slice(0, 16)}…` : r.label,
+          tyLe: r.tyLeThucTe,
+          avgPhanTram: r.avgPhanTram,
+        }))
+        .reverse(),
+    [topNguoiTao],
+  );
 
   const toggleSort = (key: PbxhLookupSortKey) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else {
       setSortKey(key);
-      setSortDir(key === 'phan_tram_hoan_thanh' || key === 'tien_do' ? 'desc' : 'asc');
+      setSortDir(key === 'phan_tram_hoan_thanh' || key === 'so_lan_hoan_thanh' || key === 'so_lan_khao_sat' || key === 'tien_do' ? 'desc' : 'asc');
     }
   };
 
@@ -531,12 +576,13 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   );
 
   const toolbarActions = canExport ? (
-    <Tooltip content={txt('pbxhThongKe.stats.exportData')} placement="bottom">
+    <Tooltip content={txt('pbxhThongKe.stats.exportReport')} placement="bottom">
       <Button
         variant="outline"
         size="sm"
         type="button"
-        onClick={handleExportLookup}
+        disabled={exporting}
+        onClick={() => void handleExportReport()}
         className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
       >
         <Download className="w-4 h-4" />
@@ -676,6 +722,154 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <StatsCard title={txt('pbxhThongKe.stats.chartAvgPhanTramTrend')} icon={Percent}>
+                <div className="h-[240px] w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                    <LineChart data={avgPhanTramTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={36} />
+                      <RechartsTooltip content={<ChartTooltip />} />
+                      <Line
+                        type="monotone"
+                        dataKey="avgPhanTram"
+                        name={txt('pbxhThongKe.stats.kpiAvgPhanTram')}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </StatsCard>
+
+              <StatsCard title={txt('pbxhThongKe.stats.chartAvgPhanTramLoaiHinh')} icon={Tag}>
+                <div className="h-[240px] w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                    <BarChart data={avgPhanTramLoaiHinh} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={45} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={36} />
+                      <RechartsTooltip content={<ChartTooltip />} />
+                      <ColoredBar
+                        data={avgPhanTramLoaiHinh}
+                        dataKey="avgPhanTram"
+                        name={txt('pbxhThongKe.stats.tableColAvgPhanTramLoai')}
+                        radius={[4, 4, 0, 0]}
+                        getFill={(row, i) =>
+                          chartFillForCategoricalBar(row, i, {
+                            badgeConfig: loaiHinhBadge,
+                            labelKey: 'label',
+                          })
+                        }
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </StatsCard>
+            </div>
+
+            <StatsCard title={txt('pbxhThongKe.stats.chartTopNguoiTaoTyLe')} icon={Trophy} spanTwo>
+              <div className="h-[300px] w-full min-w-0">
+                {topNguoiTaoChartData.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">{txt('pbxhThongKe.noData')}</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <BarChart
+                      data={topNguoiTaoChartData}
+                      layout="vertical"
+                      margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+                      <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
+                      <RechartsTooltip content={<ChartTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar
+                        dataKey="tyLe"
+                        name={txt('pbxhThongKe.stats.tableColTyLeThucTe')}
+                        fill="hsl(var(--primary))"
+                        maxBarSize={18}
+                        radius={[0, 4, 4, 0]}
+                      />
+                      <Bar
+                        dataKey="avgPhanTram"
+                        name={txt('pbxhThongKe.stats.kpiAvgPhanTram')}
+                        fill="hsl(var(--chart-2))"
+                        maxBarSize={18}
+                        radius={[0, 4, 4, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </StatsCard>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <StatsCard title={txt('pbxhThongKe.stats.tableNguoiTaoRank')} icon={User}>
+                <div className="overflow-x-auto max-h-[min(320px,40vh)] overflow-y-auto -m-4">
+                  <table className="w-full text-sm min-w-[860px]">
+                    <thead className="sticky top-0 z-[1] bg-card border-b border-border">
+                      <tr className="text-left text-muted-foreground">
+                        <th className="py-2 px-3 font-medium w-10">{txt('pbxhThongKe.stats.tableColRank')}</th>
+                        <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColNguoiTao')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColTotal')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanHoanThanh')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanKhaoSat')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColTyLeThucTe')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColAvgPhanTram')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {nguoiTaoTable.map((row, idx) => (
+                        <tr key={row.id} className="border-b border-border/60">
+                          <td className="py-2 px-3 tabular-nums text-muted-foreground">{idx + 1}</td>
+                          <td className="py-2 pr-3 max-w-[180px] truncate">{row.label}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{row.total}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanHoanThanh}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanKhaoSat}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.tyLeThucTe}%</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{row.avgPhanTram}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </StatsCard>
+
+              <StatsCard title={txt('pbxhThongKe.stats.tableTopHoatDong')} icon={Trophy}>
+                <div className="overflow-x-auto max-h-[min(320px,40vh)] overflow-y-auto -m-4">
+                  <table className="w-full text-sm min-w-[860px]">
+                    <thead className="sticky top-0 z-[1] bg-card border-b border-border">
+                      <tr className="text-left text-muted-foreground">
+                        <th className="py-2 px-3 font-medium w-10">{txt('pbxhThongKe.stats.tableColRank')}</th>
+                        <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColNoiDung')}</th>
+                        <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColNguoiTao')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColPhanTram')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanHoanThanh')}</th>
+                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanKhaoSat')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topHoatDong.map((row, idx) => (
+                        <tr key={row.id} className="border-b border-border/60">
+                          <td className="py-2 px-3 tabular-nums text-muted-foreground">{idx + 1}</td>
+                          <td className="py-2 pr-3 max-w-[200px] truncate font-medium" title={row.noi_dung}>
+                            {row.noi_dung}
+                          </td>
+                          <td className="py-2 pr-3 max-w-[120px] truncate">{row.nguoi_tao_label}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.phan_tram_hoan_thanh}%</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_hoan_thanh}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_khao_sat}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </StatsCard>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StatsTableCard
                 title={txt('pbxhThongKe.stats.chartTopDonViChuTri')}
                 icon={Building2}
@@ -698,13 +892,16 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
 
             <StatsCard title={txt('pbxhThongKe.stats.tableDonViChuTri')} icon={Building2}>
               <div className="overflow-x-auto max-h-[min(320px,40vh)] overflow-y-auto -m-4">
-                <table className="w-full text-sm min-w-[640px]">
+                <table className="w-full text-sm min-w-[860px]">
                   <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                     <tr className="text-left text-muted-foreground">
                       <th className="py-2 px-4 font-medium">{txt('pbxhThongKe.stats.tableColDonVi')}</th>
                       <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColTotal')}</th>
                       <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColDangTh')}</th>
                       <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColHoanThanh')}</th>
+                      <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanHoanThanh')}</th>
+                      <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanKhaoSat')}</th>
+                      <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColTyLeDonVi')}</th>
                       <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColAvgPhanTram')}</th>
                     </tr>
                   </thead>
@@ -715,6 +912,9 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                         <td className="py-2 pr-3 text-right tabular-nums">{row.total}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.dangThucHien}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.hoanThanh}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanHoanThanh}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanKhaoSat}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums font-medium">{row.tyLeThucTe}%</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.avgPhanTram}%</td>
                       </tr>
                     ))}
@@ -735,6 +935,8 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                           ['tinh_trang', txt('pbxhThongKe.stats.tableColTinhTrang')],
                           ['ten_don_vi_chu_tri', txt('pbxhThongKe.stats.tableColDonViChuTri')],
                           ['tien_do', txt('pbxhThongKe.stats.tableColTienDo')],
+                          ['so_lan_hoan_thanh', txt('pbxhThongKe.stats.tableColSoLanHoanThanh')],
+                          ['so_lan_khao_sat', txt('pbxhThongKe.stats.tableColSoLanKhaoSat')],
                           ['phan_tram_hoan_thanh', txt('pbxhThongKe.stats.tableColPhanTram')],
                           ['ngay_ket_thuc', txt('pbxhThongKe.stats.tableColNgayKetThuc')],
                         ] as const
@@ -781,6 +983,8 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                             {formatPbxhTienDoLabel(row)}
                           </span>
                         </td>
+                        <td className="py-2 pr-3 tabular-nums">{row.so_lan_hoan_thanh}</td>
+                        <td className="py-2 pr-3 tabular-nums">{row.so_lan_khao_sat}</td>
                         <td className="py-2 pr-3 tabular-nums">{row.phan_tram_hoan_thanh}%</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">{row.ngay_ket_thuc ?? '—'}</td>
                       </tr>
@@ -792,17 +996,6 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
           </>
         )}
       </div>
-
-      <ExportDialog
-        open={showExport}
-        onClose={() => setShowExport(false)}
-        columns={exportColumns}
-        data={exportData}
-        paginatedData={paginatedExportData}
-        selectedData={selectedExportData}
-        fileName={txt('pbxhThongKe.exportFileName')}
-        visibleColumnKeys={exportColumns.map((c) => c.key)}
-      />
 
       <AnimatePresence>
         {viewing && canOpenDetail && (

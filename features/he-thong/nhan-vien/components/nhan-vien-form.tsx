@@ -10,6 +10,7 @@ import Combobox from '../../../../components/ui/Combobox';
 import MultiSelect from '../../../../components/ui/MultiSelect';
 import ToggleSwitch from '../../../../components/ui/ToggleSwitch';
 import SingleImageInput from '../../../../components/ui/SingleImageInput';
+import { avatarCloudinaryFolder } from '@/lib/cloudinary/upload-image';
 import { EmployeeFormValues, buildEmployeeSchema } from '../core/schema';
 import { Employee } from '../core/types';
 import {
@@ -233,6 +234,7 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
                     value={field.value ?? null}
                     displaySrc={avatarDisplaySrc || undefined}
                     onChange={(v) => field.onChange(v ?? null)}
+                    cloudinaryFolder={avatarCloudinaryFolder(initialData?.id)}
                     shape="circle"
                     aspectRatio="1/1"
                     placeholder={txt('employee.form.avatar')}

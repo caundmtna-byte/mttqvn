@@ -1,4 +1,5 @@
 import type { ThamHoiToChuc } from '../core/types';
+import { formatDonViThamHoiDisplay } from '../core/display-don-vi';
 
 export function countThamHoiToChucColumnSearchActive(
   columnSearch: Record<string, string> | undefined,
@@ -31,7 +32,7 @@ export function thamHoiToChucMatchesColumnSearch(
         haystack = row.thoi_gian_du_kien ?? '';
         break;
       case 'don_vi_tham_hoi':
-        haystack = row.don_vi_tham_hoi ?? '';
+        haystack = formatDonViThamHoiDisplay(row);
         break;
       case 'noi_dung_tham_hoi':
         haystack = row.noi_dung_tham_hoi ?? '';

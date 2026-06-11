@@ -136,7 +136,8 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
       (filters.ca_nhan_filter.length > 0 ? 1 : 0) +
       (filters.phong_ban_filter.length > 0 ? 1 : 0) +
       (filters.don_vi_tham_hoi_filter.length > 0 ? 1 : 0) +
-      (filters.xa_phuong_filter.length > 0 ? 1 : 0)
+      (filters.xa_phuong_filter.length > 0 ? 1 : 0) +
+      (filters.dip_tham_hoi_filter.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -148,6 +149,7 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
     setFilter('phong_ban_filter', []);
     setFilter('don_vi_tham_hoi_filter', []);
     setFilter('xa_phuong_filter', []);
+    setFilter('dip_tham_hoi_filter', []);
     setSort(null, null);
   };
 

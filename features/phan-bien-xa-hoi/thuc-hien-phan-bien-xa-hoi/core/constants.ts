@@ -13,3 +13,6 @@ export type CapThucHien = (typeof CAP_THUC_HIEN_VALUES)[number];
 
 export const LOAI_HINH_VALUES = ['Giám sát', 'Phản biện', 'Kiểm tra', 'Giám sát cộng đồng'] as const;
 export type LoaiHinh = (typeof LOAI_HINH_VALUES)[number];
+
+/** Sentinel combobox — lưu DB `don_vi_thuc_hien_id = NULL` (MTTQ Tỉnh). */
+export const PBXH_DON_VI_THUC_HIEN_TINH_VALUE = '__tinh_cap__';

@@ -3,6 +3,7 @@ import {
   DEFAULT_BRANDING_APP_NAME,
   DEFAULT_BRANDING_LOGO,
 } from './branding-defaults';
+import { cloudinaryPwaIconUrl, isCloudinaryUrl } from './cloudinary/pwa-icon-url';
 import type { CompanyInfo } from '../store/useStore';
 
 export type BrandingSnapshot = Pick<
@@ -66,14 +67,15 @@ export function buildWebManifestBody(
   options: { appOrigin: string; scopeUrl: string; themeColor?: string },
 ): Record<string, unknown> {
   const logo = resolveBrandingIconHref(branding, '/');
-  const mime = guessImageMime(logo);
+  const icon192Src = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 192) : logo;
+  const icon512Src = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 512) : logo;
+  const mime192 = guessImageMime(icon192Src);
+  const mime512 = guessImageMime(icon512Src);
   const name = branding.appName?.trim() || DEFAULT_BRANDING_APP_NAME;
-  const icon192: Record<string, unknown> = { src: logo, sizes: '192x192', purpose: 'any' };
-  const icon512: Record<string, unknown> = { src: logo, sizes: '512x512', purpose: 'any maskable' };
-  if (mime) {
-    icon192.type = mime;
-    icon512.type = mime;
-  }
+  const icon192: Record<string, unknown> = { src: icon192Src, sizes: '192x192', purpose: 'any' };
+  const icon512: Record<string, unknown> = { src: icon512Src, sizes: '512x512', purpose: 'any maskable' };
+  if (mime192) icon192.type = mime192;
+  if (mime512) icon512.type = mime512;
   return {
     name,
     short_name: name.slice(0, 12),

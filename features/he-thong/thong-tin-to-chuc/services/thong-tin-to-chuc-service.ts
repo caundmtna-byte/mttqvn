@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase/client';
 import { isSupabase } from '@/lib/data/config';
+import { uploadLogoIfDataUrl } from '@/lib/cloudinary/upload-logo';
 import type { Database } from '@/lib/supabase/database.types';
 import type { CompanyInfo } from '@/store/useStore';
 import { DEFAULT_COMPANY_INFO } from '@/store/useStore';
@@ -58,11 +59,13 @@ export async function getThongTinToChuc(): Promise<CompanyInfo> {
 
 /** Lưu cấu hình (cập nhật dòng id = 1). */
 export async function saveThongTinToChuc(data: CompanyFormValues & { appLogo: string | null }): Promise<CompanyInfo> {
+  const resolvedLogo = await uploadLogoIfDataUrl(data.appLogo);
+
   if (!isSupabase()) {
     return {
       appName: data.appName.trim(),
       appDescription: data.appDescription?.trim() ?? '',
-      appLogo: data.appLogo,
+      appLogo: resolvedLogo,
       companyName: data.companyName.trim(),
       address: data.address?.trim() ?? '',
       phone: data.phone?.trim() ?? '',
@@ -75,7 +78,7 @@ export async function saveThongTinToChuc(data: CompanyFormValues & { appLogo: st
     throw new Error('Supabase client không khả dụng');
   }
 
-  const payload = formToDbPayload(data);
+  const payload = formToDbPayload({ ...data, appLogo: resolvedLogo });
   const { data: row, error } = await sb
     .from('var_thong_tin_to_chuc')
     .update(payload)

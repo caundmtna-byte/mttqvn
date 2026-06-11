@@ -54,9 +54,11 @@ export type AppResource =
   | 'phanBienThongKe'
   | 'danTocCaNhanTieuBieu'
   | 'danTocToChucQuanTrong'
+  | 'danTocDipThamHoi'
   | 'danTocThamHoiToChuc'
   | 'danTocThamHoiCaNhan'
   | 'danTocThamHoiThongKe'
+  | 'danTocThongKeToChucCaNhan'
   | 'profile'
   | 'notifications'
   | '*';
@@ -110,9 +112,11 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   phanBienThongKe: 'phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi',
   danTocCaNhanTieuBieu: 'dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu',
   danTocToChucQuanTrong: 'dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong',
+  danTocDipThamHoi: 'dan-toc-ton-giao/tham-hoi/dip-tham-hoi',
   danTocThamHoiToChuc: 'dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc',
   danTocThamHoiCaNhan: 'dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan',
   danTocThamHoiThongKe: 'dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi',
+  danTocThongKeToChucCaNhan: 'dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */

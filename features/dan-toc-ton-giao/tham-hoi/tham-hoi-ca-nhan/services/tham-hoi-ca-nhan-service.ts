@@ -7,6 +7,7 @@ import type { ImportErrorRow } from '@/components/shared/ImportDialog';
 import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
 import { getDepartments } from '@/features/he-thong/phong-ban/services/phong-ban-service';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
+import { getDipTenById, getDipThamHoiList } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/services/dip-tham-hoi-service';
 import { getThongTinCaNhanTieuBieuList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/services/thong-tin-ca-nhan-tieu-bieu-service';
 import type { ThamHoiCaNhanFormValues } from '../core/schema';
 import { thamHoiCaNhanSchema } from '../core/schema';
@@ -51,15 +52,22 @@ export function flattenThamHoiCaNhanRow(row: Record<string, unknown>): ThamHoiCa
   const cn = pickEmbedded<{ ho_va_ten?: string; doi_tuong?: string; chuc_vu_vi_tri?: string }>(row.ca_nhan);
   const pb = pickEmbedded<{ ten_phong_ban?: string }>(row.phong_ban);
   const dv = pickEmbedded<{ ten?: string }>(row.don_vi_tham_hoi);
+  const dip = pickEmbedded<{ ten_dip?: string }>(row.dip);
   const xp = pickEmbedded<{ ten?: string }>(row.xa_phuong);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
   const rest = { ...row };
   delete rest.ca_nhan;
   delete rest.phong_ban;
   delete rest.don_vi_tham_hoi;
+  delete rest.dip;
   delete rest.xa_phuong;
   delete rest.nguoi_tao;
   const r = rest as Record<string, unknown>;
+
+  const tenDip =
+    dip?.ten_dip != null && String(dip.ten_dip).trim() !== ''
+      ? String(dip.ten_dip)
+      : String(r.dip_tham_hoi ?? '');
 
   return {
     id: String(r.id ?? ''),
@@ -79,8 +87,11 @@ export function flattenThamHoiCaNhanRow(row: Record<string, unknown>): ThamHoiCa
         : String(r.phong_ban_tham_muu_id),
     ten_phong_ban:
       pb?.ten_phong_ban != null && String(pb.ten_phong_ban).trim() !== '' ? String(pb.ten_phong_ban) : null,
-    dip_tham_hoi: String(r.dip_tham_hoi ?? ''),
+    dip_tham_hoi_id: String(r.dip_tham_hoi_id ?? ''),
+    dip_tham_hoi: tenDip,
+    ten_dip_tham_hoi: dip?.ten_dip != null && String(dip.ten_dip).trim() !== '' ? String(dip.ten_dip) : null,
     thoi_gian_du_kien: nullableDateIso(r.thoi_gian_du_kien),
+    thoi_gian_thuc_te: nullableDateIso(r.thoi_gian_thuc_te),
     don_vi_tham_hoi_id:
       r.don_vi_tham_hoi_id == null || r.don_vi_tham_hoi_id === '' ? null : String(r.don_vi_tham_hoi_id),
     ten_don_vi_tham_hoi: dv?.ten != null && String(dv.ten).trim() !== '' ? String(dv.ten) : null,
@@ -133,10 +144,14 @@ async function resolveXaPhuongTenById(id: string | null | undefined): Promise<st
   return all.find((x) => x.id === id)?.ten ?? null;
 }
 
-function formToPayload(
+async function buildPayload(
   data: ThamHoiCaNhanFormValues,
   denorm?: { doi_tuong: string | null; chuc_vu_vi_tri: string | null },
-): Record<string, unknown> {
+): Promise<Record<string, unknown>> {
+  const dipTen = await getDipTenById(data.dip_tham_hoi_id);
+  if (!dipTen?.trim()) {
+    throw new Error(txt('danTocThamHoiCaNhan.validation.dipThamHoiInvalid'));
+  }
   const thoiGianDb =
     data.thoi_gian_du_kien != null && data.thoi_gian_du_kien !== ''
       ? monthYearToDbDate(data.thoi_gian_du_kien)
@@ -150,8 +165,10 @@ function formToPayload(
         : null,
     doi_tuong: denorm?.doi_tuong ?? null,
     chuc_vu_vi_tri: denorm?.chuc_vu_vi_tri ?? null,
-    dip_tham_hoi: data.dip_tham_hoi,
+    dip_tham_hoi_id: Number(data.dip_tham_hoi_id),
+    dip_tham_hoi: dipTen,
     thoi_gian_du_kien: thoiGianDb,
+    thoi_gian_thuc_te: data.thoi_gian_thuc_te ?? null,
     don_vi_tham_hoi_id:
       data.don_vi_tham_hoi_id != null && data.don_vi_tham_hoi_id !== ''
         ? Number(data.don_vi_tham_hoi_id)
@@ -178,6 +195,7 @@ async function mockRowFromForm(
     : undefined;
   const tenDonVi = await resolveXaPhuongTenById(data.don_vi_tham_hoi_id);
   const tenXa = await resolveXaPhuongTenById(data.xa_phuong_id);
+  const dipTen = (await getDipTenById(data.dip_tham_hoi_id)) ?? base.dip_tham_hoi ?? '';
   const thoiGianDb =
     data.thoi_gian_du_kien != null && data.thoi_gian_du_kien !== ''
       ? monthYearToDbDate(data.thoi_gian_du_kien)
@@ -191,8 +209,11 @@ async function mockRowFromForm(
     chuc_vu_vi_tri: denorm.chuc_vu_vi_tri,
     phong_ban_tham_muu_id: data.phong_ban_tham_muu_id ?? null,
     ten_phong_ban: pb?.ten_phong_ban ?? base.ten_phong_ban ?? null,
-    dip_tham_hoi: data.dip_tham_hoi,
+    dip_tham_hoi_id: data.dip_tham_hoi_id,
+    dip_tham_hoi: dipTen,
+    ten_dip_tham_hoi: dipTen || null,
     thoi_gian_du_kien: thoiGianDb,
+    thoi_gian_thuc_te: data.thoi_gian_thuc_te ?? null,
     don_vi_tham_hoi_id: data.don_vi_tham_hoi_id ?? null,
     ten_don_vi_tham_hoi: tenDonVi,
     qua_tang: data.qua_tang ?? null,
@@ -251,6 +272,25 @@ export async function getThamHoiCaNhanByCaNhanId(caNhanId: string): Promise<Tham
   return (data ?? []).map((row) => flattenThamHoiCaNhanRow(row as unknown as Record<string, unknown>));
 }
 
+export async function getThamHoiCaNhanByDipId(dipId: string): Promise<ThamHoiCaNhan[]> {
+  const trimmed = dipId.trim();
+  if (!trimmed) return [];
+  if (!isSupabase()) {
+    return mockRows
+      .filter((r) => r.dip_tham_hoi_id === trimmed)
+      .sort((a, b) => b.tg_cap_nhat.localeCompare(a.tg_cap_nhat));
+  }
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('dttg_tham_hoi_ca_nhan')
+    .select(DTTG_THAM_HOI_CA_NHAN_SELECT)
+    .eq('dip_tham_hoi_id', trimmed)
+    .order('tg_cap_nhat', { ascending: false });
+  if (error) handleSupabaseError(error);
+  return (data ?? []).map((row) => flattenThamHoiCaNhanRow(row as unknown as Record<string, unknown>));
+}
+
 export async function createThamHoiCaNhan(
   data: ThamHoiCaNhanFormValues,
   idNguoiTao: string,
@@ -266,7 +306,7 @@ export async function createThamHoiCaNhan(
   }
 
   const inserted = await repo.insert(
-    { ...formToPayload(data, denorm), id_nguoi_tao: Number(trimmed) },
+    { ...(await buildPayload(data, denorm)), id_nguoi_tao: Number(trimmed) },
     { returningSelect: DTTG_THAM_HOI_CA_NHAN_RETURNING },
   );
   return flattenThamHoiCaNhanRow(inserted as unknown as Record<string, unknown>);
@@ -283,10 +323,47 @@ export async function updateThamHoiCaNhan(id: string, data: ThamHoiCaNhanFormVal
     return { ...row };
   }
 
-  const updated = await repo.update(id, formToPayload(data, denorm) as unknown as Partial<RepoRow>, {
+  const updated = await repo.update(id, (await buildPayload(data, denorm)) as unknown as Partial<RepoRow>, {
     returningSelect: DTTG_THAM_HOI_CA_NHAN_RETURNING,
   });
   return flattenThamHoiCaNhanRow(updated as unknown as Record<string, unknown>);
+}
+
+export async function updateThamHoiCaNhanTrangThai(
+  id: string,
+  trangThai: TrangThaiThamHoi,
+  thoiGianThucTe?: string | null,
+): Promise<ThamHoiCaNhan> {
+  const patch: Record<string, unknown> = { trang_thai: trangThai };
+  if (trangThai === 'Đã hoàn thành') {
+    patch.thoi_gian_thuc_te = thoiGianThucTe?.trim() || new Date().toISOString().slice(0, 10);
+  }
+
+  if (!isSupabase()) {
+    const idx = mockRows.findIndex((r) => r.id === id);
+    if (idx === -1) throw new Error(txt('danTocThamHoiCaNhan.service.notFound'));
+    mockRows[idx] = {
+      ...mockRows[idx],
+      trang_thai: trangThai,
+      thoi_gian_thuc_te:
+        trangThai === 'Đã hoàn thành'
+          ? (thoiGianThucTe?.trim() || new Date().toISOString().slice(0, 10))
+          : mockRows[idx].thoi_gian_thuc_te,
+      tg_cap_nhat: new Date().toISOString(),
+    };
+    return { ...mockRows[idx] };
+  }
+
+  const supabase = getSupabase();
+  if (!supabase) throw new Error(txt('danTocThamHoiCaNhan.service.notFound'));
+  const { data, error } = await supabase
+    .from('dttg_tham_hoi_ca_nhan')
+    .update(patch)
+    .eq('id', id)
+    .select(DTTG_THAM_HOI_CA_NHAN_RETURNING)
+    .single();
+  if (error) handleSupabaseError(error);
+  return flattenThamHoiCaNhanRow(data as unknown as Record<string, unknown>);
 }
 
 export async function deleteThamHoiCaNhanMany(ids: string[]): Promise<void> {
@@ -342,6 +419,19 @@ async function resolvePhongBanIdByTen(tenPhongBan: string): Promise<string | nul
   const partial = all.find(
     (x) =>
       x.ten_phong_ban.toLowerCase().includes(lower) || lower.includes(x.ten_phong_ban.toLowerCase()),
+  );
+  return partial?.id ?? null;
+}
+
+async function resolveDipIdByTen(tenDip: string): Promise<string | null> {
+  const t = tenDip.trim();
+  if (!t) return null;
+  const lower = t.toLowerCase();
+  const all = await getDipThamHoiList();
+  const exact = all.find((x) => x.ten_dip.trim().toLowerCase() === lower);
+  if (exact) return exact.id;
+  const partial = all.find(
+    (x) => x.ten_dip.toLowerCase().includes(lower) || lower.includes(x.ten_dip.toLowerCase()),
   );
   return partial?.id ?? null;
 }
@@ -454,6 +544,32 @@ export async function importThamHoiCaNhan(
       }
     }
 
+    const dipRaw =
+      raw.dip_tham_hoi_id != null && String(raw.dip_tham_hoi_id).trim() !== ''
+        ? String(raw.dip_tham_hoi_id).trim()
+        : '';
+    let dip_tham_hoi_id: string | null = null;
+    if (dipRaw && /^\d+$/.test(dipRaw)) {
+      dip_tham_hoi_id = dipRaw;
+    } else {
+      const tenDip = String(raw.dip_tham_hoi ?? raw.ten_dip ?? '').trim();
+      if (!tenDip) {
+        const msg = txt('danTocThamHoiCaNhan.validation.dipThamHoiRequired');
+        const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
+        errors.push(errMsg);
+        errorRows.push({ rowNum, data: rowData, message: errMsg });
+        continue;
+      }
+      dip_tham_hoi_id = (await resolveDipIdByTen(tenDip)) ?? null;
+      if (!dip_tham_hoi_id) {
+        const msg = txt('danTocThamHoiCaNhan.validation.dipThamHoiInvalid');
+        const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
+        errors.push(errMsg);
+        errorRows.push({ rowNum, data: rowData, message: errMsg });
+        continue;
+      }
+    }
+
     const thoiGianParsed = parseThoiGianDuKienImport(raw.thoi_gian_du_kien);
     const thoiGianForm =
       thoiGianParsed != null ? dbDateToMonthYear(thoiGianParsed) : undefined;
@@ -461,7 +577,7 @@ export async function importThamHoiCaNhan(
     const input = {
       ca_nhan_id: ca_nhan_id ?? '',
       phong_ban_tham_muu_id,
-      dip_tham_hoi: String(raw.dip_tham_hoi ?? '').trim(),
+      dip_tham_hoi_id: dip_tham_hoi_id ?? '',
       thoi_gian_du_kien: thoiGianForm,
       don_vi_tham_hoi_id,
       qua_tang:
@@ -489,7 +605,7 @@ export async function importThamHoiCaNhan(
 
     const denorm = await denormFromCaNhan(parsed.data.ca_nhan_id);
     validPayloads.push({
-      ...formToPayload(parsed.data, denorm),
+      ...(await buildPayload(parsed.data, denorm)),
       id_nguoi_tao: Number(trimmedNv),
     });
   }
@@ -501,7 +617,9 @@ export async function importThamHoiCaNhan(
           ca_nhan_id: String(payload.ca_nhan_id ?? ''),
           phong_ban_tham_muu_id:
             payload.phong_ban_tham_muu_id == null ? undefined : String(payload.phong_ban_tham_muu_id),
-          dip_tham_hoi: String(payload.dip_tham_hoi ?? ''),
+          dip_tham_hoi_id: String(payload.dip_tham_hoi_id ?? ''),
+          thoi_gian_thuc_te:
+            nullableDateIso(payload.thoi_gian_thuc_te) ?? undefined,
           thoi_gian_du_kien: dbDateToMonthYear(nullableDateIso(payload.thoi_gian_du_kien)),
           don_vi_tham_hoi_id:
             payload.don_vi_tham_hoi_id == null ? undefined : String(payload.don_vi_tham_hoi_id),

@@ -8,7 +8,7 @@ import React, {
   Suspense,
   startTransition,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -62,8 +62,13 @@ const DrawerLazyFallback: React.FC = () => (
   </div>
 );
 
+interface FormPrefill {
+  dipId?: string;
+}
+
 const ThamHoiCaNhanPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
@@ -93,6 +98,7 @@ const ThamHoiCaNhanPage: React.FC = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ThamHoiCaNhan | null>(null);
+  const [formPrefill, setFormPrefill] = useState<FormPrefill>({});
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -108,6 +114,7 @@ const ThamHoiCaNhanPage: React.FC = () => {
     selectedIds,
     pagination,
     columns,
+    setFilter,
   } = useThamHoiCaNhanStore();
 
   const {
@@ -150,6 +157,10 @@ const ThamHoiCaNhanPage: React.FC = () => {
     if (f.xa_phuong_filter.length > 0) {
       const xp = item.xa_phuong_id?.trim();
       if (!xp || !f.xa_phuong_filter.includes(xp)) return false;
+    }
+    if (f.dip_tham_hoi_filter.length > 0) {
+      const dipId = item.dip_tham_hoi_id?.trim();
+      if (!dipId || !f.dip_tham_hoi_filter.includes(dipId)) return false;
     }
     return matchesSearch;
   }, []);
@@ -231,6 +242,7 @@ const ThamHoiCaNhanPage: React.FC = () => {
       filters.phong_ban_filter.length > 0 ||
       filters.don_vi_tham_hoi_filter.length > 0 ||
       filters.xa_phuong_filter.length > 0 ||
+      filters.dip_tham_hoi_filter.length > 0 ||
       Boolean(sort.column)
     );
   }, [searchTerm, filters, sort.column]);
@@ -268,6 +280,44 @@ const ThamHoiCaNhanPage: React.FC = () => {
     },
     [queryClient],
   );
+
+  useEffect(() => {
+    if (!listQueryEnabled || rows.length === 0) return;
+
+    const openId = searchParams.get('open')?.trim();
+    if (openId) {
+      const row = rows.find((r) => r.id === openId);
+      if (row) {
+        handleView(row);
+        const next = new URLSearchParams(searchParams);
+        next.delete('open');
+        setSearchParams(next, { replace: true });
+      }
+      return;
+    }
+
+    const create = searchParams.get('create')?.trim();
+    const dipId = searchParams.get('dipId')?.trim();
+    if (create === '1') {
+      startTransition(() => {
+        setEditing(null);
+        setFormPrefill(dipId ? { dipId } : {});
+        setShowForm(true);
+      });
+      const next = new URLSearchParams(searchParams);
+      next.delete('create');
+      next.delete('dipId');
+      setSearchParams(next, { replace: true });
+      return;
+    }
+
+    if (dipId) {
+      setFilter('dip_tham_hoi_filter', [dipId]);
+      const next = new URLSearchParams(searchParams);
+      next.delete('dipId');
+      setSearchParams(next, { replace: true });
+    }
+  }, [rows, listQueryEnabled, searchParams, setSearchParams, handleView, setFilter]);
 
   const handleEditFromList = (item: ThamHoiCaNhan) => {
     startTransition(() => {
@@ -338,6 +388,7 @@ const ThamHoiCaNhanPage: React.FC = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditing(null);
+    setFormPrefill({});
   };
 
   if (!canView) {
@@ -396,7 +447,11 @@ const ThamHoiCaNhanPage: React.FC = () => {
       <AnimatePresence>
         {showForm && (
           <Suspense fallback={<DrawerLazyFallback />}>
-            <ThamHoiCaNhanForm initialData={editing} onClose={handleCloseForm} />
+            <ThamHoiCaNhanForm
+              initialData={editing}
+              defaultDipId={formPrefill.dipId}
+              onClose={handleCloseForm}
+            />
           </Suspense>
         )}
       </AnimatePresence>

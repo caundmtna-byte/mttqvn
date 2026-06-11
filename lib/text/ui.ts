@@ -391,6 +391,8 @@ export const ui = {
     "danTocTonGiaoDashboard": {
       "groupThamHoi": "Thăm hỏi",
       "groupThongTin": "Thông tin",
+      "dipThamHoi": "Dịp thăm hỏi",
+      "dipThamHoiDesc": "Quản lý các dịp thăm hỏi và theo dõi tiến độ thăm hỏi tổ chức, cá nhân.",
       "thamHoiToChuc": "Thăm hỏi tổ chức",
       "thamHoiToChucDesc": "Ghi nhận và theo dõi các lượt thăm hỏi tổ chức dân tộc, tôn giáo.",
       "thamHoiCaNhan": "Thăm hỏi cá nhân",
@@ -401,6 +403,8 @@ export const ui = {
       "thongTinToChucQuanTrongDesc": "Danh mục và hồ sơ các tổ chức tôn giáo.",
       "thongTinCaNhanTieuBieu": "Thông tin cá nhân tiêu biểu",
       "thongTinCaNhanTieuBieuDesc": "Danh sách cá nhân tiêu biểu trong cộng đồng dân tộc, tôn giáo.",
+      "thongKeToChucCaNhan": "Thống kê tổ chức, cá nhân",
+      "thongKeToChucCaNhanDesc": "Tổng hợp thống kê hồ sơ tổ chức tôn giáo và cá nhân tiêu biểu.",
       "backToParent": "Quay lại Dân tộc, tôn giáo"
     },
     "matTranThietLap": {

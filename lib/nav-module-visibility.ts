@@ -62,9 +62,11 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
     return [
       'danTocCaNhanTieuBieu',
       'danTocToChucQuanTrong',
+      'danTocDipThamHoi',
       'danTocThamHoiToChuc',
       'danTocThamHoiCaNhan',
       'danTocThamHoiThongKe',
+      'danTocThongKeToChucCaNhan',
     ];
   }
   return null; // `/`, `/thong-tin-ban-quyen` → luôn hiện

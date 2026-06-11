@@ -5,15 +5,18 @@ import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import type { ThamHoiToChucFormValues } from '../core/schema';
+import type { TienDoThamHoi } from '../core/constants';
 import type { ThamHoiToChuc } from '../core/types';
 import {
   createThamHoiToChuc,
   deleteThamHoiToChucMany,
   getThamHoiToChucById,
   getThamHoiToChucByToChucId,
+  getThamHoiToChucByDipId,
   getThamHoiToChucList,
   importThamHoiToChuc,
   updateThamHoiToChuc,
+  updateThamHoiToChucTienDo,
 } from '../services/tham-hoi-to-chuc-service';
 
 const listKey = queryKeys.danTocThamHoiToChuc.all;
@@ -47,6 +50,16 @@ export function useThamHoiToChucByToChucId(toChucId: string | null, options?: { 
   });
 }
 
+export function useThamHoiToChucByDipId(dipId: string | null, options?: { enabled?: boolean }) {
+  const enabled = Boolean(dipId?.trim()) && (options?.enabled !== false);
+  return useQuery({
+    queryKey: queryKeys.danTocThamHoiToChuc.byDip(dipId?.trim() ?? '__'),
+    queryFn: () => getThamHoiToChucByDipId(dipId!.trim()),
+    enabled,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
 export function useCreateThamHoiToChuc(onSuccess?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -61,6 +74,12 @@ export function useCreateThamHoiToChuc(onSuccess?: () => void) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.danTocThamHoiToChuc.byToChuc(created.to_chuc_id),
       });
+      if (created.dip_tham_hoi_id) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.danTocThamHoiToChuc.byDip(created.dip_tham_hoi_id),
+        });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.danTocDipThamHoi.all });
+      }
       toast.success(txt('danTocThamHoiToChuc.toast.create'));
       onSuccess?.();
     },
@@ -81,7 +100,43 @@ export function useUpdateThamHoiToChuc(onSuccess?: () => void) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.danTocThamHoiToChuc.byToChuc(updated.to_chuc_id),
       });
+      if (updated.dip_tham_hoi_id) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.danTocThamHoiToChuc.byDip(updated.dip_tham_hoi_id),
+        });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.danTocDipThamHoi.all });
+      }
       toast.success(txt('danTocThamHoiToChuc.toast.update'));
+      onSuccess?.();
+    },
+    onError: (e: unknown) => toast.error(getErrorMessage(e)),
+  });
+}
+
+export function useUpdateThamHoiToChucTienDo(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      tienDo,
+      thoiGianThucTe,
+    }: {
+      id: string;
+      tienDo: TienDoThamHoi;
+      thoiGianThucTe?: string | null;
+    }) => updateThamHoiToChucTienDo(id, tienDo, thoiGianThucTe),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<ThamHoiToChuc[]>(listKey, (old) =>
+        old?.map((r) => (r.id === updated.id ? updated : r)),
+      );
+      queryClient.setQueryData(queryKeys.danTocThamHoiToChuc.detail(updated.id), updated);
+      if (updated.dip_tham_hoi_id) {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.danTocThamHoiToChuc.byDip(updated.dip_tham_hoi_id),
+        });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.danTocDipThamHoi.all });
+      }
+      toast.success(txt('danTocThamHoiToChuc.toast.changeStatus'));
       onSuccess?.();
     },
     onError: (e: unknown) => toast.error(getErrorMessage(e)),

@@ -1,45 +1,36 @@
 import { useEffect, useState } from 'react';
 import {
-  avatarsObjectPathFromStored,
-  createSignedAvatarUrl,
-} from '@/features/he-thong/nhan-vien/services/avatar-storage';
+  resolveImageDisplaySrcSync,
+  resolveLegacySupabaseAvatarSrc,
+  isLegacySupabaseAvatarPath,
+} from '@/lib/cloudinary/resolve-image-display-src';
 
 /**
- * Chuỗi dùng cho `<img src>`: data URL, URL ngoài, hoặc signed URL từ path Storage (bucket private).
+ * Chuỗi dùng cho `<img src>`: Cloudinary/https, legacy Supabase signed URL, hoặc data URL (mock).
  */
 export function useSignedEmployeeAvatarSrc(stored: string | null | undefined): string {
-  const [src, setSrc] = useState('');
+  const syncSrc = resolveImageDisplaySrcSync(stored);
+  const [legacySrc, setLegacySrc] = useState('');
 
   useEffect(() => {
-    const s = stored?.trim() ?? '';
-    if (!s) {
-      setSrc('');
+    if (syncSrc) {
+      setLegacySrc('');
       return;
     }
-    if (s.startsWith('data:image/')) {
-      setSrc(s);
-      return;
-    }
-    if (s.startsWith('http') && !s.includes('.supabase.co')) {
-      setSrc(s);
-      return;
-    }
-
-    const path = avatarsObjectPathFromStored(s);
-    if (!path) {
-      setSrc('');
+    if (!isLegacySupabaseAvatarPath(stored)) {
+      setLegacySrc('');
       return;
     }
 
     let cancelled = false;
     void (async () => {
-      const signed = await createSignedAvatarUrl(path);
-      if (!cancelled) setSrc(signed ?? '');
+      const signed = await resolveLegacySupabaseAvatarSrc(stored);
+      if (!cancelled) setLegacySrc(signed);
     })();
     return () => {
       cancelled = true;
     };
-  }, [stored]);
+  }, [stored, syncSrc]);
 
-  return src;
+  return syncSrc || legacySrc;
 }

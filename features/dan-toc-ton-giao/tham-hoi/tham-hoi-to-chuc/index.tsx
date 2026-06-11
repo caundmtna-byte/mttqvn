@@ -8,7 +8,7 @@ import React, {
   Suspense,
   startTransition,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,7 +35,8 @@ import {
 } from './hooks/use-tham-hoi-to-chuc';
 import { useThamHoiToChucStore } from './store/useThamHoiToChucStore';
 import type { ThamHoiToChuc } from './core/types';
-import { THAM_HOI_TO_CHUC_SEARCHABLE_KEYS } from './utils/search-keys';
+import { formatDonViThamHoiDisplay } from './core/display-don-vi';
+import { THAM_HOI_TO_CHUC_SEARCHABLE_KEYS, thamHoiToChucSearchRecord } from './utils/search-keys';
 import {
   countThamHoiToChucColumnSearchActive,
   thamHoiToChucMatchesColumnSearch,
@@ -59,8 +60,13 @@ const DrawerLazyFallback: React.FC = () => (
   </div>
 );
 
+interface FormPrefill {
+  dipId?: string;
+}
+
 const ThamHoiToChucPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
@@ -90,6 +96,7 @@ const ThamHoiToChucPage: React.FC = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ThamHoiToChuc | null>(null);
+  const [formPrefill, setFormPrefill] = useState<FormPrefill>({});
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -105,6 +112,7 @@ const ThamHoiToChucPage: React.FC = () => {
     selectedIds,
     pagination,
     columns,
+    setFilter,
   } = useThamHoiToChucStore();
 
   const {
@@ -125,16 +133,17 @@ const ThamHoiToChucPage: React.FC = () => {
   }, [resetState]);
 
   const filterFn = useCallback((item: ThamHoiToChuc, term: string, f: typeof filters) => {
-    const matchesSearch = matchesSearchTerm(
-      item as unknown as Record<string, unknown>,
-      term,
-      [...THAM_HOI_TO_CHUC_SEARCHABLE_KEYS],
-    );
+    const searchRecord = thamHoiToChucSearchRecord(item);
+    const matchesSearch = matchesSearchTerm(searchRecord, term, [...THAM_HOI_TO_CHUC_SEARCHABLE_KEYS]);
     if (!thamHoiToChucMatchesColumnSearch(item, f.columnSearch)) return false;
     if (f.tien_do_filter.length > 0 && !f.tien_do_filter.includes(item.tien_do)) return false;
     if (f.to_chuc_filter.length > 0) {
       const tc = item.to_chuc_id?.trim();
       if (!tc || !f.to_chuc_filter.includes(tc)) return false;
+    }
+    if (f.dip_tham_hoi_filter.length > 0) {
+      const dipId = item.dip_tham_hoi_id?.trim();
+      if (!dipId || !f.dip_tham_hoi_filter.includes(dipId)) return false;
     }
     return matchesSearch;
   }, []);
@@ -147,7 +156,7 @@ const ThamHoiToChucPage: React.FC = () => {
       { key: 'ten_co_so', label: txt('danTocThamHoiToChuc.store.tenCoSoCol') },
       { key: 'dip_tham_hoi', label: txt('danTocThamHoiToChuc.store.dipThamHoiCol') },
       { key: 'thoi_gian_du_kien', label: txt('danTocThamHoiToChuc.store.thoiGianDuKienCol') },
-      { key: 'don_vi_tham_hoi', label: txt('danTocThamHoiToChuc.store.donViThamHoiCol') },
+      { key: 'ten_don_vi_tham_hoi', label: txt('danTocThamHoiToChuc.store.donViThamHoiCol') },
       { key: 'noi_dung_tham_hoi', label: txt('danTocThamHoiToChuc.store.noiDungCol') },
       { key: 'thanh_phan_doan', label: txt('danTocThamHoiToChuc.store.thanhPhanDoanCol') },
       { key: 'qua_tang', label: txt('danTocThamHoiToChuc.store.quaTangCol') },
@@ -180,7 +189,7 @@ const ThamHoiToChucPage: React.FC = () => {
       ten_co_so: item.ten_co_so ?? '',
       dip_tham_hoi: item.dip_tham_hoi,
       thoi_gian_du_kien: item.thoi_gian_du_kien ?? '',
-      don_vi_tham_hoi: item.don_vi_tham_hoi ?? '',
+      ten_don_vi_tham_hoi: formatDonViThamHoiDisplay(item),
       noi_dung_tham_hoi: item.noi_dung_tham_hoi ?? '',
       thanh_phan_doan: item.thanh_phan_doan ?? '',
       qua_tang: item.qua_tang ?? '',
@@ -213,6 +222,7 @@ const ThamHoiToChucPage: React.FC = () => {
       countThamHoiToChucColumnSearchActive(cs) > 0 ||
       filters.tien_do_filter.length > 0 ||
       filters.to_chuc_filter.length > 0 ||
+      filters.dip_tham_hoi_filter.length > 0 ||
       Boolean(sort.column)
     );
   }, [searchTerm, filters, sort.column]);
@@ -250,6 +260,44 @@ const ThamHoiToChucPage: React.FC = () => {
     },
     [queryClient],
   );
+
+  useEffect(() => {
+    if (!listQueryEnabled || rows.length === 0) return;
+
+    const openId = searchParams.get('open')?.trim();
+    if (openId) {
+      const row = rows.find((r) => r.id === openId);
+      if (row) {
+        handleView(row);
+        const next = new URLSearchParams(searchParams);
+        next.delete('open');
+        setSearchParams(next, { replace: true });
+      }
+      return;
+    }
+
+    const create = searchParams.get('create')?.trim();
+    const dipId = searchParams.get('dipId')?.trim();
+    if (create === '1') {
+      startTransition(() => {
+        setEditing(null);
+        setFormPrefill(dipId ? { dipId } : {});
+        setShowForm(true);
+      });
+      const next = new URLSearchParams(searchParams);
+      next.delete('create');
+      next.delete('dipId');
+      setSearchParams(next, { replace: true });
+      return;
+    }
+
+    if (dipId) {
+      setFilter('dip_tham_hoi_filter', [dipId]);
+      const next = new URLSearchParams(searchParams);
+      next.delete('dipId');
+      setSearchParams(next, { replace: true });
+    }
+  }, [rows, listQueryEnabled, searchParams, setSearchParams, handleView, setFilter]);
 
   const handleEditFromList = (item: ThamHoiToChuc) => {
     startTransition(() => {
@@ -320,6 +368,7 @@ const ThamHoiToChucPage: React.FC = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditing(null);
+    setFormPrefill({});
   };
 
   if (!canView) {
@@ -378,7 +427,11 @@ const ThamHoiToChucPage: React.FC = () => {
       <AnimatePresence>
         {showForm && (
           <Suspense fallback={<DrawerLazyFallback />}>
-            <ThamHoiToChucForm initialData={editing} onClose={handleCloseForm} />
+            <ThamHoiToChucForm
+              initialData={editing}
+              defaultDipId={formPrefill.dipId}
+              onClose={handleCloseForm}
+            />
           </Suspense>
         )}
       </AnimatePresence>

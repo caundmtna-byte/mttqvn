@@ -37,8 +37,10 @@ import { matTranTangLuong } from '../../features/mat-tran-to-quoc/danh-sach-tang
 import { danTocCaNhanTieuBieu } from '../../features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/text';
 import { danTocToChucQuanTrong } from '../../features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/text';
 import { danTocThamHoiToChuc } from '../../features/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc/text';
+import { danTocDipThamHoi } from '../../features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/text';
 import { danTocThamHoiCaNhan } from '../../features/dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan/text';
 import { dttgThongKeThamHoi } from '../../features/dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi/text';
+import { dttgThongKeToChucCaNhan } from '../../features/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan/text';
 import { pbxhThucHien } from '../../features/phan-bien-xa-hoi/thuc-hien-phan-bien-xa-hoi/text';
 import { pbxhThietLap } from '../../features/phan-bien-xa-hoi/thiet-lap-danh-muc/text';
 import { pbxhThongKe } from '../../features/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi/text';
@@ -94,9 +96,11 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('matTranTangLuong', matTranTangLuong),
   ...flatten('danTocCaNhanTieuBieu', danTocCaNhanTieuBieu),
   ...flatten('danTocToChucQuanTrong', danTocToChucQuanTrong),
+  ...flatten('danTocDipThamHoi', danTocDipThamHoi),
   ...flatten('danTocThamHoiToChuc', danTocThamHoiToChuc),
   ...flatten('danTocThamHoiCaNhan', danTocThamHoiCaNhan),
   ...flatten('dttgThongKeThamHoi', dttgThongKeThamHoi),
+  ...flatten('dttgThongKeToChucCaNhan', dttgThongKeToChucCaNhan),
   ...flatten('pbxhThucHien', pbxhThucHien),
   ...flatten('pbxhThietLap', pbxhThietLap),
   ...flatten('pbxhThongKe', pbxhThongKe),

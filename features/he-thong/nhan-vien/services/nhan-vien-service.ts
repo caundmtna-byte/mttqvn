@@ -22,7 +22,11 @@ import {
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { SUPABASE_DEFAULT_MAX_ROWS } from '@/lib/data/supabase-repository';
-import { uploadEmployeeAvatarIfDataUrl } from './avatar-storage';
+import {
+  uploadImageIfDataUrl,
+  avatarCloudinaryFolder,
+  avatarCloudinaryFilename,
+} from '@/lib/cloudinary/upload-image';
 import { getTinhThanhList, getXaPhuongAll } from '../../danh-sach-tinh-thanh/services/dia-ban-service';
 import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import type { XaPhuong } from '../../danh-sach-tinh-thanh/core/types';
@@ -232,6 +236,17 @@ async function fetchLookups() {
   };
 }
 
+async function resolveEmployeeAvatarUrl(
+  hinhAnh: string | null | undefined,
+  employeeId: string,
+): Promise<string | null> {
+  if (hinhAnh == null || hinhAnh === '') return null;
+  return uploadImageIfDataUrl(hinhAnh, {
+    folder: avatarCloudinaryFolder(employeeId),
+    filename: avatarCloudinaryFilename(),
+  });
+}
+
 async function insertEmployeeRow(data: EmployeeFormValues): Promise<Employee> {
   // Bước 1: insert với hinh_anh = null để có id; bước 2: upload avatar (nếu có)
   // và update lại column. Hai bước nhỏ gọn hơn là 1 bước upload trước rồi insert
@@ -246,7 +261,7 @@ async function insertEmployeeRow(data: EmployeeFormValues): Promise<Employee> {
     fetchLookups(),
   ]);
   const insertedId = String((inserted as Employee).id);
-  const url = await uploadEmployeeAvatarIfDataUrl(hinhAnhRaw, insertedId);
+  const url = await resolveEmployeeAvatarUrl(hinhAnhRaw, insertedId);
   if (url !== null) {
     const updated = await repo.update(
       insertedId,
@@ -261,7 +276,7 @@ async function insertEmployeeRow(data: EmployeeFormValues): Promise<Employee> {
 async function updateEmployeeRow(id: string, data: EmployeeFormValues): Promise<Employee> {
   const payload = toRowPayload(data);
   // Nếu là data URL → upload trước, lưu URL vào column.
-  payload.hinh_anh = await uploadEmployeeAvatarIfDataUrl(payload.hinh_anh, id);
+  payload.hinh_anh = await resolveEmployeeAvatarUrl(payload.hinh_anh, id);
   const [updated, lookups] = await Promise.all([
     repo.update(
       id,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Megaphone, Calendar, Clock, FileText, Building2, Users, Link2, Percent, ListChecks } from 'lucide-react';
+import { Edit, Trash2, Megaphone, Calendar, Clock, FileText, Building2, Users, Link2, Percent, ListChecks, CheckCircle2, ClipboardList } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
@@ -14,6 +14,7 @@ import EnumBadge from '@/components/ui/EnumBadge';
 import type { ThucHienPhanBien } from '../core/types';
 import { loaiHinhBadge, tinhTrangBadge } from '../core/display-badges';
 import { tinhTienDo } from '../core/display-tien-do';
+import { formatTenDonViThucHien } from '../utils/display-don-vi-thuc-hien';
 
 interface Props {
   data: ThucHienPhanBien;
@@ -114,6 +115,16 @@ const ThucHienPhanBienDetail: React.FC<Props> = ({ data, onClose, onEdit, onDele
             <DetailField label={txt('pbxhThucHien.store.hinhThucCol')} value={data.ten_hinh_thuc ?? ''} icon={<ListChecks size={12} />} emptyText="—" />
             <DetailField label={txt('pbxhThucHien.store.tienDoCol')} value={tienDoLabel} icon={<Clock size={12} />} />
             <DetailField
+              label={txt('pbxhThucHien.store.soLanHoanThanhCol')}
+              value={String(data.so_lan_hoan_thanh)}
+              icon={<CheckCircle2 size={12} />}
+            />
+            <DetailField
+              label={txt('pbxhThucHien.store.soLanKhaoSatCol')}
+              value={String(data.so_lan_khao_sat)}
+              icon={<ClipboardList size={12} />}
+            />
+            <DetailField
               label={txt('pbxhThucHien.store.phanTramCol')}
               value={`${data.phan_tram_hoan_thanh}%`}
               icon={<Percent size={12} />}
@@ -148,7 +159,11 @@ const ThucHienPhanBienDetail: React.FC<Props> = ({ data, onClose, onEdit, onDele
           <DetailFieldGrid>
             <DetailField label={txt('pbxhThucHien.store.donViChuTriCol')} value={data.ten_don_vi_chu_tri ?? ''} icon={<Building2 size={12} />} emptyText="—" />
             <DetailField label={txt('pbxhThucHien.store.phongBanCol')} value={data.ten_phong_ban ?? ''} icon={<Users size={12} />} emptyText="—" />
-            <DetailField label={txt('pbxhThucHien.store.donViThucHienCol')} value={data.ten_don_vi_thuc_hien ?? ''} icon={<Building2 size={12} />} emptyText="—" />
+            <DetailField
+              label={txt('pbxhThucHien.store.donViThucHienCol')}
+              value={formatTenDonViThucHien(data)}
+              icon={<Building2 size={12} />}
+            />
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('pbxhThucHien.store.ketQuaCol')}

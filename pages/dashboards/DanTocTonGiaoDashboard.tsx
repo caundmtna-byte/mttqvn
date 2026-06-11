@@ -7,6 +7,7 @@ import {
   Star,
   MessageSquareHeart,
   BarChart3,
+  CalendarRange,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -29,6 +30,13 @@ const DanTocTonGiaoDashboard: React.FC = () => {
       {
         groupTitle: txt('page.danTocTonGiaoDashboard.groupThamHoi'),
         items: [
+          {
+            path: '/dan-toc-ton-giao/tham-hoi/dip-tham-hoi',
+            title: txt('page.danTocTonGiaoDashboard.dipThamHoi'),
+            description: txt('page.danTocTonGiaoDashboard.dipThamHoiDesc'),
+            icon: CalendarRange,
+            color: 'bg-indigo-500',
+          },
           {
             path: '/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc',
             title: txt('page.danTocTonGiaoDashboard.thamHoiToChuc'),
@@ -68,6 +76,13 @@ const DanTocTonGiaoDashboard: React.FC = () => {
             description: txt('page.danTocTonGiaoDashboard.thongTinCaNhanTieuBieuDesc'),
             icon: MessageSquareHeart,
             color: 'bg-rose-500',
+          },
+          {
+            path: '/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan',
+            title: txt('page.danTocTonGiaoDashboard.thongKeToChucCaNhan'),
+            description: txt('page.danTocTonGiaoDashboard.thongKeToChucCaNhanDesc'),
+            icon: BarChart3,
+            color: 'bg-violet-500',
           },
         ],
       },

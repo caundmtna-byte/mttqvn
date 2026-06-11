@@ -8,7 +8,10 @@ export const company = {
   upload: 'Tải lên',
   dragDrop: 'Kéo thả',
   capture: 'Chụp',
-  imageHint: 'Hỗ trợ PNG, JPG, WebP. Tối đa 2MB. Có thể dùng URL logo (ví dụ Quốc huy) đã lưu trong cấu hình.',
+  imageHint: 'Hỗ trợ PNG, JPG, WebP. Tối đa 2MB. Hoặc dán URL ảnh công khai bên dưới.',
+  logoUrl: 'URL logo',
+  logoUrlPlaceholder: 'https://…/logo.png',
+  logoUrlHint: 'Dùng link ảnh online (CDN, Cloudinary) thay cho tải file. Logo dùng cho sidebar, favicon và PWA.',
   appName: 'Tên ứng dụng',
   appNamePlaceholder: 'Ví dụ: MTTQVN',
   appNameHint: 'Hiển thị trên thanh bên và tiêu đề trình duyệt.',
@@ -35,5 +38,6 @@ export const company = {
     appDescMax: 'Mô tả ngắn không được quá 30 ký tự',
     companyNameMin: 'Tên tổ chức là bắt buộc',
     emailInvalid: 'Email không hợp lệ',
+    logoUrlInvalid: 'URL logo không hợp lệ',
   },
 } as const;

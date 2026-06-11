@@ -28,6 +28,8 @@ export interface ThucHienPhanBien {
   don_vi_thuc_hien_id: string | null;
   ten_don_vi_thuc_hien: string | null;
   ket_qua_kien_nghi: string | null;
+  so_lan_hoan_thanh: number;
+  so_lan_khao_sat: number;
   phan_tram_hoan_thanh: number;
   link_ket_qua: string | null;
   id_nguoi_tao: string;

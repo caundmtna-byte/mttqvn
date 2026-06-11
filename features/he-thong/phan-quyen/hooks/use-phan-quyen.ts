@@ -16,6 +16,7 @@ export const useRoles = (options?: { enabled?: boolean }) => {
     queryFn: getRoles,
     enabled: options?.enabled !== false,
     ...masterDataQueryOptions,
+    refetchOnMount: true,
   });
 };
 
@@ -63,8 +64,8 @@ export const useUpdateModulePermissions = () => {
       moduleId: string;
       updates: { roleId: string; actions: ActionType[] }[];
     }) => updateModulePermissions(moduleId, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: rolesQueryKey });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: rolesQueryKey });
       queryClient.invalidateQueries({ queryKey: ['permission-grants'] });
       toast.success(txt('permission.toast.updateSuccess'));
     },

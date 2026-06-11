@@ -3,13 +3,17 @@ import { ImagePlus, X, Plus, Loader2, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactDOM from 'react-dom';
 import { cn } from '../../lib/utils';
+import { isSupabase } from '@/lib/data/config';
+import {
+  uploadImageFromFile,
+  CLOUDINARY_FOLDERS,
+  avatarCloudinaryFilename,
+} from '@/lib/cloudinary/upload-image';
 
 export interface ImageItem {
   id: string;
-  /** base64 hoặc URL */
+  /** HTTPS URL (Cloudinary) hoặc data URL (mock) */
   src: string;
-  /** File gốc (nếu vừa upload, chưa lưu server) */
-  file?: File;
   name?: string;
 }
 
@@ -31,6 +35,8 @@ export interface MultiImageInputProps {
   aspectRatio?: string;
   className?: string;
   disabled?: boolean;
+  /** Folder Cloudinary — mặc định `mttqvn/uploads` */
+  cloudinaryFolder?: string;
 }
 
 /** Tạo unique id đơn giản (không cần nanoid) */
@@ -52,6 +58,7 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
   aspectRatio = '1/1',
   className,
   disabled = false,
+  cloudinaryFolder = CLOUDINARY_FOLDERS.uploads,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
@@ -71,7 +78,7 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
         ? 'grid-cols-2 sm:grid-cols-3'
         : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
 
-  const processFiles = useCallback((files: FileList | File[]) => {
+  const processFiles = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     const errors: string[] = [];
     const validFiles: File[] = [];
@@ -88,7 +95,6 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
       validFiles.push(file);
     }
 
-    // Cắt nếu vượt maxFiles
     const canAdd = maxFiles - value.length;
     if (validFiles.length > canAdd) {
       errors.push(`Chỉ thêm được ${canAdd} ảnh nữa`);
@@ -99,35 +105,41 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
     if (validFiles.length === 0) return;
 
     setLoadingCount((c) => c + validFiles.length);
-
+    const useCloudinary = isSupabase();
     const newItems: ImageItem[] = [];
-    let processed = 0;
 
-    validFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newItems.push({
-          id: uid(),
-          src: reader.result as string,
-          file,
-          name: file.name,
-        });
-        processed++;
-        if (processed === validFiles.length) {
-          onChange([...value, ...newItems]);
-          setLoadingCount((c) => c - validFiles.length);
+    await Promise.all(
+      validFiles.map(async (file) => {
+        try {
+          let src: string;
+          if (useCloudinary) {
+            src = await uploadImageFromFile(file, {
+              folder: cloudinaryFolder,
+              filename: `${avatarCloudinaryFilename()}-${uid()}`,
+            });
+          } else {
+            src = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = () => reject(new Error('Không thể đọc file'));
+              reader.readAsDataURL(file);
+            });
+          }
+          newItems.push({ id: uid(), src, name: file.name });
+        } catch (e) {
+          errors.push(
+            e instanceof Error ? e.message : `Upload "${file.name}" thất bại`,
+          );
         }
-      };
-      reader.onerror = () => {
-        processed++;
-        if (processed === validFiles.length) {
-          onChange([...value, ...newItems]);
-          setLoadingCount((c) => c - validFiles.length);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }, [maxSizeMB, maxFiles, value, onChange]);
+      }),
+    );
+
+    setFileErrors(errors);
+    if (newItems.length > 0) {
+      onChange([...value, ...newItems]);
+    }
+    setLoadingCount((c) => c - validFiles.length);
+  }, [maxSizeMB, maxFiles, value, onChange, cloudinaryFolder]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

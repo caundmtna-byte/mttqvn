@@ -7,6 +7,7 @@ export interface ThamHoiCaNhanFilters {
   phong_ban_filter: string[];
   don_vi_tham_hoi_filter: string[];
   xa_phuong_filter: string[];
+  dip_tham_hoi_filter: string[];
 }
 
 export interface ThamHoiCaNhan {
@@ -17,9 +18,12 @@ export interface ThamHoiCaNhan {
   chuc_vu_vi_tri: string | null;
   phong_ban_tham_muu_id: string | null;
   ten_phong_ban: string | null;
+  dip_tham_hoi_id: string;
   dip_tham_hoi: string;
+  ten_dip_tham_hoi: string | null;
   /** ISO date YYYY-MM-DD (ngày đầu tháng) */
   thoi_gian_du_kien: string | null;
+  thoi_gian_thuc_te: string | null;
   don_vi_tham_hoi_id: string | null;
   ten_don_vi_tham_hoi: string | null;
   qua_tang: string | null;

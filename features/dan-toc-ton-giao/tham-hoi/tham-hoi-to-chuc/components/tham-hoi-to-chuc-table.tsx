@@ -9,6 +9,7 @@ import { formatDateTimeShort } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { tienDoThamHoiBadge } from '../core/display-badges';
+import { formatDonViThamHoiDisplay } from '../core/display-don-vi';
 import { ThamHoiToChucTableRowActions } from './tham-hoi-to-chuc-table-row-actions';
 
 interface Props {
@@ -102,12 +103,14 @@ const ThamHoiToChucTable = memo(function ThamHoiToChucTable({
               {item.thoi_gian_du_kien ?? txt('common.emptyCell')}
             </span>
           );
-        case 'don_vi_tham_hoi':
+        case 'don_vi_tham_hoi': {
+          const label = formatDonViThamHoiDisplay(item);
           return (
-            <span className="text-body-sm text-muted-foreground truncate" title={item.don_vi_tham_hoi ?? undefined}>
-              {item.don_vi_tham_hoi ?? txt('common.emptyCell')}
+            <span className="text-body-sm text-muted-foreground truncate" title={label}>
+              {label}
             </span>
           );
+        }
         case 'tien_do':
           return item.tien_do?.trim() ? (
             <EnumBadge value={item.tien_do.trim()} config={tienDoThamHoiBadge} shape="pill" truncate />
@@ -181,7 +184,7 @@ const ThamHoiToChucTable = memo(function ThamHoiToChucTable({
         </div>
         <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
           {item.thoi_gian_du_kien ? <span>{item.thoi_gian_du_kien}</span> : null}
-          {item.don_vi_tham_hoi ? <span>· {item.don_vi_tham_hoi}</span> : null}
+          <span>· {formatDonViThamHoiDisplay(item)}</span>
         </div>
         <div className="flex justify-end">
           <ThamHoiToChucTableRowActions

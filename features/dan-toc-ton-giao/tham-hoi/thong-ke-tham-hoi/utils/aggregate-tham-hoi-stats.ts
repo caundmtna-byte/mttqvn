@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import type { ThamHoiToChuc } from '../../tham-hoi-to-chuc/core/types';
+import { formatDonViThamHoiDisplay as formatDonViThamHoiToChucDisplay } from '../../tham-hoi-to-chuc/core/display-don-vi';
 import { TIEN_DO_VALUES } from '../../tham-hoi-to-chuc/core/constants';
 import type { ThamHoiCaNhan } from '../../tham-hoi-ca-nhan/core/types';
 import { formatDonViThamHoiDisplay } from '../../tham-hoi-ca-nhan/core/display-don-vi';
@@ -20,10 +21,12 @@ export interface ThamHoiThongKeRow {
   loai: ThamHoiThongKeLoai;
   ten_doi_tuong: string | null;
   loai_hinh: string | null;
+  dip_tham_hoi_id: string | null;
   dip_tham_hoi: string;
   don_vi_tham_hoi: string | null;
   tinh_trang: TinhTrangThamHoi;
   thoi_gian_du_kien: string | null;
+  thoi_gian_thuc_te: string | null;
   tg_tao: string;
 }
 
@@ -79,12 +82,14 @@ function normalizeToChucRow(row: ThamHoiToChuc): ThamHoiThongKeRow {
     loai: 'to_chuc',
     ten_doi_tuong: row.ten_co_so?.trim() || null,
     loai_hinh: row.loai_hinh?.trim() || null,
-    dip_tham_hoi: row.dip_tham_hoi?.trim() || '—',
-    don_vi_tham_hoi: row.don_vi_tham_hoi?.trim() || null,
+    dip_tham_hoi_id: row.dip_tham_hoi_id?.trim() || null,
+    dip_tham_hoi: row.dip_tham_hoi?.trim() || row.ten_dip_tham_hoi?.trim() || '—',
+    don_vi_tham_hoi: formatDonViThamHoiToChucDisplay(row),
     tinh_trang: (TINH_TRANG_THAM_HOI_VALUES.includes(row.tien_do as TinhTrangThamHoi)
       ? row.tien_do
       : 'Chưa thực hiện') as TinhTrangThamHoi,
     thoi_gian_du_kien: row.thoi_gian_du_kien?.trim() || null,
+    thoi_gian_thuc_te: row.thoi_gian_thuc_te?.trim() || null,
     tg_tao: row.tg_tao,
   };
 }
@@ -95,12 +100,14 @@ function normalizeCaNhanRow(row: ThamHoiCaNhan): ThamHoiThongKeRow {
     loai: 'ca_nhan',
     ten_doi_tuong: row.ho_va_ten?.trim() || null,
     loai_hinh: null,
-    dip_tham_hoi: row.dip_tham_hoi?.trim() || '—',
+    dip_tham_hoi_id: row.dip_tham_hoi_id?.trim() || null,
+    dip_tham_hoi: row.dip_tham_hoi?.trim() || row.ten_dip_tham_hoi?.trim() || '—',
     don_vi_tham_hoi: formatDonViThamHoiDisplay(row),
     tinh_trang: (TINH_TRANG_THAM_HOI_VALUES.includes(row.trang_thai as TinhTrangThamHoi)
       ? row.trang_thai
       : 'Chưa thực hiện') as TinhTrangThamHoi,
     thoi_gian_du_kien: row.thoi_gian_du_kien?.trim() || null,
+    thoi_gian_thuc_te: row.thoi_gian_thuc_te?.trim() || null,
     tg_tao: row.tg_tao,
   };
 }
@@ -127,7 +134,10 @@ export function filterRowsForThamHoiThongKe(
     }
     if (dims.loai.length > 0 && !dims.loai.includes(row.loai)) return false;
     if (dims.tinh_trang.length > 0 && !dims.tinh_trang.includes(row.tinh_trang)) return false;
-    if (dims.dip_tham_hoi.length > 0 && !dims.dip_tham_hoi.includes(row.dip_tham_hoi)) return false;
+    if (dims.dip_tham_hoi.length > 0) {
+      const dipKey = row.dip_tham_hoi_id ?? row.dip_tham_hoi;
+      if (!dims.dip_tham_hoi.includes(dipKey)) return false;
+    }
     return true;
   });
 }
@@ -277,6 +287,7 @@ export type ThamHoiLookupSortKey =
   | 'don_vi_tham_hoi'
   | 'tinh_trang'
   | 'thoi_gian_du_kien'
+  | 'thoi_gian_thuc_te'
   | 'tg_tao';
 
 export function sortLookupRows(
@@ -304,6 +315,9 @@ export function sortLookupRows(
         break;
       case 'thoi_gian_du_kien':
         cmp = String(a.thoi_gian_du_kien ?? '').localeCompare(String(b.thoi_gian_du_kien ?? ''), getLanguage());
+        break;
+      case 'thoi_gian_thuc_te':
+        cmp = String(a.thoi_gian_thuc_te ?? '').localeCompare(String(b.thoi_gian_thuc_te ?? ''), getLanguage());
         break;
       case 'tg_tao':
         cmp = a.tg_tao.localeCompare(b.tg_tao, getLanguage());

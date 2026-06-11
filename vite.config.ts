@@ -52,6 +52,7 @@ export default defineConfig(() => {
         VitePWA({
           registerType: 'autoUpdate',
           includeAssets: ['favicon.svg'],
+          // Manifest build-time chỉ là fallback trước React; runtime dùng blob từ MetadataSynchronizer / index.html bootstrap.
           manifest: {
             name: DEFAULT_BRANDING_APP_NAME,
             short_name: DEFAULT_BRANDING_APP_NAME.slice(0, 12),
@@ -106,6 +107,15 @@ export default defineConfig(() => {
                 options: {
                   cacheName: 'supabase-storage-public-cache',
                   expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+                  cacheableResponse: { statuses: [0, 200] },
+                },
+              },
+              {
+                urlPattern: ({ url }) => url.hostname.includes('res.cloudinary.com'),
+                handler: 'CacheFirst',
+                options: {
+                  cacheName: 'cloudinary-images-cache',
+                  expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 },
                   cacheableResponse: { statuses: [0, 200] },
                 },
               },

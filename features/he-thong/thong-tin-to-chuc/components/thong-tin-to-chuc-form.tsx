@@ -1,20 +1,20 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { txt } from '../../../../lib/text';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import {
-  Save, Building2, MapPin, Phone, Mail, Globe, Image as ImageIcon, X, Camera,
+  Save, Building2, MapPin, Phone, Mail, Globe, Image as ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Button from '../../../../components/ui/Button';
 import Input from '../../../../components/ui/Input';
+import SingleImageInput from '../../../../components/ui/SingleImageInput';
 import { companySchema } from '../core/schema';
 import type { CompanyFormValues } from '../core/types';
 import { useCan } from '@/hooks/use-can';
-import { cn } from '@/lib/utils';
-
-const LOGO_MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+import { validateHttpLogoUrl, LOGO_PUBLIC_ID } from '@/lib/cloudinary/upload-logo';
+import { CLOUDINARY_FOLDERS } from '@/lib/cloudinary/upload-image';
 
 export interface ThongTinToChucFormProps {
   initialValues: CompanyFormValues & { appLogo?: string | null };
@@ -23,9 +23,11 @@ export interface ThongTinToChucFormProps {
 
 const ThongTinToChucForm: React.FC<ThongTinToChucFormProps> = ({ initialValues, onSubmit }) => {
   const canEdit = useCan('edit', 'company');
-  const [logoPreview, setLogoPreview] = useState<string | null>(initialValues.appLogo ?? null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const initialLogo = initialValues.appLogo ?? null;
+  const [logoPreview, setLogoPreview] = useState<string | null>(initialLogo);
+  const [logoUrlInput, setLogoUrlInput] = useState(
+    initialLogo?.startsWith('http') ? initialLogo : '',
+  );
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CompanyFormValues>({
     resolver: zodResolver(companySchema),
@@ -40,56 +42,33 @@ const ThongTinToChucForm: React.FC<ThongTinToChucFormProps> = ({ initialValues, 
     },
   });
 
-  const processFile = useCallback(
-    (file: File) => {
-      if (!file.type.startsWith('image/')) {
-        toast.error(txt('company.imageTypeError'));
-        return;
-      }
-      if (file.size > LOGO_MAX_SIZE_BYTES) {
-        toast.error(txt('company.imageSizeError'));
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => setLogoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    },
-    []
-  );
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-  };
-
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-      const file = e.dataTransfer.files?.[0];
-      if (file) processFile(file);
-    },
-    [processFile]
-  );
-
-  const removeLogo = () => {
-    setLogoPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const applyLogoUrl = () => {
+    const trimmed = logoUrlInput.trim();
+    if (!trimmed) {
+      setLogoPreview(null);
+      return;
+    }
+    const urlError = validateHttpLogoUrl(trimmed);
+    if (urlError) {
+      toast.error(urlError);
+      return;
+    }
+    setLogoPreview(trimmed);
   };
 
   const onFormSubmit = async (data: CompanyFormValues) => {
     if (!canEdit) return;
-    await onSubmit({ ...data, appLogo: logoPreview });
+    let appLogo = logoPreview;
+    const trimmedUrl = logoUrlInput.trim();
+    if (trimmedUrl) {
+      const urlError = validateHttpLogoUrl(trimmedUrl);
+      if (urlError) {
+        toast.error(urlError);
+        return;
+      }
+      appLogo = trimmedUrl;
+    }
+    await onSubmit({ ...data, appLogo });
   };
 
   return (
@@ -106,76 +85,38 @@ const ThongTinToChucForm: React.FC<ThongTinToChucFormProps> = ({ initialValues, 
           </h3>
 
           <div className="space-y-4">
-            <div
-              role="button"
-              tabIndex={canEdit ? 0 : -1}
-              onDragOver={canEdit ? onDragOver : undefined}
-              onDragLeave={canEdit ? onDragLeave : undefined}
-              onDrop={canEdit ? onDrop : undefined}
-              onClick={() => canEdit && fileInputRef.current?.click()}
-              onKeyDown={(e) => {
-                if (!canEdit) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
+            <SingleImageInput
+              value={logoPreview}
+              onChange={(v) => {
+                setLogoPreview(v);
+                if (v) setLogoUrlInput('');
               }}
-              className={cn(
-                'flex flex-col items-center justify-center gap-4 p-6 border-2 border-dashed rounded-xl relative group transition-all',
-                canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-70',
-                isDragging && canEdit
-                  ? 'bg-primary/5 border-primary scale-[1.02]'
-                  : 'bg-muted/50 border-border hover:border-primary/50 hover:bg-muted/80',
-              )}
-            >
-              {logoPreview ? (
-                <div className="relative group/preview" role="presentation" onClick={(e) => e.stopPropagation()}>
-                  <img src={logoPreview} alt="App Logo" className="h-24 w-24 object-contain" loading="lazy" />
-                  <button
-                    type="button"
-                    onClick={removeLogo}
-                    disabled={!canEdit}
-                    className="absolute -top-3 -right-3 bg-card rounded-full p-1 shadow-md border border-border text-muted-foreground hover:text-red-500 hover:scale-110 transition-all disabled:opacity-40"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className={`h-24 w-24 rounded-full flex items-center justify-center transition-colors ${
-                    isDragging ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  <ImageIcon size={32} />
-                </div>
-              )}
+              cloudinaryFolder={CLOUDINARY_FOLDERS.branding}
+              cloudinaryPublicId={LOGO_PUBLIC_ID}
+              shape="rounded"
+              aspectRatio="1/1"
+              placeholder={txt('company.upload')}
+              hint={txt('company.imageHint')}
+              maxSizeMB={2}
+              disabled={!canEdit}
+            />
 
-              <div className="text-center space-y-1">
-                <div className="flex items-center justify-center gap-2 text-sm font-medium text-foreground flex-wrap">
-                  {isDragging ? (
-                    <span className="text-primary">{txt('company.dropImage')}</span>
-                  ) : (
-                    <>
-                      <span>{txt('company.upload')}</span>
-                      <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                      <span>{txt('company.dragDrop')}</span>
-                      <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                      <span className="flex items-center gap-1">
-                        <Camera size={12} /> {txt('company.capture')}
-                      </span>
-                    </>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground px-4">{txt('company.imageHint')}</p>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileSelect}
+            <div className="space-y-1">
+              <Input
+                label={txt('company.logoUrl')}
+                placeholder={txt('company.logoUrlPlaceholder')}
+                icon={<Globe className="w-4 h-4 text-muted-foreground" />}
+                value={logoUrlInput}
+                onChange={(e) => setLogoUrlInput(e.target.value)}
+                onBlur={applyLogoUrl}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyLogoUrl();
+                  }
+                }}
               />
+              <p className="text-xs text-muted-foreground italic">{txt('company.logoUrlHint')}</p>
             </div>
 
             <div className="space-y-3 pt-2">

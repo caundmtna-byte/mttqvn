@@ -62,16 +62,19 @@ return await repo.update(id, payload);
 Mutation đã có một `getById` ngay sau đó (vd `khen-thuong`, `tap-huan`)
 phải narrow `returningSelect` còn `'id,tg_cap_nhat'` hoặc `'id'`.
 
-### 5. Avatar/file: Storage private + path trong DB + signed URL khi xem
+### 5. Avatar/file: Cloudinary URL (upload mới) — legacy Supabase path vẫn hiển thị qua signed URL
 
-KHÔNG lưu base64 `data:image/...` trong cột `var_nhan_vien.hinh_anh`. Dùng:
+KHÔNG lưu base64 `data:image/...` trong cột `var_nhan_vien.hinh_anh`. Upload mới:
 
-- Bucket `avatars` **private** (`public = false`); SELECT cho role `authenticated`;
-  INSERT/UPDATE/DELETE cho user đã đăng nhập (migration `20260608130000_avatars_private_bucket.sql`).
-- Cột `hinh_anh` lưu **path** trong bucket, vd `nhan-vien/{id}/{ts}.jpg` (không lưu URL public).
-- `uploadEmployeeAvatarIfDataUrl()` upload rồi trả path; UI dùng
-  `createSignedUrl` / hook `useSignedEmployeeAvatarSrc` để `<img src>`.
-- Migration một lần: `scripts/migrate-avatars-to-storage.ts` (dry-run trước).
+- `SingleImageInput` / form avatar upload lên **Cloudinary** (`mttqvn/avatars/{id}/…`) ngay khi chọn file.
+- Cột `hinh_anh` lưu **HTTPS URL** (`https://res.cloudinary.com/...`).
+- Service `resolveEmployeeAvatarUrl()` vẫn gọi `uploadImageIfDataUrl` như safety net lúc save.
+
+**Legacy** (row cũ chưa migrate):
+
+- Path Supabase bucket `avatars` private → hook `useSignedEmployeeAvatarSrc` ký URL tạm.
+- Migration một lần sang Cloudinary: `scripts/migrate-avatars-to-cloudinary.ts` (`DRY_RUN=1` trước).
+- Migration cũ (Storage path): `scripts/migrate-avatars-to-storage.ts`.
 
 ### 6. RPC / View khi list cần aggregate hoặc full-table scan
 

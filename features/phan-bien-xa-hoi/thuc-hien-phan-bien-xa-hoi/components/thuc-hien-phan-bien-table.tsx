@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from 'react';
-import { Megaphone } from 'lucide-react';
+import { ExternalLink, Megaphone } from 'lucide-react';
 import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';
 import type { ThucHienPhanBien } from '../core/types';
@@ -10,6 +10,7 @@ import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/co
 import EnumBadge from '@/components/ui/EnumBadge';
 import { loaiHinhBadge, tinhTrangBadge } from '../core/display-badges';
 import { tinhTienDo } from '../core/display-tien-do';
+import { formatTenDonViThucHien } from '../utils/display-don-vi-thuc-hien';
 import { ThucHienPhanBienTableRowActions } from './thuc-hien-phan-bien-table-row-actions';
 
 interface Props {
@@ -87,6 +88,14 @@ const ThucHienPhanBienTable = memo(function ThucHienPhanBienTable({
           ) : (
             <span className="text-body-sm text-muted-foreground">{txt('common.emptyCell')}</span>
           );
+        case 'don_vi_thuc_hien': {
+          const label = formatTenDonViThucHien(item);
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={label}>
+              {label}
+            </span>
+          );
+        }
         case 'noi_dung':
           return (
             <div className="flex min-w-0 items-center gap-2">
@@ -116,6 +125,18 @@ const ThucHienPhanBienTable = memo(function ThucHienPhanBienTable({
               {item.ten_don_vi_chu_tri ?? txt('common.emptyCell')}
             </span>
           );
+        case 'so_lan_hoan_thanh':
+          return (
+            <span className="text-body-sm font-medium tabular-nums text-foreground">
+              {item.so_lan_hoan_thanh}
+            </span>
+          );
+        case 'so_lan_khao_sat':
+          return (
+            <span className="text-body-sm font-medium tabular-nums text-foreground">
+              {item.so_lan_khao_sat}
+            </span>
+          );
         case 'phan_tram_hoan_thanh':
           return (
             <span className="text-body-sm font-medium tabular-nums text-foreground">
@@ -130,6 +151,66 @@ const ThucHienPhanBienTable = memo(function ThucHienPhanBienTable({
               {item.ten_doi_tuong ?? txt('common.emptyCell')}
             </span>
           );
+        case 'ten_hinh_thuc':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_hinh_thuc ?? undefined}>
+              {item.ten_hinh_thuc ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'ngay_bat_dau':
+          return (
+            <span className="text-body-sm text-muted-foreground whitespace-nowrap">
+              {item.ngay_bat_dau ? formatDateShort(item.ngay_bat_dau) : txt('common.emptyCell')}
+            </span>
+          );
+        case 'ngay_ket_thuc':
+          return (
+            <span className="text-body-sm text-muted-foreground whitespace-nowrap">
+              {item.ngay_ket_thuc ? formatDateShort(item.ngay_ket_thuc) : txt('common.emptyCell')}
+            </span>
+          );
+        case 'mo_ta_thoi_gian':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.mo_ta_thoi_gian ?? undefined}>
+              {item.mo_ta_thoi_gian ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'ten_phong_ban':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.ten_phong_ban ?? undefined}>
+              {item.ten_phong_ban ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'ket_qua_kien_nghi':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.ket_qua_kien_nghi ?? undefined}>
+              {item.ket_qua_kien_nghi ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'link_ket_qua':
+          return item.link_ket_qua?.trim() ? (
+            <a
+              href={item.link_ket_qua.trim()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Link
+              <ExternalLink size={12} aria-hidden />
+            </a>
+          ) : (
+            <span className="text-body-sm text-muted-foreground">{txt('common.emptyCell')}</span>
+          );
+        case 'ho_va_ten_nguoi_tao': {
+          const label =
+            item.ho_va_ten_nguoi_tao?.trim() || item.ten_tai_khoan_nguoi_tao?.trim() || txt('common.emptyCell');
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={label}>
+              {label}
+            </span>
+          );
+        }
         case 'tg_cap_nhat':
           return (
             <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -175,7 +256,11 @@ const ThucHienPhanBienTable = memo(function ThucHienPhanBienTable({
           ) : null}
         </div>
         <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+          <span>{formatTenDonViThucHien(item)}</span>
           {item.ten_don_vi_chu_tri ? <span>{item.ten_don_vi_chu_tri}</span> : null}
+          <span className="tabular-nums">
+            {item.so_lan_hoan_thanh}/{item.so_lan_khao_sat}
+          </span>
           <span className="tabular-nums">{item.phan_tram_hoan_thanh}%</span>
         </div>
         <div className="flex justify-end">
@@ -215,7 +300,7 @@ const ThucHienPhanBienTable = memo(function ThucHienPhanBienTable({
       onRowClick={onView ? handleRowClick : undefined}
       keyExtractor={(item) => item.id}
       onResizeColumn={resizeColumn}
-      stickyLeftCount={2}
+      stickyLeftCount={3}
       renderColumnHeaderAccessory={renderColumnHeaderAccessory}
       hideSortOnColumnLabel
     />

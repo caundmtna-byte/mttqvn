@@ -83,7 +83,8 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
       (searchTerm ? 1 : 0) +
       countThamHoiToChucColumnSearchActive(filters.columnSearch ?? {}) +
       (filters.tien_do_filter.length > 0 ? 1 : 0) +
-      (filters.to_chuc_filter.length > 0 ? 1 : 0)
+      (filters.to_chuc_filter.length > 0 ? 1 : 0) +
+      (filters.dip_tham_hoi_filter.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -92,6 +93,7 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
     useThamHoiToChucStore.getState().setFilter('columnSearch', {});
     setFilter('tien_do_filter', []);
     setFilter('to_chuc_filter', []);
+    setFilter('dip_tham_hoi_filter', []);
     setSort(null, null);
   };
 

@@ -87,6 +87,7 @@ const initialFilters: ThamHoiCaNhanFilters = {
   phong_ban_filter: [],
   don_vi_tham_hoi_filter: [],
   xa_phuong_filter: [],
+  dip_tham_hoi_filter: [],
 };
 
 export const useThamHoiCaNhanStore = createGenericStore<ThamHoiCaNhanFilters>(initialFilters, DEFAULT_COLUMNS);

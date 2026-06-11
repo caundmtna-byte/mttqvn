@@ -12,8 +12,10 @@ import {
 } from '../../thuc-hien-phan-bien-xa-hoi/core/constants';
 import { daysFromDeadline } from '@/features/quan-ly-giao-viec/cong-viec/utils/deadline-progress';
 import { tinhTienDo } from '../../thuc-hien-phan-bien-xa-hoi/core/display-tien-do';
+import { computePhanTramHoanThanh } from '../../thuc-hien-phan-bien-xa-hoi/core/compute-phan-tram';
 
 export const PBXH_STATS_DON_VI_NONE = '__none__';
+export const PBXH_STATS_NGUOI_TAO_NONE = '__none__';
 
 export const PBXH_TIEN_DO_FILTER_IDS = ['qua_han', 'sap_den_han', 'con_han', 'khong_co_han'] as const;
 export type PbxhTienDoFilterId = (typeof PBXH_TIEN_DO_FILTER_IDS)[number];
@@ -122,6 +124,9 @@ export interface PbxhThongKeKpis {
   keHoachDuKien: number;
   quaHan: number;
   avgPhanTram: number;
+  sumSoLanHoanThanh: number;
+  sumSoLanKhaoSat: number;
+  tyLeThucTe: number;
 }
 
 export function computePbxhThongKeKpis(filtered: ThucHienPhanBien[]): PbxhThongKeKpis {
@@ -130,6 +135,8 @@ export function computePbxhThongKeKpis(filtered: ThucHienPhanBien[]): PbxhThongK
   let keHoachDuKien = 0;
   let quaHan = 0;
   let sumPhanTram = 0;
+  let sumSoLanHoanThanh = 0;
+  let sumSoLanKhaoSat = 0;
 
   for (const r of filtered) {
     if (r.tinh_trang === 'Đang thực hiện') dangThucHien += 1;
@@ -142,12 +149,25 @@ export function computePbxhThongKeKpis(filtered: ThucHienPhanBien[]): PbxhThongK
     }
 
     sumPhanTram += r.phan_tram_hoan_thanh ?? 0;
+    sumSoLanHoanThanh += r.so_lan_hoan_thanh ?? 0;
+    sumSoLanKhaoSat += r.so_lan_khao_sat ?? 0;
   }
 
   const total = filtered.length;
   const avgPhanTram = total > 0 ? Math.round(sumPhanTram / total) : 0;
+  const tyLeThucTe = computePhanTramHoanThanh(sumSoLanHoanThanh, sumSoLanKhaoSat);
 
-  return { total, dangThucHien, hoanThanh, keHoachDuKien, quaHan, avgPhanTram };
+  return {
+    total,
+    dangThucHien,
+    hoanThanh,
+    keHoachDuKien,
+    quaHan,
+    avgPhanTram,
+    sumSoLanHoanThanh,
+    sumSoLanKhaoSat,
+    tyLeThucTe,
+  };
 }
 
 export interface PbxhTienDoKpis {
@@ -227,12 +247,23 @@ export interface PbxhDonViChuTriTableRow {
   dangThucHien: number;
   hoanThanh: number;
   avgPhanTram: number;
+  sumSoLanHoanThanh: number;
+  sumSoLanKhaoSat: number;
+  tyLeThucTe: number;
 }
 
 export function aggregatePbxhByDonViChuTriTable(filtered: ThucHienPhanBien[]): PbxhDonViChuTriTableRow[] {
   const tally = new Map<
     string,
-    { label: string; total: number; dangThucHien: number; hoanThanh: number; sumPhanTram: number }
+    {
+      label: string;
+      total: number;
+      dangThucHien: number;
+      hoanThanh: number;
+      sumPhanTram: number;
+      sumSoLanHoanThanh: number;
+      sumSoLanKhaoSat: number;
+    }
   >();
 
   for (const row of filtered) {
@@ -244,6 +275,8 @@ export function aggregatePbxhByDonViChuTriTable(filtered: ThucHienPhanBien[]): P
       if (row.tinh_trang === 'Đang thực hiện') prev.dangThucHien += 1;
       if (row.tinh_trang === 'Đã hoàn thành') prev.hoanThanh += 1;
       prev.sumPhanTram += row.phan_tram_hoan_thanh ?? 0;
+      prev.sumSoLanHoanThanh += row.so_lan_hoan_thanh ?? 0;
+      prev.sumSoLanKhaoSat += row.so_lan_khao_sat ?? 0;
     } else {
       tally.set(id, {
         label,
@@ -251,6 +284,8 @@ export function aggregatePbxhByDonViChuTriTable(filtered: ThucHienPhanBien[]): P
         dangThucHien: row.tinh_trang === 'Đang thực hiện' ? 1 : 0,
         hoanThanh: row.tinh_trang === 'Đã hoàn thành' ? 1 : 0,
         sumPhanTram: row.phan_tram_hoan_thanh ?? 0,
+        sumSoLanHoanThanh: row.so_lan_hoan_thanh ?? 0,
+        sumSoLanKhaoSat: row.so_lan_khao_sat ?? 0,
       });
     }
   }
@@ -263,8 +298,11 @@ export function aggregatePbxhByDonViChuTriTable(filtered: ThucHienPhanBien[]): P
       dangThucHien: v.dangThucHien,
       hoanThanh: v.hoanThanh,
       avgPhanTram: v.total > 0 ? Math.round(v.sumPhanTram / v.total) : 0,
+      sumSoLanHoanThanh: v.sumSoLanHoanThanh,
+      sumSoLanKhaoSat: v.sumSoLanKhaoSat,
+      tyLeThucTe: computePhanTramHoanThanh(v.sumSoLanHoanThanh, v.sumSoLanKhaoSat),
     }))
-    .sort((a, b) => b.total - a.total);
+    .sort((a, b) => b.tyLeThucTe - a.tyLeThucTe || b.total - a.total);
 }
 
 export function aggregatePbxhLoaiHinhMatrix(filtered: ThucHienPhanBien[]): LabelCountRow[] {
@@ -276,6 +314,192 @@ export function aggregatePbxhLoaiHinhMatrix(filtered: ThucHienPhanBien[]): Label
   return [...tally.entries()]
     .map(([label, value]) => ({ id: label, label, value }))
     .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+}
+
+export interface PbxhNguoiTaoRankRow {
+  id: string;
+  label: string;
+  total: number;
+  hoanThanh: number;
+  sumSoLanHoanThanh: number;
+  sumSoLanKhaoSat: number;
+  avgPhanTram: number;
+  tyLeThucTe: number;
+}
+
+export function aggregatePbxhByNguoiTaoTable(filtered: ThucHienPhanBien[]): PbxhNguoiTaoRankRow[] {
+  const tally = new Map<
+    string,
+    {
+      label: string;
+      total: number;
+      hoanThanh: number;
+      sumPhanTram: number;
+      sumSoLanHoanThanh: number;
+      sumSoLanKhaoSat: number;
+    }
+  >();
+
+  for (const row of filtered) {
+    const id = row.id_nguoi_tao?.trim() ? String(row.id_nguoi_tao) : PBXH_STATS_NGUOI_TAO_NONE;
+    const label =
+      (row.ho_va_ten_nguoi_tao ?? row.ten_tai_khoan_nguoi_tao ?? '').trim() || '—';
+    const prev = tally.get(id);
+    if (prev) {
+      prev.total += 1;
+      if (row.tinh_trang === 'Đã hoàn thành') prev.hoanThanh += 1;
+      prev.sumPhanTram += row.phan_tram_hoan_thanh ?? 0;
+      prev.sumSoLanHoanThanh += row.so_lan_hoan_thanh ?? 0;
+      prev.sumSoLanKhaoSat += row.so_lan_khao_sat ?? 0;
+    } else {
+      tally.set(id, {
+        label,
+        total: 1,
+        hoanThanh: row.tinh_trang === 'Đã hoàn thành' ? 1 : 0,
+        sumPhanTram: row.phan_tram_hoan_thanh ?? 0,
+        sumSoLanHoanThanh: row.so_lan_hoan_thanh ?? 0,
+        sumSoLanKhaoSat: row.so_lan_khao_sat ?? 0,
+      });
+    }
+  }
+
+  return [...tally.entries()]
+    .map(([id, v]) => ({
+      id,
+      label: v.label,
+      total: v.total,
+      hoanThanh: v.hoanThanh,
+      sumSoLanHoanThanh: v.sumSoLanHoanThanh,
+      sumSoLanKhaoSat: v.sumSoLanKhaoSat,
+      avgPhanTram: v.total > 0 ? Math.round(v.sumPhanTram / v.total) : 0,
+      tyLeThucTe: computePhanTramHoanThanh(v.sumSoLanHoanThanh, v.sumSoLanKhaoSat),
+    }))
+    .sort((a, b) => b.tyLeThucTe - a.tyLeThucTe || b.avgPhanTram - a.avgPhanTram || b.total - a.total);
+}
+
+export function aggregatePbxhTopNguoiTaoByTyLe(
+  filtered: ThucHienPhanBien[],
+  topN: number,
+): PbxhNguoiTaoRankRow[] {
+  return aggregatePbxhByNguoiTaoTable(filtered).slice(0, topN);
+}
+
+export interface PbxhTopHoatDongRow {
+  id: string;
+  noi_dung: string;
+  nguoi_tao_label: string;
+  loai_hinh: string;
+  tinh_trang: string;
+  so_lan_hoan_thanh: number;
+  so_lan_khao_sat: number;
+  phan_tram_hoan_thanh: number;
+}
+
+export function aggregatePbxhTopHoatDongByPhanTram(
+  filtered: ThucHienPhanBien[],
+  topN: number,
+): PbxhTopHoatDongRow[] {
+  return [...filtered]
+    .sort(
+      (a, b) =>
+        (b.phan_tram_hoan_thanh ?? 0) - (a.phan_tram_hoan_thanh ?? 0) ||
+        (b.so_lan_hoan_thanh ?? 0) - (a.so_lan_hoan_thanh ?? 0) ||
+        a.noi_dung.localeCompare(b.noi_dung),
+    )
+    .slice(0, topN)
+    .map((row) => ({
+      id: row.id,
+      noi_dung: row.noi_dung,
+      nguoi_tao_label:
+        (row.ho_va_ten_nguoi_tao ?? row.ten_tai_khoan_nguoi_tao ?? '').trim() || '—',
+      loai_hinh: row.loai_hinh,
+      tinh_trang: row.tinh_trang,
+      so_lan_hoan_thanh: row.so_lan_hoan_thanh ?? 0,
+      so_lan_khao_sat: row.so_lan_khao_sat ?? 0,
+      phan_tram_hoan_thanh: row.phan_tram_hoan_thanh ?? 0,
+    }));
+}
+
+export interface PbxhAvgPhanTramBarRow {
+  label: string;
+  avgPhanTram: number;
+  count: number;
+}
+
+export function buildPbxhAvgPhanTramByLoaiHinhBarData(filtered: ThucHienPhanBien[]): PbxhAvgPhanTramBarRow[] {
+  const tally = new Map<string, { sum: number; count: number }>();
+  for (const v of LOAI_HINH_VALUES) tally.set(v, { sum: 0, count: 0 });
+  for (const row of filtered) {
+    const key = row.loai_hinh;
+    if (!LOAI_HINH_VALUES.includes(key as (typeof LOAI_HINH_VALUES)[number])) continue;
+    const prev = tally.get(key)!;
+    prev.sum += row.phan_tram_hoan_thanh ?? 0;
+    prev.count += 1;
+  }
+  return LOAI_HINH_VALUES.map((label) => {
+    const v = tally.get(label)!;
+    return {
+      label,
+      avgPhanTram: v.count > 0 ? Math.round(v.sum / v.count) : 0,
+      count: v.count,
+    };
+  });
+}
+
+export interface PbxhAvgPhanTramTrendPoint {
+  key: string;
+  label: string;
+  avgPhanTram: number;
+  count: number;
+}
+
+export function buildPbxhAvgPhanTramTrendSeries(
+  filtered: ThucHienPhanBien[],
+  range: ResolvedDateRange,
+  bucket: PbxhTrendBucket,
+): PbxhAvgPhanTramTrendPoint[] {
+  const start = dayjs(range.start.slice(0, 10));
+  const end = dayjs(range.end.slice(0, 10));
+  const keys: string[] = [];
+
+  if (bucket === 'day') {
+    for (let cur = start; !cur.isAfter(end, 'day'); cur = cur.add(1, 'day')) {
+      keys.push(cur.format('YYYY-MM-DD'));
+    }
+  } else {
+    for (let cur = start.startOf('month'); !cur.isAfter(end, 'month'); cur = cur.add(1, 'month')) {
+      keys.push(cur.format('YYYY-MM'));
+    }
+  }
+
+  const sumMap = new Map<string, number>();
+  const countMap = new Map<string, number>();
+  for (const k of keys) {
+    sumMap.set(k, 0);
+    countMap.set(k, 0);
+  }
+
+  for (const item of filtered) {
+    const raw = item.ngay_bat_dau?.trim() ? item.ngay_bat_dau.trim().slice(0, 10) : getPbxhStatsDateFromRow(item);
+    if (!raw) continue;
+    const key = bucket === 'day' ? raw.slice(0, 10) : raw.slice(0, 7);
+    if (!sumMap.has(key)) continue;
+    sumMap.set(key, (sumMap.get(key) ?? 0) + (item.phan_tram_hoan_thanh ?? 0));
+    countMap.set(key, (countMap.get(key) ?? 0) + 1);
+  }
+
+  return keys.map((key) => {
+    const count = countMap.get(key) ?? 0;
+    const sum = sumMap.get(key) ?? 0;
+    const label =
+      bucket === 'day' ? dayjs(key).format('DD/MM') : dayjs(`${key}-01`).format('MM/YYYY');
+    return {
+      key,
+      label,
+      avgPhanTram: count > 0 ? Math.round(sum / count) : 0,
+      count,
+    };
+  });
 }
 
 export type PbxhTrendBucket = 'day' | 'month';
@@ -337,6 +561,8 @@ export type PbxhLookupSortKey =
   | 'tinh_trang'
   | 'ten_don_vi_chu_tri'
   | 'tien_do'
+  | 'so_lan_hoan_thanh'
+  | 'so_lan_khao_sat'
   | 'phan_tram_hoan_thanh'
   | 'ngay_ket_thuc';
 
@@ -362,6 +588,12 @@ export function sortPbxhLookupRows(
         break;
       case 'tien_do':
         cmp = pbxhTienDoSortKey(a) - pbxhTienDoSortKey(b);
+        break;
+      case 'so_lan_hoan_thanh':
+        cmp = (a.so_lan_hoan_thanh ?? 0) - (b.so_lan_hoan_thanh ?? 0);
+        break;
+      case 'so_lan_khao_sat':
+        cmp = (a.so_lan_khao_sat ?? 0) - (b.so_lan_khao_sat ?? 0);
         break;
       case 'phan_tram_hoan_thanh':
         cmp = (a.phan_tram_hoan_thanh ?? 0) - (b.phan_tram_hoan_thanh ?? 0);

@@ -36,6 +36,7 @@ export const dttgThongKeThamHoi = {
     tableColDonViThamHoi: 'Đơn vị thăm hỏi',
     tableColTinhTrang: 'Tình trạng',
     tableColThoiGianDuKien: 'Thời gian dự kiến',
+    tableColThoiGianThucTe: 'Thời gian thực tế',
     tableColTgTao: 'Ngày tạo',
     tableTwoColLabel: 'Nhóm',
     tableTwoColValue: 'Số lượng',

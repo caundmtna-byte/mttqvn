@@ -8,6 +8,7 @@ import type { ThucHienPhanBien } from '../core/types';
 import type { CapThucHien, LoaiHinh, TinhTrang } from '../core/constants';
 import { TINH_TRANG_DEFAULT } from '../core/constants';
 import { PBXH_THUC_HIEN_RETURNING, PBXH_THUC_HIEN_SELECT } from '../core/supabase-select';
+import { computePhanTramHoanThanh } from '../core/compute-phan-tram';
 import { PBXH_THUC_HIEN_MOCK } from '../mock-data';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -72,6 +73,8 @@ export function flattenThucHienPhanBienRow(row: Record<string, unknown>): ThucHi
     don_vi_thuc_hien_id: nullableStr(r.don_vi_thuc_hien_id),
     ten_don_vi_thuc_hien: dv?.ten != null && String(dv.ten).trim() !== '' ? String(dv.ten) : null,
     ket_qua_kien_nghi: nullableStr(r.ket_qua_kien_nghi),
+    so_lan_hoan_thanh: Number(r.so_lan_hoan_thanh ?? 0),
+    so_lan_khao_sat: Number(r.so_lan_khao_sat ?? 0),
     phan_tram_hoan_thanh: Number(r.phan_tram_hoan_thanh ?? 0),
     link_ket_qua: nullableStr(r.link_ket_qua),
     id_nguoi_tao: String(r.id_nguoi_tao ?? ''),
@@ -104,7 +107,8 @@ function formToPayload(data: ThucHienPhanBienFormValues): Record<string, unknown
     phong_ban_tham_muu_id: nullableFk(data.phong_ban_tham_muu_id),
     don_vi_thuc_hien_id: nullableFk(data.don_vi_thuc_hien_id),
     ket_qua_kien_nghi: data.ket_qua_kien_nghi ?? null,
-    phan_tram_hoan_thanh: data.phan_tram_hoan_thanh ?? 0,
+    so_lan_hoan_thanh: data.so_lan_hoan_thanh ?? 0,
+    so_lan_khao_sat: data.so_lan_khao_sat ?? 0,
     link_ket_qua: data.link_ket_qua ?? null,
   };
 }
@@ -144,7 +148,11 @@ export async function createThucHienPhanBien(
     const now = new Date().toISOString();
     const row: ThucHienPhanBien = {
       id: mockNextId(),
-      ...formToPayload(data) as unknown as Omit<ThucHienPhanBien, 'id' | 'tg_tao' | 'tg_cap_nhat' | 'id_nguoi_tao'>,
+      ...formToPayload(data) as unknown as Omit<
+        ThucHienPhanBien,
+        'id' | 'tg_tao' | 'tg_cap_nhat' | 'id_nguoi_tao' | 'phan_tram_hoan_thanh'
+      >,
+      phan_tram_hoan_thanh: computePhanTramHoanThanh(data.so_lan_hoan_thanh, data.so_lan_khao_sat),
       doi_tuong_id: data.doi_tuong_id ?? null,
       hinh_thuc_id: data.hinh_thuc_id ?? null,
       don_vi_chu_tri_id: data.don_vi_chu_tri_id ?? null,
@@ -198,7 +206,9 @@ export async function updateThucHienPhanBien(
       phong_ban_tham_muu_id: data.phong_ban_tham_muu_id ?? null,
       don_vi_thuc_hien_id: data.don_vi_thuc_hien_id ?? null,
       ket_qua_kien_nghi: data.ket_qua_kien_nghi ?? null,
-      phan_tram_hoan_thanh: data.phan_tram_hoan_thanh ?? 0,
+      so_lan_hoan_thanh: data.so_lan_hoan_thanh ?? 0,
+      so_lan_khao_sat: data.so_lan_khao_sat ?? 0,
+      phan_tram_hoan_thanh: computePhanTramHoanThanh(data.so_lan_hoan_thanh, data.so_lan_khao_sat),
       link_ket_qua: data.link_ket_qua ?? null,
       tg_cap_nhat: now,
     };

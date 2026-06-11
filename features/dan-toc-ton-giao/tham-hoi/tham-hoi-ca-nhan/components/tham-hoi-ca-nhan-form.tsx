@@ -25,6 +25,8 @@ import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
 import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
 import { useTinhThanhList, useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import { useDipThamHoiOptions } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-tham-hoi';
+import { useDipChildFormPrefill } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-child-form-prefill';
 import { useThongTinCaNhanTieuBieuList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/hooks/use-thong-tin-ca-nhan-tieu-bieu';
 import {
   thamHoiCaNhanSchema,
@@ -45,15 +47,17 @@ const FORM_ID = 'dttg-tham-hoi-ca-nhan-form';
 
 interface Props {
   initialData?: ThamHoiCaNhan | null;
+  defaultDipId?: string;
   onClose: () => void;
 }
 
-const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, onClose }) => {
+const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, defaultDipId, onClose }) => {
   const isEdit = Boolean(initialData);
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
 
   const { data: caNhanList = [] } = useThongTinCaNhanTieuBieuList();
+  const { data: dipOptions = [] } = useDipThamHoiOptions();
   const { data: departments = [] } = useDepartments();
   const { data: thamHoiList = [] } = useThamHoiCaNhanList();
   const { data: tinhList = [] } = useTinhThanhList();
@@ -104,6 +108,14 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, onClose }) => {
     [caNhanList],
   );
 
+  const dipThamHoiOptions = useMemo(
+    () =>
+      [...dipOptions]
+        .sort((a, b) => a.ten_dip.localeCompare(b.ten_dip, 'vi'))
+        .map((d) => ({ label: d.ten_dip, value: d.id })),
+    [dipOptions],
+  );
+
   const phongBanOptions = useMemo(
     () =>
       [...departments]
@@ -122,6 +134,8 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ThamHoiCaNhanFormInput>({
     defaultValues: thamHoiCaNhanToFormInput(null),
@@ -136,8 +150,21 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, onClose }) => {
   );
 
   useEffect(() => {
-    reset(thamHoiCaNhanToFormInput(initialData ?? null));
-  }, [initialData, reset]);
+    const base = thamHoiCaNhanToFormInput(initialData ?? null);
+    if (!initialData && defaultDipId?.trim()) {
+      base.dip_tham_hoi_id = defaultDipId.trim();
+    }
+    reset(base);
+  }, [initialData, defaultDipId, reset]);
+
+  useDipChildFormPrefill({
+    isEdit,
+    dipOptions,
+    control,
+    setValue,
+    getValues,
+    prefillThoiGianDuKien: false,
+  });
 
   const onSubmit: SubmitHandler<ThamHoiCaNhanFormInput> = (data) => {
     const parsed = thamHoiCaNhanSchema.parse(data) as ThamHoiCaNhanFormValues;
@@ -215,12 +242,23 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, onClose }) => {
                 </div>
               )}
             />
-            <Input
-              label={txt('danTocThamHoiCaNhan.form.dipThamHoi')}
-              required
-              icon={Calendar}
-              {...register('dip_tham_hoi')}
-              error={errors.dip_tham_hoi?.message}
+            <Controller
+              name="dip_tham_hoi_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={dipThamHoiOptions}
+                  value={field.value === '' ? null : field.value}
+                  onChange={(v) => field.onChange(v === '' || v == null ? '' : String(v))}
+                  label={txt('danTocThamHoiCaNhan.form.dipThamHoi')}
+                  placeholder={txt('danTocThamHoiCaNhan.form.dipThamHoiPlaceholder')}
+                  required
+                  icon={<Calendar size={14} />}
+                  error={errors.dip_tham_hoi_id?.message}
+                  dropdownInPortal
+                  clearable={false}
+                />
+              )}
             />
             <Controller
               name="thoi_gian_du_kien"
@@ -234,6 +272,13 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, onClose }) => {
                   error={errors.thoi_gian_du_kien?.message}
                 />
               )}
+            />
+            <Input
+              label={txt('danTocThamHoiCaNhan.form.thoiGianThucTe')}
+              icon={Calendar}
+              type="date"
+              {...register('thoi_gian_thuc_te')}
+              error={errors.thoi_gian_thuc_te?.message}
             />
             <Controller
               name="don_vi_tham_hoi_id"

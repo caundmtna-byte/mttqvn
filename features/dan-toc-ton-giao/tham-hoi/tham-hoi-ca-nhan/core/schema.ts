@@ -34,6 +34,15 @@ const optionalId = z
     return s === '' ? undefined : s;
   });
 
+const optionalDate = z
+  .union([z.string(), z.null(), z.undefined()])
+  .optional()
+  .transform((v) => {
+    if (v == null) return undefined;
+    const s = String(v).trim();
+    return s === '' ? undefined : s;
+  });
+
 const donViThamHoiIdField = z
   .union([z.string(), z.null(), z.undefined()])
   .optional()
@@ -71,8 +80,9 @@ const quaTangField = optionalText.pipe(
 export const thamHoiCaNhanSchema = z.object({
   ca_nhan_id: z.string().trim().min(1, txt('danTocThamHoiCaNhan.validation.caNhanRequired')),
   phong_ban_tham_muu_id: optionalId,
-  dip_tham_hoi: z.string().trim().min(1, txt('danTocThamHoiCaNhan.validation.dipThamHoiRequired')),
+  dip_tham_hoi_id: z.string().trim().min(1, txt('danTocThamHoiCaNhan.validation.dipThamHoiRequired')),
   thoi_gian_du_kien: thoiGianDuKienField,
+  thoi_gian_thuc_te: optionalDate,
   don_vi_tham_hoi_id: donViThamHoiIdField,
   qua_tang: quaTangField,
   xa_phuong_id: optionalId,
@@ -86,8 +96,9 @@ export type ThamHoiCaNhanFormValues = z.infer<typeof thamHoiCaNhanSchema>;
 export type ThamHoiCaNhanFormInput = {
   ca_nhan_id: string;
   phong_ban_tham_muu_id?: string;
-  dip_tham_hoi: string;
+  dip_tham_hoi_id: string;
   thoi_gian_du_kien?: string;
+  thoi_gian_thuc_te?: string;
   don_vi_tham_hoi_id?: string;
   qua_tang?: string;
   xa_phuong_id?: string;
@@ -101,8 +112,9 @@ export function thamHoiCaNhanToFormInput(row: ThamHoiCaNhan | null): ThamHoiCaNh
     return {
       ca_nhan_id: '',
       phong_ban_tham_muu_id: '',
-      dip_tham_hoi: '',
+      dip_tham_hoi_id: '',
       thoi_gian_du_kien: '',
+      thoi_gian_thuc_te: '',
       don_vi_tham_hoi_id: DON_VI_THAM_HOI_CQMTTQ_VALUE,
       qua_tang: '',
       xa_phuong_id: '',
@@ -114,8 +126,9 @@ export function thamHoiCaNhanToFormInput(row: ThamHoiCaNhan | null): ThamHoiCaNh
   return {
     ca_nhan_id: row.ca_nhan_id ?? '',
     phong_ban_tham_muu_id: row.phong_ban_tham_muu_id ?? '',
-    dip_tham_hoi: row.dip_tham_hoi ?? '',
+    dip_tham_hoi_id: row.dip_tham_hoi_id ?? '',
     thoi_gian_du_kien: dbDateToMonthYear(row.thoi_gian_du_kien),
+    thoi_gian_thuc_te: row.thoi_gian_thuc_te ?? '',
     don_vi_tham_hoi_id:
       row.don_vi_tham_hoi_id != null && row.don_vi_tham_hoi_id !== ''
         ? row.don_vi_tham_hoi_id

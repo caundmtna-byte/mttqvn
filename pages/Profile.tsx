@@ -18,6 +18,8 @@ import {
   Briefcase, Building2, Layers,
 } from 'lucide-react';
 import { getAvatarUrl } from '../lib/utils';
+import { resolveImageDisplaySrcSync } from '@/lib/cloudinary/resolve-image-display-src';
+import { avatarCloudinaryFolder } from '@/lib/cloudinary/upload-image';
 import { canEditProfile } from '../lib/profile-permissions';
 import { supabaseEmailToLoginName } from '../lib/auth-email';
 import { useEmployees, useUpdateEmployee } from '../features/he-thong/nhan-vien/hooks/use-nhan-vien';
@@ -63,8 +65,8 @@ const Profile: React.FC = () => {
   const profileAvatarImgSrc = useMemo(() => {
     const s = profileAvatarStored?.trim() ?? '';
     if (!s) return getAvatarUrl(displayName, 128);
-    if (s.startsWith('data:image/')) return s;
-    if (s.startsWith('http') && !s.includes('.supabase.co')) return s;
+    const direct = resolveImageDisplaySrcSync(s);
+    if (direct) return direct;
     return profileAvatarSigned || getAvatarUrl(displayName, 128);
   }, [profileAvatarStored, profileAvatarSigned, displayName]);
 
@@ -305,6 +307,7 @@ const Profile: React.FC = () => {
                 value={avatarPreview ?? displayAvatar ?? null}
                 displaySrc={profileAvatarSigned || undefined}
                 onChange={setAvatarPreview}
+                cloudinaryFolder={avatarCloudinaryFolder(currentEmployee?.id)}
                 shape="circle"
                 aspectRatio="1/1"
                 placeholder={txt('page.profile.changeAvatar')}

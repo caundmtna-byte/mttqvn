@@ -158,6 +158,10 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         groupTitleKey: 'page.danTocTonGiaoDashboard.groupThamHoi',
         modules: [
           {
+            id: 'dan-toc-ton-giao/tham-hoi/dip-tham-hoi',
+            nameKey: 'page.danTocTonGiaoDashboard.dipThamHoi',
+          },
+          {
             id: 'dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc',
             nameKey: 'page.danTocTonGiaoDashboard.thamHoiToChuc',
           },
@@ -181,6 +185,10 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           {
             id: 'dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu',
             nameKey: 'page.danTocTonGiaoDashboard.thongTinCaNhanTieuBieu',
+          },
+          {
+            id: 'dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan',
+            nameKey: 'page.danTocTonGiaoDashboard.thongKeToChucCaNhan',
           },
         ],
       },

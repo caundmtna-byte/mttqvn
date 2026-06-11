@@ -7,6 +7,9 @@ const PHONG_BAN =
 const DON_VI_THAM_HOI =
   'don_vi_tham_hoi:var_ssn_xa_phuong!dttg_tham_hoi_ca_nhan_don_vi_tham_hoi_id_fkey(ten,var_ssn_tinh_thanh(ten))';
 
+const DIP =
+  'dip:dttg_dip_tham_hoi!dttg_tham_hoi_ca_nhan_dip_tham_hoi_id_fkey(ten_dip)';
+
 const XA_PHUONG =
   'xa_phuong:var_ssn_xa_phuong!dttg_tham_hoi_ca_nhan_xa_phuong_id_fkey(ten,var_ssn_tinh_thanh(ten))';
 
@@ -19,8 +22,10 @@ const LIST_COLS = [
   'phong_ban_tham_muu_id',
   'doi_tuong',
   'chuc_vu_vi_tri',
+  'dip_tham_hoi_id',
   'dip_tham_hoi',
   'thoi_gian_du_kien',
+  'thoi_gian_thuc_te',
   'don_vi_tham_hoi_id',
   'qua_tang',
   'xa_phuong_id',
@@ -32,6 +37,6 @@ const LIST_COLS = [
   'tg_cap_nhat',
 ].join(',');
 
-export const DTTG_THAM_HOI_CA_NHAN_SELECT = `${LIST_COLS},${CA_NHAN},${PHONG_BAN},${DON_VI_THAM_HOI},${XA_PHUONG},${NGUOI_TAO}`;
+export const DTTG_THAM_HOI_CA_NHAN_SELECT = `${LIST_COLS},${CA_NHAN},${PHONG_BAN},${DON_VI_THAM_HOI},${DIP},${XA_PHUONG},${NGUOI_TAO}`;
 
 export const DTTG_THAM_HOI_CA_NHAN_RETURNING = DTTG_THAM_HOI_CA_NHAN_SELECT;
