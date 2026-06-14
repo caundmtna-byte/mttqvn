@@ -43,6 +43,8 @@ import { useCan } from '@/hooks/use-can';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { useMttqCanBoList } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/hooks/use-mttq-can-bo';
+import type { MttqThietLapLoai } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/core/types';
+import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
 import { useTinhThanhList } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import { queryKeys } from '@/lib/query-keys';
@@ -73,9 +75,20 @@ const DEFAULT_VALUES: MttqTapHuanFormValues = {
   nam_tap_huan: new Date().getFullYear(),
   cap_tap_huan: 'Cấp tỉnh',
   don_vi_id: '',
+  to_chuc_id: '',
   ghi_chu: undefined,
   chi_tiet: [],
 };
+
+function optionsByLoai(
+  all: { id: string; loai: MttqThietLapLoai; ten: string }[],
+  loai: MttqThietLapLoai,
+): { label: string; value: string }[] {
+  return all
+    .filter((x) => x.loai === loai)
+    .map((x) => ({ label: x.ten, value: String(x.id) }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+}
 
 function toFormFk(v: string | null | undefined): string {
   return v != null && String(v).trim() !== '' ? String(v) : '';
@@ -117,6 +130,7 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
+  const { data: thietLapAll = [] } = useMttqThietLapAll();
   const viewer = useMttqLopTapHuanViewer();
 
   const validationSchema = useMemo(() => createMttqTapHuanSchema(canBoList), [canBoList]);
@@ -143,6 +157,7 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
     [],
   );
   const thuocDienBadgeConfig = useMemo(() => getTapHuanThuocDienBadgeConfig(), []);
+  const toChucOpts = useMemo(() => optionsByLoai(thietLapAll, 'to_chuc'), [thietLapAll]);
 
   const {
     register,
@@ -244,6 +259,7 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
         nam_tap_huan: initialData.nam_tap_huan,
         cap_tap_huan: initialData.cap_tap_huan,
         don_vi_id: toFormFk(initialData.don_vi_id),
+        to_chuc_id: toFormFk(initialData.to_chuc_id),
         ghi_chu: initialData.ghi_chu ?? undefined,
         chi_tiet:
           initialData.chi_tiet.length > 0
@@ -410,6 +426,24 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
                   )}
                 />
               ) : null}
+              <Controller
+                name="to_chuc_id"
+                control={control}
+                render={({ field }) => (
+                  <Combobox
+                    label={txt('matTranTapHuan.form.toChuc')}
+                    icon={<Building2 size={12} />}
+                    options={toChucOpts}
+                    value={field.value}
+                    onChange={(v) => field.onChange(v === '' ? '' : String(v))}
+                    placeholder={txt('common.select')}
+                    error={errors.to_chuc_id?.message}
+                    required
+                    searchPlaceholder={txt('common.search')}
+                    dropdownInPortal
+                  />
+                )}
+              />
               <div className={FORM_GRID_SPAN_FULL}>
                 <Textarea
                   label={txt('matTranTapHuan.form.ghiChu')}

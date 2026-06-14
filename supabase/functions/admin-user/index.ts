@@ -57,13 +57,31 @@ function buildEmail(username: string): string {
 }
 
 async function findAuthUserIdByEmail(adminClient: ReturnType<typeof createClient>, email: string): Promise<string | null> {
-  // listUsers chưa có filter email phía server -> phải duyệt phân trang.
+  const normalized = email.trim().toLowerCase();
+  // GoTrue Admin API hỗ trợ filter email — O(1) thay vì quét tối đa 50×1000 user.
+  const filter = encodeURIComponent(`email.eq.${normalized}`);
+  const url = `${SUPABASE_URL}/auth/v1/admin/users?filter=${filter}&per_page=1&page=1`;
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+    },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(body || `Auth admin lookup failed (${res.status})`);
+  }
+  const payload = (await res.json()) as { users?: { id: string; email?: string | null }[] };
+  const match = payload.users?.find((u) => (u.email ?? '').toLowerCase() === normalized);
+  if (match?.id) return match.id;
+
+  // Fallback: SDK phân trang (GoTrue cũ / filter không khả dụng).
   const perPage = 1000;
   for (let page = 1; page <= 50; page += 1) {
     const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
     if (error) throw error;
-    const match = data.users.find((u) => (u.email ?? '').toLowerCase() === email);
-    if (match) return match.id;
+    const found = data.users.find((u) => (u.email ?? '').toLowerCase() === normalized);
+    if (found) return found.id;
     if (data.users.length < perPage) break;
   }
   return null;

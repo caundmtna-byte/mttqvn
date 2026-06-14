@@ -31,6 +31,9 @@ export function parentToFormValues(
     don_vi_cuu_tro_id: d.don_vi_cuu_tro_id ?? undefined,
     dot_cuu_tro_id: d.dot_cuu_tro_id ?? undefined,
     ghi_chu: d.ghi_chu ?? undefined,
+    nguoi_giao_nhan: d.nguoi_giao_nhan ?? undefined,
+    bo_phan: d.bo_phan ?? undefined,
+    chung_tu_goc: d.chung_tu_goc ?? undefined,
     chi_tiet: chiLines,
   };
 }

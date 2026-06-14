@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -17,15 +16,8 @@ import {
   MTTQ_LOP_TAP_HUAN_SELECT_FULL,
   MTTQ_LOP_TAP_HUAN_SELECT_LIST,
 } from '../core/supabase-select';
-import { MTTQ_CAN_BO_MOCK_DATA } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/mock-data';
 import {
-  MTTQ_LOP_TAP_HUAN_MOCK_CHILDREN,
-  MTTQ_LOP_TAP_HUAN_MOCK_PARENTS,
-} from '../mock-data';
-import {
-  tapHuanCanBoThreeColFromCanBo,
   tapHuanCanBoThreeColFromSource,
-  tapHuanSnapshotFromCanBo,
   tapHuanSnapshotFromSource,
   tapHuanSnapshotSourceFromPostgrestCanBoEmbed,
 } from '../utils/snapshot-from-can-bo';
@@ -35,9 +27,6 @@ type ParentRepoRow = { id: string } & Record<string, unknown>;
 const repo = createRepository<ParentRepoRow>({
   tableName: 'mttq_lop_tap_huan',
   select: MTTQ_LOP_TAP_HUAN_SELECT_LIST,
-  delay: 400,
-  /** Mock parents/children được service quản lý — không dùng MockRepository cho bảng này. */
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -71,16 +60,6 @@ function isPersistedChildId(id: unknown): id is string {
   return /^\d+$/.test(id.trim());
 }
 
-/** Mock in-memory (chỉ khi không Supabase). */
-let mockParents = structuredClone(MTTQ_LOP_TAP_HUAN_MOCK_PARENTS);
-let mockChildren = structuredClone(MTTQ_LOP_TAP_HUAN_MOCK_CHILDREN);
-
-function mockNextId(): string {
-  const maxP = Math.max(0, ...mockParents.map((p) => Number(p.id) || 0));
-  const maxC = Math.max(0, ...mockChildren.map((c) => Number(c.id) || 0));
-  return String(Math.max(maxP, maxC) + 1);
-}
-
 function hoTenFromEmbed(v: unknown): string | null {
   const o = pickEmbedded<{ ho_ten?: unknown }>(v);
   const t = o?.ho_ten;
@@ -100,9 +79,14 @@ function tenDonViFromXaEmbed(v: unknown): string | null {
   return xs || ts || null;
 }
 
+function tenToChucFromEmbed(v: unknown): string | null {
+  const o = pickEmbedded<{ ten?: unknown }>(v);
+  const t = o?.ten;
+  return t != null && String(t).trim() !== '' ? String(t) : null;
+}
+
 function chucVuCapQuanLyFromCanBoEmbed(canBo: Record<string, unknown> | undefined): string | null {
   if (!canBo) return null;
-  // cap_quan_ly giờ nằm trực tiếp trên mttq_can_bo (TEXT[]) thay vì embed var_chuc_vu.
   const raw = canBo.cap_quan_ly;
   if (!Array.isArray(raw) || raw.length === 0) return null;
   if (raw.includes('Tỉnh')) return 'Tỉnh';
@@ -170,59 +154,12 @@ export function flattenChiTietFlatRow(
   };
 }
 
-function mockLopEmbedFromParent(p: (typeof MTTQ_LOP_TAP_HUAN_MOCK_PARENTS)[number]): Record<string, unknown> {
-  return {
-    id: p.id,
-    ten_lop_tap_huan: p.ten_lop_tap_huan,
-    nam_tap_huan: p.nam_tap_huan,
-    cap_tap_huan: p.cap_tap_huan,
-    don_vi_id: p.don_vi_id,
-    tg_cap_nhat: p.tg_cap_nhat,
-    don_vi: p.ten_don_vi ? { ten: p.ten_don_vi } : null,
-    nguoi_tao: {
-      ho_va_ten: p.ho_va_ten_nguoi_tao,
-      ten_tai_khoan: p.ten_tai_khoan_nguoi_tao,
-      id_phong_ban: p.id_phong_ban_nguoi_tao,
-    },
-  };
-}
-
-/** Embed `can_bo` tối thiểu để `flattenCtRow` khớp PostgREST. */
-function mockCanBoPostgrestFromMttq(
-  cb: (typeof MTTQ_CAN_BO_MOCK_DATA)[number] | undefined,
-): Record<string, unknown> | null {
-  if (!cb) return null;
-  const chucVuEmb =
-    cb.ten_chuc_vu != null && String(cb.ten_chuc_vu).trim() !== ''
-      ? { ten_chuc_vu: cb.ten_chuc_vu }
-      : null;
-  // cap_quan_ly giờ nằm trực tiếp trên mttq_can_bo (TEXT[]).
-  const capQuanLyArr =
-    cb.chuc_vu_cap_quan_ly != null && String(cb.chuc_vu_cap_quan_ly).trim() !== ''
-      ? [cb.chuc_vu_cap_quan_ly]
-      : [];
-  return {
-    ho_ten: cb.ho_ten,
-    don_vi_id: cb.don_vi_id,
-    cap_quan_ly: capQuanLyArr,
-    don_vi: cb.ten_don_vi ? { ten: cb.ten_don_vi } : null,
-    chuc_vu: chucVuEmb,
-    to_chuc:
-      Array.isArray(cb.ten_to_chuc_arr) && cb.ten_to_chuc_arr.length > 0
-        ? { ten: cb.ten_to_chuc_arr.join(', ') }
-        : null,
-    phong_ban: cb.ten_phong_ban ? { ten_phong_ban: cb.ten_phong_ban } : null,
-  };
-}
-
 function flattenListRow(row: Record<string, unknown>): MttqLopTapHuanListRow {
   const nv = pickEmbedded<{
     ho_va_ten?: string;
     ten_tai_khoan?: string;
     id_phong_ban?: string | number | null;
   }>(row.nguoi_tao);
-  // PostgREST aggregate `mttq_lop_tap_huan_ct(count)` trả `[{ count: N }]` — không
-  // kéo mảng id chi tiết nữa (tiết kiệm egress đáng kể với lớp tập huấn nhiều cán bộ).
   const lines = row.mttq_lop_tap_huan_ct;
   let soDong = 0;
   if (Array.isArray(lines)) {
@@ -237,10 +174,12 @@ function flattenListRow(row: Record<string, unknown>): MttqLopTapHuanListRow {
   }
 
   const tenDonViLop = tenDonViFromXaEmbed(row.don_vi);
+  const tenToChucLop = tenToChucFromEmbed(row.to_chuc);
   const rest = { ...row };
   delete rest.nguoi_tao;
   delete rest.mttq_lop_tap_huan_ct;
   delete rest.don_vi;
+  delete rest.to_chuc;
   const r = rest as Record<string, unknown>;
 
   return {
@@ -250,6 +189,8 @@ function flattenListRow(row: Record<string, unknown>): MttqLopTapHuanListRow {
     cap_tap_huan: String(r.cap_tap_huan ?? 'Cấp tỉnh') as MttqTapHuanCap,
     don_vi_id: nullableId(r.don_vi_id),
     ten_don_vi: tenDonViLop,
+    to_chuc_id: nullableId(r.to_chuc_id),
+    ten_to_chuc: tenToChucLop,
     ghi_chu: nullableStr(r.ghi_chu),
     id_nguoi_tao: String(r.id_nguoi_tao ?? ''),
     tg_tao: String(r.tg_tao ?? ''),
@@ -259,6 +200,12 @@ function flattenListRow(row: Record<string, unknown>): MttqLopTapHuanListRow {
     id_phong_ban_nguoi_tao: nv?.id_phong_ban == null ? null : String(nv.id_phong_ban),
     so_dong: soDong,
   };
+}
+
+/** Chuyển bản ghi FULL (có chi_tiet) sang dòng bảng danh sách. */
+export function mttqLopTapHuanToListRow(row: MttqLopTapHuan): MttqLopTapHuanListRow {
+  const { chi_tiet, ...rest } = row;
+  return { ...rest, so_dong: chi_tiet?.length ?? 0 };
 }
 
 async function buildToChucTenByIdMap(): Promise<Map<string, string>> {
@@ -283,10 +230,12 @@ export function flattenFullRow(
     : [];
 
   const tenDonViLop = tenDonViFromXaEmbed(row.don_vi);
+  const tenToChucLop = tenToChucFromEmbed(row.to_chuc);
   const rest = { ...row };
   delete rest.nguoi_tao;
   delete rest.mttq_lop_tap_huan_ct;
   delete rest.don_vi;
+  delete rest.to_chuc;
   const r = rest as Record<string, unknown>;
 
   return {
@@ -296,6 +245,8 @@ export function flattenFullRow(
     cap_tap_huan: String(r.cap_tap_huan ?? 'Cấp tỉnh') as MttqTapHuanCap,
     don_vi_id: nullableId(r.don_vi_id),
     ten_don_vi: tenDonViLop,
+    to_chuc_id: nullableId(r.to_chuc_id),
+    ten_to_chuc: tenToChucLop,
     ghi_chu: nullableStr(r.ghi_chu),
     id_nguoi_tao: String(r.id_nguoi_tao ?? ''),
     tg_tao: String(r.tg_tao ?? ''),
@@ -312,6 +263,7 @@ function normalizeFull(x: MttqLopTapHuan): MttqLopTapHuan {
     ...x,
     id: String(x.id),
     don_vi_id: x.don_vi_id == null || String(x.don_vi_id).trim() === '' ? null : String(x.don_vi_id),
+    to_chuc_id: x.to_chuc_id == null || String(x.to_chuc_id).trim() === '' ? null : String(x.to_chuc_id),
     chi_tiet: x.chi_tiet.map((c) => ({
       ...c,
       id: String(c.id),
@@ -330,6 +282,7 @@ function headerPayload(data: MttqTapHuanFormValues) {
     nam_tap_huan: data.nam_tap_huan,
     cap_tap_huan: cap,
     don_vi_id: donViId,
+    to_chuc_id: data.to_chuc_id.trim(),
     ghi_chu: data.ghi_chu?.trim() ?? null,
   };
 }
@@ -339,12 +292,13 @@ function headerPayloadForDb(data: MttqTapHuanFormValues): Record<string, unknown
   return {
     ...h,
     don_vi_id: h.don_vi_id != null ? Number(h.don_vi_id) : null,
+    to_chuc_id: Number(h.to_chuc_id),
   };
 }
 
 async function syncChildrenSupabase(parentId: string, lines: MttqTapHuanFormValues['chi_tiet']) {
   const supabase = getSupabase();
-  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   const q = () => supabase.from('mttq_lop_tap_huan_ct');
 
   const { data: existing, error: e1 } = await q().select('id').eq('id_lop_tap_huan', parentId);
@@ -354,7 +308,6 @@ async function syncChildrenSupabase(parentId: string, lines: MttqTapHuanFormValu
   const existingIds = (existing ?? []).map((r) => String(r.id));
   const toDelete = existingIds.filter((id: string) => !keep.has(id));
 
-  // Batch để giảm round-trip: 1 delete (in-list) + 1 upsert update + 1 insert.
   const baseOf = (line: MttqTapHuanFormValues['chi_tiet'][number]) => ({
     can_bo_id: Number(line.can_bo_id),
     thuoc_dien: line.thuoc_dien,
@@ -370,8 +323,6 @@ async function syncChildrenSupabase(parentId: string, lines: MttqTapHuanFormValu
     const { error: e2 } = await q().delete().in('id', toDelete);
     if (e2) handleSupabaseError(e2);
   }
-  // Không dùng `.upsert(..., onConflict: 'id')`: cột `id` là GENERATED ALWAYS AS IDENTITY —
-  // PostgREST vẫn tạo INSERT có `id` → Postgres/REST trả 400. Cập nhật từng dòng đã persist bằng `.update`.
   for (const row of toUpsertExisting) {
     const { id, ...patch } = row;
     const { error: e3 } = await q().update(patch).eq('id', id);
@@ -383,66 +334,13 @@ async function syncChildrenSupabase(parentId: string, lines: MttqTapHuanFormValu
   }
 }
 
-function syncChildrenMock(parentId: string, lines: MttqTapHuanFormValues['chi_tiet']) {
-  mockChildren = mockChildren.filter((c) => c.id_lop_tap_huan !== parentId);
-  for (const line of lines) {
-    const id = isPersistedChildId(line.id) ? line.id! : mockNextId();
-    mockChildren.push({
-      id,
-      id_lop_tap_huan: parentId,
-      can_bo_id: line.can_bo_id,
-      thuoc_dien: line.thuoc_dien,
-    });
-  }
-}
-
 export async function getMttqLopTapHuanList(): Promise<MttqLopTapHuanListRow[]> {
-  if (!isSupabase()) {
-    return mockParents.map((p) => {
-      const n = mockChildren.filter((c) => c.id_lop_tap_huan === p.id).length;
-      return {
-        id: p.id,
-        ten_lop_tap_huan: p.ten_lop_tap_huan,
-        nam_tap_huan: p.nam_tap_huan,
-        cap_tap_huan: p.cap_tap_huan,
-        don_vi_id: p.don_vi_id ?? null,
-        ten_don_vi: p.ten_don_vi ?? null,
-        ghi_chu: p.ghi_chu,
-        id_nguoi_tao: p.id_nguoi_tao,
-        tg_tao: p.tg_tao,
-        tg_cap_nhat: p.tg_cap_nhat,
-        ho_va_ten_nguoi_tao: p.ho_va_ten_nguoi_tao,
-        ten_tai_khoan_nguoi_tao: p.ten_tai_khoan_nguoi_tao,
-        id_phong_ban_nguoi_tao: p.id_phong_ban_nguoi_tao ?? null,
-        so_dong: n,
-      };
-    });
-  }
-
   const list = await repo.getAll({ orderBy: 'nam_tap_huan', ascending: false });
   return list.map((row) => flattenListRow(row as unknown as Record<string, unknown>));
 }
 
 /** Toàn bộ dòng CT (client filter/sort). Nếu dữ liệu rất lớn: chuyển phân trang + order trên `mttq_lop_tap_huan_ct`. */
 export async function getMttqLopTapHuanChiTietFlatList(): Promise<MttqTapHuanChiTietFlatRow[]> {
-  if (!isSupabase()) {
-    const mockCbMap = new Map(MTTQ_CAN_BO_MOCK_DATA.map((c) => [String(c.id), c]));
-    const rows: Record<string, unknown>[] = [];
-    for (const c of mockChildren) {
-      const p = mockParents.find((x) => x.id === c.id_lop_tap_huan);
-      if (!p) continue;
-      rows.push({
-        id: c.id,
-        id_lop_tap_huan: c.id_lop_tap_huan,
-        can_bo_id: c.can_bo_id,
-        thuoc_dien: c.thuoc_dien,
-        lop: mockLopEmbedFromParent(p),
-        can_bo: mockCanBoPostgrestFromMttq(mockCbMap.get(String(c.can_bo_id))),
-      });
-    }
-    return rows.map((r) => flattenChiTietFlatRow(r));
-  }
-
   const supabase = getSupabase();
   if (!supabase) return [];
   const [{ data, error }, toChucById] = await Promise.all([
@@ -476,24 +374,6 @@ export async function getMttqLopTapHuanChiTietFlatListForCanBoId(canBoId: string
   const id = String(canBoId ?? '').trim();
   if (!id) return [];
 
-  if (!isSupabase()) {
-    const mockCbMap = new Map(MTTQ_CAN_BO_MOCK_DATA.map((c) => [String(c.id), c]));
-    const rows: Record<string, unknown>[] = [];
-    for (const c of mockChildren.filter((x) => String(x.can_bo_id) === id)) {
-      const p = mockParents.find((x) => x.id === c.id_lop_tap_huan);
-      if (!p) continue;
-      rows.push({
-        id: c.id,
-        id_lop_tap_huan: c.id_lop_tap_huan,
-        can_bo_id: c.can_bo_id,
-        thuoc_dien: c.thuoc_dien,
-        lop: mockLopEmbedFromParent(p),
-        can_bo: mockCanBoPostgrestFromMttq(mockCbMap.get(String(c.can_bo_id))),
-      });
-    }
-    return sortTapHuanChiTietFlatByLopDesc(rows.map((r) => flattenChiTietFlatRow(r)));
-  }
-
   const supabase = getSupabase();
   if (!supabase) return [];
   const canBoKey = /^\d+$/.test(id) ? Number(id) : id;
@@ -513,35 +393,6 @@ export async function getMttqLopTapHuanChiTietFlatListForCanBoId(canBoId: string
 }
 
 export async function getMttqLopTapHuanById(id: string): Promise<MttqLopTapHuan | null> {
-  if (!isSupabase()) {
-    const p = mockParents.find((x) => x.id === id);
-    if (!p) return null;
-    const mockCbMap = new Map(MTTQ_CAN_BO_MOCK_DATA.map((c) => [String(c.id), c]));
-    const chi = mockChildren
-      .filter((c) => c.id_lop_tap_huan === id)
-      .map((c) => {
-        const cb = mockCbMap.get(String(c.can_bo_id));
-        const three = tapHuanCanBoThreeColFromCanBo(cb);
-        const snap = tapHuanSnapshotFromCanBo(cb);
-        return {
-          ...c,
-          chuc_vu: three.ten_chuc_vu.trim() ? three.ten_chuc_vu : null,
-          ten_to_chuc: three.ten_to_chuc.trim() ? three.ten_to_chuc : null,
-          ten_phong_ban: three.ten_phong_ban.trim() ? three.ten_phong_ban : null,
-          don_vi_cong_tac: snap.don_vi_cong_tac.trim() ? snap.don_vi_cong_tac : null,
-          ten_can_bo: cb?.ho_ten ?? null,
-          can_bo_don_vi_id: cb?.don_vi_id != null ? String(cb.don_vi_id) : null,
-          ten_don_vi_can_bo: cb?.ten_don_vi ?? null,
-          chuc_vu_cap_quan_ly: cb?.chuc_vu_cap_quan_ly ?? null,
-        };
-      });
-    return normalizeFull({
-      ...p,
-      don_vi_id: p.don_vi_id ?? null,
-      chi_tiet: chi,
-    });
-  }
-
   const supabase = getSupabase();
   if (!supabase) return null;
   const [{ data, error }, toChucById] = await Promise.all([
@@ -564,26 +415,6 @@ export async function createMttqLopTapHuan(
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('matTranTapHuan.service.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const id = mockNextId();
-    const now = new Date().toISOString();
-    mockParents.push({
-      id,
-      ...headerPayload(data),
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-      ho_va_ten_nguoi_tao: 'Mock',
-      ten_tai_khoan_nguoi_tao: 'mock',
-      id_phong_ban_nguoi_tao: null,
-    });
-    syncChildrenMock(id, data.chi_tiet);
-    const full = await getMttqLopTapHuanById(id);
-    if (!full) throw new Error(txt('matTranTapHuan.service.notFound'));
-    return full;
-  }
-
-  // Narrow returning — `getById` ngay sau đó nạp full row, không cần payload rộng.
   const inserted = await repo.insert(
     {
       ...headerPayloadForDb(data),
@@ -602,20 +433,6 @@ export async function updateMttqLopTapHuan(
   id: string,
   data: MttqTapHuanFormValues,
 ): Promise<MttqLopTapHuan> {
-  if (!isSupabase()) {
-    const idx = mockParents.findIndex((p) => p.id === id);
-    if (idx === -1) throw new Error(txt('matTranTapHuan.service.notFound'));
-    mockParents[idx] = {
-      ...mockParents[idx],
-      ...headerPayload(data),
-      tg_cap_nhat: new Date().toISOString(),
-    };
-    syncChildrenMock(id, data.chi_tiet);
-    const full = await getMttqLopTapHuanById(id);
-    if (!full) throw new Error(txt('matTranTapHuan.service.notFound'));
-    return full;
-  }
-
   await repo.update(id, headerPayloadForDb(data) as unknown as Partial<ParentRepoRow>, {
     returningSelect: 'id,tg_cap_nhat',
   });
@@ -627,10 +444,5 @@ export async function updateMttqLopTapHuan(
 
 export async function deleteMttqLopTapHuanMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    mockParents = mockParents.filter((p) => !ids.includes(p.id));
-    mockChildren = mockChildren.filter((c) => !ids.includes(c.id_lop_tap_huan));
-    return;
-  }
   await repo.remove(ids);
 }

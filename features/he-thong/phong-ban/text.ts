@@ -8,6 +8,7 @@ export const department = {
   "exportSuccess": "Xuất file thành công",
   "noExportData": "Không có dữ liệu để xuất",
   "importDeveloping": "Chức năng Import đang phát triển",
+  "importMobileDesc": "Import danh sách phòng ban từ file Excel",
   "toolbar": {
     "department": "Phòng"
   },

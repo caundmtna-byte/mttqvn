@@ -1,5 +1,8 @@
 export const danTocThamHoiToChuc = {
   noViewPermission: 'Bạn không có quyền xem thăm hỏi tổ chức.',
+  noViewRowPermission: 'Bạn không có quyền xem lượt thăm hỏi này.',
+  noEditOtherDonVi: 'Bạn chỉ được sửa bản ghi thuộc đơn vị của mình.',
+  noDeleteOtherDonVi: 'Bạn chỉ được xóa bản ghi thuộc đơn vị của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
   searchPlaceholder: 'Tìm theo tên cơ sở, dịp thăm hỏi, đơn vị thăm hỏi, nội dung…',
   emptyTitle: 'Chưa có lượt thăm hỏi',

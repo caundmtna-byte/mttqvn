@@ -74,7 +74,7 @@ import {
 const CUSTOM_PRESET = 'custom';
 
 const initialDateRange: DateRangeValue = {
-  preset: 'thisMonth',
+  preset: 'all',
   customStart: '',
   customEnd: '',
 };
@@ -279,7 +279,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
   );
 
   const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    () => isStandardDateRangeNonDefault(dateRange, 'all'),
     [dateRange],
   );
 

@@ -54,7 +54,6 @@ const DipThamHoiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) 
   const canCreateToChuc = toChucPerms.canCreate;
   const canCreateCaNhan = caNhanPerms.canCreate;
   const [changeStatusOpen, setChangeStatusOpen] = useState(false);
-  const [detailTab, setDetailTab] = useState<'to_chuc' | 'ca_nhan'>('to_chuc');
   const emptyCell = txt('common.emptyCell');
 
   const { data: toChucRows = [] } = useThamHoiToChucByDipId(data.id, { enabled: canViewToChuc });
@@ -69,13 +68,6 @@ const DipThamHoiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) 
       onClick: () => setChangeStatusOpen(true),
     });
   }
-
-  const tabClass = (active: boolean) =>
-    `px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-      active
-        ? 'bg-primary text-primary-foreground border-primary'
-        : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted'
-    }`;
 
   const toChucBasePath = '/dan-toc-ton-giao/tham-hoi/tham-hoi-to-chuc';
   const caNhanBasePath = '/dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan';
@@ -103,33 +95,6 @@ const DipThamHoiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) 
   const handleViewAllCaNhan = () => {
     navigate(`${caNhanBasePath}?dipId=${encodeURIComponent(data.id)}`);
   };
-
-  const sectionListActions = (
-    <div className="flex flex-wrap items-center gap-2 justify-end">
-      {canViewToChuc ? (
-        <button type="button" className={tabClass(detailTab === 'to_chuc')} onClick={() => setDetailTab('to_chuc')}>
-          {txt('danTocDipThamHoi.detail.tabToChuc')} ({toChucRows.length})
-        </button>
-      ) : null}
-      {canViewCaNhan ? (
-        <button type="button" className={tabClass(detailTab === 'ca_nhan')} onClick={() => setDetailTab('ca_nhan')}>
-          {txt('danTocDipThamHoi.detail.tabCaNhan')} ({caNhanRows.length})
-        </button>
-      ) : null}
-      {detailTab === 'to_chuc' && canCreateToChuc ? (
-        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={handleAddToChuc}>
-          <Plus size={14} className="mr-1" />
-          {txt('danTocDipThamHoi.detail.addToChuc')}
-        </Button>
-      ) : null}
-      {detailTab === 'ca_nhan' && canCreateCaNhan ? (
-        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={handleAddCaNhan}>
-          <Plus size={14} className="mr-1" />
-          {txt('danTocDipThamHoi.detail.addCaNhan')}
-        </Button>
-      ) : null}
-    </div>
-  );
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -207,26 +172,33 @@ const DipThamHoiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) 
           </DetailFieldGrid>
         </DetailSection>
 
-        {(canViewToChuc || canViewCaNhan) && (
+        {canViewToChuc ? (
           <DetailSection
-            title={txt('danTocDipThamHoi.detail.sectionDetailList')}
-            headerRight={sectionListActions}
+            title={`${txt('danTocDipThamHoi.detail.sectionToChuc')} (${toChucRows.length})`}
+            icon={<Building2 size={14} />}
+            headerRight={
+              canCreateToChuc ? (
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={handleAddToChuc}>
+                  <Plus size={14} className="mr-1" />
+                  {txt('danTocDipThamHoi.detail.addToChuc')}
+                </Button>
+              ) : null
+            }
           >
-            {detailTab === 'to_chuc' && canViewToChuc ? (
-              toChucRows.length === 0 ? (
-                <div className="space-y-3">
-                  <EmptyState title={txt('danTocDipThamHoi.detail.noChildToChuc')} icon={<Building2 className="h-10 w-10 text-muted-foreground" />} />
-                  {canCreateToChuc ? (
-                    <div className="flex justify-center">
-                      <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleAddToChuc}>
-                        <Plus size={14} className="mr-1.5" />
-                        {txt('danTocDipThamHoi.detail.addToChuc')}
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <>
+            {toChucRows.length === 0 ? (
+              <div className="space-y-3">
+                <EmptyState title={txt('danTocDipThamHoi.detail.noChildToChuc')} icon={<Building2 className="h-10 w-10 text-muted-foreground" />} />
+                {canCreateToChuc ? (
+                  <div className="flex justify-center">
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleAddToChuc}>
+                      <Plus size={14} className="mr-1.5" />
+                      {txt('danTocDipThamHoi.detail.addToChuc')}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <>
                 <EmbeddedChildDataGrid
                   rows={toChucRows}
                   getRowKey={(row) => row.id}
@@ -265,24 +237,38 @@ const DipThamHoiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) 
                     <ExternalLink size={12} />
                   </button>
                 </div>
-                </>
-              )
-            ) : null}
-            {detailTab === 'ca_nhan' && canViewCaNhan ? (
-              caNhanRows.length === 0 ? (
-                <div className="space-y-3">
-                  <EmptyState title={txt('danTocDipThamHoi.detail.noChildCaNhan')} icon={<User className="h-10 w-10 text-muted-foreground" />} />
-                  {canCreateCaNhan ? (
-                    <div className="flex justify-center">
-                      <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleAddCaNhan}>
-                        <Plus size={14} className="mr-1.5" />
-                        {txt('danTocDipThamHoi.detail.addCaNhan')}
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <>
+              </>
+            )}
+          </DetailSection>
+        ) : null}
+
+        {canViewCaNhan ? (
+          <DetailSection
+            title={`${txt('danTocDipThamHoi.detail.sectionCaNhan')} (${caNhanRows.length})`}
+            icon={<User size={14} />}
+            headerRight={
+              canCreateCaNhan ? (
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={handleAddCaNhan}>
+                  <Plus size={14} className="mr-1" />
+                  {txt('danTocDipThamHoi.detail.addCaNhan')}
+                </Button>
+              ) : null
+            }
+          >
+            {caNhanRows.length === 0 ? (
+              <div className="space-y-3">
+                <EmptyState title={txt('danTocDipThamHoi.detail.noChildCaNhan')} icon={<User className="h-10 w-10 text-muted-foreground" />} />
+                {canCreateCaNhan ? (
+                  <div className="flex justify-center">
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleAddCaNhan}>
+                      <Plus size={14} className="mr-1.5" />
+                      {txt('danTocDipThamHoi.detail.addCaNhan')}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <>
                 <EmbeddedChildDataGrid
                   rows={caNhanRows}
                   getRowKey={(row) => row.id}
@@ -321,11 +307,10 @@ const DipThamHoiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) 
                     <ExternalLink size={12} />
                   </button>
                 </div>
-                </>
-              )
-            ) : null}
+              </>
+            )}
           </DetailSection>
-        )}
+        ) : null}
 
         <DetailSection title={txt('danTocDipThamHoi.detail.systemInfo')}>
           <DetailFieldGrid>

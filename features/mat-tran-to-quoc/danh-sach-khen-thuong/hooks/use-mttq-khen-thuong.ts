@@ -4,7 +4,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
-import type { MttqKhenThuong, MttqKhenThuongChiTietFlatRow, MttqKhenThuongLineForCanBo } from '../core/types';
+import type { MttqKhenThuong, MttqKhenThuongChiTietFlatRow, MttqKhenThuongLineForCanBo, MttqKhenThuongListRow } from '../core/types';
 import type { MttqKhenThuongFormValues } from '../core/schema';
 import {
   createMttqKhenThuong,
@@ -13,6 +13,7 @@ import {
   getMttqKhenThuongChiTietFlatList,
   getMttqKhenThuongList,
   getMttqKhenThuongLinesForCanBoId,
+  mttqKhenThuongDetailToListRow,
   updateMttqKhenThuong,
 } from '../services/mttq-khen-thuong-service';
 
@@ -78,7 +79,10 @@ export const useUpdateMttqKhenThuong = (onSuccess?: () => void) => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: MttqKhenThuongFormValues }) => updateMttqKhenThuong(id, data),
     onSuccess: (updated, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
+      const listRow = mttqKhenThuongDetailToListRow(updated);
+      queryClient.setQueryData<MttqKhenThuongListRow[]>(listKey, (cur) =>
+        cur?.map((r) => (r.id === id ? listRow : r)),
+      );
       void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.mttqKhenThuong.byCanBoPrefix,

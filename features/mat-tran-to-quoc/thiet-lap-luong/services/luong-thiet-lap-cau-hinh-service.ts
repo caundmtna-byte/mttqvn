@@ -1,10 +1,7 @@
-import { isSupabase } from '@/lib/data/config';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { LuongThietLapCauHinhRow } from '../core/types';
 import { LUONG_THIET_LAP_CAU_HINH_RETURNING, LUONG_THIET_LAP_CAU_HINH_SELECT } from '../core/supabase-select';
-
-let mockMlcs = 2340000;
 
 function flatten(row: Record<string, unknown>): LuongThietLapCauHinhRow {
   return {
@@ -16,15 +13,6 @@ function flatten(row: Record<string, unknown>): LuongThietLapCauHinhRow {
 }
 
 export async function getLuongThietLapCauHinh(): Promise<LuongThietLapCauHinhRow | null> {
-  if (!isSupabase()) {
-    const now = new Date().toISOString();
-    return {
-      id: '1',
-      muc_luong_co_so: String(mockMlcs),
-      tg_tao: now,
-      tg_cap_nhat: now,
-    };
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -38,14 +26,8 @@ export async function getLuongThietLapCauHinh(): Promise<LuongThietLapCauHinhRow
 }
 
 export async function updateLuongThietLapCauHinhMucLuong(muc_luong_co_so: number): Promise<LuongThietLapCauHinhRow> {
-  if (!isSupabase()) {
-    mockMlcs = muc_luong_co_so;
-    const r = await getLuongThietLapCauHinh();
-    if (!r) throw new Error('missing');
-    return r;
-  }
   const supabase = getSupabase();
-  if (!supabase) throw new Error('missing');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   const { data, error } = await supabase
     .from('luong_thiet_lap_cau_hinh')
     .update({ muc_luong_co_so })

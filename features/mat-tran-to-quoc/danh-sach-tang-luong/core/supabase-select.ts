@@ -1,6 +1,6 @@
 import { MTTQ_CAN_BO_EMBED_PHONG_BAN } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/core/supabase-select';
 
-const BASE_COLS = [
+const LIST_COLS = [
   'id',
   'can_bo_id',
   'ngay_nang_luong',
@@ -12,12 +12,12 @@ const BASE_COLS = [
   'so_thang_rut_ngan',
   'ngay_den_han_goc',
   'luong',
-  'ghi_chu',
-  'file_quyet_dinh',
   'id_nguoi_tao',
   'tg_tao',
   'tg_cap_nhat',
 ].join(',');
+
+const FULL_ONLY_COLS = ['ghi_chu', 'file_quyet_dinh'].join(',');
 
 /** Embed cán bộ — cùng FK rõ ràng như tab chi tiết Tập huấn / Danh sách cán bộ. */
 const CAN_BO_INNER = [
@@ -43,6 +43,6 @@ const NGUOI_TAO =
 
 const EMBED_LIST = [CAN_BO_EMBED, NGACH_CU, BAC_CU, NGACH_MOI, BAC_MOI, NGUOI_TAO].join(',');
 
-export const MTTQ_TANG_LUONG_SELECT_LIST = `${BASE_COLS},${EMBED_LIST}`;
-export const MTTQ_TANG_LUONG_SELECT_FULL = MTTQ_TANG_LUONG_SELECT_LIST;
-export const MTTQ_TANG_LUONG_RETURNING = BASE_COLS;
+export const MTTQ_TANG_LUONG_SELECT_LIST = `${LIST_COLS},${EMBED_LIST}`;
+export const MTTQ_TANG_LUONG_SELECT_FULL = `${LIST_COLS},${FULL_ONLY_COLS},${EMBED_LIST}`;
+export const MTTQ_TANG_LUONG_RETURNING = 'id,tg_cap_nhat';

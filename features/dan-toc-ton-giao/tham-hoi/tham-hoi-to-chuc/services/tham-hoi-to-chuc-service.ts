@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -7,7 +6,6 @@ import type { ImportErrorRow } from '@/components/shared/ImportDialog';
 import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
 import { getThongTinToChucQuanTrongList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/services/thong-tin-to-chuc-quan-trong-service';
 import { getDipTenById, getDipThamHoiList } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/services/dip-tham-hoi-service';
-import { getDepartments } from '@/features/he-thong/phong-ban/services/phong-ban-service';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import type { ThamHoiToChucFormValues } from '../core/schema';
 import { thamHoiToChucSchema } from '../core/schema';
@@ -18,15 +16,12 @@ import {
   DTTG_THAM_HOI_TO_CHUC_RETURNING,
   DTTG_THAM_HOI_TO_CHUC_SELECT,
 } from '../core/supabase-select';
-import { DTTG_THAM_HOI_TO_CHUC_MOCK } from '../mock-data';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
 const repo = createRepository<RepoRow>({
   tableName: 'dttg_tham_hoi_to_chuc',
   select: DTTG_THAM_HOI_TO_CHUC_SELECT,
-  delay: 350,
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -94,13 +89,6 @@ export function flattenThamHoiToChucRow(row: Record<string, unknown>): ThamHoiTo
   };
 }
 
-let mockRows = structuredClone(DTTG_THAM_HOI_TO_CHUC_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 async function buildPayload(data: ThamHoiToChucFormValues): Promise<Record<string, unknown>> {
   const dipTen = await getDipTenById(data.dip_tham_hoi_id);
   if (!dipTen?.trim()) {
@@ -142,12 +130,6 @@ async function resolveXaPhuongIdByTen(ten: string): Promise<string | null> {
   return partial?.id ?? null;
 }
 
-async function resolveXaPhuongTenById(id: string | null | undefined): Promise<string | null> {
-  if (id == null || id === '') return null;
-  const all = await getXaPhuongAll();
-  return all.find((x) => x.id === id)?.ten ?? null;
-}
-
 function isMttqTinhLabel(raw: string): boolean {
   const lower = raw.trim().toLowerCase();
   return (
@@ -159,57 +141,12 @@ function isMttqTinhLabel(raw: string): boolean {
   );
 }
 
-async function mockRowFromForm(
-  data: ThamHoiToChucFormValues,
-  base: Partial<ThamHoiToChuc> = {},
-): Promise<ThamHoiToChuc> {
-  const orgList = await getThongTinToChucQuanTrongList();
-  const org = orgList.find((o) => o.id === data.to_chuc_id);
-  const tenDonVi = await resolveXaPhuongTenById(data.don_vi_tham_hoi_id);
-  const dipTen = (await getDipTenById(data.dip_tham_hoi_id)) ?? base.dip_tham_hoi ?? '';
-  const pbList = await getDepartments();
-  const pb = data.phong_ban_tham_muu_id
-    ? pbList.find((p) => p.id === data.phong_ban_tham_muu_id)
-    : undefined;
-  return {
-    id: base.id ?? mockNextId(),
-    to_chuc_id: data.to_chuc_id,
-    ten_co_so: org?.ten_co_so ?? base.ten_co_so ?? null,
-    loai_hinh: org?.loai_hinh ?? base.loai_hinh ?? null,
-    dip_tham_hoi_id: data.dip_tham_hoi_id,
-    dip_tham_hoi: dipTen,
-    ten_dip_tham_hoi: dipTen || null,
-    thoi_gian_du_kien: data.thoi_gian_du_kien ?? null,
-    thoi_gian_thuc_te: data.thoi_gian_thuc_te ?? null,
-    don_vi_tham_hoi_id: data.don_vi_tham_hoi_id ?? null,
-    ten_don_vi_tham_hoi: tenDonVi,
-    phong_ban_tham_muu_id: data.phong_ban_tham_muu_id ?? null,
-    ten_phong_ban: pb?.ten_phong_ban ?? base.ten_phong_ban ?? null,
-    noi_dung_tham_hoi: data.noi_dung_tham_hoi ?? null,
-    thanh_phan_doan: data.thanh_phan_doan ?? null,
-    qua_tang: data.qua_tang ?? null,
-    tien_do: data.tien_do,
-    ket_qua_thuc_hien: data.ket_qua_thuc_hien ?? null,
-    link_ket_qua: data.link_ket_qua ?? null,
-    id_nguoi_tao: base.id_nguoi_tao ?? '',
-    tg_tao: base.tg_tao ?? new Date().toISOString(),
-    tg_cap_nhat: base.tg_cap_nhat ?? new Date().toISOString(),
-    ho_va_ten_nguoi_tao: base.ho_va_ten_nguoi_tao ?? 'Mock',
-  };
-}
-
 export async function getThamHoiToChucList(): Promise<ThamHoiToChuc[]> {
-  if (!isSupabase()) {
-    return [...mockRows].sort((a, b) => b.tg_cap_nhat.localeCompare(a.tg_cap_nhat));
-  }
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   return list.map((row) => flattenThamHoiToChucRow(row as unknown as Record<string, unknown>));
 }
 
 export async function getThamHoiToChucById(id: string): Promise<ThamHoiToChuc | null> {
-  if (!isSupabase()) {
-    return mockRows.find((r) => r.id === id) ?? null;
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -225,11 +162,6 @@ export async function getThamHoiToChucById(id: string): Promise<ThamHoiToChuc | 
 export async function getThamHoiToChucByToChucId(toChucId: string): Promise<ThamHoiToChuc[]> {
   const trimmed = toChucId.trim();
   if (!trimmed) return [];
-  if (!isSupabase()) {
-    return mockRows
-      .filter((r) => r.to_chuc_id === trimmed)
-      .sort((a, b) => b.tg_cap_nhat.localeCompare(a.tg_cap_nhat));
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -244,11 +176,6 @@ export async function getThamHoiToChucByToChucId(toChucId: string): Promise<Tham
 export async function getThamHoiToChucByDipId(dipId: string): Promise<ThamHoiToChuc[]> {
   const trimmed = dipId.trim();
   if (!trimmed) return [];
-  if (!isSupabase()) {
-    return mockRows
-      .filter((r) => r.dip_tham_hoi_id === trimmed)
-      .sort((a, b) => b.tg_cap_nhat.localeCompare(a.tg_cap_nhat));
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -267,19 +194,6 @@ export async function createThamHoiToChuc(
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('danTocThamHoiToChuc.service.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const now = new Date().toISOString();
-    const row = await mockRowFromForm(data, {
-      id: mockNextId(),
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-      ho_va_ten_nguoi_tao: 'Mock',
-    });
-    mockRows = [row, ...mockRows];
-    return { ...row };
-  }
-
   const inserted = await repo.insert(
     { ...(await buildPayload(data)), id_nguoi_tao: Number(trimmed) },
     { returningSelect: DTTG_THAM_HOI_TO_CHUC_RETURNING },
@@ -288,18 +202,6 @@ export async function createThamHoiToChuc(
 }
 
 export async function updateThamHoiToChuc(id: string, data: ThamHoiToChucFormValues): Promise<ThamHoiToChuc> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('danTocThamHoiToChuc.service.notFound'));
-    const now = new Date().toISOString();
-    const row = await mockRowFromForm(data, {
-      ...mockRows[idx],
-      tg_cap_nhat: now,
-    });
-    mockRows = [...mockRows.slice(0, idx), row, ...mockRows.slice(idx + 1)];
-    return { ...row };
-  }
-
   const updated = await repo.update(id, (await buildPayload(data)) as unknown as Partial<RepoRow>, {
     returningSelect: DTTG_THAM_HOI_TO_CHUC_RETURNING,
   });
@@ -316,21 +218,6 @@ export async function updateThamHoiToChucTienDo(
     patch.thoi_gian_thuc_te = thoiGianThucTe?.trim() || new Date().toISOString().slice(0, 10);
   }
 
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('danTocThamHoiToChuc.service.notFound'));
-    mockRows[idx] = {
-      ...mockRows[idx],
-      tien_do: tienDo,
-      thoi_gian_thuc_te:
-        tienDo === 'Đã hoàn thành'
-          ? (thoiGianThucTe?.trim() || new Date().toISOString().slice(0, 10))
-          : mockRows[idx].thoi_gian_thuc_te,
-      tg_cap_nhat: new Date().toISOString(),
-    };
-    return { ...mockRows[idx] };
-  }
-
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('danTocThamHoiToChuc.service.notFound'));
   const { data, error } = await supabase
@@ -345,11 +232,6 @@ export async function updateThamHoiToChucTienDo(
 
 export async function deleteThamHoiToChucMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    const set = new Set(ids);
-    mockRows = mockRows.filter((r) => !set.has(r.id));
-    return;
-  }
   await repo.remove(ids);
 }
 
@@ -523,37 +405,10 @@ export async function importThamHoiToChuc(
   }
 
   if (validPayloads.length > 0) {
-    if (!isSupabase()) {
-      const now = new Date().toISOString();
-      for (const payload of validPayloads) {
-        const parsed = thamHoiToChucSchema.parse({
-          to_chuc_id: String(payload.to_chuc_id ?? ''),
-          dip_tham_hoi_id: String(payload.dip_tham_hoi_id ?? ''),
-          thoi_gian_du_kien: nullableStr(payload.thoi_gian_du_kien) ?? undefined,
-          don_vi_tham_hoi_id:
-            payload.don_vi_tham_hoi_id == null ? undefined : String(payload.don_vi_tham_hoi_id),
-          noi_dung_tham_hoi: nullableStr(payload.noi_dung_tham_hoi) ?? undefined,
-          thanh_phan_doan: nullableStr(payload.thanh_phan_doan) ?? undefined,
-          qua_tang: nullableStr(payload.qua_tang) ?? undefined,
-          tien_do: String(payload.tien_do ?? TIEN_DO_DEFAULT) as TienDoThamHoi,
-          ket_qua_thuc_hien: nullableStr(payload.ket_qua_thuc_hien) ?? undefined,
-          link_ket_qua: nullableStr(payload.link_ket_qua) ?? undefined,
-        });
-        const row = await mockRowFromForm(parsed, {
-          id: mockNextId(),
-          id_nguoi_tao: trimmedNv,
-          tg_tao: now,
-          tg_cap_nhat: now,
-          ho_va_ten_nguoi_tao: 'Mock',
-        });
-        mockRows = [row, ...mockRows];
-      }
-    } else {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error(txt('danTocThamHoiToChuc.service.notFound'));
-      const { error } = await supabase.from('dttg_tham_hoi_to_chuc').insert(validPayloads);
-      if (error) handleSupabaseError(error);
-    }
+    const supabase = getSupabase();
+    if (!supabase) throw new Error(txt('danTocThamHoiToChuc.service.notFound'));
+    const { error } = await supabase.from('dttg_tham_hoi_to_chuc').insert(validPayloads);
+    if (error) handleSupabaseError(error);
   }
 
   return { created: validPayloads.length, errors, errorRows };

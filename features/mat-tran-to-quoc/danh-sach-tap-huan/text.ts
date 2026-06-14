@@ -30,6 +30,7 @@ export const matTranTapHuan = {
     canBoProfileIncomplete:
       'Không lấy được chức vụ / tổ chức từ hồ sơ cán bộ — kiểm tra danh sách cán bộ hoặc chọn cán bộ khác.',
     donViRequired: 'Chọn xã/phường (bắt buộc với lớp Cấp xã).',
+    toChucRequired: 'Chọn tổ chức.',
     canBoDonViMismatch:
       'Với lớp Cấp xã, mỗi cán bộ tham gia phải thuộc đúng xã/phường đã chọn cho lớp (cùng đơn vị hồ sơ).',
   },
@@ -80,6 +81,7 @@ export const matTranTapHuan = {
     tenLopCol: 'Lớp tập huấn',
     namCol: 'Năm',
     capCol: 'Cấp',
+    toChucCol: 'Tổ chức',
     donViCol: 'Đơn vị (xã/phường)',
     soDongCol: 'Số người',
     nguoiTaoCol: 'Người tạo',
@@ -97,6 +99,7 @@ export const matTranTapHuan = {
     tenLop: 'Tên lớp tập huấn',
     namTapHuan: 'Năm tập huấn',
     capTapHuan: 'Cấp tập huấn',
+    toChuc: 'Tổ chức',
     donVi: 'Xã/phường',
     donViHint: 'Áp dụng khi chọn Cấp xã — chọn xã/phường.',
     ghiChu: 'Ghi chú',

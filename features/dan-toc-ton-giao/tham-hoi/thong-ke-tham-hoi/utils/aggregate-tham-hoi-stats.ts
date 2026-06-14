@@ -337,3 +337,90 @@ export function formatLoaiLabel(
 ): string {
   return loai === 'to_chuc' ? labelToChuc : labelCaNhan;
 }
+
+export interface ThamHoiByYearRow {
+  year: string;
+  label: string;
+  soDot: number;
+  tongLuot: number;
+  toChuc: number;
+  caNhan: number;
+  hoanThanh: number;
+  dangThucHien: number;
+  chuaThucHien: number;
+}
+
+function getThamHoiRowYear(row: ThamHoiThongKeRow): string | null {
+  const d = getThamHoiStatsDateFromRow(row);
+  if (!d || d.length < 4) return null;
+  const year = d.slice(0, 4);
+  return /^\d{4}$/.test(year) ? year : null;
+}
+
+function getDipKey(row: ThamHoiThongKeRow): string {
+  return row.dip_tham_hoi_id?.trim() || row.dip_tham_hoi?.trim() || '—';
+}
+
+export function buildByYearStats(filtered: ThamHoiThongKeRow[]): ThamHoiByYearRow[] {
+  const buckets = new Map<
+    string,
+    {
+      dipIds: Set<string>;
+      tongLuot: number;
+      toChuc: number;
+      caNhan: number;
+      hoanThanh: number;
+      dangThucHien: number;
+      chuaThucHien: number;
+    }
+  >();
+
+  for (const row of filtered) {
+    const year = getThamHoiRowYear(row);
+    if (!year) continue;
+
+    let bucket = buckets.get(year);
+    if (!bucket) {
+      bucket = {
+        dipIds: new Set<string>(),
+        tongLuot: 0,
+        toChuc: 0,
+        caNhan: 0,
+        hoanThanh: 0,
+        dangThucHien: 0,
+        chuaThucHien: 0,
+      };
+      buckets.set(year, bucket);
+    }
+
+    bucket.dipIds.add(getDipKey(row));
+    bucket.tongLuot += 1;
+    if (row.loai === 'to_chuc') bucket.toChuc += 1;
+    else bucket.caNhan += 1;
+    if (row.tinh_trang === 'Đã hoàn thành') bucket.hoanThanh += 1;
+    else if (row.tinh_trang === 'Đang thực hiện') bucket.dangThucHien += 1;
+    else bucket.chuaThucHien += 1;
+  }
+
+  return [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([year, b]) => ({
+      year,
+      label: year,
+      soDot: b.dipIds.size,
+      tongLuot: b.tongLuot,
+      toChuc: b.toChuc,
+      caNhan: b.caNhan,
+      hoanThanh: b.hoanThanh,
+      dangThucHien: b.dangThucHien,
+      chuaThucHien: b.chuaThucHien,
+    }));
+}
+
+export function buildByYearChartData(rows: ThamHoiByYearRow[]) {
+  return rows.map((r) => ({
+    label: r.label,
+    soDot: r.soDot,
+    tongLuot: r.tongLuot,
+  }));
+}

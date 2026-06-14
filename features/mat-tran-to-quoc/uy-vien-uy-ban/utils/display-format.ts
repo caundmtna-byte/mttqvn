@@ -5,10 +5,10 @@ import {
 } from '../core/constants';
 import { formatDate, formatDateShort } from '@/lib/utils';
 import {
-  canBoPhoneTelHref,
-  formatCanBoPhoneDisplay,
+  formatPhoneDisplay as formatCanBoPhoneDisplay,
+  phoneTelHref as canBoPhoneTelHref,
   trimmedDisplay,
-} from '@/features/mat-tran-to-quoc/danh-sach-can-bo/utils/display-format';
+} from '@/lib/display-format';
 
 /** Ngày ISO (YYYY-MM-DD) → hiển thị DD/MM/YYYY (chi tiết). */
 export function formatUyVienDetailDate(iso: string | null | undefined): string | null {

@@ -50,6 +50,9 @@ const CT_COLS_FULL = [
 export const NHAP_XUAT_KHO_SELECT_FULL = [
   BASE_COLS_LIST,
   'ghi_chu',
+  'nguoi_giao_nhan',
+  'bo_phan',
+  'chung_tu_goc',
   KHO_XUAT,
   KHO_NHAP,
   DON_VI,

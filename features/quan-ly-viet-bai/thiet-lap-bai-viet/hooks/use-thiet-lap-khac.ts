@@ -11,6 +11,7 @@ import {
   deleteThietLapKhac,
 } from '../services/thiet-lap-khac-service';
 import type { ThietLapKhacFormValues } from '../core/schema';
+import type { BaiVietThietLapKhac } from '../core/types';
 
 const qk = queryKeys.baiVietThietLapKhac.all;
 
@@ -39,8 +40,11 @@ export const useUpdateThietLapKhac = (onSuccess?: () => void) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ThietLapKhacFormValues }) => updateThietLapKhac(id, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: qk });
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData<BaiVietThietLapKhac[]>(qk, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
+      void queryClient.invalidateQueries({ queryKey: qk, refetchType: 'none' });
       toast.success(txt('articleSettings.toast.khacUpdate'));
       onSuccess?.();
     },

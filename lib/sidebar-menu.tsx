@@ -38,7 +38,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
   {
     path: '/quan-ly-viet-bai',
     nameKey: 'nav.quanLyVietBai',
-    descriptionKey: 'page.home.placeholderModuleDesc',
+    descriptionKey: 'page.home.vietBaiModuleDesc',
     icon: FilePenLine,
     gradient: 'bg-gradient-to-br from-violet-600 to-violet-900 dark:from-violet-500 dark:to-violet-800',
   },
@@ -52,21 +52,21 @@ export const SIDEBAR_MENU: MenuItem[] = [
   {
     path: '/phan-bien-xa-hoi',
     nameKey: 'nav.phanBienXaHoi',
-    descriptionKey: 'page.home.placeholderModuleDesc',
+    descriptionKey: 'page.home.phanBienModuleDesc',
     icon: Megaphone,
     gradient: 'bg-gradient-to-br from-orange-600 to-orange-900 dark:from-orange-500 dark:to-orange-800',
   },
   {
     path: '/dan-toc-ton-giao',
     nameKey: 'nav.danTocTonGiao',
-    descriptionKey: 'page.home.placeholderModuleDesc',
+    descriptionKey: 'page.home.danTocModuleDesc',
     icon: UsersRound,
     gradient: 'bg-gradient-to-br from-indigo-600 to-indigo-900 dark:from-indigo-500 dark:to-indigo-800',
   },
   {
     path: '/trang-thong-tin-khac',
     nameKey: 'nav.trangThongTinKhac',
-    descriptionKey: 'page.home.placeholderModuleDesc',
+    descriptionKey: 'page.home.trangThongTinKhacModuleDesc',
     icon: LayoutGrid,
     gradient: 'bg-gradient-to-br from-teal-600 to-teal-900 dark:from-teal-500 dark:to-teal-800',
   },

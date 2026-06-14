@@ -12,10 +12,7 @@ import {
   WidthType,
 } from 'docx';
 import { getTodayISODate } from '@/lib/utils';
-import {
-  layoutNhapXuatKhoPhieuMetaPairs,
-  type NhapXuatKhoPhieuDocumentModel,
-} from './build-nhap-xuat-kho-phieu-document';
+import type { NhapXuatKhoPhieuDocumentModel } from './build-nhap-xuat-kho-phieu-document';
 
 const FONT = 'Times New Roman';
 const BODY_SIZE = 22;
@@ -23,10 +20,10 @@ const TITLE_SIZE = 28;
 const SUB_SIZE = 20;
 
 const PAGE_MARGIN = {
-  top: 850,
-  right: 850,
-  bottom: 850,
-  left: 1134,
+  top: 567,
+  right: 567,
+  bottom: 567,
+  left: 567,
 };
 
 const thinBorder = {
@@ -69,106 +66,94 @@ export async function downloadNhapXuatKhoPhieuDocx(
   fileName: string,
 ): Promise<void> {
   const children: (Paragraph | Table)[] = [
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
-      children: [run(model.orgNameLine1, { bold: true, size: TITLE_SIZE })],
-      spacing: { after: model.orgNameLine2 ? 0 : 40 },
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: { ...noBorder, insideHorizontal: noBorder.top, insideVertical: noBorder.left },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: noBorder,
+              children: [
+                new Paragraph({
+                  children: [
+                    run(`${model.donViLabel}: `, { bold: true }),
+                    run(model.donViValue),
+                  ],
+                }),
+                new Paragraph({
+                  children: [
+                    run(`${model.diaChiLabel}: `, { bold: true }),
+                    run(model.diaChiValue),
+                  ],
+                }),
+                new Paragraph({
+                  children: [
+                    run(`${model.boPhanLabel}: `, { bold: true }),
+                    run(model.boPhanValue),
+                  ],
+                }),
+              ],
+            }),
+            new TableCell({
+              width: { size: 34, type: WidthType.PERCENTAGE },
+              borders: noBorder,
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [run(model.docTitle, { bold: true, size: TITLE_SIZE })],
+                }),
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [run(`${model.ngayLapPhieuLabel}: ${model.ngayPhieu}`)],
+                }),
+              ],
+            }),
+            new TableCell({
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              borders: noBorder,
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.RIGHT,
+                  children: [
+                    run(`${model.soPhieuLabel}: `, { bold: true }),
+                    run(model.soPhieu),
+                  ],
+                }),
+                new Paragraph({
+                  alignment: AlignmentType.RIGHT,
+                  children: [
+                    run(`${model.mauSoLabel}: `, { bold: true }),
+                    run(model.mauSo),
+                  ],
+                }),
+                new Paragraph({
+                  alignment: AlignmentType.RIGHT,
+                  children: [run(model.thongTu, { size: SUB_SIZE, italics: true })],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
     }),
-    ...(model.orgNameLine2
-      ? [
-          new Paragraph({
-            alignment: AlignmentType.LEFT,
-            children: [run(model.orgNameLine2, { bold: true, size: TITLE_SIZE })],
-            spacing: { after: 40 },
-          }),
-        ]
-      : []),
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
-      children: [run(model.orgSubTitle.toUpperCase(), { bold: true, size: BODY_SIZE })],
-      spacing: { after: 80 },
-    }),
+    new Paragraph({ spacing: { after: 160 } }),
   ];
 
-  if (model.address) {
+  for (const line of model.infoLines) {
     children.push(
       new Paragraph({
-        alignment: AlignmentType.LEFT,
-        children: [run(model.address, { size: SUB_SIZE })],
+        children: [run(`${line.label}: `, { bold: true }), run(line.value)],
         spacing: { after: 40 },
       }),
     );
   }
-  if (model.phone) {
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.LEFT,
-        children: [run(`ĐT: ${model.phone}`, { size: SUB_SIZE })],
-        spacing: { after: 120 },
-      }),
-    );
-  }
 
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      children: [
-        run(`Mẫu số: 01-KCT · Số: ${model.soPhieu} · ${model.signedDateLabel}: ${model.signedDateValue}`, {
-          size: SUB_SIZE,
-        }),
-      ],
-      spacing: { after: 160 },
-    }),
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [run(model.docTitle, { bold: true, size: TITLE_SIZE })],
-      spacing: { after: 80 },
-    }),
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [run(`Ngày lập phiếu: ${model.ngayPhieu}`)],
-      spacing: { after: 160 },
-    }),
-  );
-
-  const metaPairs = layoutNhapXuatKhoPhieuMetaPairs(model.metaItems, {
-    label: model.signedDateLabel,
-    value: model.signedDateValue,
-  });
-
-  for (const pair of metaPairs) {
-    const cells = pair.map(
-      (item) =>
-        new TableCell({
-          width: { size: 50, type: WidthType.PERCENTAGE },
-          borders: noBorder,
-          children: [
-            new Paragraph({
-              children: [run(`${item.label}: `, { bold: true }), run(item.value)],
-            }),
-          ],
-        }),
-    );
-    while (cells.length < 2) {
-      cells.push(
-        new TableCell({
-          width: { size: 50, type: WidthType.PERCENTAGE },
-          borders: noBorder,
-          children: [new Paragraph({ children: [run(' ')] })],
-        }),
-      );
-    }
-    children.push(
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: { ...noBorder, insideHorizontal: noBorder.top, insideVertical: noBorder.left },
-        rows: [new TableRow({ children: cells })],
-      }),
-    );
-  }
+  children.push(new Paragraph({ spacing: { after: 120 } }));
 
   if (model.rows.length > 0) {
-    const headers = Object.keys(model.rows[0]);
+    const headers = model.columnHeaders;
     const headerRow = new TableRow({
       tableHeader: true,
       children: headers.map(
@@ -184,6 +169,20 @@ export async function downloadNhapXuatKhoPhieuDocx(
             },
             children: [cellParagraph(h, true, AlignmentType.CENTER)],
           }),
+      ),
+    });
+    const codeRow = new TableRow({
+      children: model.columnCodes.map((code) =>
+        new TableCell({
+          verticalAlign: VerticalAlign.CENTER,
+          borders: {
+            top: thinBorder,
+            bottom: thinBorder,
+            left: thinBorder,
+            right: thinBorder,
+          },
+          children: [cellParagraph(code, true, AlignmentType.CENTER)],
+        }),
       ),
     });
     const bodyRows = model.rows.map(
@@ -217,10 +216,48 @@ export async function downloadNhapXuatKhoPhieuDocx(
         }),
     );
 
+    const tableRows = [headerRow, codeRow, ...bodyRows];
+    if (model.showCongRow) {
+      tableRows.push(
+        new TableRow({
+          children: [
+            new TableCell({
+              columnSpan: 5,
+              borders: {
+                top: thinBorder,
+                bottom: thinBorder,
+                left: thinBorder,
+                right: thinBorder,
+              },
+              children: [cellParagraph(model.congLabel, true, AlignmentType.RIGHT)],
+            }),
+            new TableCell({
+              borders: {
+                top: thinBorder,
+                bottom: thinBorder,
+                left: thinBorder,
+                right: thinBorder,
+              },
+              children: [cellParagraph(model.congValue, true, AlignmentType.RIGHT)],
+            }),
+            new TableCell({
+              borders: {
+                top: thinBorder,
+                bottom: thinBorder,
+                left: thinBorder,
+                right: thinBorder,
+              },
+              children: [cellParagraph('', false, AlignmentType.LEFT)],
+            }),
+          ],
+        }),
+      );
+    }
+
     children.push(
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
-        rows: [headerRow, ...bodyRows],
+        rows: tableRows,
       }),
     );
   } else {
@@ -233,36 +270,44 @@ export async function downloadNhapXuatKhoPhieuDocx(
     );
   }
 
-  if (model.tongTien > 0) {
+  if (model.tongTienBangChu) {
     children.push(
       new Paragraph({
-        alignment: AlignmentType.RIGHT,
         spacing: { before: 120 },
         children: [
-          run('Tổng cộng: ', { bold: true }),
-          run(model.tongTienFormatted, { bold: true }),
+          run(`${model.tongTienBangChuLabel}: `, { bold: true }),
+          run(`${model.tongTienBangChu}.`, { italics: true }),
         ],
       }),
     );
-    if (model.tongTienBangChu) {
-      children.push(
-        new Paragraph({
-          spacing: { before: 80 },
-          children: [
-            run('Bằng chữ: ', { bold: true }),
-            run(`${model.tongTienBangChu}.`, { italics: true }),
-          ],
-        }),
-      );
-    }
   }
 
   children.push(
     new Paragraph({
-      spacing: { before: 160 },
-      children: [run('Ghi chú: ', { bold: true }), run(model.ghiChu)],
+      spacing: { before: 80 },
+      children: [
+        run(`${model.chungTuGocLabel}: `, { bold: true }),
+        run(model.chungTuGoc),
+      ],
     }),
-    new Paragraph({ spacing: { before: 320 } }),
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 160, after: 240 },
+      children: [run(model.signatureDateLine, { italics: true })],
+    }),
+  );
+
+  if (model.ghiChuNoiBo) {
+    children.push(
+      new Paragraph({
+        spacing: { before: 80 },
+        children: [run(`Ghi chú nội bộ: `, { bold: true, size: SUB_SIZE }), run(model.ghiChuNoiBo, { size: SUB_SIZE })],
+      }),
+    );
+  }
+
+  children.push(
+    new Paragraph({ spacing: { before: 240 } }),
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: { ...noBorder, insideHorizontal: noBorder.top, insideVertical: noBorder.left },

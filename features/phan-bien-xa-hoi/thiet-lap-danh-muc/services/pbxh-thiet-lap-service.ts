@@ -6,7 +6,6 @@ import { PBXH_THIET_LAP_RETURNING_FULL, PBXH_THIET_LAP_SELECT_FULL } from '../co
 const repo = createRepository<PbxhThietLap>({
   tableName: 'pbxh_thiet_lap',
   select: PBXH_THIET_LAP_SELECT_FULL,
-  delay: 400,
 });
 
 function normalize(raw: PbxhThietLap): PbxhThietLap {

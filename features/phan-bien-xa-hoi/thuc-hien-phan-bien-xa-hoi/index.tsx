@@ -39,8 +39,7 @@ import {
   thucHienMatchesColumnSearch,
 } from './utils/column-search';
 import { sortThucHienPhanBienList } from './utils/sort';
-import { tinhTienDo } from './core/display-tien-do';
-import { formatTenDonViThucHien } from './utils/display-don-vi-thuc-hien';
+import { getThucHienColumnDisplayValue } from './utils/column-display';
 import ThucHienPhanBienToolbar from './components/thuc-hien-phan-bien-toolbar';
 import ThucHienPhanBienTable from './components/thuc-hien-phan-bien-table';
 
@@ -121,7 +120,7 @@ const ThucHienPhanBienPage: React.FC = () => {
     const matchesSearch = matchesSearchTerm(
       {
         ...(item as unknown as Record<string, unknown>),
-        ten_don_vi_thuc_hien: formatTenDonViThucHien(item),
+        ten_don_vi_thuc_hien: getThucHienColumnDisplayValue(item, 'don_vi_thuc_hien'),
       },
       term,
       [...THUC_HIEN_PHAN_BIEN_SEARCH_KEYS],
@@ -170,25 +169,24 @@ const ThucHienPhanBienPage: React.FC = () => {
     (item: ThucHienPhanBien) => ({
       cap_thuc_hien: item.cap_thuc_hien,
       loai_hinh: item.loai_hinh,
-      don_vi_thuc_hien: formatTenDonViThucHien(item),
+      don_vi_thuc_hien: getThucHienColumnDisplayValue(item, 'don_vi_thuc_hien'),
       noi_dung: item.noi_dung,
-      ten_doi_tuong: item.ten_doi_tuong ?? '',
-      ten_hinh_thuc: item.ten_hinh_thuc ?? '',
-      ngay_bat_dau: item.ngay_bat_dau ?? '',
-      ngay_ket_thuc: item.ngay_ket_thuc ?? '',
-      mo_ta_thoi_gian: item.mo_ta_thoi_gian ?? '',
-      tien_do: tinhTienDo(item.ngay_ket_thuc) ?? item.mo_ta_thoi_gian ?? '',
+      ten_doi_tuong: getThucHienColumnDisplayValue(item, 'ten_doi_tuong'),
+      ten_hinh_thuc: getThucHienColumnDisplayValue(item, 'ten_hinh_thuc'),
+      ngay_bat_dau: getThucHienColumnDisplayValue(item, 'ngay_bat_dau'),
+      ngay_ket_thuc: getThucHienColumnDisplayValue(item, 'ngay_ket_thuc'),
+      mo_ta_thoi_gian: getThucHienColumnDisplayValue(item, 'mo_ta_thoi_gian'),
+      tien_do: getThucHienColumnDisplayValue(item, 'tien_do'),
       tinh_trang: item.tinh_trang,
-      ten_don_vi_chu_tri: item.ten_don_vi_chu_tri ?? '',
-      ten_phong_ban: item.ten_phong_ban ?? '',
-      ket_qua_kien_nghi: item.ket_qua_kien_nghi ?? '',
+      ten_don_vi_chu_tri: getThucHienColumnDisplayValue(item, 'ten_don_vi_chu_tri'),
+      ten_phong_ban: getThucHienColumnDisplayValue(item, 'ten_phong_ban'),
+      ket_qua_kien_nghi: getThucHienColumnDisplayValue(item, 'ket_qua_kien_nghi'),
       so_lan_hoan_thanh: item.so_lan_hoan_thanh,
       so_lan_khao_sat: item.so_lan_khao_sat,
-      phan_tram_hoan_thanh: item.phan_tram_hoan_thanh,
-      link_ket_qua: item.link_ket_qua ?? '',
-      ho_va_ten_nguoi_tao:
-        item.ho_va_ten_nguoi_tao?.trim() || item.ten_tai_khoan_nguoi_tao?.trim() || '',
-      tg_cap_nhat: item.tg_cap_nhat,
+      phan_tram_hoan_thanh: getThucHienColumnDisplayValue(item, 'phan_tram_hoan_thanh'),
+      link_ket_qua: getThucHienColumnDisplayValue(item, 'link_ket_qua'),
+      ho_va_ten_nguoi_tao: getThucHienColumnDisplayValue(item, 'ho_va_ten_nguoi_tao'),
+      tg_cap_nhat: getThucHienColumnDisplayValue(item, 'tg_cap_nhat'),
     }),
     [],
   );

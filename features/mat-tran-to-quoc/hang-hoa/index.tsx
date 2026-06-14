@@ -458,7 +458,10 @@ const HangHoaPage: React.FC = () => {
                   });
                 }}
                 onDelete={handleDeleteDm}
-                onView={(item) => setDmViewingId(item.id)}
+                onView={(item) => {
+                  queryClient.setQueryData(queryKeys.khoDanhMucHangHoa.detail(item.id), item);
+                  setDmViewingId(item.id);
+                }}
               />
             </div>
           </>
@@ -505,7 +508,10 @@ const HangHoaPage: React.FC = () => {
                   });
                 }}
                 onDelete={handleDeleteHh}
-                onView={(item) => setHhViewingId(item.id)}
+                onView={(item) => {
+                  queryClient.setQueryData(queryKeys.khoDanhSachHangHoa.detail(item.id), item);
+                  setHhViewingId(item.id);
+                }}
               />
             </div>
           </>

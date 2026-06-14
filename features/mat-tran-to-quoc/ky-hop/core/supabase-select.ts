@@ -24,4 +24,7 @@ export const MTTQ_KY_HOP_SELECT_LIST = `${LIST_COLS},${NHIEM_KY},${DON_VI},${NGU
 
 export const MTTQ_KY_HOP_SELECT_FULL = `${FULL_COLS},${NHIEM_KY},${DON_VI},${NGUOI_TAO}`;
 
+export const MTTQ_KY_HOP_RETURNING = 'id,tg_cap_nhat';
+
+/** @deprecated use MTTQ_KY_HOP_RETURNING + getById */
 export const MTTQ_KY_HOP_RETURNING_FULL = MTTQ_KY_HOP_SELECT_FULL;

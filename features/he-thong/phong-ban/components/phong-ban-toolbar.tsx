@@ -131,7 +131,7 @@ const PhongBanToolbar: React.FC<Props> = ({
               label: txt('common.import'),
               icon: Upload,
               onClick: onImport,
-              description: txt('department.importDeveloping'),
+              description: txt('department.importMobileDesc'),
             },
           ]
         : []),

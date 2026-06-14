@@ -1,4 +1,3 @@
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -16,7 +15,6 @@ import {
   NHAP_XUAT_KHO_SELECT_FULL,
   NHAP_XUAT_KHO_SELECT_LIST,
 } from '../core/supabase-select';
-import { NHAP_XUAT_KHO_MOCK_LINES, NHAP_XUAT_KHO_MOCK_MASTER, type NhapXuatKhoMockMaster } from '../mock-data';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -135,6 +133,9 @@ export function flattenFullRow(row: Record<string, unknown>): NhapXuatKhoDetail 
     ...base,
     so_dong: chi_tiet.length,
     ghi_chu: nullableStr(row.ghi_chu),
+    nguoi_giao_nhan: nullableStr(row.nguoi_giao_nhan),
+    bo_phan: nullableStr(row.bo_phan),
+    chung_tu_goc: nullableStr(row.chung_tu_goc),
     chi_tiet,
   };
 }
@@ -168,85 +169,6 @@ export function flattenCtFlatRow(row: Record<string, unknown>): NhapXuatKhoCtFla
 }
 
 // ---------------------------------------------------------------------------
-// Mock state
-// ---------------------------------------------------------------------------
-
-let mockMaster = structuredClone(NHAP_XUAT_KHO_MOCK_MASTER);
-let mockLines = structuredClone(NHAP_XUAT_KHO_MOCK_LINES);
-
-function mockNextId(): string {
-  const ids = [
-    ...mockMaster.map((m) => Number(m.id) || 0),
-    ...mockLines.map((l) => Number(l.id) || 0),
-  ];
-  return String(Math.max(0, ...ids) + 1);
-}
-
-function mockNextTt(): number {
-  return Math.max(0, ...mockMaster.map((m) => m.tt)) + 1;
-}
-
-function mockSoPhieu(loai: NhapXuatKhoLoaiPhieu, ngay: string): string {
-  const prefix = loai === 'nhap_ngoai' ? 'PN' : loai === 'xuat_ngoai' ? 'PX' : 'PC';
-  const year = (ngay || new Date().toISOString()).slice(0, 4);
-  const samePrefix = mockMaster.filter((m) => m.so_phieu.startsWith(`${prefix}-${year}-`));
-  const seq = samePrefix.length + 1;
-  return `${prefix}-${year}-${String(seq).padStart(4, '0')}`;
-}
-
-function mockMasterFromForm(
-  data: NhapXuatKhoFormValues,
-  id: string,
-  tt: number,
-  soPhieu: string,
-): NhapXuatKhoMockMaster {
-  const now = new Date().toISOString();
-  return {
-    id,
-    tt,
-    so_phieu: soPhieu,
-    loai_phieu: data.loai_phieu,
-    ngay_phieu: data.ngay_phieu,
-    kho_xuat_id: data.kho_xuat_id?.trim() || null,
-    ten_kho_xuat: data.kho_xuat_id?.trim() ? `Kho #${data.kho_xuat_id.trim()} (mock)` : null,
-    kho_xuat_don_vi_id: data.kho_xuat_id?.trim() ? data.kho_xuat_id.trim() : null,
-    kho_nhap_id: data.kho_nhap_id?.trim() || null,
-    ten_kho_nhap: data.kho_nhap_id?.trim() ? `Kho #${data.kho_nhap_id.trim()} (mock)` : null,
-    kho_nhap_don_vi_id: data.kho_nhap_id?.trim() ? data.kho_nhap_id.trim() : null,
-    don_vi_cuu_tro_id: data.don_vi_cuu_tro_id?.trim() || null,
-    ten_don_vi_cuu_tro: data.don_vi_cuu_tro_id?.trim() ? `Đơn vị #${data.don_vi_cuu_tro_id.trim()} (mock)` : null,
-    dot_cuu_tro_id: data.dot_cuu_tro_id?.trim() || null,
-    ten_dot_cuu_tro: data.dot_cuu_tro_id?.trim() ? `Đợt #${data.dot_cuu_tro_id.trim()} (mock)` : null,
-    so_dong: data.chi_tiet.length,
-    ghi_chu: data.ghi_chu?.trim() || null,
-    tg_tao: now,
-    tg_cap_nhat: now,
-  };
-}
-
-function mockReplaceLines(phieuId: string, data: NhapXuatKhoFormValues) {
-  mockLines = mockLines.filter((l) => l.phieu_id !== phieuId);
-  let nextNum = Math.max(0, ...mockLines.map((l) => Number(l.id) || 0));
-  data.chi_tiet.forEach((line, i) => {
-    nextNum += 1;
-    const so_luong = Number(line.so_luong);
-    const don_gia = line.don_gia.trim() === '' ? 0 : Number(line.don_gia);
-    mockLines.push({
-      id: String(nextNum),
-      phieu_id: phieuId,
-      hang_hoa_id: line.hang_hoa_id,
-      ten_hang_hoa: `Hàng #${line.hang_hoa_id} (mock)`,
-      don_vi_tinh: line.don_vi_tinh,
-      so_luong,
-      don_gia,
-      thanh_tien: so_luong * don_gia,
-      ghi_chu: line.ghi_chu?.trim() || null,
-      thu_tu: i + 1,
-    });
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Error mapping (PG `RAISE EXCEPTION 'TON_KHO_KHONG_DU: ...'` → toast)
 // ---------------------------------------------------------------------------
 
@@ -270,12 +192,6 @@ function rethrowMapped(err: unknown): never {
 // ---------------------------------------------------------------------------
 
 export async function getNhapXuatKhoList(): Promise<NhapXuatKhoListRow[]> {
-  if (!isSupabase()) {
-    return mockMaster.map((m) => ({
-      ...m,
-      so_dong: mockLines.filter((l) => l.phieu_id === m.id).length,
-    }));
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -288,14 +204,6 @@ export async function getNhapXuatKhoList(): Promise<NhapXuatKhoListRow[]> {
 }
 
 export async function getNhapXuatKhoById(id: string): Promise<NhapXuatKhoDetail | null> {
-  if (!isSupabase()) {
-    const m = mockMaster.find((x) => x.id === id);
-    if (!m) return null;
-    const lines = mockLines
-      .filter((l) => l.phieu_id === id)
-      .sort((a, b) => a.thu_tu - b.thu_tu || Number(a.id) - Number(b.id));
-    return { ...m, so_dong: lines.length, chi_tiet: lines };
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -309,39 +217,6 @@ export async function getNhapXuatKhoById(id: string): Promise<NhapXuatKhoDetail 
 }
 
 export async function getNhapXuatKhoCtFlatList(): Promise<NhapXuatKhoCtFlatRow[]> {
-  if (!isSupabase()) {
-    return mockLines
-      .map((l) => {
-        const m = mockMaster.find((p) => p.id === l.phieu_id);
-        if (!m) return null;
-        const r: NhapXuatKhoCtFlatRow = {
-          id: l.id,
-          phieu_id: l.phieu_id,
-          so_phieu: m.so_phieu,
-          loai_phieu: m.loai_phieu,
-          ngay_phieu: m.ngay_phieu,
-          kho_xuat_id: m.kho_xuat_id,
-          ten_kho_xuat: m.ten_kho_xuat,
-          kho_xuat_don_vi_id: m.kho_xuat_don_vi_id,
-          kho_nhap_id: m.kho_nhap_id,
-          ten_kho_nhap: m.ten_kho_nhap,
-          kho_nhap_don_vi_id: m.kho_nhap_don_vi_id,
-          don_vi_cuu_tro_id: m.don_vi_cuu_tro_id,
-          ten_don_vi_cuu_tro: m.ten_don_vi_cuu_tro,
-          dot_cuu_tro_id: m.dot_cuu_tro_id,
-          ten_dot_cuu_tro: m.ten_dot_cuu_tro,
-          hang_hoa_id: l.hang_hoa_id,
-          ten_hang_hoa: l.ten_hang_hoa,
-          don_vi_tinh: l.don_vi_tinh,
-          so_luong: l.so_luong,
-          don_gia: l.don_gia,
-          thanh_tien: l.thanh_tien,
-          ghi_chu: l.ghi_chu,
-        };
-        return r;
-      })
-      .filter((x): x is NhapXuatKhoCtFlatRow => x != null);
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -355,26 +230,6 @@ export async function getNhapXuatKhoCtFlatList(): Promise<NhapXuatKhoCtFlatRow[]
 /** Đơn giá gần nhất theo hang_hoa_id — lấy từ lần nhập gần nhất (ngay_phieu DESC). */
 export async function getLastDonGiaMap(): Promise<Map<string, number>> {
   const map = new Map<string, number>();
-
-  if (!isSupabase()) {
-    const rows: { hang_hoa_id: string; don_gia: number; ngay_phieu: string }[] = [];
-    for (const l of mockLines) {
-      const m = mockMaster.find((p) => p.id === l.phieu_id);
-      if (!m) continue;
-      rows.push({
-        hang_hoa_id: l.hang_hoa_id,
-        don_gia: l.don_gia,
-        ngay_phieu: m.ngay_phieu,
-      });
-    }
-    rows.sort((a, b) => b.ngay_phieu.localeCompare(a.ngay_phieu));
-    for (const r of rows) {
-      if (!map.has(r.hang_hoa_id) && r.don_gia > 0) {
-        map.set(r.hang_hoa_id, r.don_gia);
-      }
-    }
-    return map;
-  }
 
   const supabase = getSupabase();
   if (!supabase) return map;
@@ -400,17 +255,6 @@ export async function getLastDonGiaMap(): Promise<Map<string, number>> {
 export async function getKhoTonKhoByKho(khoId: string | null): Promise<KhoTonKhoRow[]> {
   const id = (khoId ?? '').trim();
   if (!id) return [];
-  if (!isSupabase()) {
-    const map = new Map<string, number>();
-    for (const l of mockLines) {
-      const m = mockMaster.find((p) => p.id === l.phieu_id);
-      if (!m) continue;
-      const key = l.hang_hoa_id;
-      if (m.kho_nhap_id === id) map.set(key, (map.get(key) ?? 0) + l.so_luong);
-      if (m.kho_xuat_id === id) map.set(key, (map.get(key) ?? 0) - l.so_luong);
-    }
-    return [...map.entries()].map(([hang_hoa_id, ton_kho]) => ({ kho_id: id, hang_hoa_id, ton_kho }));
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -437,18 +281,8 @@ function buildChiTietPayload(data: NhapXuatKhoFormValues) {
 }
 
 export async function createNhapXuatKho(data: NhapXuatKhoFormValues): Promise<NhapXuatKhoDetail> {
-  if (!isSupabase()) {
-    const id = mockNextId();
-    const tt = mockNextTt();
-    const so_phieu = mockSoPhieu(data.loai_phieu, data.ngay_phieu);
-    mockMaster = [...mockMaster, mockMasterFromForm(data, id, tt, so_phieu)];
-    mockReplaceLines(id, data);
-    const full = await getNhapXuatKhoById(id);
-    if (!full) throw new Error(txt('matTranNhapXuatKho.service.notFound'));
-    return full;
-  }
   const supabase = getSupabase();
-  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   try {
     const { data: rpcData, error } = await supabase.rpc('rpc_kho_tao_phieu_nhap_xuat', {
       p_loai_phieu: data.loai_phieu,
@@ -458,6 +292,9 @@ export async function createNhapXuatKho(data: NhapXuatKhoFormValues): Promise<Nh
       p_don_vi_cuu_tro_id: toNullableId(data.don_vi_cuu_tro_id),
       p_dot_cuu_tro_id: toNullableId(data.dot_cuu_tro_id),
       p_ghi_chu: data.ghi_chu?.trim() ?? null,
+      p_nguoi_giao_nhan: data.nguoi_giao_nhan?.trim() ?? null,
+      p_bo_phan: data.bo_phan?.trim() ?? null,
+      p_chung_tu_goc: data.chung_tu_goc?.trim() ?? null,
       p_chi_tiet: buildChiTietPayload(data),
     });
     if (error) handleSupabaseError(error);
@@ -474,20 +311,8 @@ export async function updateNhapXuatKho(
   id: string,
   data: NhapXuatKhoFormValues,
 ): Promise<NhapXuatKhoDetail> {
-  if (!isSupabase()) {
-    const idx = mockMaster.findIndex((m) => m.id === id);
-    if (idx === -1) throw new Error(txt('matTranNhapXuatKho.service.notFound'));
-    const prev = mockMaster[idx];
-    const updated = mockMasterFromForm(data, id, prev.tt, prev.so_phieu);
-    updated.tg_tao = prev.tg_tao;
-    mockMaster = [...mockMaster.slice(0, idx), updated, ...mockMaster.slice(idx + 1)];
-    mockReplaceLines(id, data);
-    const full = await getNhapXuatKhoById(id);
-    if (!full) throw new Error(txt('matTranNhapXuatKho.service.notFound'));
-    return full;
-  }
   const supabase = getSupabase();
-  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   try {
     const { error } = await supabase.rpc('rpc_kho_cap_nhat_phieu_nhap_xuat', {
       p_id: Number(id),
@@ -498,6 +323,9 @@ export async function updateNhapXuatKho(
       p_don_vi_cuu_tro_id: toNullableId(data.don_vi_cuu_tro_id),
       p_dot_cuu_tro_id: toNullableId(data.dot_cuu_tro_id),
       p_ghi_chu: data.ghi_chu?.trim() ?? null,
+      p_nguoi_giao_nhan: data.nguoi_giao_nhan?.trim() ?? null,
+      p_bo_phan: data.bo_phan?.trim() ?? null,
+      p_chung_tu_goc: data.chung_tu_goc?.trim() ?? null,
       p_chi_tiet: buildChiTietPayload(data),
     });
     if (error) handleSupabaseError(error);
@@ -511,14 +339,8 @@ export async function updateNhapXuatKho(
 
 export async function deleteNhapXuatKhoMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    const set = new Set(ids);
-    mockMaster = mockMaster.filter((m) => !set.has(m.id));
-    mockLines = mockLines.filter((l) => !set.has(l.phieu_id));
-    return;
-  }
   const supabase = getSupabase();
-  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   const numericIds = ids.filter((x) => isPersistedId(x)).map((x) => Number(x));
   const { error } = await supabase.from('kho_nhap_xuat_kho').delete().in('id', numericIds);
   if (error) handleSupabaseError(error);

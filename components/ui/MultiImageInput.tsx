@@ -3,7 +3,6 @@ import { ImagePlus, X, Plus, Loader2, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactDOM from 'react-dom';
 import { cn } from '../../lib/utils';
-import { isSupabase } from '@/lib/data/config';
 import {
   uploadImageFromFile,
   CLOUDINARY_FOLDERS,
@@ -12,7 +11,7 @@ import {
 
 export interface ImageItem {
   id: string;
-  /** HTTPS URL (Cloudinary) hoặc data URL (mock) */
+  /** HTTPS URL (Cloudinary) */
   src: string;
   name?: string;
 }
@@ -105,26 +104,15 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
     if (validFiles.length === 0) return;
 
     setLoadingCount((c) => c + validFiles.length);
-    const useCloudinary = isSupabase();
     const newItems: ImageItem[] = [];
 
     await Promise.all(
       validFiles.map(async (file) => {
         try {
-          let src: string;
-          if (useCloudinary) {
-            src = await uploadImageFromFile(file, {
-              folder: cloudinaryFolder,
-              filename: `${avatarCloudinaryFilename()}-${uid()}`,
-            });
-          } else {
-            src = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.onerror = () => reject(new Error('Không thể đọc file'));
-              reader.readAsDataURL(file);
-            });
-          }
+          const src = await uploadImageFromFile(file, {
+            folder: cloudinaryFolder,
+            filename: `${avatarCloudinaryFilename()}-${uid()}`,
+          });
           newItems.push({ id: uid(), src, name: file.name });
         } catch (e) {
           errors.push(

@@ -24,6 +24,7 @@ import type { GenericState } from '@/store/createGenericStore';
 import { useDeletePbxhThietLap } from '../hooks/use-pbxh-thiet-lap';
 import type { PbxhThietLap, PbxhThietLapFilters, PbxhThietLapLoai } from '../core/types';
 import { pbxhMatchesColumnSearch } from '../utils/column-search';
+import { getPbxhThietLapColumnDisplayValue } from '../utils/column-display';
 import { PBXH_THIET_LAP_SEARCH_KEYS } from '../utils/search-keys';
 
 const PbxhThietLapForm = lazy(() => import('./pbxh-thiet-lap-form'));
@@ -118,7 +119,7 @@ export function PbxhThietLapListPanel({ loai, items, isLoading, store, tabGroup,
   const exportMapFn = useCallback(
     (item: PbxhThietLap) => ({
       ten: item.ten,
-      mo_ta: item.mo_ta ?? '',
+      mo_ta: getPbxhThietLapColumnDisplayValue(item, 'mo_ta'),
       thu_tu: item.thu_tu,
     }),
     [],

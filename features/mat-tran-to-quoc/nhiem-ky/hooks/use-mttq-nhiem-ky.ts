@@ -52,7 +52,9 @@ export const useUpdateMttqNhiemKy = (onSuccess?: () => void) => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: MttqNhiemKyFormValues }) => updateMttqNhiemKy(id, data),
     onSuccess: (updated, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.setQueryData<MttqNhiemKy[]>(listKey, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
       queryClient.setQueryData<MttqNhiemKy | null>(queryKeys.mttqNhiemKy.detail(id), updated);
       toast.success(txt('matTranNhiemKy.toast.update'));
       onSuccess?.();

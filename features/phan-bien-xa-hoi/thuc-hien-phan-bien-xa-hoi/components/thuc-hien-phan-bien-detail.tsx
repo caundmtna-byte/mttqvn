@@ -1,8 +1,24 @@
 import React from 'react';
-import { Edit, Trash2, Megaphone, Calendar, Clock, FileText, Building2, Users, Link2, Percent, ListChecks, CheckCircle2, ClipboardList } from 'lucide-react';
+import {
+  Edit,
+  Trash2,
+  Megaphone,
+  Calendar,
+  Clock,
+  FileText,
+  Building2,
+  Users,
+  Link2,
+  Percent,
+  ListChecks,
+  CheckCircle2,
+  ClipboardList,
+  ExternalLink,
+  User,
+  CalendarClock,
+} from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
-import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
@@ -12,9 +28,17 @@ import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
 import type { ThucHienPhanBien } from '../core/types';
-import { loaiHinhBadge, tinhTrangBadge } from '../core/display-badges';
-import { tinhTienDo } from '../core/display-tien-do';
-import { formatTenDonViThucHien } from '../utils/display-don-vi-thuc-hien';
+import { capThucHienBadge, loaiHinhBadge, tinhTrangBadge } from '../core/display-badges';
+import {
+  formatPbxhDateTimeDisplay,
+  formatPbxhDonViThucHienDisplay,
+  formatPbxhNgayDisplay,
+  formatPbxhNguoiTaoDisplay,
+  formatPbxhPhanTramDisplay,
+  formatPbxhSoNguyenDisplay,
+  formatPbxhTienDoDisplay,
+  trimmedPbxhDisplay,
+} from '../utils/display-format';
 
 interface Props {
   data: ThucHienPhanBien;
@@ -25,7 +49,8 @@ interface Props {
 
 const ThucHienPhanBienDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('phanBienThucHien');
-  const tienDoLabel = tinhTienDo(data.ngay_ket_thuc) ?? data.mo_ta_thoi_gian ?? '—';
+  const emptyCell = txt('common.emptyCell');
+  const tienDoLabel = formatPbxhTienDoDisplay(data);
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -94,6 +119,9 @@ const ThucHienPhanBienDetail: React.FC<Props> = ({ data, onClose, onEdit, onDele
               {data.loai_hinh?.trim() ? (
                 <EnumBadge value={data.loai_hinh.trim()} config={loaiHinhBadge} shape="pill" truncate />
               ) : null}
+              {data.cap_thuc_hien?.trim() ? (
+                <EnumBadge value={data.cap_thuc_hien.trim()} config={capThucHienBadge} shape="pill" truncate />
+              ) : null}
               {data.tinh_trang?.trim() ? (
                 <EnumBadge value={data.tinh_trang.trim()} config={tinhTrangBadge} shape="pill" truncate />
               ) : null}
@@ -103,31 +131,97 @@ const ThucHienPhanBienDetail: React.FC<Props> = ({ data, onClose, onEdit, onDele
 
         <DetailSection title={txt('pbxhThucHien.form.sectionMain')} icon={<FileText size={14} />} variant="primary">
           <DetailFieldGrid>
-            <DetailField label={txt('pbxhThucHien.store.capThucHienCol')} value={data.cap_thuc_hien} icon={<Building2 size={12} />} />
-            <DetailField label={txt('pbxhThucHien.store.loaiHinhCol')} value={data.loai_hinh} icon={<Megaphone size={12} />} />
+            <DetailField
+              label={txt('pbxhThucHien.store.capThucHienCol')}
+              icon={<Building2 size={12} />}
+              value={
+                data.cap_thuc_hien?.trim() ? (
+                  <EnumBadge value={data.cap_thuc_hien.trim()} config={capThucHienBadge} shape="pill" truncate />
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('pbxhThucHien.store.loaiHinhCol')}
+              icon={<Megaphone size={12} />}
+              value={
+                data.loai_hinh?.trim() ? (
+                  <EnumBadge value={data.loai_hinh.trim()} config={loaiHinhBadge} shape="pill" truncate />
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('pbxhThucHien.store.noiDungCol')}
-              value={data.noi_dung}
               icon={<FileText size={12} />}
+              value={
+                trimmedPbxhDisplay(data.noi_dung) ? (
+                  <p className="whitespace-pre-wrap break-words text-body-sm font-semibold tracking-tight text-foreground">
+                    {data.noi_dung}
+                  </p>
+                ) : undefined
+              }
+              emptyText={emptyCell}
             />
-            <DetailField label={txt('pbxhThucHien.store.doiTuongCol')} value={data.ten_doi_tuong ?? ''} icon={<Users size={12} />} emptyText="—" />
-            <DetailField label={txt('pbxhThucHien.store.hinhThucCol')} value={data.ten_hinh_thuc ?? ''} icon={<ListChecks size={12} />} emptyText="—" />
-            <DetailField label={txt('pbxhThucHien.store.tienDoCol')} value={tienDoLabel} icon={<Clock size={12} />} />
+            <DetailField
+              label={txt('pbxhThucHien.store.doiTuongCol')}
+              icon={<Users size={12} />}
+              value={trimmedPbxhDisplay(data.ten_doi_tuong) ?? undefined}
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('pbxhThucHien.store.hinhThucCol')}
+              icon={<ListChecks size={12} />}
+              value={trimmedPbxhDisplay(data.ten_hinh_thuc) ?? undefined}
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('pbxhThucHien.store.tinhTrangCol')}
+              icon={<ListChecks size={12} />}
+              value={
+                data.tinh_trang?.trim() ? (
+                  <EnumBadge value={data.tinh_trang.trim()} config={tinhTrangBadge} shape="pill" truncate />
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('pbxhThucHien.store.tienDoCol')}
+              icon={<Clock size={12} />}
+              value={
+                tienDoLabel ? (
+                  <span className="tabular-nums text-body-sm text-foreground">{tienDoLabel}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
             <DetailField
               label={txt('pbxhThucHien.store.soLanHoanThanhCol')}
-              value={String(data.so_lan_hoan_thanh)}
               icon={<CheckCircle2 size={12} />}
+              value={
+                <span className="tabular-nums text-body-sm text-foreground">
+                  {formatPbxhSoNguyenDisplay(data.so_lan_hoan_thanh)}
+                </span>
+              }
             />
             <DetailField
               label={txt('pbxhThucHien.store.soLanKhaoSatCol')}
-              value={String(data.so_lan_khao_sat)}
               icon={<ClipboardList size={12} />}
+              value={
+                <span className="tabular-nums text-body-sm text-foreground">
+                  {formatPbxhSoNguyenDisplay(data.so_lan_khao_sat)}
+                </span>
+              }
             />
             <DetailField
               label={txt('pbxhThucHien.store.phanTramCol')}
-              value={`${data.phan_tram_hoan_thanh}%`}
               icon={<Percent size={12} />}
+              value={
+                <span className="tabular-nums text-body-sm text-foreground">
+                  {formatPbxhPhanTramDisplay(data.phan_tram_hoan_thanh)}
+                </span>
+              }
             />
           </DetailFieldGrid>
         </DetailSection>
@@ -136,65 +230,109 @@ const ThucHienPhanBienDetail: React.FC<Props> = ({ data, onClose, onEdit, onDele
           <DetailFieldGrid>
             <DetailField
               label={txt('pbxhThucHien.store.ngayBatDauCol')}
-              value={data.ngay_bat_dau ? formatDateShort(data.ngay_bat_dau) : ''}
               icon={<Calendar size={12} />}
-              emptyText="—"
+              value={
+                formatPbxhNgayDisplay(data.ngay_bat_dau) ? (
+                  <span className="tabular-nums">{formatPbxhNgayDisplay(data.ngay_bat_dau)}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
             />
             <DetailField
               label={txt('pbxhThucHien.store.ngayKetThucCol')}
-              value={data.ngay_ket_thuc ? formatDateShort(data.ngay_ket_thuc) : ''}
               icon={<Calendar size={12} />}
-              emptyText="—"
+              value={
+                formatPbxhNgayDisplay(data.ngay_ket_thuc) ? (
+                  <span className="tabular-nums">{formatPbxhNgayDisplay(data.ngay_ket_thuc)}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
             />
             <DetailField
               label={txt('pbxhThucHien.store.moTaThoiGianCol')}
-              value={data.mo_ta_thoi_gian ?? ''}
               icon={<Calendar size={12} />}
-              emptyText="—"
+              value={
+                trimmedPbxhDisplay(data.mo_ta_thoi_gian) ? (
+                  <span className="tabular-nums text-body-sm text-foreground">{data.mo_ta_thoi_gian}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
             />
           </DetailFieldGrid>
         </DetailSection>
 
         <DetailSection title={txt('pbxhThucHien.form.sectionDonVi')} icon={<Building2 size={14} />} variant="primary">
           <DetailFieldGrid>
-            <DetailField label={txt('pbxhThucHien.store.donViChuTriCol')} value={data.ten_don_vi_chu_tri ?? ''} icon={<Building2 size={12} />} emptyText="—" />
-            <DetailField label={txt('pbxhThucHien.store.phongBanCol')} value={data.ten_phong_ban ?? ''} icon={<Users size={12} />} emptyText="—" />
+            <DetailField
+              label={txt('pbxhThucHien.store.donViChuTriCol')}
+              icon={<Building2 size={12} />}
+              value={trimmedPbxhDisplay(data.ten_don_vi_chu_tri) ?? undefined}
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('pbxhThucHien.store.phongBanCol')}
+              icon={<Users size={12} />}
+              value={trimmedPbxhDisplay(data.ten_phong_ban) ?? undefined}
+              emptyText={emptyCell}
+            />
             <DetailField
               label={txt('pbxhThucHien.store.donViThucHienCol')}
-              value={formatTenDonViThucHien(data)}
               icon={<Building2 size={12} />}
+              value={formatPbxhDonViThucHienDisplay(data)}
             />
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('pbxhThucHien.store.ketQuaCol')}
-              value={data.ket_qua_kien_nghi ?? ''}
               icon={<FileText size={12} />}
-              emptyText="—"
+              value={
+                trimmedPbxhDisplay(data.ket_qua_kien_nghi) ? (
+                  <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">
+                    {data.ket_qua_kien_nghi}
+                  </p>
+                ) : undefined
+              }
+              emptyText={emptyCell}
             />
-            {data.link_ket_qua?.trim() ? (
-              <DetailField
-                className={DETAIL_FIELD_SPAN_FULL}
-                label={txt('pbxhThucHien.store.linkKetQuaCol')}
-                value={
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('pbxhThucHien.store.linkKetQuaCol')}
+              icon={<Link2 size={12} />}
+              value={
+                trimmedPbxhDisplay(data.link_ket_qua) ? (
                   <a
-                    href={data.link_ket_qua}
+                    href={data.link_ket_qua!.trim()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline truncate inline-flex items-center gap-1"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline break-all"
                   >
-                    <Link2 size={12} />
-                    {data.link_ket_qua}
+                    {txt('pbxhThucHien.detail.openLink')}
+                    <ExternalLink size={12} aria-hidden />
                   </a>
-                }
-                icon={<Link2 size={12} />}
-              />
-            ) : null}
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
           </DetailFieldGrid>
         </DetailSection>
 
-        <DetailSection title={txt('page.articleSettings.detailSystem')} icon={<Clock size={14} />} variant="primary">
+        <DetailSection title={txt('pbxhThucHien.detail.systemInfo')} icon={<Clock size={14} />} variant="primary">
           <DetailFieldGrid>
-            <DetailField label={txt('page.articleSettings.colTgCapNhat')} value={formatDateTimeShort(data.tg_cap_nhat)} icon={<Calendar size={12} />} />
+            <DetailField
+              label={txt('pbxhThucHien.store.nguoiTaoCol')}
+              icon={<User size={12} />}
+              value={formatPbxhNguoiTaoDisplay(data) || undefined}
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('pbxhThucHien.store.tgCapNhatCol')}
+              icon={<CalendarClock size={12} />}
+              value={
+                formatPbxhDateTimeDisplay(data.tg_cap_nhat) ? (
+                  <span className="tabular-nums">{formatPbxhDateTimeDisplay(data.tg_cap_nhat)}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
           </DetailFieldGrid>
         </DetailSection>
       </div>

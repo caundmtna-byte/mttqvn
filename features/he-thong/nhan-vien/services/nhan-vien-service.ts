@@ -6,7 +6,6 @@ import { getDepartments } from '../../phong-ban/services/phong-ban-service';
 import { createRepository } from '@/lib/data/create-repository';
 import { EMPLOYEES_LIST_QUERY_PARAMS } from '@/lib/query-keys';
 import { txt } from '../../../../lib/text';
-import { isSupabase } from '@/lib/data/config';
 import {
   checkAuthUserExists,
   createAuthUser,
@@ -51,7 +50,6 @@ const now = () => new Date().toISOString();
 const repo = createRepository<Employee>({
   tableName: 'var_nhan_vien',
   select: EMPLOYEE_SELECT_FULL,
-  delay: 200,
 });
 
 export type GetEmployeesParams = {
@@ -128,23 +126,17 @@ export const getEmployees = async (params: GetEmployeesParams = {}): Promise<Emp
   const orderBy = params.orderBy ?? EMPLOYEES_LIST_QUERY_PARAMS.orderBy;
   const ascending = params.ascending ?? EMPLOYEES_LIST_QUERY_PARAMS.ascending;
 
-  let list: Employee[];
-  if (isSupabase()) {
-    const supabase = getSupabase();
-    if (!supabase) {
-      list = [];
-    } else {
-      const pageSize = limit ?? SUPABASE_DEFAULT_MAX_ROWS;
-      let q = supabase.from('var_nhan_vien').select(EMPLOYEE_SELECT_LIST);
-      if (orderBy) q = q.order(orderBy, { ascending: ascending !== false });
-      q = q.range(offset, offset + pageSize - 1);
-      const { data, error } = await q;
-      if (error) handleSupabaseError(error);
-      list = (data ?? []) as unknown as Employee[];
-    }
-  } else {
-    list = await repo.getAll({ limit, offset, orderBy, ascending });
-  }
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const pageSize = limit ?? SUPABASE_DEFAULT_MAX_ROWS;
+  let q = supabase.from('var_nhan_vien').select(EMPLOYEE_SELECT_LIST);
+  if (orderBy) q = q.order(orderBy, { ascending: ascending !== false });
+  q = q.range(offset, offset + pageSize - 1);
+  const { data, error } = await q;
+  if (error) handleSupabaseError(error);
+  const list = (data ?? []) as unknown as Employee[];
+
   if (list.length === 0) return list;
   const [depts, positions, xaAll, tinhAll, thietLapAll] = await Promise.all([
     getDepartments(),
@@ -294,15 +286,12 @@ async function updateEmployeeRow(id: string, data: EmployeeFormValues): Promise<
 /**
  * Tạo nhân viên mới. Nếu Auth user `<ten_tai_khoan>@gmail.com` đã tồn tại sẽ
  * throw {@link AuthUserExistsError} để UI hỏi admin (reset / keep).
- * Khi mock (chưa nối Supabase) thì bỏ qua bước Auth.
  */
 export const createEmployee = async (data: EmployeeFormValues): Promise<Employee> => {
-  if (isSupabase()) {
-    const username = data.ten_tai_khoan.trim().toLowerCase();
-    const { exists } = await checkAuthUserExists(username);
-    if (exists) throw new AuthUserExistsError(username);
-    await createAuthUser(username);
-  }
+  const username = data.ten_tai_khoan.trim().toLowerCase();
+  const { exists } = await checkAuthUserExists(username);
+  if (exists) throw new AuthUserExistsError(username);
+  await createAuthUser(username);
   return insertEmployeeRow(data);
 };
 
@@ -311,14 +300,31 @@ export const createEmployeeWithAuthDecision = async (
   data: EmployeeFormValues,
   decision: AuthConflictDecision,
 ): Promise<Employee> => {
-  if (isSupabase()) {
-    const username = data.ten_tai_khoan.trim().toLowerCase();
-    if (decision === 'reset') {
-      await resetAuthUserPassword(username);
-    }
+  const username = data.ten_tai_khoan.trim().toLowerCase();
+  if (decision === 'reset') {
+    await resetAuthUserPassword(username);
   }
   return insertEmployeeRow(data);
 };
+
+async function requireEmployeeTenTaiKhoan(id: string): Promise<string> {
+  const supabase = getSupabase();
+  if (supabase) {
+    const idNum = normInt8Fk(id);
+    if (idNum == null) throw new Error(txt('employee.service.notFound'));
+    const { data, error } = await supabase
+      .from('var_nhan_vien')
+      .select('ten_tai_khoan')
+      .eq('id', idNum)
+      .maybeSingle();
+    if (error) handleSupabaseError(error);
+    if (!data) throw new Error(txt('employee.service.notFound'));
+    return String((data as { ten_tai_khoan?: unknown }).ten_tai_khoan ?? '').trim().toLowerCase();
+  }
+  const row = await repo.getById(id);
+  if (!row) throw new Error(txt('employee.service.notFound'));
+  return String(row.ten_tai_khoan ?? '').trim().toLowerCase();
+}
 
 /**
  * Cập nhật nhân viên. Nếu `ten_tai_khoan` thay đổi:
@@ -329,22 +335,17 @@ export const updateEmployee = async (
   id: string,
   data: EmployeeFormValues,
 ): Promise<Employee> => {
-  const existing = await repo.getById(id);
-  if (!existing) throw new Error(txt('employee.service.notFound'));
-
-  if (isSupabase()) {
-    const oldUsername = String(existing.ten_tai_khoan ?? '').trim().toLowerCase();
-    const newUsername = data.ten_tai_khoan.trim().toLowerCase();
-    if (oldUsername !== newUsername) {
-      const { exists } = await checkAuthUserExists(newUsername);
-      if (exists) throw new AuthUserExistsError(newUsername);
-      await createAuthUser(newUsername);
-      if (oldUsername) {
-        try {
-          await deleteAuthUser(oldUsername);
-        } catch {
-          // Không chặn cập nhật nếu xoá Auth cũ thất bại — admin có thể dọn sau.
-        }
+  const oldUsername = await requireEmployeeTenTaiKhoan(id);
+  const newUsername = data.ten_tai_khoan.trim().toLowerCase();
+  if (oldUsername !== newUsername) {
+    const { exists } = await checkAuthUserExists(newUsername);
+    if (exists) throw new AuthUserExistsError(newUsername);
+    await createAuthUser(newUsername);
+    if (oldUsername) {
+      try {
+        await deleteAuthUser(oldUsername);
+      } catch {
+        // Không chặn cập nhật nếu xoá Auth cũ thất bại — admin có thể dọn sau.
       }
     }
   }
@@ -358,22 +359,17 @@ export const updateEmployeeWithAuthDecision = async (
   data: EmployeeFormValues,
   decision: AuthConflictDecision,
 ): Promise<Employee> => {
-  const existing = await repo.getById(id);
-  if (!existing) throw new Error(txt('employee.service.notFound'));
-
-  if (isSupabase()) {
-    const oldUsername = String(existing.ten_tai_khoan ?? '').trim().toLowerCase();
-    const newUsername = data.ten_tai_khoan.trim().toLowerCase();
-    if (oldUsername !== newUsername) {
-      if (decision === 'reset') {
-        await resetAuthUserPassword(newUsername);
-      }
-      if (oldUsername) {
-        try {
-          await deleteAuthUser(oldUsername);
-        } catch {
-          // Bỏ qua lỗi xoá Auth cũ.
-        }
+  const oldUsername = await requireEmployeeTenTaiKhoan(id);
+  const newUsername = data.ten_tai_khoan.trim().toLowerCase();
+  if (oldUsername !== newUsername) {
+    if (decision === 'reset') {
+      await resetAuthUserPassword(newUsername);
+    }
+    if (oldUsername) {
+      try {
+        await deleteAuthUser(oldUsername);
+      } catch {
+        // Bỏ qua lỗi xoá Auth cũ.
       }
     }
   }
@@ -385,7 +381,19 @@ export const updateEmployeeStatus = async (
   ids: string[],
   status: TrangThaiNhanVien,
 ): Promise<void> => {
+  if (ids.length === 0) return;
   const timestamp = now();
+  const supabase = getSupabase();
+  if (supabase) {
+    const idNums = ids.map(normInt8Fk).filter((n): n is number => n != null);
+    if (idNums.length === 0) return;
+    const { error } = await supabase
+      .from('var_nhan_vien')
+      .update({ trang_thai: status, tg_cap_nhat: timestamp })
+      .in('id', idNums);
+    if (error) handleSupabaseError(error);
+    return;
+  }
   await Promise.all(
     ids.map((id) =>
       repo.update(
@@ -398,11 +406,28 @@ export const updateEmployeeStatus = async (
 };
 
 async function safeDeleteAuthUsersByIds(ids: string[]): Promise<void> {
-  if (!isSupabase() || ids.length === 0) return;
-  const rows = await Promise.all(ids.map((id) => repo.getById(id).catch(() => null)));
-  const usernames = rows
-    .map((row) => String((row as Employee | null)?.ten_tai_khoan ?? '').trim().toLowerCase())
-    .filter(Boolean);
+  if (ids.length === 0) return;
+  let usernames: string[] = [];
+  const supabase = getSupabase();
+  if (supabase) {
+    const idNums = ids.map(normInt8Fk).filter((n): n is number => n != null);
+    if (idNums.length === 0) return;
+    const { data, error } = await supabase
+      .from('var_nhan_vien')
+      .select('ten_tai_khoan')
+      .in('id', idNums);
+    if (error) handleSupabaseError(error);
+    usernames = (data ?? [])
+      .map((row) =>
+        String((row as { ten_tai_khoan?: unknown }).ten_tai_khoan ?? '').trim().toLowerCase(),
+      )
+      .filter(Boolean);
+  } else {
+    const rows = await Promise.all(ids.map((id) => repo.getById(id).catch(() => null)));
+    usernames = rows
+      .map((row) => String((row as Employee | null)?.ten_tai_khoan ?? '').trim().toLowerCase())
+      .filter(Boolean);
+  }
   await Promise.all(
     usernames.map((u) =>
       deleteAuthUser(u).catch(() => {

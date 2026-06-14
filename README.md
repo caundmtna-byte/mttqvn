@@ -7,12 +7,12 @@
 - **Frontend:** React (Vite) + TypeScript.
 - **UI:** Tailwind CSS + **component nội bộ** trong `components/ui/` (phong cách tương tự shadcn, **không** cài registry shadcn/Radix để giữ kiểm soát bundle).
 - **Dữ liệu:** TanStack Query (server) + Zustand (client); React Hook Form + Zod.
-- **Backend:** Supabase (PostgreSQL + Auth); thiếu URL/anon key hoặc bật `VITE_FORCE_MOCK=true` thì dùng mock.
+- **Backend:** Supabase (PostgreSQL + Auth); bắt buộc cấu hình `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` trong `.env.local`.
 
 ## Supabase
 
 1. Tạo project trên [Supabase](https://supabase.com), lấy **URL** và **anon key**.
-2. Copy `.env.example` → `.env.local` và đặt `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (đủ hai là bật Supabase). Tuỳ chọn: `VITE_FORCE_MOCK=true` để ép mock.
+2. Copy `.env.example` → `.env.local` và điền `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. **Không commit** `.env.local` (đã nằm trong `.gitignore`). Trên Vercel: đặt cùng biến trong Environment Variables.
 3. Sinh type TypeScript cho PostgREST (khuyến nghị khi schema ổn định):
 
    ```bash
@@ -21,7 +21,7 @@
 
    (Cần [Supabase CLI](https://supabase.com/docs/guides/cli) và project đã `supabase link`, hoặc chỉnh script trong `package.json` dùng `--project-id`.)
 
-4. Bật **RLS** và policy phù hợp trên các bảng; client chỉ dùng anon key nên policy là lớp bảo vệ chính.
+4. Bật **RLS** và policy phù hợp trên các bảng; client chỉ dùng anon key (có thể lộ trong bundle SPA) — **RLS** là lớp bảo vệ chính. **Không** đặt `SUPABASE_SERVICE_ROLE_KEY` vào biến `VITE_*`.
 
 **Hiệu năng (đã áp dụng trong code):** client Supabase singleton + PKCE; TanStack Query `staleTime` / `gcTime`; repository giới hạn số dòng mỗi lần `getAll` (xem `SUPABASE_DEFAULT_MAX_ROWS`); `select` trong service chỉ lấy cột và quan hệ cần thiết. Dev: nút **React Query Devtools** góc dưới trái.
 

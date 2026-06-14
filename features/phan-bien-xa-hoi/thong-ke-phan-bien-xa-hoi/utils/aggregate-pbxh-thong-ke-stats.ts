@@ -11,11 +11,12 @@ import {
   TINH_TRANG_VALUES,
 } from '../../thuc-hien-phan-bien-xa-hoi/core/constants';
 import { daysFromDeadline } from '@/features/quan-ly-giao-viec/cong-viec/utils/deadline-progress';
-import { tinhTienDo } from '../../thuc-hien-phan-bien-xa-hoi/core/display-tien-do';
+import { formatPbxhTienDoDisplay } from '../../thuc-hien-phan-bien-xa-hoi/utils/display-format';
+import { formatTenDonViThucHien } from '../../thuc-hien-phan-bien-xa-hoi/utils/display-don-vi-thuc-hien';
 import { computePhanTramHoanThanh } from '../../thuc-hien-phan-bien-xa-hoi/core/compute-phan-tram';
+import { txt } from '@/lib/text';
 
-export const PBXH_STATS_DON_VI_NONE = '__none__';
-export const PBXH_STATS_NGUOI_TAO_NONE = '__none__';
+export const PBXH_STATS_DON_VI_THUC_HIEN_TINH = '__tinh_cap__';
 
 export const PBXH_TIEN_DO_FILTER_IDS = ['qua_han', 'sap_den_han', 'con_han', 'khong_co_han'] as const;
 export type PbxhTienDoFilterId = (typeof PBXH_TIEN_DO_FILTER_IDS)[number];
@@ -26,11 +27,22 @@ export interface PbxhThongKeDimensionFilters {
   cap_thuc_hien: string[];
   loai_hinh: string[];
   tinh_trang: string[];
-  don_vi_chu_tri_id: string[];
+  don_vi_thuc_hien_id: string[];
   tien_do: string[];
 }
 
 export type ResolvedDateRange = StandardResolvedDateRange;
+
+export function getPbxhStatsDonViThucHienKey(row: ThucHienPhanBien): string {
+  if (row.don_vi_thuc_hien_id == null || row.don_vi_thuc_hien_id === '') {
+    return PBXH_STATS_DON_VI_THUC_HIEN_TINH;
+  }
+  return String(row.don_vi_thuc_hien_id);
+}
+
+export function getPbxhStatsDonViThucHienLabel(row: ThucHienPhanBien): string {
+  return formatTenDonViThucHien(row);
+}
 
 export function resolvePbxhThongKeDateRange(
   preset: string,
@@ -105,9 +117,9 @@ export function filterRowsForPbxhThongKe(
     if (dims.cap_thuc_hien.length > 0 && !dims.cap_thuc_hien.includes(row.cap_thuc_hien)) return false;
     if (dims.loai_hinh.length > 0 && !dims.loai_hinh.includes(row.loai_hinh)) return false;
     if (dims.tinh_trang.length > 0 && !dims.tinh_trang.includes(row.tinh_trang)) return false;
-    if (dims.don_vi_chu_tri_id.length > 0) {
-      const id = row.don_vi_chu_tri_id?.trim() ? String(row.don_vi_chu_tri_id) : PBXH_STATS_DON_VI_NONE;
-      if (!dims.don_vi_chu_tri_id.includes(id)) return false;
+    if (dims.don_vi_thuc_hien_id.length > 0) {
+      const id = getPbxhStatsDonViThucHienKey(row);
+      if (!dims.don_vi_thuc_hien_id.includes(id)) return false;
     }
     if (dims.tien_do.length > 0) {
       const td = getPbxhTienDoFilterId(row);
@@ -225,11 +237,11 @@ export function buildPbxhCapThucHienBarData(filtered: ThucHienPhanBien[]) {
   return aggregateByField(filtered, CAP_THUC_HIEN_VALUES, (r) => r.cap_thuc_hien);
 }
 
-export function aggregatePbxhTopDonViChuTri(filtered: ThucHienPhanBien[], topN: number): LabelCountRow[] {
+export function aggregatePbxhTopDonViThucHien(filtered: ThucHienPhanBien[], topN: number): LabelCountRow[] {
   const tally = new Map<string, { label: string; count: number }>();
   for (const row of filtered) {
-    const id = row.don_vi_chu_tri_id?.trim() ? String(row.don_vi_chu_tri_id) : PBXH_STATS_DON_VI_NONE;
-    const label = (row.ten_don_vi_chu_tri ?? '').trim() || '—';
+    const id = getPbxhStatsDonViThucHienKey(row);
+    const label = getPbxhStatsDonViThucHienLabel(row);
     const prev = tally.get(id);
     if (prev) prev.count += 1;
     else tally.set(id, { label, count: 1 });
@@ -240,7 +252,7 @@ export function aggregatePbxhTopDonViChuTri(filtered: ThucHienPhanBien[], topN: 
     .slice(0, topN);
 }
 
-export interface PbxhDonViChuTriTableRow {
+export interface PbxhDonViThucHienTableRow {
   id: string;
   label: string;
   total: number;
@@ -252,7 +264,7 @@ export interface PbxhDonViChuTriTableRow {
   tyLeThucTe: number;
 }
 
-export function aggregatePbxhByDonViChuTriTable(filtered: ThucHienPhanBien[]): PbxhDonViChuTriTableRow[] {
+export function aggregatePbxhByDonViThucHienTable(filtered: ThucHienPhanBien[]): PbxhDonViThucHienTableRow[] {
   const tally = new Map<
     string,
     {
@@ -267,8 +279,8 @@ export function aggregatePbxhByDonViChuTriTable(filtered: ThucHienPhanBien[]): P
   >();
 
   for (const row of filtered) {
-    const id = row.don_vi_chu_tri_id?.trim() ? String(row.don_vi_chu_tri_id) : PBXH_STATS_DON_VI_NONE;
-    const label = (row.ten_don_vi_chu_tri ?? '').trim() || '—';
+    const id = getPbxhStatsDonViThucHienKey(row);
+    const label = getPbxhStatsDonViThucHienLabel(row);
     const prev = tally.get(id);
     if (prev) {
       prev.total += 1;
@@ -305,6 +317,13 @@ export function aggregatePbxhByDonViChuTriTable(filtered: ThucHienPhanBien[]): P
     .sort((a, b) => b.tyLeThucTe - a.tyLeThucTe || b.total - a.total);
 }
 
+export function aggregatePbxhTopDonViThucHienByTyLe(
+  filtered: ThucHienPhanBien[],
+  topN: number,
+): PbxhDonViThucHienTableRow[] {
+  return aggregatePbxhByDonViThucHienTable(filtered).slice(0, topN);
+}
+
 export function aggregatePbxhLoaiHinhMatrix(filtered: ThucHienPhanBien[]): LabelCountRow[] {
   const tally = new Map<string, number>();
   for (const row of filtered) {
@@ -316,78 +335,10 @@ export function aggregatePbxhLoaiHinhMatrix(filtered: ThucHienPhanBien[]): Label
     .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
 }
 
-export interface PbxhNguoiTaoRankRow {
-  id: string;
-  label: string;
-  total: number;
-  hoanThanh: number;
-  sumSoLanHoanThanh: number;
-  sumSoLanKhaoSat: number;
-  avgPhanTram: number;
-  tyLeThucTe: number;
-}
-
-export function aggregatePbxhByNguoiTaoTable(filtered: ThucHienPhanBien[]): PbxhNguoiTaoRankRow[] {
-  const tally = new Map<
-    string,
-    {
-      label: string;
-      total: number;
-      hoanThanh: number;
-      sumPhanTram: number;
-      sumSoLanHoanThanh: number;
-      sumSoLanKhaoSat: number;
-    }
-  >();
-
-  for (const row of filtered) {
-    const id = row.id_nguoi_tao?.trim() ? String(row.id_nguoi_tao) : PBXH_STATS_NGUOI_TAO_NONE;
-    const label =
-      (row.ho_va_ten_nguoi_tao ?? row.ten_tai_khoan_nguoi_tao ?? '').trim() || '—';
-    const prev = tally.get(id);
-    if (prev) {
-      prev.total += 1;
-      if (row.tinh_trang === 'Đã hoàn thành') prev.hoanThanh += 1;
-      prev.sumPhanTram += row.phan_tram_hoan_thanh ?? 0;
-      prev.sumSoLanHoanThanh += row.so_lan_hoan_thanh ?? 0;
-      prev.sumSoLanKhaoSat += row.so_lan_khao_sat ?? 0;
-    } else {
-      tally.set(id, {
-        label,
-        total: 1,
-        hoanThanh: row.tinh_trang === 'Đã hoàn thành' ? 1 : 0,
-        sumPhanTram: row.phan_tram_hoan_thanh ?? 0,
-        sumSoLanHoanThanh: row.so_lan_hoan_thanh ?? 0,
-        sumSoLanKhaoSat: row.so_lan_khao_sat ?? 0,
-      });
-    }
-  }
-
-  return [...tally.entries()]
-    .map(([id, v]) => ({
-      id,
-      label: v.label,
-      total: v.total,
-      hoanThanh: v.hoanThanh,
-      sumSoLanHoanThanh: v.sumSoLanHoanThanh,
-      sumSoLanKhaoSat: v.sumSoLanKhaoSat,
-      avgPhanTram: v.total > 0 ? Math.round(v.sumPhanTram / v.total) : 0,
-      tyLeThucTe: computePhanTramHoanThanh(v.sumSoLanHoanThanh, v.sumSoLanKhaoSat),
-    }))
-    .sort((a, b) => b.tyLeThucTe - a.tyLeThucTe || b.avgPhanTram - a.avgPhanTram || b.total - a.total);
-}
-
-export function aggregatePbxhTopNguoiTaoByTyLe(
-  filtered: ThucHienPhanBien[],
-  topN: number,
-): PbxhNguoiTaoRankRow[] {
-  return aggregatePbxhByNguoiTaoTable(filtered).slice(0, topN);
-}
-
 export interface PbxhTopHoatDongRow {
   id: string;
   noi_dung: string;
-  nguoi_tao_label: string;
+  don_vi_thuc_hien_label: string;
   loai_hinh: string;
   tinh_trang: string;
   so_lan_hoan_thanh: number;
@@ -410,8 +361,7 @@ export function aggregatePbxhTopHoatDongByPhanTram(
     .map((row) => ({
       id: row.id,
       noi_dung: row.noi_dung,
-      nguoi_tao_label:
-        (row.ho_va_ten_nguoi_tao ?? row.ten_tai_khoan_nguoi_tao ?? '').trim() || '—',
+      don_vi_thuc_hien_label: getPbxhStatsDonViThucHienLabel(row),
       loai_hinh: row.loai_hinh,
       tinh_trang: row.tinh_trang,
       so_lan_hoan_thanh: row.so_lan_hoan_thanh ?? 0,
@@ -559,6 +509,7 @@ export type PbxhLookupSortKey =
   | 'noi_dung'
   | 'loai_hinh'
   | 'tinh_trang'
+  | 'ten_don_vi_thuc_hien'
   | 'ten_don_vi_chu_tri'
   | 'tien_do'
   | 'so_lan_hoan_thanh'
@@ -582,6 +533,9 @@ export function sortPbxhLookupRows(
         break;
       case 'tinh_trang':
         cmp = String(a.tinh_trang).localeCompare(String(b.tinh_trang), getLanguage());
+        break;
+      case 'ten_don_vi_thuc_hien':
+        cmp = getPbxhStatsDonViThucHienLabel(a).localeCompare(getPbxhStatsDonViThucHienLabel(b), getLanguage());
         break;
       case 'ten_don_vi_chu_tri':
         cmp = String(a.ten_don_vi_chu_tri ?? '').localeCompare(String(b.ten_don_vi_chu_tri ?? ''), getLanguage());
@@ -610,5 +564,5 @@ export function sortPbxhLookupRows(
 }
 
 export function formatPbxhTienDoLabel(row: ThucHienPhanBien): string {
-  return tinhTienDo(row.ngay_ket_thuc) ?? row.mo_ta_thoi_gian ?? '—';
+  return formatPbxhTienDoDisplay(row) || txt('common.emptyCell');
 }

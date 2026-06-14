@@ -322,7 +322,10 @@ const KhoDanhSachKhoPage: React.FC = () => {
             isLoading={isListLoading}
             onEdit={handleEditFromList}
             onDelete={handleDelete}
-            onView={(item) => setViewingId(item.id)}
+            onView={(item) => {
+              queryClient.setQueryData(queryKeys.khoDanhSachKho.detail(item.id), item);
+              setViewingId(item.id);
+            }}
             emptyTitle={emptyTitleResolved}
             emptyDescription={emptyDescriptionResolved}
           />

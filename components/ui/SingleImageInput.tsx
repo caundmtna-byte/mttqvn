@@ -3,7 +3,6 @@ import { ImagePlus, Trash2, Camera, Image, Loader2, Pencil } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactDOM from 'react-dom';
 import { cn } from '../../lib/utils';
-import { isSupabase } from '@/lib/data/config';
 import {
   uploadImageFromFile,
   CLOUDINARY_FOLDERS,
@@ -16,14 +15,14 @@ export interface SingleImageInputProps {
   icon?: React.ReactNode;
   required?: boolean;
   error?: string;
-  /** Giá trị form: HTTPS URL (Cloudinary), legacy path Storage, hoặc data URL (mock). */
+  /** Giá trị form: HTTPS URL (Cloudinary), legacy path Storage, hoặc data URL. */
   value?: string | null;
   /**
    * URL hiển thị preview cho legacy Supabase path (signed URL từ parent).
    */
   displaySrc?: string | null;
   onChange: (value: string | null) => void;
-  /** Folder Cloudinary — mặc định `mttqvn/uploads` khi Supabase. */
+  /** Folder Cloudinary — mặc định `mttqvn/uploads`. */
   cloudinaryFolder?: string;
   /** public_id cố định (ghi đè), vd. logo tổ chức */
   cloudinaryPublicId?: string;
@@ -88,9 +87,6 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
     };
   }, [localPreviewUrl]);
 
-  const useCloudinary = isSupabase();
-
-  // ── File processing ──
   const processFile = useCallback(async (file: File) => {
     setSizeError('');
     if (!file.type.startsWith('image/')) {
@@ -99,21 +95,6 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
     }
     if (file.size > maxSizeMB * 1024 * 1024) {
       setSizeError(`Ảnh vượt quá ${maxSizeMB}MB`);
-      return;
-    }
-
-    if (!useCloudinary) {
-      setIsLoading(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onChange(reader.result as string);
-        setIsLoading(false);
-      };
-      reader.onerror = () => {
-        setSizeError('Không thể đọc file');
-        setIsLoading(false);
-      };
-      reader.readAsDataURL(file);
       return;
     }
 
@@ -147,7 +128,6 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
   }, [
     maxSizeMB,
     onChange,
-    useCloudinary,
     cloudinaryFolder,
     cloudinaryPublicId,
     cloudinaryFilename,

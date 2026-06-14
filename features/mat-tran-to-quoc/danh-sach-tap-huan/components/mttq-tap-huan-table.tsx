@@ -170,6 +170,15 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
           return (
             <EnumBadge value={item.cap_tap_huan} config={capBadgeConfig} truncate shape="pill" />
           );
+        case 'ten_to_chuc':
+          return (
+            <span
+              className="text-body-sm text-muted-foreground truncate"
+              title={item.ten_to_chuc ?? undefined}
+            >
+              {item.ten_to_chuc?.trim() ? item.ten_to_chuc : txt('common.emptyCell')}
+            </span>
+          );
         case 'ten_don_vi': {
           const donViLabel = formatLopTenDonViDisplay(item.ten_don_vi);
           return (

@@ -86,7 +86,7 @@ const PositionPermissionPicker: React.FC<Props> = ({
 
   return (
     <GenericDrawer
-      title={title ?? txt('taiLieu.detail.phanQuyenTitle')}
+      title={title ?? txt('common.permissionPickerTitle')}
       icon={<Shield size={20} />}
       onClose={onClose}
       maxWidthClass={DRAWER_WIDTH_DETAIL}
@@ -103,7 +103,7 @@ const PositionPermissionPicker: React.FC<Props> = ({
         </div>
       }
     >
-      <p className="text-sm text-muted-foreground mb-4">{txt('taiLieu.detail.phanQuyenMessage')}</p>
+      <p className="text-sm text-muted-foreground mb-4">{txt('common.permissionPickerMessage')}</p>
       <div className="space-y-4">
         {byPhong.order.map(([phongKey]) => {
           const group = byPhong.map.get(phongKey) ?? [];

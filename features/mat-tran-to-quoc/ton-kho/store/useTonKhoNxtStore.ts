@@ -4,7 +4,7 @@ import { getDateRangeFromPreset } from '../core/datePresets';
 
 export type TonKhoNxtTabId = 'byProduct' | 'baoCaoNXT';
 
-const defaultNxt = getDateRangeFromPreset('thisMonth');
+const defaultNxt = getDateRangeFromPreset('all');
 
 interface TonKhoNxtStoreState {
   nxtDateFrom: string;
@@ -27,7 +27,7 @@ interface TonKhoNxtStoreState {
 export const useTonKhoNxtStore = create<TonKhoNxtStoreState>((set) => ({
   nxtDateFrom: defaultNxt.dateFrom,
   nxtDateTo: defaultNxt.dateTo,
-  nxtPreset: 'thisMonth',
+  nxtPreset: 'all',
   setNxtPreset: (nxtPreset) => {
     const r = getDateRangeFromPreset(nxtPreset);
     set({ nxtPreset, nxtDateFrom: r.dateFrom, nxtDateTo: r.dateTo });
@@ -43,11 +43,11 @@ export const useTonKhoNxtStore = create<TonKhoNxtStoreState>((set) => ({
   nxtCategoryIds: [],
   setNxtCategoryIds: (nxtCategoryIds) => set({ nxtCategoryIds }),
   clearNxtFilters: () => {
-    const r = getDateRangeFromPreset('thisMonth');
+    const r = getDateRangeFromPreset('all');
     set({
       nxtDateFrom: r.dateFrom,
       nxtDateTo: r.dateTo,
-      nxtPreset: 'thisMonth',
+      nxtPreset: 'all',
       nxtWarehouseIds: [],
       nxtLoaiPhieu: [],
       nxtHangHoaIds: [],

@@ -1,5 +1,4 @@
 import { getSupabase } from '@/lib/supabase/client';
-import { isSupabase } from '@/lib/data/config';
 import { uploadLogoIfDataUrl } from '@/lib/cloudinary/upload-logo';
 import type { Database } from '@/lib/supabase/database.types';
 import type { CompanyInfo } from '@/store/useStore';
@@ -38,11 +37,8 @@ function formToDbPayload(data: CompanyFormValues & { appLogo: string | null }): 
   };
 }
 
-/** Đọc cấu hình tổ chức: Supabase row id=1, hoặc mock = default store. */
+/** Đọc cấu hình tổ chức từ Supabase row id=1. */
 export async function getThongTinToChuc(): Promise<CompanyInfo> {
-  if (!isSupabase()) {
-    return { ...DEFAULT_COMPANY_INFO };
-  }
   const sb = getSupabase();
   if (!sb) return { ...DEFAULT_COMPANY_INFO };
 
@@ -61,18 +57,6 @@ export async function getThongTinToChuc(): Promise<CompanyInfo> {
 export async function saveThongTinToChuc(data: CompanyFormValues & { appLogo: string | null }): Promise<CompanyInfo> {
   const resolvedLogo = await uploadLogoIfDataUrl(data.appLogo);
 
-  if (!isSupabase()) {
-    return {
-      appName: data.appName.trim(),
-      appDescription: data.appDescription?.trim() ?? '',
-      appLogo: resolvedLogo,
-      companyName: data.companyName.trim(),
-      address: data.address?.trim() ?? '',
-      phone: data.phone?.trim() ?? '',
-      email: data.email?.trim() ?? '',
-      website: data.website?.trim() ?? '',
-    };
-  }
   const sb = getSupabase();
   if (!sb) {
     throw new Error('Supabase client không khả dụng');

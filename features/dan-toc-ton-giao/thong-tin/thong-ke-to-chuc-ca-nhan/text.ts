@@ -2,6 +2,7 @@
 export const dttgThongKeToChucCaNhan = {
   title: 'Thống kê tổ chức, cá nhân',
   noViewPermission: 'Bạn không có quyền xem thống kê tổ chức, cá nhân.',
+  noViewRowPermission: 'Bạn không có quyền xem hồ sơ này.',
   noDetailPermission: 'Bạn không có quyền xem chi tiết hồ sơ này.',
   loading: 'Đang tải thống kê…',
   noData: 'Không có dữ liệu trong khoảng và bộ lọc đã chọn.',

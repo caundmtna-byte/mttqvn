@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, Building2, ListChecks } from 'lucide-react';
+import { Plus, Download, Upload, Building2, ListChecks, CalendarRange, Users } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import { getLanguage } from '@/lib/utils';
@@ -8,10 +8,16 @@ import Tooltip from '@/components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
+import { useDipThamHoiOptions } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-tham-hoi';
 import { useThamHoiToChucStore } from '../store/useThamHoiToChucStore';
 import { countThamHoiToChucColumnSearchActive } from '../utils/column-search';
-import { TIEN_DO_VALUES } from '../core/constants';
+import { TIEN_DO_VALUES, DON_VI_THAM_HOI_TINH_VALUE, DON_VI_THAM_HOI_TINH_LABEL } from '../core/constants';
 import type { ThamHoiToChuc } from '../core/types';
+import {
+  buildDipThamHoiFilterOptions,
+  buildDonViThamHoiFilterOptions,
+  buildPhongBanFilterOptions,
+} from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
 
 interface Props {
   onPageBack: () => void;
@@ -32,6 +38,7 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('danTocThamHoiToChuc');
   const itemRows = Array.isArray(items) ? items : [];
+  const { data: dipList = [] } = useDipThamHoiOptions();
 
   const {
     searchTerm,
@@ -78,13 +85,37 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [itemRows]);
 
+  const dipOptions = useMemo(
+    () => buildDipThamHoiFilterOptions(itemRows, dipList, filters.dip_tham_hoi_filter),
+    [itemRows, dipList, filters.dip_tham_hoi_filter],
+  );
+
+  const donViThamHoiOptions = useMemo(
+    () =>
+      buildDonViThamHoiFilterOptions(
+        itemRows,
+        'don_vi_tham_hoi_id',
+        'ten_don_vi_tham_hoi',
+        DON_VI_THAM_HOI_TINH_VALUE,
+        DON_VI_THAM_HOI_TINH_LABEL,
+      ),
+    [itemRows],
+  );
+
+  const phongBanOptions = useMemo(
+    () => buildPhongBanFilterOptions(itemRows, 'phong_ban_tham_muu_id', 'ten_phong_ban'),
+    [itemRows],
+  );
+
   const activeFilterCount = useMemo(() => {
     return (
       (searchTerm ? 1 : 0) +
       countThamHoiToChucColumnSearchActive(filters.columnSearch ?? {}) +
       (filters.tien_do_filter.length > 0 ? 1 : 0) +
       (filters.to_chuc_filter.length > 0 ? 1 : 0) +
-      (filters.dip_tham_hoi_filter.length > 0 ? 1 : 0)
+      (filters.dip_tham_hoi_filter.length > 0 ? 1 : 0) +
+      (filters.don_vi_tham_hoi_filter.length > 0 ? 1 : 0) +
+      (filters.phong_ban_filter.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -94,6 +125,8 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
     setFilter('tien_do_filter', []);
     setFilter('to_chuc_filter', []);
     setFilter('dip_tham_hoi_filter', []);
+    setFilter('don_vi_tham_hoi_filter', []);
+    setFilter('phong_ban_filter', []);
     setSort(null, null);
   };
 
@@ -116,9 +149,33 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
           icon={Building2}
           className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
         />
+        <FilterChipMultiSelect
+          options={dipOptions}
+          value={filters.dip_tham_hoi_filter}
+          onChange={(val) => setFilter('dip_tham_hoi_filter', val)}
+          placeholder={txt('danTocThamHoiToChuc.store.dipThamHoiCol')}
+          icon={CalendarRange}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
+        />
+        <FilterChipMultiSelect
+          options={donViThamHoiOptions}
+          value={filters.don_vi_tham_hoi_filter}
+          onChange={(val) => setFilter('don_vi_tham_hoi_filter', val)}
+          placeholder={txt('danTocThamHoiToChuc.store.donViThamHoiCol')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
+        />
+        <FilterChipMultiSelect
+          options={phongBanOptions}
+          value={filters.phong_ban_filter}
+          onChange={(val) => setFilter('phong_ban_filter', val)}
+          placeholder={txt('danTocThamHoiCaNhan.store.phongBanThamMuuCol')}
+          icon={Users}
+          className="shrink-0 w-full min-w-0 sm:w-[min(240px,30vw)] sm:max-w-[300px]"
+        />
       </div>
     ),
-    [tienDoOptions, toChucOptions, filters, setFilter],
+    [tienDoOptions, toChucOptions, dipOptions, donViThamHoiOptions, phongBanOptions, filters, setFilter],
   );
 
   const filterGroups = useMemo(
@@ -139,8 +196,32 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
         value: filters.to_chuc_filter,
         onChange: (val: string[]) => setFilter('to_chuc_filter', val),
       },
+      {
+        key: 'dip_tham_hoi_filter',
+        label: txt('danTocThamHoiToChuc.store.dipThamHoiCol'),
+        icon: CalendarRange,
+        options: dipOptions,
+        value: filters.dip_tham_hoi_filter,
+        onChange: (val: string[]) => setFilter('dip_tham_hoi_filter', val),
+      },
+      {
+        key: 'don_vi_tham_hoi_filter',
+        label: txt('danTocThamHoiToChuc.store.donViThamHoiCol'),
+        icon: Building2,
+        options: donViThamHoiOptions,
+        value: filters.don_vi_tham_hoi_filter,
+        onChange: (val: string[]) => setFilter('don_vi_tham_hoi_filter', val),
+      },
+      {
+        key: 'phong_ban_filter',
+        label: txt('danTocThamHoiCaNhan.store.phongBanThamMuuCol'),
+        icon: Users,
+        options: phongBanOptions,
+        value: filters.phong_ban_filter,
+        onChange: (val: string[]) => setFilter('phong_ban_filter', val),
+      },
     ],
-    [tienDoOptions, toChucOptions, filters, setFilter],
+    [tienDoOptions, toChucOptions, dipOptions, donViThamHoiOptions, phongBanOptions, filters, setFilter],
   );
 
   const mobileActions = useMemo<ActionItem[]>(

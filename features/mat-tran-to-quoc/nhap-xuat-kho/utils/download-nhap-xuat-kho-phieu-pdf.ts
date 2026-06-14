@@ -2,7 +2,7 @@ import { getTodayISODate } from '@/lib/utils';
 
 const PAGE_W_MM = 210;
 const PAGE_H_MM = 297;
-const MARGIN = { top: 15, right: 15, bottom: 15, left: 20 };
+const MARGIN = { top: 10, right: 10, bottom: 10, left: 10 };
 
 /** PDF khớp preview — chụp DOM bằng html2canvas, tách trang A4. */
 export async function downloadNhapXuatKhoPhieuPdf(

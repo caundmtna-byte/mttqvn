@@ -65,7 +65,7 @@ const BaiVietDetail = lazy(() => import('../bai-viet/components/bai-viet-detail'
 const CUSTOM_PRESET = 'custom';
 
 const initialDateRange: DateRangeValue = {
-  preset: 'thisMonth',
+  preset: 'all',
   customStart: '',
   customEnd: '',
 };
@@ -241,7 +241,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
   );
 
   const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    () => isStandardDateRangeNonDefault(dateRange, 'all'),
     [dateRange],
   );
 

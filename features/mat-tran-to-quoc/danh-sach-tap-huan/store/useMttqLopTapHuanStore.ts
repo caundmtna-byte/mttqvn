@@ -32,12 +32,20 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 2,
   },
   {
+    id: 'ten_to_chuc',
+    label: txt('matTranTapHuan.store.toChucCol'),
+    visible: true,
+    minWidth: 140,
+    maxWidth: 220,
+    order: 3,
+  },
+  {
     id: 'ten_don_vi',
     label: txt('matTranTapHuan.store.donViCol'),
     visible: true,
     minWidth: 140,
     maxWidth: 220,
-    order: 3,
+    order: 4,
   },
   {
     id: 'so_dong',
@@ -45,7 +53,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 72,
     maxWidth: 96,
-    order: 4,
+    order: 5,
   },
   {
     id: 'ho_va_ten_nguoi_tao',
@@ -53,14 +61,14 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 180,
-    order: 5,
+    order: 6,
   },
   {
     id: 'tg_cap_nhat',
     label: txt('matTranTapHuan.store.tgCapNhatCol'),
     visible: false,
     ...P.datetime,
-    order: 6,
+    order: 7,
   },
 ];
 
@@ -68,10 +76,30 @@ const initialFilters: MttqLopTapHuanFilters = {
   columnSearch: {},
   cap_tap_huan: [],
   nam_tap_huan: [],
+  to_chuc_id: [],
   don_vi_id: [],
 };
+
+/** Gộp filter mặc định — tránh crash khi HMR/rehydrate thiếu key mới. */
+export function normalizeMttqLopTapHuanFilters(
+  partial?: Partial<MttqLopTapHuanFilters>,
+): MttqLopTapHuanFilters {
+  const f = partial ?? {};
+  return {
+    columnSearch: f.columnSearch ?? {},
+    cap_tap_huan: f.cap_tap_huan ?? [],
+    nam_tap_huan: f.nam_tap_huan ?? [],
+    to_chuc_id: f.to_chuc_id ?? [],
+    don_vi_id: f.don_vi_id ?? [],
+  };
+}
 
 export const useMttqLopTapHuanStore = createGenericStore<MttqLopTapHuanFilters>(
   initialFilters,
   DEFAULT_COLUMNS,
 );
+
+// Một lần khi load module: bổ sung key filter mới nếu state cũ (HMR) chưa có.
+useMttqLopTapHuanStore.setState((state) => ({
+  filters: normalizeMttqLopTapHuanFilters(state.filters),
+}));

@@ -9,15 +9,17 @@ import {
 import type { ThucHienPhanBien } from './types';
 import { computePhanTramHoanThanh } from './compute-phan-tram';
 
-const optionalLink = z
-  .string()
-  .trim()
-  .transform((s) => s)
-  .pipe(
-    z
-      .union([z.literal(''), z.string().url(txt('pbxhThucHien.validation.linkUrl'))])
-      .transform((s) => (s === '' ? undefined : s)),
-  );
+const optionalLink = z.preprocess(
+  (val) => (val == null ? '' : val),
+  z
+    .string()
+    .trim()
+    .pipe(
+      z
+        .union([z.literal(''), z.string().url(txt('pbxhThucHien.validation.linkUrl'))])
+        .transform((s) => (s === '' ? undefined : s)),
+    ),
+);
 
 const optionalText = z
   .string()

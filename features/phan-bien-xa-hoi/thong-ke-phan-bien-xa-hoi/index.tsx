@@ -36,7 +36,6 @@ import {
   Gauge,
   MapPin,
   Trophy,
-  User,
   ClipboardList,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -71,8 +70,15 @@ import {
   TINH_TRANG_VALUES,
 } from '../thuc-hien-phan-bien-xa-hoi/core/constants';
 import { loaiHinhBadge, tinhTrangBadge } from '../thuc-hien-phan-bien-xa-hoi/core/display-badges';
+import EnumBadge from '@/components/ui/EnumBadge';
 import {
-  PBXH_STATS_DON_VI_NONE,
+  formatPbxhDonViThucHienDisplay,
+  formatPbxhNgayDisplay,
+  formatPbxhPhanTramDisplay,
+  formatPbxhSoNguyenDisplay,
+  trimmedPbxhDisplay,
+} from '../thuc-hien-phan-bien-xa-hoi/utils/display-format';
+import {
   PBXH_TIEN_DO_FILTER_IDS,
   type PbxhThongKeDimensionFilters,
   type PbxhLookupSortKey,
@@ -85,17 +91,18 @@ import {
   buildPbxhTinhTrangBarData,
   buildPbxhLoaiHinhBarData,
   buildPbxhCapThucHienBarData,
-  aggregatePbxhTopDonViChuTri,
-  aggregatePbxhByDonViChuTriTable,
+  aggregatePbxhTopDonViThucHien,
+  aggregatePbxhByDonViThucHienTable,
+  aggregatePbxhTopDonViThucHienByTyLe,
   aggregatePbxhLoaiHinhMatrix,
-  aggregatePbxhByNguoiTaoTable,
-  aggregatePbxhTopNguoiTaoByTyLe,
   aggregatePbxhTopHoatDongByPhanTram,
   buildPbxhAvgPhanTramByLoaiHinhBarData,
   buildPbxhAvgPhanTramTrendSeries,
   sortPbxhLookupRows,
   formatPbxhTienDoLabel,
   getPbxhTienDoFilterId,
+  getPbxhStatsDonViThucHienKey,
+  getPbxhStatsDonViThucHienLabel,
 } from './utils/aggregate-pbxh-thong-ke-stats';
 import { exportPbxhThongKeReportToExcel } from './utils/export-pbxh-thong-ke-report';
 
@@ -106,7 +113,7 @@ const ThucHienPhanBienDetail = lazy(
 const CUSTOM_PRESET = 'custom';
 
 const initialDateRange: DateRangeValue = {
-  preset: 'thisMonth',
+  preset: 'all',
   customStart: '',
   customEnd: '',
 };
@@ -115,7 +122,7 @@ const initialDims: PbxhThongKeDimensionFilters = {
   cap_thuc_hien: [],
   loai_hinh: [],
   tinh_trang: [],
-  don_vi_chu_tri_id: [],
+  don_vi_thuc_hien_id: [],
   tien_do: [],
 };
 
@@ -207,11 +214,13 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   const tinhTrangBar = useMemo(() => buildPbxhTinhTrangBarData(filtered), [filtered]);
   const loaiHinhBar = useMemo(() => buildPbxhLoaiHinhBarData(filtered), [filtered]);
   const capBar = useMemo(() => buildPbxhCapThucHienBarData(filtered), [filtered]);
-  const topDonVi = useMemo(() => aggregatePbxhTopDonViChuTri(filtered, TOP_N), [filtered]);
-  const donViTable = useMemo(() => aggregatePbxhByDonViChuTriTable(filtered), [filtered]);
+  const topDonVi = useMemo(() => aggregatePbxhTopDonViThucHien(filtered, TOP_N), [filtered]);
+  const donViTable = useMemo(() => aggregatePbxhByDonViThucHienTable(filtered), [filtered]);
   const matrixRows = useMemo(() => aggregatePbxhLoaiHinhMatrix(filtered), [filtered]);
-  const nguoiTaoTable = useMemo(() => aggregatePbxhByNguoiTaoTable(filtered), [filtered]);
-  const topNguoiTao = useMemo(() => aggregatePbxhTopNguoiTaoByTyLe(filtered, TOP_N), [filtered]);
+  const topDonViThucHienTyLe = useMemo(
+    () => aggregatePbxhTopDonViThucHienByTyLe(filtered, TOP_N),
+    [filtered],
+  );
   const topHoatDong = useMemo(() => aggregatePbxhTopHoatDongByPhanTram(filtered, TOP_N), [filtered]);
   const avgPhanTramLoaiHinh = useMemo(() => buildPbxhAvgPhanTramByLoaiHinhBarData(filtered), [filtered]);
   const avgPhanTramTrend = useMemo(
@@ -257,11 +266,11 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     }));
   }, [rows]);
 
-  const donViChuTriOptions = useMemo(
+  const donViThucHienOptions = useMemo(
     () =>
       buildDimOptions(rows, (r) => ({
-        id: r.don_vi_chu_tri_id?.trim() ? String(r.don_vi_chu_tri_id) : PBXH_STATS_DON_VI_NONE,
-        label: (r.ten_don_vi_chu_tri ?? '').trim() || txt('pbxhThongKe.stats.donViChuaGan'),
+        id: getPbxhStatsDonViThucHienKey(r),
+        label: getPbxhStatsDonViThucHienLabel(r),
       })),
     [rows],
   );
@@ -321,12 +330,12 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, tinh_trang: v })),
       },
       {
-        key: 'don_vi_chu_tri_id',
-        label: txt('pbxhThongKe.stats.filterDonViChuTri'),
+        key: 'don_vi_thuc_hien_id',
+        label: txt('pbxhThongKe.stats.filterDonViThucHien'),
         icon: Building2,
-        options: donViChuTriOptions.map((o) => ({ label: o.label, value: o.value, count: o.count })),
-        value: dims.don_vi_chu_tri_id,
-        onChange: (v) => setDims((d) => ({ ...d, don_vi_chu_tri_id: v })),
+        options: donViThucHienOptions.map((o) => ({ label: o.label, value: o.value, count: o.count })),
+        value: dims.don_vi_thuc_hien_id,
+        onChange: (v) => setDims((d) => ({ ...d, don_vi_thuc_hien_id: v })),
       },
       {
         key: 'tien_do',
@@ -337,11 +346,11 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, tien_do: v })),
       },
     ],
-    [capOptions, loaiHinhOptions, tinhTrangOptions, donViChuTriOptions, tienDoOptions, dims],
+    [capOptions, loaiHinhOptions, tinhTrangOptions, donViThucHienOptions, tienDoOptions, dims],
   );
 
   const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    () => isStandardDateRangeNonDefault(dateRange, 'all'),
     [dateRange],
   );
 
@@ -351,7 +360,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     if (dims.cap_thuc_hien.length) n += 1;
     if (dims.loai_hinh.length) n += 1;
     if (dims.tinh_trang.length) n += 1;
-    if (dims.don_vi_chu_tri_id.length) n += 1;
+    if (dims.don_vi_thuc_hien_id.length) n += 1;
     if (dims.tien_do.length) n += 1;
     return n;
   }, [dims, isNonDefaultDateRange]);
@@ -370,8 +379,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     try {
       await exportPbxhThongKeReportToExcel({
         kpis,
-        donViRows: donViTable,
-        nguoiTaoRows: nguoiTaoTable,
+        donViThucHienRows: donViTable,
         topHoatDongRows: topHoatDong,
         loaiHinhRows: loaiHinhBar,
         avgPhanTramLoaiHinhRows: avgPhanTramLoaiHinh,
@@ -391,7 +399,6 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     filtered.length,
     kpis,
     donViTable,
-    nguoiTaoTable,
     topHoatDong,
     loaiHinhBar,
     avgPhanTramLoaiHinh,
@@ -487,16 +494,16 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     [kpis],
   );
 
-  const topNguoiTaoChartData = useMemo(
+  const topDonViThucHienTyLeChartData = useMemo(
     () =>
-      [...topNguoiTao]
+      [...topDonViThucHienTyLe]
         .map((r) => ({
           name: r.label.length > 18 ? `${r.label.slice(0, 16)}…` : r.label,
           tyLe: r.tyLeThucTe,
           avgPhanTram: r.avgPhanTram,
         }))
         .reverse(),
-    [topNguoiTao],
+    [topDonViThucHienTyLe],
   );
 
   const toggleSort = (key: PbxhLookupSortKey) => {
@@ -558,10 +565,10 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
       />
       <FilterChipMultiSelect
         icon={Building2}
-        options={donViChuTriOptions}
-        value={dims.don_vi_chu_tri_id}
-        onChange={(v) => setDims((d) => ({ ...d, don_vi_chu_tri_id: v }))}
-        placeholder={txt('pbxhThongKe.stats.filterDonViChuTri')}
+        options={donViThucHienOptions}
+        value={dims.don_vi_thuc_hien_id}
+        onChange={(v) => setDims((d) => ({ ...d, don_vi_thuc_hien_id: v }))}
+        placeholder={txt('pbxhThongKe.stats.filterDonViThucHien')}
         className="w-[11rem] shrink-0"
       />
       <FilterChipMultiSelect
@@ -769,14 +776,14 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
               </StatsCard>
             </div>
 
-            <StatsCard title={txt('pbxhThongKe.stats.chartTopNguoiTaoTyLe')} icon={Trophy} spanTwo>
+            <StatsCard title={txt('pbxhThongKe.stats.chartTopDonViThucHienTyLe')} icon={Trophy} spanTwo>
               <div className="h-[300px] w-full min-w-0">
-                {topNguoiTaoChartData.length === 0 ? (
+                {topDonViThucHienTyLeChartData.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">{txt('pbxhThongKe.noData')}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <BarChart
-                      data={topNguoiTaoChartData}
+                      data={topDonViThucHienTyLeChartData}
                       layout="vertical"
                       margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
                     >
@@ -805,73 +812,40 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
               </div>
             </StatsCard>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <StatsCard title={txt('pbxhThongKe.stats.tableNguoiTaoRank')} icon={User}>
-                <div className="overflow-x-auto max-h-[min(320px,40vh)] overflow-y-auto -m-4">
-                  <table className="w-full text-sm min-w-[860px]">
-                    <thead className="sticky top-0 z-[1] bg-card border-b border-border">
-                      <tr className="text-left text-muted-foreground">
-                        <th className="py-2 px-3 font-medium w-10">{txt('pbxhThongKe.stats.tableColRank')}</th>
-                        <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColNguoiTao')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColTotal')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanHoanThanh')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanKhaoSat')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColTyLeThucTe')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColAvgPhanTram')}</th>
+            <StatsCard title={txt('pbxhThongKe.stats.tableTopHoatDong')} icon={Trophy}>
+              <div className="overflow-x-auto max-h-[min(320px,40vh)] overflow-y-auto -m-4">
+                <table className="w-full text-sm min-w-[860px]">
+                  <thead className="sticky top-0 z-[1] bg-card border-b border-border">
+                    <tr className="text-left text-muted-foreground">
+                      <th className="py-2 px-3 font-medium w-10">{txt('pbxhThongKe.stats.tableColRank')}</th>
+                      <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColNoiDung')}</th>
+                      <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColDonViThucHien')}</th>
+                      <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColPhanTram')}</th>
+                      <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanHoanThanh')}</th>
+                      <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanKhaoSat')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topHoatDong.map((row, idx) => (
+                      <tr key={row.id} className="border-b border-border/60">
+                        <td className="py-2 px-3 tabular-nums text-muted-foreground">{idx + 1}</td>
+                        <td className="py-2 pr-3 max-w-[200px] truncate font-medium" title={row.noi_dung}>
+                          {row.noi_dung}
+                        </td>
+                        <td className="py-2 pr-3 max-w-[160px] truncate">{row.don_vi_thuc_hien_label}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.phan_tram_hoan_thanh}%</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_hoan_thanh}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_khao_sat}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {nguoiTaoTable.map((row, idx) => (
-                        <tr key={row.id} className="border-b border-border/60">
-                          <td className="py-2 px-3 tabular-nums text-muted-foreground">{idx + 1}</td>
-                          <td className="py-2 pr-3 max-w-[180px] truncate">{row.label}</td>
-                          <td className="py-2 pr-3 text-right tabular-nums">{row.total}</td>
-                          <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanHoanThanh}</td>
-                          <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanKhaoSat}</td>
-                          <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.tyLeThucTe}%</td>
-                          <td className="py-2 pr-3 text-right tabular-nums">{row.avgPhanTram}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </StatsCard>
-
-              <StatsCard title={txt('pbxhThongKe.stats.tableTopHoatDong')} icon={Trophy}>
-                <div className="overflow-x-auto max-h-[min(320px,40vh)] overflow-y-auto -m-4">
-                  <table className="w-full text-sm min-w-[860px]">
-                    <thead className="sticky top-0 z-[1] bg-card border-b border-border">
-                      <tr className="text-left text-muted-foreground">
-                        <th className="py-2 px-3 font-medium w-10">{txt('pbxhThongKe.stats.tableColRank')}</th>
-                        <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColNoiDung')}</th>
-                        <th className="py-2 pr-3 font-medium">{txt('pbxhThongKe.stats.tableColNguoiTao')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColPhanTram')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanHoanThanh')}</th>
-                        <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColSoLanKhaoSat')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topHoatDong.map((row, idx) => (
-                        <tr key={row.id} className="border-b border-border/60">
-                          <td className="py-2 px-3 tabular-nums text-muted-foreground">{idx + 1}</td>
-                          <td className="py-2 pr-3 max-w-[200px] truncate font-medium" title={row.noi_dung}>
-                            {row.noi_dung}
-                          </td>
-                          <td className="py-2 pr-3 max-w-[120px] truncate">{row.nguoi_tao_label}</td>
-                          <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.phan_tram_hoan_thanh}%</td>
-                          <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_hoan_thanh}</td>
-                          <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_khao_sat}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </StatsCard>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </StatsCard>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StatsTableCard
-                title={txt('pbxhThongKe.stats.chartTopDonViChuTri')}
+                title={txt('pbxhThongKe.stats.chartTopDonViThucHien')}
                 icon={Building2}
                 rows={topDonVi.map((r) => ({ label: r.label, value: r.value, id: r.id }))}
                 columnLabelKey="pbxhThongKe.stats.tableTwoColLabel"
@@ -890,11 +864,12 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
               />
             </div>
 
-            <StatsCard title={txt('pbxhThongKe.stats.tableDonViChuTri')} icon={Building2}>
+            <StatsCard title={txt('pbxhThongKe.stats.tableDonViThucHien')} icon={Building2}>
               <div className="overflow-x-auto max-h-[min(320px,40vh)] overflow-y-auto -m-4">
                 <table className="w-full text-sm min-w-[860px]">
                   <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                     <tr className="text-left text-muted-foreground">
+                      <th className="py-2 px-3 font-medium w-10">{txt('pbxhThongKe.stats.tableColRank')}</th>
                       <th className="py-2 px-4 font-medium">{txt('pbxhThongKe.stats.tableColDonVi')}</th>
                       <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColTotal')}</th>
                       <th className="py-2 pr-3 font-medium text-right">{txt('pbxhThongKe.stats.tableColDangTh')}</th>
@@ -906,8 +881,9 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {donViTable.map((row) => (
+                    {donViTable.map((row, idx) => (
                       <tr key={row.id} className="border-b border-border/60">
+                        <td className="py-2 px-3 tabular-nums text-muted-foreground">{idx + 1}</td>
                         <td className="py-2 px-4 max-w-[240px] truncate">{row.label}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.total}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.dangThucHien}</td>
@@ -933,6 +909,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                           ['noi_dung', txt('pbxhThongKe.stats.tableColNoiDung')],
                           ['loai_hinh', txt('pbxhThongKe.stats.tableColLoaiHinh')],
                           ['tinh_trang', txt('pbxhThongKe.stats.tableColTinhTrang')],
+                          ['ten_don_vi_thuc_hien', txt('pbxhThongKe.stats.tableColDonViThucHien')],
                           ['ten_don_vi_chu_tri', txt('pbxhThongKe.stats.tableColDonViChuTri')],
                           ['tien_do', txt('pbxhThongKe.stats.tableColTienDo')],
                           ['so_lan_hoan_thanh', txt('pbxhThongKe.stats.tableColSoLanHoanThanh')],
@@ -960,7 +937,10 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedLookupBase.map((row) => (
+                    {sortedLookupBase.map((row) => {
+                      const empty = txt('common.emptyCell');
+                      const ngayKetThucLabel = formatPbxhNgayDisplay(row.ngay_ket_thuc);
+                      return (
                       <tr
                         key={row.id}
                         className={cn(
@@ -969,26 +949,54 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                         )}
                         onClick={() => handleOpenDetail(row)}
                       >
-                        <td className="py-2 pr-3 max-w-[220px] truncate font-medium">{row.noi_dung}</td>
-                        <td className="py-2 pr-3 whitespace-nowrap">{row.loai_hinh}</td>
-                        <td className="py-2 pr-3 whitespace-nowrap">{row.tinh_trang}</td>
-                        <td className="py-2 pr-3 max-w-[160px] truncate">{row.ten_don_vi_chu_tri?.trim() || '—'}</td>
+                        <td className="py-2 pr-3 max-w-[220px] truncate font-medium tracking-tight" title={row.noi_dung}>
+                          {row.noi_dung}
+                        </td>
+                        <td className="py-2 pr-3 whitespace-nowrap">
+                          {row.loai_hinh?.trim() ? (
+                            <EnumBadge value={row.loai_hinh.trim()} config={loaiHinhBadge} shape="pill" truncate />
+                          ) : (
+                            empty
+                          )}
+                        </td>
+                        <td className="py-2 pr-3 whitespace-nowrap">
+                          {row.tinh_trang?.trim() ? (
+                            <EnumBadge value={row.tinh_trang.trim()} config={tinhTrangBadge} shape="pill" truncate />
+                          ) : (
+                            empty
+                          )}
+                        </td>
+                        <td className="py-2 pr-3 max-w-[160px] truncate text-muted-foreground">
+                          {formatPbxhDonViThucHienDisplay(row)}
+                        </td>
+                        <td className="py-2 pr-3 max-w-[160px] truncate text-muted-foreground">
+                          {trimmedPbxhDisplay(row.ten_don_vi_chu_tri) ?? empty}
+                        </td>
                         <td className="py-2 pr-3 max-w-[180px]">
                           <span
                             className={congViecDeadlineChipClass(
                               pbxhTienDoChipTone(row),
-                              'text-xs max-w-full truncate',
+                              'text-xs max-w-full truncate tabular-nums',
                             )}
                           >
                             {formatPbxhTienDoLabel(row)}
                           </span>
                         </td>
-                        <td className="py-2 pr-3 tabular-nums">{row.so_lan_hoan_thanh}</td>
-                        <td className="py-2 pr-3 tabular-nums">{row.so_lan_khao_sat}</td>
-                        <td className="py-2 pr-3 tabular-nums">{row.phan_tram_hoan_thanh}%</td>
-                        <td className="py-2 pr-3 tabular-nums whitespace-nowrap">{row.ngay_ket_thuc ?? '—'}</td>
+                        <td className="py-2 pr-3 tabular-nums text-right">
+                          {formatPbxhSoNguyenDisplay(row.so_lan_hoan_thanh)}
+                        </td>
+                        <td className="py-2 pr-3 tabular-nums text-right">
+                          {formatPbxhSoNguyenDisplay(row.so_lan_khao_sat)}
+                        </td>
+                        <td className="py-2 pr-3 tabular-nums text-right font-medium text-primary">
+                          {formatPbxhPhanTramDisplay(row.phan_tram_hoan_thanh)}
+                        </td>
+                        <td className="py-2 pr-3 tabular-nums whitespace-nowrap text-muted-foreground">
+                          {ngayKetThucLabel || empty}
+                        </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>

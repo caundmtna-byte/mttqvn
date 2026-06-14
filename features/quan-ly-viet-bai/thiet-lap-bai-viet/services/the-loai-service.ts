@@ -7,7 +7,6 @@ import { txt } from '@/lib/text';
 const repo = createRepository<BaiVietTheLoai>({
   tableName: 'bai_viet_thiet_lap_the_loai',
   select: THE_LOAI_SELECT_FULL,
-  delay: 400,
 });
 
 function normalizeTheLoai(raw: BaiVietTheLoai): BaiVietTheLoai {

@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -17,17 +16,12 @@ import {
   MTTQ_KHEN_THUONG_SELECT_FULL,
   MTTQ_KHEN_THUONG_SELECT_LIST,
 } from '../core/supabase-select';
-import { MTTQ_KHEN_THUONG_MOCK_CHILDREN, MTTQ_KHEN_THUONG_MOCK_PARENTS } from '../mock-data';
-import type { MttqKhenThuongMockParent } from '../mock-data';
 
 type ParentRepoRow = { id: string } & Record<string, unknown>;
 
 const repo = createRepository<ParentRepoRow>({
   tableName: 'mttq_khen_thuong',
   select: MTTQ_KHEN_THUONG_SELECT_LIST,
-  delay: 400,
-  /** Danh sách mock do `mockParents` / `mockChildren` quản lý — không dùng MockRepository cho bảng này. */
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -50,16 +44,6 @@ function nullableStr(v: unknown): string | null {
 function isPersistedChildId(id: unknown): id is string {
   if (id == null || typeof id !== 'string') return false;
   return /^\d+$/.test(id.trim());
-}
-
-/** Mock in-memory (chỉ khi không Supabase). */
-let mockParents = structuredClone(MTTQ_KHEN_THUONG_MOCK_PARENTS);
-let mockChildren = structuredClone(MTTQ_KHEN_THUONG_MOCK_CHILDREN);
-
-function mockNextId(): string {
-  const maxP = Math.max(0, ...mockParents.map((p) => Number(p.id) || 0));
-  const maxC = Math.max(0, ...mockChildren.map((c) => Number(c.id) || 0));
-  return String(Math.max(maxP, maxC) + 1);
 }
 
 function tenCanBoFromEmbed(v: unknown): string | null {
@@ -165,20 +149,34 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
   };
 }
 
-function mockQdEmbedFromParent(p: MttqKhenThuongMockParent): Record<string, unknown> {
+/** Chuyển bản ghi detail (sau create/update) sang dòng list — tránh invalidate list. */
+export function mttqKhenThuongDetailToListRow(d: MttqKhenThuong): MttqKhenThuongListRow {
+  const hinhSet = new Set<MttqKhenThuongHinhThuc>();
+  const danhSet = new Set<MttqKhenThuongDanhHieu>();
+  const rewardedDonViIds: string[] = [];
+  for (const c of d.chi_tiet) {
+    const dv = c.can_bo_don_vi_id?.toString().trim();
+    if (dv) rewardedDonViIds.push(dv);
+    if (c.hinh_thuc_khen) hinhSet.add(c.hinh_thuc_khen);
+    if (c.danh_hieu) danhSet.add(c.danh_hieu);
+  }
   return {
-    id: p.id,
-    id_nguoi_tao: p.id_nguoi_tao,
-    so_qd: p.so_qd,
-    ngay_khen_thuong: p.ngay_khen_thuong,
-    don_vi_de_xuat: p.don_vi_de_xuat,
-    trang_thai: p.trang_thai,
-    tg_cap_nhat: p.tg_cap_nhat,
-    nguoi_tao: {
-      ho_va_ten: p.ho_va_ten_nguoi_tao,
-      ten_tai_khoan: p.ten_tai_khoan_nguoi_tao,
-      id_phong_ban: p.id_phong_ban_nguoi_tao,
-    },
+    id: d.id,
+    so_qd: d.so_qd,
+    ngay_khen_thuong: d.ngay_khen_thuong,
+    don_vi_de_xuat: d.don_vi_de_xuat,
+    ghi_chu: d.ghi_chu,
+    trang_thai: d.trang_thai,
+    id_nguoi_tao: d.id_nguoi_tao,
+    tg_tao: d.tg_tao,
+    tg_cap_nhat: d.tg_cap_nhat,
+    ho_va_ten_nguoi_tao: d.ho_va_ten_nguoi_tao ?? null,
+    ten_tai_khoan_nguoi_tao: d.ten_tai_khoan_nguoi_tao ?? null,
+    id_phong_ban_nguoi_tao: d.id_phong_ban_nguoi_tao ?? null,
+    so_dong: d.chi_tiet.length,
+    rewarded_can_bo_don_vi_ids: rewardedDonViIds,
+    hinh_thuc_trong_qd: [...hinhSet].sort((a, b) => a.localeCompare(b)),
+    danh_hieu_trong_qd: [...danhSet].sort((a, b) => a.localeCompare(b)),
   };
 }
 
@@ -267,7 +265,7 @@ function headerPayload(data: MttqKhenThuongFormValues) {
 
 async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormValues['chi_tiet']) {
   const supabase = getSupabase();
-  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   const q = () => supabase.from('mttq_khen_thuong_ct');
 
   const { data: existing, error: e1 } = await q().select('id').eq('id_khen_thuong', parentId);
@@ -277,7 +275,6 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
   const existingIds = (existing ?? []).map((r) => String(r.id));
   const toDelete = existingIds.filter((id: string) => !keep.has(id));
 
-  // Batch để giảm round-trip: 1 delete (in-list) + N update từng dòng + 1 insert.
   const baseOf = (line: MttqKhenThuongFormValues['chi_tiet'][number]) => ({
     can_bo_id: Number(line.can_bo_id),
     cap_khen_thuong: line.cap_khen_thuong,
@@ -297,9 +294,6 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
     const { error: e2 } = await q().delete().in('id', toDelete);
     if (e2) handleSupabaseError(e2);
   }
-  // Không dùng `.upsert(..., onConflict: 'id')`: cột `id` là GENERATED ALWAYS AS IDENTITY —
-  // PostgREST vẫn tạo INSERT có `id` → Postgres trả 400 ("cannot insert a non-DEFAULT value into column \"id\"").
-  // Cập nhật từng dòng đã persist bằng `.update().eq('id', id)`.
   for (const row of toUpdateExisting) {
     const { id, ...patch } = row;
     const { error: e3 } = await q().update(patch).eq('id', id);
@@ -311,78 +305,12 @@ async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormV
   }
 }
 
-function syncChildrenMock(parentId: string, lines: MttqKhenThuongFormValues['chi_tiet']) {
-  mockChildren = mockChildren.filter((c) => c.id_khen_thuong !== parentId);
-  for (const line of lines) {
-    const id = isPersistedChildId(line.id) ? line.id! : mockNextId();
-    mockChildren.push({
-      id,
-      id_khen_thuong: parentId,
-      can_bo_id: line.can_bo_id,
-      cap_khen_thuong: line.cap_khen_thuong,
-      hinh_thuc_khen: line.hinh_thuc_khen,
-      danh_hieu: line.danh_hieu,
-      noi_dung_khen: line.noi_dung_khen?.trim() ?? null,
-      ho_so_khen: line.ho_so_khen?.trim() ?? null,
-    });
-  }
-}
-
 export async function getMttqKhenThuongList(): Promise<MttqKhenThuongListRow[]> {
-  if (!isSupabase()) {
-    return mockParents.map((p) => {
-      const kids = mockChildren.filter((c) => c.id_khen_thuong === p.id);
-      const rewarded_can_bo_don_vi_ids: string[] = [];
-      const hinhSet = new Set<MttqKhenThuongHinhThuc>();
-      const danhSet = new Set<MttqKhenThuongDanhHieu>();
-      for (const c of kids) {
-        const dv = c.can_bo_don_vi_id?.toString().trim();
-        if (dv) rewarded_can_bo_don_vi_ids.push(dv);
-        hinhSet.add(c.hinh_thuc_khen);
-        danhSet.add(c.danh_hieu);
-      }
-      return {
-        id: p.id,
-        so_qd: p.so_qd,
-        ngay_khen_thuong: p.ngay_khen_thuong,
-        don_vi_de_xuat: p.don_vi_de_xuat,
-        ghi_chu: p.ghi_chu,
-        trang_thai: p.trang_thai,
-        id_nguoi_tao: p.id_nguoi_tao,
-        tg_tao: p.tg_tao,
-        tg_cap_nhat: p.tg_cap_nhat,
-        ho_va_ten_nguoi_tao: p.ho_va_ten_nguoi_tao,
-        ten_tai_khoan_nguoi_tao: p.ten_tai_khoan_nguoi_tao,
-        id_phong_ban_nguoi_tao: p.id_phong_ban_nguoi_tao ?? null,
-        so_dong: kids.length,
-        rewarded_can_bo_don_vi_ids,
-        hinh_thuc_trong_qd: [...hinhSet].sort((a, b) => a.localeCompare(b)),
-        danh_hieu_trong_qd: [...danhSet].sort((a, b) => a.localeCompare(b)),
-      };
-    });
-  }
-
   const list = await repo.getAll({ orderBy: 'ngay_khen_thuong', ascending: false });
   return list.map((row) => flattenListRow(row as unknown as Record<string, unknown>));
 }
 
 export async function getMttqKhenThuongById(id: string): Promise<MttqKhenThuong | null> {
-  if (!isSupabase()) {
-    const p = mockParents.find((x) => x.id === id);
-    if (!p) return null;
-    const chi = mockChildren
-      .filter((c) => c.id_khen_thuong === id)
-      .map((c) => ({
-        ...c,
-        ten_can_bo: null as string | null,
-        can_bo_don_vi_id: c.can_bo_don_vi_id ?? null,
-      }));
-    return normalizeFull({
-      ...p,
-      chi_tiet: chi,
-    });
-  }
-
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -399,26 +327,6 @@ export async function createMttqKhenThuong(data: MttqKhenThuongFormValues, idNgu
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('matTranKhenThuong.service.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const id = mockNextId();
-    const now = new Date().toISOString();
-    mockParents.push({
-      id,
-      ...headerPayload(data),
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-      ho_va_ten_nguoi_tao: 'Mock',
-      ten_tai_khoan_nguoi_tao: 'mock',
-      id_phong_ban_nguoi_tao: null,
-    });
-    syncChildrenMock(id, data.chi_tiet);
-    const full = await getMttqKhenThuongById(id);
-    if (!full) throw new Error(txt('matTranKhenThuong.service.notFound'));
-    return full;
-  }
-
-  // Chỉ trả `id, tg_cap_nhat` — `getById` ngay sau đó nạp full row, không cần payload rộng.
   const inserted = await repo.insert(
     {
       ...headerPayload(data),
@@ -434,21 +342,6 @@ export async function createMttqKhenThuong(data: MttqKhenThuongFormValues, idNgu
 }
 
 export async function updateMttqKhenThuong(id: string, data: MttqKhenThuongFormValues): Promise<MttqKhenThuong> {
-  if (!isSupabase()) {
-    const idx = mockParents.findIndex((p) => p.id === id);
-    if (idx === -1) throw new Error(txt('matTranKhenThuong.service.notFound'));
-    mockParents[idx] = {
-      ...mockParents[idx],
-      ...headerPayload(data),
-      tg_cap_nhat: new Date().toISOString(),
-    };
-    syncChildrenMock(id, data.chi_tiet);
-    const full = await getMttqKhenThuongById(id);
-    if (!full) throw new Error(txt('matTranKhenThuong.service.notFound'));
-    return full;
-  }
-
-  // Narrow returning — `getById` ngay sau đó vẫn cấp full row cho UI.
   await repo.update(id, headerPayload(data) as unknown as Partial<ParentRepoRow>, {
     returningSelect: 'id,tg_cap_nhat',
   });
@@ -460,11 +353,6 @@ export async function updateMttqKhenThuong(id: string, data: MttqKhenThuongFormV
 
 export async function deleteMttqKhenThuongMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    mockParents = mockParents.filter((p) => !ids.includes(p.id));
-    mockChildren = mockChildren.filter((c) => !ids.includes(c.id_khen_thuong));
-    return;
-  }
   await repo.remove(ids);
 }
 
@@ -472,28 +360,6 @@ export async function deleteMttqKhenThuongMany(ids: string[]): Promise<void> {
 export async function getMttqKhenThuongLinesForCanBoId(canBoId: string): Promise<MttqKhenThuongLineForCanBo[]> {
   const id = String(canBoId ?? '').trim();
   if (!id) return [];
-
-  if (!isSupabase()) {
-    const out: MttqKhenThuongLineForCanBo[] = [];
-    for (const c of mockChildren.filter((x) => String(x.can_bo_id) === id)) {
-      const p = mockParents.find((x) => x.id === c.id_khen_thuong);
-      if (!p) continue;
-      out.push({
-        id_ct: String(c.id),
-        id_khen_thuong: String(c.id_khen_thuong),
-        so_qd: p.so_qd,
-        ngay_khen_thuong: dateOnly(p.ngay_khen_thuong),
-        trang_thai: p.trang_thai,
-        hinh_thuc_khen: c.hinh_thuc_khen,
-        danh_hieu: c.danh_hieu,
-        cap_khen_thuong: c.cap_khen_thuong,
-        noi_dung_khen: c.noi_dung_khen ?? null,
-        ho_so_khen: c.ho_so_khen ?? null,
-      });
-    }
-    out.sort((a, b) => (b.ngay_khen_thuong || '').localeCompare(a.ngay_khen_thuong || ''));
-    return out;
-  }
 
   const supabase = getSupabase();
   if (!supabase) return [];
@@ -529,30 +395,6 @@ export async function getMttqKhenThuongLinesForCanBoId(canBoId: string): Promise
 
 /** Toàn bộ dòng CT (client filter/sort). */
 export async function getMttqKhenThuongChiTietFlatList(): Promise<MttqKhenThuongChiTietFlatRow[]> {
-  if (!isSupabase()) {
-    const rows: Record<string, unknown>[] = [];
-    for (const c of mockChildren) {
-      const p = mockParents.find((x) => x.id === c.id_khen_thuong);
-      if (!p) continue;
-      rows.push({
-        id: c.id,
-        id_khen_thuong: c.id_khen_thuong,
-        can_bo_id: c.can_bo_id,
-        cap_khen_thuong: c.cap_khen_thuong,
-        hinh_thuc_khen: c.hinh_thuc_khen,
-        danh_hieu: c.danh_hieu,
-        noi_dung_khen: c.noi_dung_khen,
-        ho_so_khen: c.ho_so_khen,
-        qd: mockQdEmbedFromParent(p),
-        can_bo: {
-          ho_ten: `Cán bộ ${c.can_bo_id}`,
-          don_vi_id: c.can_bo_don_vi_id ?? null,
-        },
-      });
-    }
-    return rows.map((r) => flattenKhenThuongChiTietFlatRow(r));
-  }
-
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase

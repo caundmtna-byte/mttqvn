@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { TinhThanh, XaPhuong } from '../core/types';
@@ -32,13 +31,11 @@ function normXa(row: Record<string, unknown>): XaPhuong {
 const tinhRepo = createRepository<TinhThanh>({
   tableName: 'var_ssn_tinh_thanh',
   select: TINH_THANH_SELECT_FULL,
-  delay: 400,
 });
 
 const xaRepo = createRepository<XaPhuong>({
   tableName: 'var_ssn_xa_phuong',
   select: XA_PHUONG_SELECT_FULL,
-  delay: 400,
 });
 
 const XA_COUNT_PAGE = 2000;
@@ -46,23 +43,14 @@ const XA_COUNT_PAGE = 2000;
 /** Đếm số xã/phường theo từng id tỉnh — dùng RPC GROUP BY phía DB thay vì paginate toàn bảng. */
 async function getXaCountsByTinhThanhId(): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
-  if (isSupabase()) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error('Supabase client is not configured.');
-    const { data, error } = await supabase.rpc('get_xa_counts_by_tinh_thanh');
-    if (error) handleSupabaseError(error);
-    for (const r of (data ?? []) as { id_tinh_thanh: string; so_xa: number }[]) {
-      const id = String(r.id_tinh_thanh ?? '');
-      if (!id) continue;
-      counts.set(id, Number(r.so_xa) || 0);
-    }
-    return counts;
-  }
-  const all = await xaRepo.getAll({ orderBy: 'thu_tu', ascending: true });
-  for (const x of all) {
-    const id = String((x as XaPhuong).id_tinh_thanh ?? '');
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase client is not configured.');
+  const { data, error } = await supabase.rpc('get_xa_counts_by_tinh_thanh');
+  if (error) handleSupabaseError(error);
+  for (const r of (data ?? []) as { id_tinh_thanh: string; so_xa: number }[]) {
+    const id = String(r.id_tinh_thanh ?? '');
     if (!id) continue;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
+    counts.set(id, Number(r.so_xa) || 0);
   }
   return counts;
 }
@@ -81,21 +69,15 @@ export async function getTinhThanhList(): Promise<TinhThanh[]> {
 
 export async function getXaPhuongByTinhThanh(idTinhThanh: string): Promise<XaPhuong[]> {
   if (!idTinhThanh.trim()) return [];
-  if (isSupabase()) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error('Supabase client is not configured.');
-    const { data, error } = await supabase
-      .from('var_ssn_xa_phuong')
-      .select(XA_PHUONG_SELECT_FULL)
-      .eq('id_tinh_thanh', idTinhThanh)
-      .order('thu_tu', { ascending: true });
-    if (error) handleSupabaseError(error);
-    return (data ?? []).map((r) => normXa(r as Record<string, unknown>));
-  }
-  const all = await xaRepo.getAll({ orderBy: 'thu_tu', ascending: true });
-  return all
-    .filter((x) => x.id_tinh_thanh === idTinhThanh)
-    .map((r) => normXa(r as unknown as Record<string, unknown>));
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase client is not configured.');
+  const { data, error } = await supabase
+    .from('var_ssn_xa_phuong')
+    .select(XA_PHUONG_SELECT_FULL)
+    .eq('id_tinh_thanh', idTinhThanh)
+    .order('thu_tu', { ascending: true });
+  if (error) handleSupabaseError(error);
+  return (data ?? []).map((r) => normXa(r as Record<string, unknown>));
 }
 
 /**
@@ -123,37 +105,24 @@ export async function getXaPhuongAll(): Promise<XaPhuong[]> {
   if (xaPhuongAllInflight) return xaPhuongAllInflight;
 
   xaPhuongAllInflight = (async () => {
-    if (isSupabase()) {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error('Supabase client is not configured.');
-      const out: XaPhuong[] = [];
-      let from = 0;
-      for (;;) {
-        const { data, error } = await supabase
-          .from('var_ssn_xa_phuong')
-          .select(XA_PHUONG_SELECT_FULL)
-          .order('id_tinh_thanh', { ascending: true })
-          .order('thu_tu', { ascending: true })
-          .range(from, from + XA_COUNT_PAGE - 1);
-        if (error) handleSupabaseError(error);
-        const rows = data ?? [];
-        if (rows.length === 0) break;
-        for (const r of rows) out.push(normXa(r as Record<string, unknown>));
-        if (rows.length < XA_COUNT_PAGE) break;
-        from += XA_COUNT_PAGE;
-      }
-      xaPhuongAllCache = { data: out, expiresAt: Date.now() + XA_PHUONG_ALL_TTL_MS };
-      return out;
+    const supabase = getSupabase();
+    if (!supabase) throw new Error('Supabase client is not configured.');
+    const out: XaPhuong[] = [];
+    let from = 0;
+    for (;;) {
+      const { data, error } = await supabase
+        .from('var_ssn_xa_phuong')
+        .select(XA_PHUONG_SELECT_FULL)
+        .order('id_tinh_thanh', { ascending: true })
+        .order('thu_tu', { ascending: true })
+        .range(from, from + XA_COUNT_PAGE - 1);
+      if (error) handleSupabaseError(error);
+      const rows = data ?? [];
+      if (rows.length === 0) break;
+      for (const r of rows) out.push(normXa(r as Record<string, unknown>));
+      if (rows.length < XA_COUNT_PAGE) break;
+      from += XA_COUNT_PAGE;
     }
-    const all = await xaRepo.getAll({ orderBy: 'thu_tu', ascending: true });
-    const out = all
-      .slice()
-      .sort(
-        (a, b) =>
-          String((a as XaPhuong).id_tinh_thanh).localeCompare(String((b as XaPhuong).id_tinh_thanh)) ||
-          (a as XaPhuong).thu_tu - (b as XaPhuong).thu_tu,
-      )
-      .map((r) => normXa(r as unknown as Record<string, unknown>));
     xaPhuongAllCache = { data: out, expiresAt: Date.now() + XA_PHUONG_ALL_TTL_MS };
     return out;
   })();

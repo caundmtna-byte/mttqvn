@@ -1,16 +1,14 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { ChuongTrinhNam, ChuongTrinhNamListRow } from '../core/types';
 import type { ChuongTrinhNamFormValues } from '../core/schema';
 import {
-  CHUONG_TRINH_NAM_RETURNING_FULL,
+  CHUONG_TRINH_NAM_RETURNING,
   CHUONG_TRINH_NAM_SELECT_FULL,
   CHUONG_TRINH_NAM_SELECT_LIST,
 } from '../core/supabase-select';
-import { CHUONG_TRINH_NAM_MOCK } from '../mock-data';
 import type { ChuongTrinhNamTrangThai } from '../core/constants';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -18,8 +16,6 @@ type RepoRow = { id: string } & Record<string, unknown>;
 const repo = createRepository<RepoRow>({
   tableName: 'chuong_trinh_nam',
   select: CHUONG_TRINH_NAM_SELECT_LIST,
-  mockData: CHUONG_TRINH_NAM_MOCK as unknown as RepoRow[],
-  delay: 400,
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -110,11 +106,6 @@ export async function getChuongTrinhNamList(): Promise<ChuongTrinhNamListRow[]> 
 }
 
 export async function getChuongTrinhNamById(id: string): Promise<ChuongTrinhNam | null> {
-  if (!isSupabase()) {
-    const row = await repo.getById(id);
-    if (!row) return null;
-    return normalize(flattenChuongTrinhNamRow(row as unknown as Record<string, unknown>));
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -135,17 +126,22 @@ export async function createChuongTrinhNam(
   if (!trimmed) throw new Error(txt('chuongTrinhNam.service.noEmployeeProfile'));
   const payload = formToPayload(data, trimmed);
   const inserted = await repo.insert(payload as unknown as Omit<ChuongTrinhNam, 'id'>, {
-    returningSelect: CHUONG_TRINH_NAM_RETURNING_FULL,
+    returningSelect: CHUONG_TRINH_NAM_RETURNING,
   });
-  return normalize(flattenChuongTrinhNamRow(inserted as unknown as Record<string, unknown>));
+  const id = String((inserted as { id: string }).id);
+  const full = await getChuongTrinhNamById(id);
+  if (!full) throw new Error(txt('chuongTrinhNam.service.notFound'));
+  return full;
 }
 
 export async function updateChuongTrinhNam(id: string, data: ChuongTrinhNamFormValues): Promise<ChuongTrinhNam> {
   const payload = formToPayload(data);
-  const updated = await repo.update(id, payload as unknown as Partial<ChuongTrinhNam>, {
-    returningSelect: CHUONG_TRINH_NAM_RETURNING_FULL,
+  await repo.update(id, payload as unknown as Partial<ChuongTrinhNam>, {
+    returningSelect: CHUONG_TRINH_NAM_RETURNING,
   });
-  return normalize(flattenChuongTrinhNamRow(updated as unknown as Record<string, unknown>));
+  const full = await getChuongTrinhNamById(id);
+  if (!full) throw new Error(txt('chuongTrinhNam.service.notFound'));
+  return full;
 }
 
 export async function deleteChuongTrinhNamMany(ids: string[]): Promise<void> {

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, User, ListChecks, Users, Building2, MapPin } from 'lucide-react';
+import { Plus, Download, Upload, User, ListChecks, Users, Building2, MapPin, CalendarRange } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import { getLanguage } from '@/lib/utils';
@@ -8,10 +8,16 @@ import Tooltip from '@/components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
+import { useDipThamHoiOptions } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-tham-hoi';
 import { useThamHoiCaNhanStore } from '../store/useThamHoiCaNhanStore';
 import { countThamHoiCaNhanColumnSearchActive } from '../utils/column-search';
 import { TRANG_THAI_VALUES, DON_VI_THAM_HOI_CQMTTQ_VALUE, DON_VI_THAM_HOI_CQMTTQ_LABEL } from '../core/constants';
 import type { ThamHoiCaNhan } from '../core/types';
+import {
+  buildDipThamHoiFilterOptions,
+  buildDonViThamHoiFilterOptions,
+  buildPhongBanFilterOptions,
+} from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
 
 interface Props {
   onPageBack: () => void;
@@ -32,6 +38,7 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('danTocThamHoiCaNhan');
   const itemRows = Array.isArray(items) ? items : [];
+  const { data: dipList = [] } = useDipThamHoiOptions();
 
   const {
     searchTerm,
@@ -78,41 +85,27 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [itemRows]);
 
-  const phongBanOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    for (const r of itemRows) {
-      if (!r.phong_ban_tham_muu_id) continue;
-      const label = r.ten_phong_ban?.trim() || r.phong_ban_tham_muu_id;
-      const cur = map.get(r.phong_ban_tham_muu_id);
-      if (cur) cur.count += 1;
-      else map.set(r.phong_ban_tham_muu_id, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [itemRows]);
+  const dipOptions = useMemo(
+    () => buildDipThamHoiFilterOptions(itemRows, dipList, filters.dip_tham_hoi_filter),
+    [itemRows, dipList, filters.dip_tham_hoi_filter],
+  );
 
-  const donViThamHoiOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    let cqmttqCount = 0;
-    for (const r of itemRows) {
-      if (r.don_vi_tham_hoi_id == null || r.don_vi_tham_hoi_id === '') {
-        cqmttqCount += 1;
-        continue;
-      }
-      const label = r.ten_don_vi_tham_hoi?.trim() || r.don_vi_tham_hoi_id;
-      const cur = map.get(r.don_vi_tham_hoi_id);
-      if (cur) cur.count += 1;
-      else map.set(r.don_vi_tham_hoi_id, { label, count: 1 });
-    }
-    const options = [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-    return [
-      { value: DON_VI_THAM_HOI_CQMTTQ_VALUE, label: DON_VI_THAM_HOI_CQMTTQ_LABEL, count: cqmttqCount },
-      ...options,
-    ];
-  }, [itemRows]);
+  const phongBanOptions = useMemo(
+    () => buildPhongBanFilterOptions(itemRows, 'phong_ban_tham_muu_id', 'ten_phong_ban'),
+    [itemRows],
+  );
+
+  const donViThamHoiOptions = useMemo(
+    () =>
+      buildDonViThamHoiFilterOptions(
+        itemRows,
+        'don_vi_tham_hoi_id',
+        'ten_don_vi_tham_hoi',
+        DON_VI_THAM_HOI_CQMTTQ_VALUE,
+        DON_VI_THAM_HOI_CQMTTQ_LABEL,
+      ),
+    [itemRows],
+  );
 
   const xaPhuongOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
@@ -134,10 +127,10 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
       countThamHoiCaNhanColumnSearchActive(filters.columnSearch ?? {}) +
       (filters.trang_thai_filter.length > 0 ? 1 : 0) +
       (filters.ca_nhan_filter.length > 0 ? 1 : 0) +
+      (filters.dip_tham_hoi_filter.length > 0 ? 1 : 0) +
       (filters.phong_ban_filter.length > 0 ? 1 : 0) +
       (filters.don_vi_tham_hoi_filter.length > 0 ? 1 : 0) +
-      (filters.xa_phuong_filter.length > 0 ? 1 : 0) +
-      (filters.dip_tham_hoi_filter.length > 0 ? 1 : 0)
+      (filters.xa_phuong_filter.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -146,10 +139,10 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
     useThamHoiCaNhanStore.getState().setFilter('columnSearch', {});
     setFilter('trang_thai_filter', []);
     setFilter('ca_nhan_filter', []);
+    setFilter('dip_tham_hoi_filter', []);
     setFilter('phong_ban_filter', []);
     setFilter('don_vi_tham_hoi_filter', []);
     setFilter('xa_phuong_filter', []);
-    setFilter('dip_tham_hoi_filter', []);
     setSort(null, null);
   };
 
@@ -163,6 +156,14 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
           placeholder={txt('danTocThamHoiCaNhan.store.trangThaiCol')}
           icon={ListChecks}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,26vw)] sm:max-w-[240px]"
+        />
+        <FilterChipMultiSelect
+          options={dipOptions}
+          value={filters.dip_tham_hoi_filter}
+          onChange={(val) => setFilter('dip_tham_hoi_filter', val)}
+          placeholder={txt('danTocThamHoiCaNhan.store.dipThamHoiCol')}
+          icon={CalendarRange}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
         />
         <FilterChipMultiSelect
           options={caNhanOptions}
@@ -198,7 +199,16 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
         />
       </div>
     ),
-    [trangThaiOptions, caNhanOptions, phongBanOptions, donViThamHoiOptions, xaPhuongOptions, filters, setFilter],
+    [
+      trangThaiOptions,
+      dipOptions,
+      caNhanOptions,
+      phongBanOptions,
+      donViThamHoiOptions,
+      xaPhuongOptions,
+      filters,
+      setFilter,
+    ],
   );
 
   const filterGroups = useMemo(
@@ -210,6 +220,14 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
         options: trangThaiOptions,
         value: filters.trang_thai_filter,
         onChange: (val: string[]) => setFilter('trang_thai_filter', val),
+      },
+      {
+        key: 'dip_tham_hoi_filter',
+        label: txt('danTocThamHoiCaNhan.store.dipThamHoiCol'),
+        icon: CalendarRange,
+        options: dipOptions,
+        value: filters.dip_tham_hoi_filter,
+        onChange: (val: string[]) => setFilter('dip_tham_hoi_filter', val),
       },
       {
         key: 'ca_nhan_filter',
@@ -244,7 +262,16 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
         onChange: (val: string[]) => setFilter('xa_phuong_filter', val),
       },
     ],
-    [trangThaiOptions, caNhanOptions, phongBanOptions, donViThamHoiOptions, xaPhuongOptions, filters, setFilter],
+    [
+      trangThaiOptions,
+      dipOptions,
+      caNhanOptions,
+      phongBanOptions,
+      donViThamHoiOptions,
+      xaPhuongOptions,
+      filters,
+      setFilter,
+    ],
   );
 
   const mobileActions = useMemo<ActionItem[]>(

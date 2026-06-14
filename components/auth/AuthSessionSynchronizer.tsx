@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useStore';
 import { getAuthService } from '@/lib/supabase/auth';
-import { isSupabase } from '@/lib/data/config';
 
 /**
  * Sau khi persist auth hydrate: làm mới `user` từ Supabase (họ tên, chức vụ, …)
@@ -13,7 +12,7 @@ export function AuthSessionSynchronizer() {
   const userId = useAuthStore((s) => s.user?.id);
 
   useEffect(() => {
-    if (!isSupabase() || !hasHydrated || !isAuthenticated || !userId) return;
+    if (!hasHydrated || !isAuthenticated || !userId) return;
 
     let alive = true;
     void (async () => {

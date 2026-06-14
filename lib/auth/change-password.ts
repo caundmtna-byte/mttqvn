@@ -1,5 +1,4 @@
 import { getSupabase } from '@/lib/supabase/client';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 
 export interface ChangePasswordInput {
@@ -42,14 +41,6 @@ export async function changeUserPassword(
   currentPassword: string,
   newPassword: string,
 ): Promise<{ error?: string }> {
-  if (!isSupabase()) {
-    await new Promise((r) => setTimeout(r, 400));
-    if (currentPassword.length < 6) {
-      return { error: txt('nav.changePassword.errorWrongCurrent') };
-    }
-    return {};
-  }
-
   const supabase = getSupabase();
   if (!supabase) {
     return { error: txt('nav.changePassword.errorNotConfigured') };

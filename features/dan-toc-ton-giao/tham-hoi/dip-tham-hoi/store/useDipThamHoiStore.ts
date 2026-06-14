@@ -107,6 +107,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 const initialFilters: DipThamHoiFilters = {
   columnSearch: {},
   trang_thai_filter: [],
+  don_vi_to_chuc_filter: [],
+  phong_ban_filter: [],
 };
 
 export const useDipThamHoiStore = createGenericStore<DipThamHoiFilters>(initialFilters, DEFAULT_COLUMNS);

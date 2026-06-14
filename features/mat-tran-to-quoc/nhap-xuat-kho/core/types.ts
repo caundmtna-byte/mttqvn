@@ -56,9 +56,13 @@ export interface NhapXuatKhoCtRow {
   thu_tu: number;
 }
 
-/** Detail (master + lines + ghi_chu). */
+/** Detail (master + lines + ghi_chu + trường in phiếu). */
 export interface NhapXuatKhoDetail extends NhapXuatKhoListRow {
   ghi_chu: string | null;
+  /** Họ tên người giao hàng (nhập/chuyển) hoặc người nhận hàng (xuất). */
+  nguoi_giao_nhan: string | null;
+  bo_phan: string | null;
+  chung_tu_goc: string | null;
   chi_tiet: NhapXuatKhoCtRow[];
 }
 

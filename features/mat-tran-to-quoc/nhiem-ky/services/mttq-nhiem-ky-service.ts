@@ -1,20 +1,16 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { MttqNhiemKy, MttqNhiemKyListRow } from '../core/types';
 import { mttqNhiemKySchema, type MttqNhiemKyFormInput, type MttqNhiemKyFormValues } from '../core/schema';
-import { MTTQ_NHIEM_KY_SELECT_FULL, MTTQ_NHIEM_KY_SELECT_LIST } from '../core/supabase-select';
-import { MTTQ_NHIEM_KY_MOCK } from '../mock-data';
+import { MTTQ_NHIEM_KY_RETURNING, MTTQ_NHIEM_KY_SELECT_FULL, MTTQ_NHIEM_KY_SELECT_LIST } from '../core/supabase-select';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
 const repo = createRepository<RepoRow>({
   tableName: 'mttq_nhiem_ky',
   select: MTTQ_NHIEM_KY_SELECT_LIST,
-  delay: 400,
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -66,13 +62,6 @@ export function flattenRow(row: Record<string, unknown>): MttqNhiemKy {
   };
 }
 
-let mockRows = structuredClone(MTTQ_NHIEM_KY_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 function payloadFromForm(data: MttqNhiemKyFormValues) {
   return {
     ten_nhiem_ky: data.ten_nhiem_ky,
@@ -89,18 +78,11 @@ function payloadFromForm(data: MttqNhiemKyFormValues) {
 }
 
 export async function getMttqNhiemKyList(): Promise<MttqNhiemKyListRow[]> {
-  if (!isSupabase()) {
-    return mockRows.map((r) => ({ ...r }));
-  }
   const list = await repo.getAll({ orderBy: 'tu_nam', ascending: false });
   return list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
 }
 
 export async function getMttqNhiemKyById(id: string): Promise<MttqNhiemKy | null> {
-  if (!isSupabase()) {
-    const r = mockRows.find((x) => x.id === id);
-    return r ? { ...r } : null;
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -117,62 +99,35 @@ export async function createMttqNhiemKy(data: MttqNhiemKyFormValues, idNguoiTao:
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('matTranNhiemKy.service.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const id = mockNextId();
-    const now = new Date().toISOString();
-    const row: MttqNhiemKy = {
-      id,
-      ...payloadFromForm(data),
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-      ho_va_ten_nguoi_tao: 'Mock',
-      ten_tai_khoan_nguoi_tao: 'mock',
-    };
-    mockRows.push(row);
-    return { ...row };
-  }
-
   const inserted = await repo.insert(
     {
       ...payloadFromForm(data),
       id_nguoi_tao: trimmed,
     } as unknown as Omit<RepoRow, 'id'>,
-    { returningSelect: MTTQ_NHIEM_KY_SELECT_FULL },
+    { returningSelect: MTTQ_NHIEM_KY_RETURNING },
   );
-  return flattenRow(inserted as unknown as Record<string, unknown>);
+  const id = String((inserted as { id: string }).id);
+  const full = await getMttqNhiemKyById(id);
+  if (!full) throw new Error(txt('matTranNhiemKy.service.notFound'));
+  return full;
 }
 
 export async function updateMttqNhiemKy(id: string, data: MttqNhiemKyFormValues): Promise<MttqNhiemKy> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('matTranNhiemKy.service.notFound'));
-    const now = new Date().toISOString();
-    mockRows[idx] = {
-      ...mockRows[idx],
-      ...payloadFromForm(data),
-      tg_cap_nhat: now,
-    };
-    return { ...mockRows[idx] };
-  }
-
-  const updated = await repo.update(
+  await repo.update(
     id,
     {
       ...payloadFromForm(data),
       tg_cap_nhat: new Date().toISOString(),
     } as unknown as Partial<RepoRow>,
-    { returningSelect: MTTQ_NHIEM_KY_SELECT_FULL },
+    { returningSelect: MTTQ_NHIEM_KY_RETURNING },
   );
-  return flattenRow(updated as unknown as Record<string, unknown>);
+  const full = await getMttqNhiemKyById(id);
+  if (!full) throw new Error(txt('matTranNhiemKy.service.notFound'));
+  return full;
 }
 
 export async function deleteMttqNhiemKyMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    mockRows = mockRows.filter((r) => !ids.includes(r.id));
-    return;
-  }
   await repo.remove(ids);
 }
 

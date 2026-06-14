@@ -1,4 +1,5 @@
 import type { Department } from '../core/types';
+import { countActiveColumnSearchFilters, rowMatchesColumnSearch } from '@/lib/column-search';
 
 /** Cột đã có MultiSelect ở header — không áp dụng thêm `columnSearch` cho cùng id cột. */
 export const DEPARTMENT_COLUMN_IDS_WITH_MULTISELECT = ['trang_thai', 'ten_phong_ban'] as const;
@@ -30,15 +31,7 @@ function columnIdToValue(
 export function countDepartmentColumnSearchActive(
   columnSearch: Record<string, string> | undefined,
 ): number {
-  if (!columnSearch) return 0;
-  const skip = DEPARTMENT_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
-  let n = 0;
-  for (const [colId, q] of Object.entries(columnSearch)) {
-    if (!q.trim()) continue;
-    if (skip.includes(colId)) continue;
-    n += 1;
-  }
-  return n;
+  return countActiveColumnSearchFilters(columnSearch, DEPARTMENT_COLUMN_IDS_WITH_MULTISELECT);
 }
 
 /**
@@ -50,14 +43,7 @@ export function departmentMatchesColumnSearch(
   columnSearch: Record<string, string> | undefined,
   parentName: string,
 ): boolean {
-  if (!columnSearch) return true;
-  const skip = DEPARTMENT_COLUMN_IDS_WITH_MULTISELECT as readonly string[];
-  for (const [colId, q] of Object.entries(columnSearch)) {
-    if (skip.includes(colId)) continue;
-    const trimmed = q.trim();
-    if (!trimmed) continue;
-    const str = columnIdToValue(colId, item, parentName);
-    if (!str.toLowerCase().includes(trimmed.toLowerCase())) return false;
-  }
-  return true;
+  return rowMatchesColumnSearch(columnSearch, DEPARTMENT_COLUMN_IDS_WITH_MULTISELECT, (colId) =>
+    columnIdToValue(colId, item, parentName),
+  );
 }

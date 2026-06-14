@@ -82,7 +82,7 @@ const MttqUyVienUyBanDetail = lazy(() => import('../uy-vien-uy-ban/components/mt
 const CUSTOM_PRESET = 'custom';
 
 const initialDateRange: DateRangeValue = {
-  preset: 'thisMonth',
+  preset: 'all',
   customStart: '',
   customEnd: '',
 };
@@ -318,7 +318,7 @@ const BaoCaoUyVienPage: React.FC = () => {
   );
 
   const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    () => isStandardDateRangeNonDefault(dateRange, 'all'),
     [dateRange],
   );
 

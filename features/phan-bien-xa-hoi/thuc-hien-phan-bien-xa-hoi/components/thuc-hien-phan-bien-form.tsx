@@ -118,9 +118,13 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
     reset,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<ThucHienPhanBienFormInput>({
+  } = useForm<ThucHienPhanBienFormInput, unknown, ThucHienPhanBienFormValues>({
     defaultValues: thucHienPhanBienToFormInput(null),
-    resolver: zodResolver(thucHienPhanBienSchema) as Resolver<ThucHienPhanBienFormInput>,
+    resolver: zodResolver(thucHienPhanBienSchema) as Resolver<
+      ThucHienPhanBienFormInput,
+      unknown,
+      ThucHienPhanBienFormValues
+    >,
   });
 
   useEffect(() => {
@@ -134,8 +138,7 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
     so_lan_khao_sat: Number(soLanKhaoSat) || 0,
   });
 
-  const onSubmit: SubmitHandler<ThucHienPhanBienFormInput> = (data) => {
-    const parsed = thucHienPhanBienSchema.parse(data) as ThucHienPhanBienFormValues;
+  const onSubmit: SubmitHandler<ThucHienPhanBienFormValues> = (parsed) => {
     if (isEdit && initialData) {
       updateMutation.mutate({ id: initialData.id, data: parsed });
     } else {

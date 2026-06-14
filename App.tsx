@@ -20,7 +20,6 @@ const ThucHienPhanBienPage = lazy(() => import('./features/phan-bien-xa-hoi/thuc
 const ThietLapDanhMucPbxhPage = lazy(() => import('./features/phan-bien-xa-hoi/thiet-lap-danh-muc/index'));
 const ThongKePhanBienXaHoiPage = lazy(() => import('./features/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi/index'));
 const DanTocTonGiaoDashboard = lazy(() => import('./pages/dashboards/DanTocTonGiaoDashboard'));
-const MatTranToQuocModulePlaceholder = lazy(() => import('./pages/mat-tran-to-quoc/MatTranToQuocModulePlaceholder'));
 const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet-lap-bai-viet/index'));
 const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
 const HoaHongVietBaiPage = lazy(() => import('./features/quan-ly-viet-bai/hoa-hong-viet-bai/index'));

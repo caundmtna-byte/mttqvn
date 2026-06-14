@@ -2,6 +2,7 @@
 export const MTTQ_TAP_HUAN_SEARCHABLE_KEYS: string[] = [
   'ten_lop_tap_huan',
   'cap_tap_huan',
+  'ten_to_chuc',
   'ten_don_vi',
   'ghi_chu',
   'ho_va_ten_nguoi_tao',

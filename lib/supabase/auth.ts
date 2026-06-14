@@ -1,5 +1,4 @@
 import { getSupabase } from '@/lib/supabase/client';
-import { isSupabase } from '@/lib/data/config';
 import type { User } from '@/types';
 import { loginNameToSupabaseEmail, supabaseEmailToLoginName } from '@/lib/auth-email';
 
@@ -107,55 +106,7 @@ function buildAppUser(authUser: { id: string; email?: string; user_metadata?: Re
   };
 }
 
-const mockUser: User = {
-  id: 'emp-000',
-  username: 'admin',
-  email: 'admin@gmail.com',
-  full_name: 'Quản trị viên',
-  role: 'admin',
-  created_at: new Date().toISOString(),
-  id_phong_ban: null,
-  id_bo_phan: null,
-  id_chuc_vu: null,
-  ten_chuc_vu: null,
-  don_vi_id: null,
-  cap_quan_ly: [],
-  trang_thai: 'Hoạt động',
-};
-
-const mockAuthService: AuthService = {
-  async signIn({ email, password }) {
-    await new Promise((r) => setTimeout(r, 600));
-    if (password.length < 6) return { error: 'Mật khẩu không hợp lệ' };
-    return {
-      user: {
-        ...mockUser,
-        email,
-        username: email.split('@')[0],
-        full_name: email === 'admin@gmail.com' ? mockUser.full_name : email.split('@')[0],
-      },
-    };
-  },
-
-  async signUp() {
-    await new Promise((r) => setTimeout(r, 800));
-    return {};
-  },
-
-  async signOut() {
-    await new Promise((r) => setTimeout(r, 100));
-  },
-
-  async getSession() {
-    return null;
-  },
-
-  onAuthStateChange() {
-    return () => {};
-  },
-};
-
-const supabaseAuthService: AuthService = {
+const authService: AuthService = {
   async signIn(credentials) {
     const supabase = getSupabase();
     if (!supabase) return { error: 'Supabase chưa được cấu hình' };
@@ -225,5 +176,5 @@ const supabaseAuthService: AuthService = {
 };
 
 export function getAuthService(): AuthService {
-  return isSupabase() ? supabaseAuthService : mockAuthService;
+  return authService;
 }

@@ -42,6 +42,11 @@ import {
   thongTinToChucQuanTrongMatchesColumnSearch,
 } from './utils/column-search';
 import { sortThongTinToChucQuanTrongList } from './utils/sort';
+import {
+  canMutateDttgRowByDonVi,
+  dttgRowVisibleByDonVi,
+  useDttgViewer,
+} from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 import ThongTinToChucQuanTrongToolbar from './components/thong-tin-to-chuc-quan-trong-toolbar';
 import ThongTinToChucQuanTrongTable from './components/thong-tin-to-chuc-quan-trong-table';
 
@@ -121,6 +126,12 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
   const deleteMutation = useDeleteThongTinToChucQuanTrongMany();
   const statusMutation = useUpdateThongTinToChucQuanTrongStatus();
   const importMutation = useImportThongTinToChucQuanTrong(() => setShowImport(false));
+  const viewer = useDttgViewer('danTocToChucQuanTrong');
+
+  const viewableRows = useMemo(
+    () => rows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_id])),
+    [rows, viewer],
+  );
 
   useEffect(() => {
     return () => resetState();
@@ -142,7 +153,7 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
     return matchesSearch;
   }, []);
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
   const sorted = useMemo(() => sortThongTinToChucQuanTrongList(filtered, sort), [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
@@ -220,29 +231,33 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
 
   const emptyTitleResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('common.noResults')
         : txt('danTocToChucQuanTrong.emptyTitle'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   const emptyDescriptionResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('danTocToChucQuanTrong.emptyFilteredHint')
         : txt('danTocToChucQuanTrong.emptyHint'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   useEffect(() => {
     if (!viewingId) return;
-    const fresh = rows.find((r) => r.id === viewingId);
+    const fresh = viewableRows.find((r) => r.id === viewingId);
     if (!fresh) {
+      const row = rows.find((r) => r.id === viewingId);
+      if (row && !dttgRowVisibleByDonVi(viewer, [row.don_vi_id])) {
+        toast.error(txt('danTocToChucQuanTrong.noViewRowPermission'));
+      }
       setViewingId(null);
       return;
     }
     queryClient.setQueryData(queryKeys.danTocToChucQuanTrong.detail(viewingId), fresh);
-  }, [rows, viewingId, queryClient]);
+  }, [rows, viewableRows, viewingId, queryClient, viewer]);
 
   const handleView = useCallback(
     (item: ThongTinToChucQuanTrong) => {
@@ -253,6 +268,10 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
   );
 
   const handleEditFromList = (item: ThongTinToChucQuanTrong) => {
+    if (!canMutateDttgRowByDonVi(viewer, [item.don_vi_id])) {
+      toast.error(txt('danTocToChucQuanTrong.noEditOtherDonVi'));
+      return;
+    }
     startTransition(() => {
       setEditing(item);
       setShowForm(true);
@@ -260,6 +279,10 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
   };
 
   const handleEditFromDetail = (d: ThongTinToChucQuanTrong) => {
+    if (!canMutateDttgRowByDonVi(viewer, [d.don_vi_id])) {
+      toast.error(txt('danTocToChucQuanTrong.noEditOtherDonVi'));
+      return;
+    }
     startTransition(() => {
       setEditing(d);
       setShowForm(true);
@@ -267,6 +290,11 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
+    const row = rows.find((r) => r.id === id);
+    if (!canMutateDttgRowByDonVi(viewer, [row?.don_vi_id])) {
+      toast.error(txt('danTocToChucQuanTrong.noDeleteOtherDonVi'));
+      return;
+    }
     confirm({
       title: txt('danTocToChucQuanTrong.deleteTitle'),
       message: txt('danTocToChucQuanTrong.deleteMessage'),
@@ -283,16 +311,27 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
   };
 
   const handleDeleteMany = (ids: string[]) => {
+    const allowedIds = ids.filter((id) => {
+      const row = rows.find((r) => r.id === id);
+      return row && canMutateDttgRowByDonVi(viewer, [row.don_vi_id]);
+    });
+    if (allowedIds.length === 0) {
+      toast.error(txt('danTocToChucQuanTrong.noDeleteOtherDonVi'));
+      return;
+    }
+    if (allowedIds.length < ids.length) {
+      toast.error(txt('danTocToChucQuanTrong.noDeleteOtherDonVi'));
+    }
     confirm({
       title: txt('danTocToChucQuanTrong.bulkDeleteTitle'),
-      message: txt('danTocToChucQuanTrong.bulkDeleteMessage', { count: ids.length }),
+      message: txt('danTocToChucQuanTrong.bulkDeleteMessage', { count: allowedIds.length }),
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        deleteMutation.mutate(allowedIds, {
           onSuccess: () => {
             clearSelection();
-            if (viewingId && ids.includes(viewingId)) setViewingId(null);
+            if (viewingId && allowedIds.includes(viewingId)) setViewingId(null);
           },
         });
       },
@@ -363,7 +402,7 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
           onExport={handleExport}
           onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
-          items={rows}
+          items={viewableRows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">

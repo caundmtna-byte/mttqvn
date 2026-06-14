@@ -3,7 +3,7 @@
  * với pattern `body * { visibility: hidden }` trong index.css.
  */
 export const NHAP_XUAT_KHO_PHIEU_PRINT_STYLES = `
-  @page { size: A4 portrait; margin: 12mm 12mm 12mm 16mm; }
+  @page { size: A4 portrait; margin: 1cm; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -21,53 +21,32 @@ export const NHAP_XUAT_KHO_PHIEU_PRINT_STYLES = `
     margin: 0 auto;
     padding: 0;
   }
-  .nhap-xuat-kho-phieu-doc__letterhead {
-    display: flex;
-    justify-content: space-between;
-    gap: 16pt;
+  .nhap-xuat-kho-phieu-doc__header {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr 1fr;
+    gap: 8pt 12pt;
+    align-items: start;
     margin-bottom: 10pt;
   }
-  .nhap-xuat-kho-phieu-doc__letterhead-left {
-    flex: 1;
-    min-width: 0;
-    text-align: center;
-    padding-right: 8pt;
-  }
-  .nhap-xuat-kho-phieu-doc__letterhead-right {
-    flex: 0 0 auto;
-    text-align: right;
-    min-width: 130pt;
+  .nhap-xuat-kho-phieu-doc__header-left { text-align: left; }
+  .nhap-xuat-kho-phieu-doc__header-center { text-align: center; }
+  .nhap-xuat-kho-phieu-doc__header-right { text-align: right; font-size: 10pt; }
+  .nhap-xuat-kho-phieu-doc__header-line {
+    margin: 0 0 2pt;
     font-size: 10pt;
+    line-height: 1.25;
   }
-  .nhap-xuat-kho-phieu-doc__org-name {
-    margin: 0;
-    font-size: 12pt;
-    font-weight: 700;
-    line-height: 1.2;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-  .nhap-xuat-kho-phieu-doc__org-sub {
-    margin: 2pt 0 0;
-    font-size: 11pt;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  .nhap-xuat-kho-phieu-doc__org-line {
-    width: 120pt;
-    height: 1px;
-    background: #000;
-    margin: 4pt auto;
-  }
-  .nhap-xuat-kho-phieu-doc__org-line-text {
-    margin: 1pt 0 0;
-    font-size: 10pt;
-    line-height: 1.2;
-  }
+  .nhap-xuat-kho-phieu-doc__header-label { font-weight: 700; }
   .nhap-xuat-kho-phieu-doc__ref-line { margin: 0 0 2pt; }
   .nhap-xuat-kho-phieu-doc__ref-value { font-weight: 700; }
+  .nhap-xuat-kho-phieu-doc__thong-tu {
+    margin: 2pt 0 0;
+    font-size: 9pt;
+    font-style: italic;
+    line-height: 1.2;
+  }
   .nhap-xuat-kho-phieu-doc__title {
-    margin: 10pt 0 4pt;
+    margin: 0 0 4pt;
     font-size: 14pt;
     font-weight: 700;
     text-align: center;
@@ -75,19 +54,13 @@ export const NHAP_XUAT_KHO_PHIEU_PRINT_STYLES = `
     line-height: 1.2;
   }
   .nhap-xuat-kho-phieu-doc__subtitle {
-    margin: 0 0 10pt;
+    margin: 0;
     font-size: 11pt;
     text-align: center;
   }
-  .nhap-xuat-kho-phieu-doc__meta { margin: 0 0 10pt; }
-  .nhap-xuat-kho-phieu-doc__meta-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2pt 12pt;
-    margin-bottom: 2pt;
-  }
-  .nhap-xuat-kho-phieu-doc__meta-item { margin: 0; font-size: 11pt; }
-  .nhap-xuat-kho-phieu-doc__meta-label { font-weight: 700; }
+  .nhap-xuat-kho-phieu-doc__info { margin: 0 0 10pt; }
+  .nhap-xuat-kho-phieu-doc__info-line { margin: 0 0 3pt; font-size: 11pt; }
+  .nhap-xuat-kho-phieu-doc__info-label { font-weight: 700; }
   .nhap-xuat-kho-phieu-doc__empty {
     margin: 10pt 0 0;
     text-align: center;
@@ -115,35 +88,36 @@ export const NHAP_XUAT_KHO_PHIEU_PRINT_STYLES = `
     text-align: center;
     font-size: 10pt;
   }
+  .nhap-xuat-kho-phieu-doc__th--code {
+    font-weight: 400;
+    font-style: italic;
+  }
   .nhap-xuat-kho-phieu-doc__td { min-height: 28px; }
   .nhap-xuat-kho-phieu-doc__td--center { text-align: center; }
   .nhap-xuat-kho-phieu-doc__td--right { text-align: right; }
   .nhap-xuat-kho-phieu-doc__td--left { text-align: left; }
+  .nhap-xuat-kho-phieu-doc__td--bold { font-weight: 700; }
   .nhap-xuat-kho-phieu-doc thead { display: table-header-group; }
   .nhap-xuat-kho-phieu-doc tr { page-break-inside: avoid; }
-  .nhap-xuat-kho-phieu-doc__summary { margin-top: 8pt; text-align: right; }
-  .nhap-xuat-kho-phieu-doc__summary-row {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12pt;
-    margin-bottom: 4pt;
-    font-size: 11pt;
-  }
-  .nhap-xuat-kho-phieu-doc__summary-label { font-weight: 700; }
-  .nhap-xuat-kho-phieu-doc__summary-value { font-weight: 700; min-width: 100pt; text-align: right; }
   .nhap-xuat-kho-phieu-doc__amount-words {
-    margin: 4pt 0 0;
+    margin: 8pt 0 0;
     font-size: 11pt;
-    font-style: italic;
     text-align: left;
   }
-  .nhap-xuat-kho-phieu-doc__note {
-    margin: 10pt 0 0;
-    padding: 6pt 8pt;
-    border: 0.5px solid #333;
+  .nhap-xuat-kho-phieu-doc__chung-tu { margin: 6pt 0 0; font-size: 11pt; }
+  .nhap-xuat-kho-phieu-doc__signature-date {
+    margin: 12pt 0 0;
     font-size: 11pt;
-    min-height: 32pt;
+    font-style: italic;
+    text-align: right;
   }
+  .nhap-xuat-kho-phieu-doc__note {
+    margin: 8pt 0 0;
+    font-size: 9pt;
+    color: #444;
+    line-height: 1.25;
+  }
+  .nhap-xuat-kho-phieu-doc__note-label { font-weight: 700; }
   .nhap-xuat-kho-phieu-doc__footer {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;

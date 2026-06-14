@@ -41,6 +41,7 @@ import {
 } from '../core/constants';
 import type { ThamHoiCaNhan } from '../core/types';
 import { useCreateThamHoiCaNhan, useUpdateThamHoiCaNhan, useThamHoiCaNhanList } from '../hooks/use-tham-hoi-ca-nhan';
+import { useDttgViewer } from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 import { buildQuaTangOptions } from '../utils/qua-tang-suggestions';
 
 const FORM_ID = 'dttg-tham-hoi-ca-nhan-form';
@@ -64,6 +65,9 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, defaultDipId, onClose
   const { data: xaList = [] } = useXaPhuongForTab(true, '');
   const createMutation = useCreateThamHoiCaNhan(onClose);
   const updateMutation = useUpdateThamHoiCaNhan(onClose);
+  const viewer = useDttgViewer('danTocThamHoiCaNhan');
+  const defaultDonViFromViewer =
+    viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewer.viewerDonViId);
 
   const tinhMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -154,8 +158,11 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, defaultDipId, onClose
     if (!initialData && defaultDipId?.trim()) {
       base.dip_tham_hoi_id = defaultDipId.trim();
     }
+    if (!initialData && defaultDonViFromViewer && viewer.viewerDonViId) {
+      base.don_vi_tham_hoi_id = viewer.viewerDonViId;
+    }
     reset(base);
-  }, [initialData, defaultDipId, reset]);
+  }, [initialData, defaultDipId, reset, defaultDonViFromViewer, viewer.viewerDonViId]);
 
   useDipChildFormPrefill({
     isEdit,

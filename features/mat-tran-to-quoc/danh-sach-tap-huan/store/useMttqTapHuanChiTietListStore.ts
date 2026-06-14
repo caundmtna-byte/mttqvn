@@ -100,6 +100,7 @@ const initialFilters: MttqTapHuanChiTietListFilters = {
   columnSearch: {},
   cap_tap_huan: [],
   nam_tap_huan: [],
+  to_chuc_id: [],
   thuoc_dien: [],
   id_lop_tap_huan: [],
 };

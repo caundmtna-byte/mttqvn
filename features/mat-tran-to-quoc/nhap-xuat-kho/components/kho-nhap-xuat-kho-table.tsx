@@ -12,7 +12,7 @@ import {
 import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';
 import GenericTable from '@/components/shared/GenericTable';
-import { formatDateShort, formatDateTimeShort } from '@/lib/utils';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import type { NhapXuatKhoListRow } from '../core/types';
@@ -126,7 +126,7 @@ const NhapXuatKhoTable = memo(function NhapXuatKhoTable({
         case 'ngay_phieu':
           return (
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-              {item.ngay_phieu ? formatDateShort(item.ngay_phieu) : txt('common.emptyCell')}
+              {item.ngay_phieu ? formatDate(item.ngay_phieu) : txt('common.emptyCell')}
             </span>
           );
         case 'ten_kho_xuat':
@@ -172,7 +172,7 @@ const NhapXuatKhoTable = memo(function NhapXuatKhoTable({
         case 'tg_cap_nhat':
           return (
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-              {item.tg_cap_nhat ? formatDateTimeShort(item.tg_cap_nhat) : txt('common.emptyCell')}
+              {item.tg_cap_nhat ? formatDateTime(item.tg_cap_nhat) : txt('common.emptyCell')}
             </span>
           );
         case 'actions':
@@ -243,7 +243,7 @@ const NhapXuatKhoTable = memo(function NhapXuatKhoTable({
                 {item.ngay_phieu ? (
                   <span className="inline-flex items-center gap-1">
                     <Calendar size={12} aria-hidden />
-                    {formatDateShort(item.ngay_phieu)}
+                    {formatDate(item.ngay_phieu)}
                   </span>
                 ) : null}
                 <span>· {item.so_dong} dòng</span>

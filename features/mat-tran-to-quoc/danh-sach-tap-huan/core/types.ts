@@ -4,6 +4,8 @@ export interface MttqLopTapHuanFilters {
   columnSearch: Record<string, string>;
   cap_tap_huan: string[];
   nam_tap_huan: string[];
+  /** FK `mttq_thiet_lap` loại to_chuc; `__empty__` = chưa gắn. */
+  to_chuc_id: string[];
   /** FK xã/phường lớp; `__empty__` = cấp tỉnh / chưa gắn đơn vị. */
   don_vi_id: string[];
 }
@@ -40,8 +42,12 @@ export interface MttqLopTapHuan {
   cap_tap_huan: MttqTapHuanCap;
   /** FK `var_ssn_xa_phuong.id` — bắt buộc khi `cap_tap_huan` = Cấp xã. */
   don_vi_id: string | null;
+  /** FK `mttq_thiet_lap.id` (loai = to_chuc). */
+  to_chuc_id: string | null;
   /** Nhãn xã — tỉnh (embed), phục vụ hiển thị. */
   ten_don_vi?: string | null;
+  /** Nhãn tổ chức (embed `mttq_thiet_lap`). */
+  ten_to_chuc?: string | null;
   ghi_chu: string | null;
   id_nguoi_tao: string;
   tg_tao: string;

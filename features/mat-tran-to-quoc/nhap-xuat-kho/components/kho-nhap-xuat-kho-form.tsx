@@ -25,6 +25,7 @@ import {
   StickyNote,
   Tag,
   Trash2,
+  User,
   Warehouse,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -67,6 +68,9 @@ const DEFAULT_VALUES: NhapXuatKhoFormValues = {
   don_vi_cuu_tro_id: undefined,
   dot_cuu_tro_id: undefined,
   ghi_chu: undefined,
+  nguoi_giao_nhan: undefined,
+  bo_phan: undefined,
+  chung_tu_goc: undefined,
   chi_tiet: [],
 };
 
@@ -162,6 +166,9 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
         don_vi_cuu_tro_id: initialData.don_vi_cuu_tro_id ?? undefined,
         dot_cuu_tro_id: initialData.dot_cuu_tro_id ?? undefined,
         ghi_chu: initialData.ghi_chu ?? undefined,
+        nguoi_giao_nhan: initialData.nguoi_giao_nhan ?? undefined,
+        bo_phan: initialData.bo_phan ?? undefined,
+        chung_tu_goc: initialData.chung_tu_goc ?? undefined,
         chi_tiet: initialData.chi_tiet.map((c) => ({
           id: c.id,
           hang_hoa_id: c.hang_hoa_id,
@@ -644,6 +651,39 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 </span>
               </div>
             ) : null}
+          </FormSection>
+
+          <FormSection
+            title={txt('matTranNhapXuatKho.form.sectionChungTu')}
+            icon={<FileText size={14} />}
+            variant="primary"
+          >
+            <FormGrid>
+              <Input
+                label={
+                  watchedLoaiPhieu === 'xuat_ngoai'
+                    ? txt('matTranNhapXuatKho.form.nguoiNhanHang')
+                    : txt('matTranNhapXuatKho.form.nguoiGiaoHang')
+                }
+                icon={<User size={12} />}
+                {...register('nguoi_giao_nhan')}
+                error={errors.nguoi_giao_nhan?.message}
+              />
+              <Input
+                label={txt('matTranNhapXuatKho.form.boPhan')}
+                icon={<Building2 size={12} />}
+                {...register('bo_phan')}
+                error={errors.bo_phan?.message}
+              />
+              <div className={FORM_GRID_SPAN_FULL}>
+                <Input
+                  label={txt('matTranNhapXuatKho.form.chungTuGoc')}
+                  icon={<FileText size={12} />}
+                  {...register('chung_tu_goc')}
+                  error={errors.chung_tu_goc?.message}
+                />
+              </div>
+            </FormGrid>
           </FormSection>
 
           {/* Ghi chú */}

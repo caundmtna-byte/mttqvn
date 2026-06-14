@@ -75,6 +75,7 @@ function lopTapHuanToFormValues(d: MttqLopTapHuan): MttqTapHuanFormValues {
     nam_tap_huan: d.nam_tap_huan,
     cap_tap_huan: d.cap_tap_huan,
     don_vi_id: d.don_vi_id != null && String(d.don_vi_id).trim() !== '' ? String(d.don_vi_id) : '',
+    to_chuc_id: d.to_chuc_id != null && String(d.to_chuc_id).trim() !== '' ? String(d.to_chuc_id) : '',
     ghi_chu: d.ghi_chu ?? undefined,
     chi_tiet: d.chi_tiet.map((c) => ({
       id: c.id,
@@ -229,6 +230,10 @@ const DanhSachTapHuanPage: React.FC = () => {
       );
       if (f.cap_tap_huan?.length && !f.cap_tap_huan.includes(item.cap_tap_huan)) return false;
       if (f.nam_tap_huan?.length && !f.nam_tap_huan.includes(String(item.nam_tap_huan))) return false;
+      if (f.to_chuc_id?.length) {
+        const tc = item.to_chuc_id?.trim() || '__empty__';
+        if (!f.to_chuc_id.includes(tc)) return false;
+      }
       if (f.don_vi_id?.length) {
         const dv = item.don_vi_id?.trim() || '__empty__';
         if (!f.don_vi_id.includes(dv)) return false;
@@ -482,6 +487,20 @@ const DanhSachTapHuanPage: React.FC = () => {
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [viewableRows]);
 
+  const toChucChipOptions = useMemo(() => {
+    const map = new Map<string, { label: string; count: number }>();
+    for (const r of viewableRows) {
+      const value = r.to_chuc_id?.trim() || '__empty__';
+      const label = r.ten_to_chuc?.trim() || txt('common.emptyCell');
+      const cur = map.get(value);
+      if (cur) cur.count += 1;
+      else map.set(value, { label, count: 1 });
+    }
+    return [...map.entries()]
+      .map(([value, { label, count }]) => ({ value, label, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
+  }, [viewableRows]);
+
   const donViChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
     for (const r of viewableRows) {
@@ -541,6 +560,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       { key: 'ten_lop_tap_huan', label: txt('matTranTapHuan.store.tenLopCol') },
       { key: 'nam_tap_huan', label: txt('matTranTapHuan.store.namCol') },
       { key: 'cap_tap_huan', label: txt('matTranTapHuan.store.capCol') },
+      { key: 'ten_to_chuc', label: txt('matTranTapHuan.store.toChucCol') },
       { key: 'ten_don_vi', label: txt('matTranTapHuan.store.donViCol') },
       { key: 'so_dong', label: txt('matTranTapHuan.store.soDongCol') },
       { key: 'ho_va_ten_nguoi_tao', label: txt('matTranTapHuan.store.nguoiTaoCol') },
@@ -569,6 +589,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       ten_lop_tap_huan: item.ten_lop_tap_huan,
       nam_tap_huan: String(item.nam_tap_huan ?? ''),
       cap_tap_huan: item.cap_tap_huan,
+      ten_to_chuc: item.ten_to_chuc ?? '',
       ten_don_vi: formatLopTenDonViDisplay(item.ten_don_vi),
       so_dong: String(item.so_dong),
       ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? '',
@@ -793,6 +814,7 @@ const DanhSachTapHuanPage: React.FC = () => {
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               capOptions={capChipOptions}
               namOptions={namChipOptions}
+              toChucOptions={toChucChipOptions}
               donViOptions={donViChipOptions}
               onAdd={() => {
                 startTransition(() => {
@@ -855,6 +877,7 @@ const DanhSachTapHuanPage: React.FC = () => {
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               capOptions={capChipOptions}
               namOptions={namChipOptions}
+              toChucOptions={toChucChipOptions}
               donViOptions={donViChipOptions}
               onAdd={() => {
                 startTransition(() => {

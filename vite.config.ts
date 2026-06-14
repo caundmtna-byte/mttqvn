@@ -33,11 +33,13 @@ export default defineConfig(() => {
               if (id.includes('framer-motion')) return 'vendor-framer';
               if (id.includes('@tanstack')) return 'vendor-tanstack';
               if (id.includes('recharts')) return 'vendor-recharts';
-              if (id.includes('@tiptap') || id.includes('/tiptap/')) return 'vendor-tiptap';
+              if (id.includes('@sentry')) return 'vendor-sentry';
+              if (id.includes('/docx/') || id.includes('node_modules/docx')) return 'vendor-docx';
+              if (id.includes('html2canvas')) return 'vendor-html2canvas';
+              if (id.includes('jspdf-autotable')) return 'vendor-jspdf-autotable';
               if (id.includes('jspdf')) return 'vendor-jspdf';
               if (id.includes('lucide-react')) return 'vendor-icons';
               if (id.includes('xlsx')) return 'vendor-xlsx';
-              if (id.includes('dompurify')) return 'vendor-dompurify';
               if (id.includes('@supabase')) return 'vendor-supabase';
             },
           },

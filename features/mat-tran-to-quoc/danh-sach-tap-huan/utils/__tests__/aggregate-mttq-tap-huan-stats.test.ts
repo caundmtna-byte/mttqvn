@@ -17,6 +17,7 @@ function row(partial: Partial<MttqLopTapHuanListRow>): MttqLopTapHuanListRow {
     nam_tap_huan: 2024,
     cap_tap_huan: 'Cấp tỉnh',
     don_vi_id: null,
+    to_chuc_id: null,
     ghi_chu: null,
     id_nguoi_tao: '1',
     tg_tao: '',

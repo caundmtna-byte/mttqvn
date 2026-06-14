@@ -75,7 +75,7 @@ const BaoCaoNxtToolbar: React.FC<Props> = ({
 
   const dateRangePresets = useMemo(
     () =>
-      (['thisMonth', 'lastMonth', 'thisQuarter', 'thisYear'] as const).map((id) => ({
+      (['all', 'thisMonth', 'lastMonth', 'thisQuarter', 'thisYear'] as const).map((id) => ({
         id,
         label: txt(`matTranTonKho.nxt.preset.${id}`),
       })),

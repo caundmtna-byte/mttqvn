@@ -9,6 +9,8 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   BarChart,
+  Bar,
+  Legend,
 } from 'recharts';
 import {
   MessageSquareHeart,
@@ -22,6 +24,7 @@ import {
   Flag,
   CalendarHeart,
   Download,
+  Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -48,6 +51,11 @@ import EnumBadge from '@/components/ui/EnumBadge';
 import { tienDoThamHoiBadge } from '../tham-hoi-to-chuc/core/display-badges';
 import { useThamHoiToChucList } from '../tham-hoi-to-chuc/hooks/use-tham-hoi-to-chuc';
 import { useDipThamHoiOptions } from '../dip-tham-hoi/hooks/use-dip-tham-hoi';
+import { buildDipThamHoiFilterOptions } from '../shared/build-filter-options';
+import {
+  dttgRowVisibleByDonVi,
+  useDttgViewer,
+} from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 import { useThamHoiCaNhanList } from '../tham-hoi-ca-nhan/hooks/use-tham-hoi-ca-nhan';
 import { formatThoiGianDuKienDisplay } from '../tham-hoi-ca-nhan/utils/thoi-gian-du-kien';
 import {
@@ -66,6 +74,8 @@ import {
   buildTinhTrangBarData,
   buildLoaiBarData,
   buildDipThamHoiBarData,
+  buildByYearStats,
+  buildByYearChartData,
   sortLookupRows,
   formatLoaiLabel,
 } from './utils/aggregate-tham-hoi-stats';
@@ -73,7 +83,7 @@ import {
 const CUSTOM_PRESET = 'custom';
 
 const initialDateRange: DateRangeValue = {
-  preset: 'thisMonth',
+  preset: 'all',
   customStart: '',
   customEnd: '',
 };
@@ -124,10 +134,23 @@ const ThongKeThamHoiPage: React.FC = () => {
   const { data: caNhanRows = [], isLoading: loadingCaNhan } = useThamHoiCaNhanList({ enabled: canView });
   const { data: dipList = [] } = useDipThamHoiOptions({ enabled: canView });
   const isLoading = loadingToChuc || loadingCaNhan;
+  const viewer = useDttgViewer('danTocThamHoiThongKe');
+
+  const viewableToChucRows = useMemo(
+    () => toChucRows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_tham_hoi_id])),
+    [toChucRows, viewer],
+  );
+  const viewableCaNhanRows = useMemo(
+    () =>
+      caNhanRows.filter((r) =>
+        dttgRowVisibleByDonVi(viewer, [r.don_vi_tham_hoi_id, r.xa_phuong_id]),
+      ),
+    [caNhanRows, viewer],
+  );
 
   const allRows = useMemo(
-    () => combineAndNormalize(toChucRows, caNhanRows),
-    [toChucRows, caNhanRows],
+    () => combineAndNormalize(viewableToChucRows, viewableCaNhanRows),
+    [viewableToChucRows, viewableCaNhanRows],
   );
 
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
@@ -174,6 +197,9 @@ const ThongKeThamHoiPage: React.FC = () => {
   );
   const dipBar = useMemo(() => buildDipThamHoiBarData(filtered, 10), [filtered]);
 
+  const byYearRows = useMemo(() => buildByYearStats(filtered), [filtered]);
+  const byYearChartData = useMemo(() => buildByYearChartData(byYearRows), [byYearRows]);
+
   const sortedLookupBase = useMemo(
     () => sortLookupRows(filtered, sortKey, sortDir, getLanguage),
     [filtered, sortKey, sortDir],
@@ -207,20 +233,10 @@ const ThongKeThamHoiPage: React.FC = () => {
     }));
   }, [allRows]);
 
-  const dipOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const r of allRows) {
-      const key = r.dip_tham_hoi_id ?? r.dip_tham_hoi;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    return dipList
-      .map((d) => ({
-        value: d.id,
-        label: d.ten_dip,
-        count: counts.get(d.id) ?? 0,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [allRows, dipList]);
+  const dipOptions = useMemo(
+    () => buildDipThamHoiFilterOptions(allRows, dipList, dims.dip_tham_hoi),
+    [allRows, dipList, dims.dip_tham_hoi],
+  );
 
   const filterGroups = useMemo<FilterGroup[]>(
     () => [
@@ -253,7 +269,7 @@ const ThongKeThamHoiPage: React.FC = () => {
   );
 
   const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'thisMonth'),
+    () => isStandardDateRangeNonDefault(dateRange, 'all'),
     [dateRange],
   );
 
@@ -573,6 +589,77 @@ const ThongKeThamHoiPage: React.FC = () => {
                 emptyKey="dttgThongKeThamHoi.noData"
                 maxHeight="max-h-[220px]"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <StatsCard title={txt('dttgThongKeThamHoi.stats.chartByYear')} icon={Calendar}>
+                <div className="h-[260px] w-full min-w-0">
+                  {byYearChartData.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center">{txt('dttgThongKeThamHoi.noData')}</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                      <BarChart data={byYearChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                        <RechartsTooltip content={<ChartTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Bar
+                          dataKey="soDot"
+                          name={txt('dttgThongKeThamHoi.stats.chartSeriesSoDot')}
+                          fill="hsl(var(--primary))"
+                          maxBarSize={28}
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="tongLuot"
+                          name={txt('dttgThongKeThamHoi.stats.chartSeriesTongLuot')}
+                          fill="hsl(var(--chart-2))"
+                          maxBarSize={28}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </StatsCard>
+
+              <StatsCard title={txt('dttgThongKeThamHoi.stats.tableByYear')} icon={Calendar}>
+                <div className="overflow-x-auto max-h-[min(260px,40vh)] overflow-y-auto -m-4">
+                  {byYearRows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center px-4">{txt('dttgThongKeThamHoi.noData')}</p>
+                  ) : (
+                    <table className="w-full text-sm min-w-[640px]">
+                      <thead className="sticky top-0 z-[1] bg-card border-b border-border">
+                        <tr className="text-left text-muted-foreground">
+                          <th className="py-2 px-3 font-medium">{txt('dttgThongKeThamHoi.stats.tableColNam')}</th>
+                          <th className="py-2 pr-3 font-medium text-right">{txt('dttgThongKeThamHoi.stats.tableColSoDot')}</th>
+                          <th className="py-2 pr-3 font-medium text-right">{txt('dttgThongKeThamHoi.stats.tableColTongLuot')}</th>
+                          <th className="py-2 pr-3 font-medium text-right">{txt('dttgThongKeThamHoi.stats.kpiToChuc')}</th>
+                          <th className="py-2 pr-3 font-medium text-right">{txt('dttgThongKeThamHoi.stats.kpiCaNhan')}</th>
+                          <th className="py-2 pr-3 font-medium text-right">{txt('dttgThongKeThamHoi.stats.kpiHoanThanh')}</th>
+                          <th className="py-2 pr-3 font-medium text-right">{txt('dttgThongKeThamHoi.stats.kpiDangThucHien')}</th>
+                          <th className="py-2 pr-3 font-medium text-right">{txt('dttgThongKeThamHoi.stats.kpiChuaThucHien')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {byYearRows.map((row) => (
+                          <tr key={row.year} className="border-b border-border/60">
+                            <td className="py-2 px-3 tabular-nums font-medium">{row.label}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{row.soDot}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.tongLuot}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{row.toChuc}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{row.caNhan}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{row.hoanThanh}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{row.dangThucHien}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{row.chuaThucHien}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </StatsCard>
             </div>
 
             <StatsCard title={txt('dttgThongKeThamHoi.stats.tableLookupTitle')} icon={Layers}>

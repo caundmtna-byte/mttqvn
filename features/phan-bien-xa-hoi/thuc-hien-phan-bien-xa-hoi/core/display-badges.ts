@@ -1,5 +1,10 @@
 import type { BadgeConfig } from '@/components/ui/EnumBadge';
 
+export const capThucHienBadge: BadgeConfig = {
+  'Cấp tỉnh': { label: 'Cấp tỉnh', color: 'primary' },
+  'Cấp xã': { label: 'Cấp xã', color: 'sky' },
+};
+
 export const tinhTrangBadge: BadgeConfig = {
   'Đang thực hiện': { label: 'Đang thực hiện', color: 'sky' },
   'Đã lập kế hoạch': { label: 'Đã lập kế hoạch', color: 'slate' },

@@ -1,8 +1,6 @@
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import { MTTQ_UY_VIEN_UY_BAN_MOCK } from '@/features/mat-tran-to-quoc/uy-vien-uy-ban/mock-data';
 import type {
   MttqDiemDanhTrangThai,
   MttqDiemDanhUyVien,
@@ -10,7 +8,6 @@ import type {
   MttqKyHopDiemDanhSummary,
   MttqUyVienDiemDanhSummary,
 } from '../core/types';
-import { MTTQ_KY_HOP_MOCK } from '../mock-data';
 
 function rowFromDb(row: Record<string, unknown>): MttqDiemDanhUyVien {
   return {
@@ -22,17 +19,9 @@ function rowFromDb(row: Record<string, unknown>): MttqDiemDanhUyVien {
   };
 }
 
-/** Mock in-memory rows khi không dùng Supabase. */
-let mockDiemDanhRows: MttqDiemDanhUyVien[] = [];
-let mockNextId = 1;
-
 export async function getDiemDanhForKyHop(kyHopId: string): Promise<MttqDiemDanhUyVien[]> {
   const id = kyHopId.trim();
   if (!id) return [];
-
-  if (!isSupabase()) {
-    return mockDiemDanhRows.filter((r) => r.ky_hop_id === id).map((r) => ({ ...r }));
-  }
 
   const supabase = getSupabase();
   if (!supabase) return [];
@@ -56,13 +45,6 @@ export async function getDiemDanhForKyHop(kyHopId: string): Promise<MttqDiemDanh
 export async function getDiemDanhForNhiemKy(nhiemKyId: string): Promise<MttqDiemDanhMatrixRow[]> {
   const nk = nhiemKyId.trim();
   if (!nk) return [];
-
-  if (!isSupabase()) {
-    const khIds = new Set(MTTQ_KY_HOP_MOCK.filter((k) => String(k.nhiem_ky_id) === nk).map((k) => k.id));
-    return mockDiemDanhRows
-      .filter((r) => khIds.has(r.ky_hop_id))
-      .map((r) => ({ ky_hop_id: r.ky_hop_id, uy_vien_id: r.uy_vien_id, trang_thai: r.trang_thai }));
-  }
 
   const supabase = getSupabase();
   if (!supabase) return [];
@@ -89,20 +71,6 @@ export async function upsertDiemDanh(params: {
   if (!ky_hop_id || !uy_vien_id) throw new Error(txt('matTranKyHop.diemDanh.saveFailed'));
   if (!id_nguoi_tao) throw new Error(txt('matTranKyHop.diemDanh.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const idx = mockDiemDanhRows.findIndex((r) => r.ky_hop_id === ky_hop_id && r.uy_vien_id === uy_vien_id);
-    const next: MttqDiemDanhUyVien = {
-      id: idx >= 0 ? mockDiemDanhRows[idx].id : String(mockNextId++),
-      ky_hop_id,
-      uy_vien_id,
-      trang_thai: params.trangThai,
-      ghi_chu: null,
-    };
-    if (idx >= 0) mockDiemDanhRows[idx] = next;
-    else mockDiemDanhRows.push(next);
-    return { ...next };
-  }
-
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('matTranKyHop.diemDanh.saveFailed'));
 
@@ -125,31 +93,11 @@ export async function upsertDiemDanh(params: {
   return rowFromDb(data as unknown as Record<string, unknown>);
 }
 
-/** Tóm tắt điểm danh theo nhiều kỳ họp (view hoặc mock). */
+/** Tóm tắt điểm danh theo nhiều kỳ họp. */
 export async function getDiemDanhSummariesForKyHopIds(kyHopIds: string[]): Promise<Map<string, MttqKyHopDiemDanhSummary>> {
   const uniq = [...new Set(kyHopIds.map((x) => x.trim()).filter(Boolean))];
   const empty = new Map<string, MttqKyHopDiemDanhSummary>();
   if (uniq.length === 0) return empty;
-
-  if (!isSupabase()) {
-    const m = new Map<string, MttqKyHopDiemDanhSummary>();
-    for (const id of uniq) {
-      const kh = MTTQ_KY_HOP_MOCK.find((k) => k.id === id);
-      const nk = kh?.nhiem_ky_id ?? '';
-      const slUyVien = nk ? MTTQ_UY_VIEN_UY_BAN_MOCK.filter((u) => u.nhiem_ky_id === nk).length : 0;
-      const diem = mockDiemDanhRows.filter((r) => r.ky_hop_id === id);
-      const co = diem.filter((d) => d.trang_thai === 'Có mặt').length;
-      const vang = diem.filter((d) => d.trang_thai === 'Vắng mặt').length;
-      const tong = diem.length;
-      m.set(id, {
-        ky_hop_id: id,
-        co_mat: co,
-        vang_mat: vang,
-        chua_diem_danh: Math.max(0, slUyVien - tong),
-      });
-    }
-    return m;
-  }
 
   const supabase = getSupabase();
   if (!supabase) return empty;
@@ -204,7 +152,7 @@ function mapUyVienDiemDanhSummaryRows(
   return m;
 }
 
-/** Tóm tắt điểm danh theo nhiều ủy viên (view hoặc mock). */
+/** Tóm tắt điểm danh theo nhiều ủy viên. */
 export async function getUyVienDiemDanhSummariesForIds(
   uyVienIds: string[],
   donViId?: string | null,
@@ -214,39 +162,6 @@ export async function getUyVienDiemDanhSummariesForIds(
   if (uniq.length === 0) return empty;
 
   const scopedDonViId = donViId?.toString().trim() || null;
-
-  if (!isSupabase()) {
-    const m = new Map<string, MttqUyVienDiemDanhSummary>();
-    for (const uid of uniq) {
-      const uv = MTTQ_UY_VIEN_UY_BAN_MOCK.find((u) => u.id === uid);
-      if (!uv) {
-        m.set(uid, { uy_vien_id: uid, so_ky_hop: 0, co_mat: 0, vang_mat: 0, chua_diem_danh: 0 });
-        continue;
-      }
-      const nk = uv.nhiem_ky_id;
-      const khList = MTTQ_KY_HOP_MOCK.filter((k) => {
-        if (String(k.nhiem_ky_id) !== nk) return false;
-        if (scopedDonViId) return String(k.don_vi_id ?? '') === scopedDonViId;
-        return true;
-      });
-      let co = 0;
-      let vang = 0;
-      for (const kh of khList) {
-        const d = mockDiemDanhRows.find((r) => r.ky_hop_id === kh.id && r.uy_vien_id === uid);
-        if (d?.trang_thai === 'Có mặt') co += 1;
-        else if (d?.trang_thai === 'Vắng mặt') vang += 1;
-      }
-      const so = khList.length;
-      m.set(uid, {
-        uy_vien_id: uid,
-        so_ky_hop: so,
-        co_mat: co,
-        vang_mat: vang,
-        chua_diem_danh: Math.max(0, so - co - vang),
-      });
-    }
-    return m;
-  }
 
   const supabase = getSupabase();
   if (!supabase) return empty;

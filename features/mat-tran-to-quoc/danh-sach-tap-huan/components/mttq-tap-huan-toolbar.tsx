@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Tag, CalendarDays, MapPin } from 'lucide-react';
+import { Plus, Download, Tag, CalendarDays, MapPin, Building2 } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -29,6 +29,7 @@ interface Props {
   onPageBack: () => void;
   capOptions: ChipOption[];
   namOptions: ChipOption[];
+  toChucOptions: ChipOption[];
   donViOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
@@ -55,6 +56,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
   onPageBack,
   capOptions,
   namOptions,
+  toChucOptions,
   donViOptions,
   onAdd,
   onExport,
@@ -84,6 +86,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
   } = useMttqLopTapHuanStore();
 
   const selectedCount = selectedIds.size;
+  const toChucFilter = filters.to_chuc_id ?? [];
 
   const activeFilterCount = useMemo(() => {
     const columnSearchN = countTapHuanColumnSearchActive(filters.columnSearch);
@@ -91,17 +94,19 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
       columnSearchN +
       (filters.cap_tap_huan.length > 0 ? 1 : 0) +
       (filters.nam_tap_huan.length > 0 ? 1 : 0) +
+      (toChucFilter.length > 0 ? 1 : 0) +
       (filters.don_vi_id.length > 0 ? 1 : 0) +
       extraActiveFilterCount;
     if (hideListControls) return chipAndCol;
     return (searchTerm ? 1 : 0) + chipAndCol;
-  }, [hideListControls, searchTerm, filters, extraActiveFilterCount]);
+  }, [hideListControls, searchTerm, filters, toChucFilter, extraActiveFilterCount]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setFilter('columnSearch', {});
     setFilter('cap_tap_huan', []);
     setFilter('nam_tap_huan', []);
+    setFilter('to_chuc_id', []);
     setFilter('don_vi_id', []);
     setSort(null, null);
     onClearExtraFilters?.();
@@ -127,6 +132,14 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
           className="shrink-0 w-full min-w-0 sm:w-[min(160px,22vw)] sm:max-w-[200px]"
         />
         <FilterChipMultiSelect
+          options={toChucOptions}
+          value={toChucFilter}
+          onChange={(val) => setFilter('to_chuc_id', val)}
+          placeholder={txt('matTranTapHuan.store.toChucCol')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,28vw)] sm:max-w-[260px]"
+        />
+        <FilterChipMultiSelect
           options={donViOptions}
           value={filters.don_vi_id}
           onChange={(val) => setFilter('don_vi_id', val)}
@@ -137,7 +150,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
         {extraFiltersSlot}
       </div>
     ),
-    [capOptions, namOptions, donViOptions, filters.cap_tap_huan, filters.nam_tap_huan, filters.don_vi_id, setFilter, extraFiltersSlot],
+    [capOptions, namOptions, toChucOptions, donViOptions, filters.cap_tap_huan, filters.nam_tap_huan, toChucFilter, filters.don_vi_id, setFilter, extraFiltersSlot],
   );
 
   const filterGroups = useMemo(
@@ -159,6 +172,14 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
         onChange: (val: string[]) => setFilter('nam_tap_huan', val),
       },
       {
+        key: 'to_chuc_id',
+        label: txt('matTranTapHuan.store.toChucCol'),
+        icon: Building2,
+        options: toChucOptions,
+        value: toChucFilter,
+        onChange: (val: string[]) => setFilter('to_chuc_id', val),
+      },
+      {
         key: 'don_vi_id',
         label: txt('matTranTapHuan.store.donViCol'),
         icon: MapPin,
@@ -171,10 +192,12 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
     [
       capOptions,
       namOptions,
+      toChucOptions,
       donViOptions,
       extraFilterGroups,
       filters.cap_tap_huan,
       filters.nam_tap_huan,
+      toChucFilter,
       filters.don_vi_id,
       setFilter,
     ],

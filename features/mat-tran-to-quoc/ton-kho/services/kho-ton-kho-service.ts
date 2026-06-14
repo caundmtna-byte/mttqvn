@@ -1,7 +1,6 @@
 /**
  * Tồn kho + báo cáo NXT — `kho_ton_kho_view` + flat chi tiết phiếu nhập xuất.
  */
-import { isSupabase } from '@/lib/data/config';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { NhapXuatKhoCtFlatRow } from '../../nhap-xuat-kho/core/types';
@@ -56,25 +55,6 @@ function rowToTonKho(r: TonKhoViewRow): TonKhoRecord {
 
 /** Ma trận tồn từ view. */
 export async function getTonKhoMatrix(): Promise<TonKhoRecord[]> {
-  if (!isSupabase()) {
-    const flat = await getNhapXuatKhoCtFlatList();
-    const map = new Map<string, number>();
-    for (const line of flat) {
-      const qty = line.so_luong;
-      if (line.kho_nhap_id) {
-        const k = `${line.kho_nhap_id}|${line.hang_hoa_id}`;
-        map.set(k, (map.get(k) ?? 0) + qty);
-      }
-      if (line.kho_xuat_id) {
-        const k = `${line.kho_xuat_id}|${line.hang_hoa_id}`;
-        map.set(k, (map.get(k) ?? 0) - qty);
-      }
-    }
-    return [...map.entries()].map(([key, ton_kho]) => {
-      const [kho_id, hang_hoa_id] = key.split('|');
-      return { kho_id, hang_hoa_id, ton_kho };
-    });
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const rows = await fetchAllPages<TonKhoViewRow>((from, to) =>

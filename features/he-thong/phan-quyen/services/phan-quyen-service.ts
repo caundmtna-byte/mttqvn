@@ -1,9 +1,6 @@
 import { PositionPermission, ModulePermission, ActionType } from '../core/types';
 import { RoleFormValues } from '../core/schema';
 import { txt } from '../../../../lib/text';
-import { createRepository } from '@/lib/data/create-repository';
-import { ROLE_RETURNING_FULL, ROLE_SELECT_FULL } from '../core/supabase-select';
-import { isSupabase } from '@/lib/data/config';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import {
@@ -28,12 +25,6 @@ export function getModuleName(moduleId: string): string {
   const m = SYSTEM_MODULES_CONFIG.find((x) => x.id === moduleId);
   return m?.nameKey ?? moduleId;
 }
-
-const roleRepo = createRepository<PositionPermission>({
-  tableName: 'he_thong_phan_quyen',
-  select: ROLE_SELECT_FULL,
-  delay: 500,
-});
 
 type VarChucVuRow = {
   id: number | string;
@@ -215,114 +206,68 @@ async function fetchOneRoleFromSupabase(id_chuc_vu: string): Promise<PositionPer
   return mapVarChucVuToPosition(row, pb, (pqRows ?? []) as VarPhanQuyenRow[], count ?? 0);
 }
 
-export const getRoles = async (): Promise<PositionPermission[]> => {
-  if (isSupabase()) return fetchRolesFromSupabase();
-  return roleRepo.getAll();
-};
+export const getRoles = async (): Promise<PositionPermission[]> => fetchRolesFromSupabase();
 
 /** Lấy một role theo id_chuc_vu — filter server-side trên Supabase, tránh load toàn bảng. */
-export const getRoleByChucVu = async (id_chuc_vu: string): Promise<PositionPermission | null> => {
-  if (isSupabase()) return fetchOneRoleFromSupabase(id_chuc_vu);
-  const all = await roleRepo.getAll();
-  return all.find((r) => r.id_chuc_vu === id_chuc_vu) ?? null;
-};
+export const getRoleByChucVu = async (id_chuc_vu: string): Promise<PositionPermission | null> =>
+  fetchOneRoleFromSupabase(id_chuc_vu);
 
 export const createRole = async (
-  data: RoleFormValues,
-  permissions: ModulePermission[]
+  _data: RoleFormValues,
+  _permissions: ModulePermission[]
 ): Promise<PositionPermission> => {
-  if (isSupabase()) {
-    throw new Error(
-      'Đã kết nối Supabase: tạo chức vụ tại module Chức vụ (var_chuc_vu); gán quyền qua ma trận (var_phan_quyen).',
-    );
-  }
-  const id = `perm-${Date.now()}`;
-  const now = new Date().toISOString();
-  return roleRepo.insert(
-    {
-      id,
-      id_chuc_vu: `pos-custom-${Date.now()}`,
-      ma_chuc_vu: data.ma_vai_tro,
-      ten_chuc_vu: data.ten_vai_tro,
-      ten_phong_ban: txt('permission.module.undefined'),
-      mo_ta: data.mo_ta || null,
-      so_nhan_vien: 0,
-      quyen_han: permissions,
-      trang_thai: data.trang_thai,
-      tg_cap_nhat: now,
-    } as Omit<PositionPermission, 'id'> & { id: string },
-    { returningSelect: ROLE_RETURNING_FULL },
+  throw new Error(
+    'Tạo chức vụ tại module Chức vụ (var_chuc_vu); gán quyền qua ma trận (var_phan_quyen).',
   );
 };
 
-export const deleteRoles = async (ids: string[]): Promise<void> => {
-  if (isSupabase()) {
-    throw new Error('Đã kết nối Supabase: xóa chức vụ tại module Chức vụ (var_chuc_vu).');
-  }
-  await roleRepo.remove(ids);
+export const deleteRoles = async (_ids: string[]): Promise<void> => {
+  throw new Error('Xóa chức vụ tại module Chức vụ (var_chuc_vu).');
 };
 
 export const updateModulePermissions = async (
   moduleId: string,
   updates: { roleId: string; actions: ActionType[] }[]
 ): Promise<void> => {
-  if (isSupabase()) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error('Supabase client is not configured.');
-    if (updates.length === 0) return;
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (updates.length === 0) return;
 
-    const storageKey = getModuleStorageKey(moduleId);
-    const legacyKeys = moduleKeysForDbLookup(moduleId);
+  const storageKey = getModuleStorageKey(moduleId);
+  const legacyKeys = moduleKeysForDbLookup(moduleId);
 
-    const chucVuIds = [
-      ...new Set(
-        updates.map(({ roleId }) => parseChucVuId(roleId)).filter((n): n is number => n != null),
-      ),
-    ];
-    if (chucVuIds.length === 0) return;
+  const chucVuIds = [
+    ...new Set(
+      updates.map(({ roleId }) => parseChucVuId(roleId)).filter((n): n is number => n != null),
+    ),
+  ];
+  if (chucVuIds.length === 0) return;
 
-    const { error: delErr } = await supabase
-      .from('var_phan_quyen')
-      .delete()
-      .in('chuc_vu_id', chucVuIds)
-      .in('module_key', legacyKeys);
-    if (delErr) handleSupabaseError(delErr);
+  const { error: delErr } = await supabase
+    .from('var_phan_quyen')
+    .delete()
+    .in('chuc_vu_id', chucVuIds)
+    .in('module_key', legacyKeys);
+  if (delErr) handleSupabaseError(delErr);
 
-    const rows = updates
-      .filter(({ actions }) => actions.length > 0)
-      .map(({ roleId, actions }) => {
-        const chucVuId = parseChucVuId(roleId);
-        if (chucVuId == null) return null;
-        return {
-          chuc_vu_id: chucVuId,
-          module_key: storageKey,
-          quyen: actionsToQuyenText(actions),
-        };
-      })
-      .filter((r): r is NonNullable<typeof r> => r != null);
+  const rows = updates
+    .filter(({ actions }) => actions.length > 0)
+    .map(({ roleId, actions }) => {
+      const chucVuId = parseChucVuId(roleId);
+      if (chucVuId == null) return null;
+      return {
+        chuc_vu_id: chucVuId,
+        module_key: storageKey,
+        quyen: actionsToQuyenText(actions),
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r != null);
 
-    if (rows.length > 0) {
-      const { error: upErr } = await supabase.from('var_phan_quyen').upsert(rows, {
-        onConflict: 'chuc_vu_id,module_key',
-      });
-      if (upErr) handleSupabaseError(upErr);
-    }
-    return;
-  }
-
-  const moduleName = getModuleName(moduleId);
-  for (const { roleId, actions } of updates) {
-    const role = await roleRepo.getById(roleId);
-    if (!role) continue;
-    const otherPerms = role.quyen_han.filter((p) => p.module_id !== moduleId);
-    await roleRepo.update(
-      roleId,
-      {
-        quyen_han: [...otherPerms, { module_id: moduleId, module_name: moduleName, actions }],
-        tg_cap_nhat: new Date().toISOString(),
-      },
-      { returningSelect: ROLE_RETURNING_FULL },
-    );
+  if (rows.length > 0) {
+    const { error: upErr } = await supabase.from('var_phan_quyen').upsert(rows, {
+      onConflict: 'chuc_vu_id,module_key',
+    });
+    if (upErr) handleSupabaseError(upErr);
   }
 };
 

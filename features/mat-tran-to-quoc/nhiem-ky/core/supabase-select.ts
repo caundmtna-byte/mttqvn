@@ -23,4 +23,7 @@ export const MTTQ_NHIEM_KY_SELECT_LIST = `${LIST_COLS},${NGUOI_TAO}`;
 
 export const MTTQ_NHIEM_KY_SELECT_FULL = `${FULL_COLS},${NGUOI_TAO}`;
 
+export const MTTQ_NHIEM_KY_RETURNING = 'id,tg_cap_nhat';
+
+/** @deprecated use MTTQ_NHIEM_KY_RETURNING + getById */
 export const MTTQ_NHIEM_KY_RETURNING_FULL = MTTQ_NHIEM_KY_SELECT_FULL;

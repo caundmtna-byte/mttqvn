@@ -63,7 +63,9 @@ export const useUpdateMttqKyHop = (onSuccess?: () => void) => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: MttqKyHopFormValues }) => updateMttqKyHop(id, data),
     onSuccess: (updated, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.setQueryData<MttqKyHop[]>(listKey, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
       queryClient.setQueryData<MttqKyHop | null>(queryKeys.mttqKyHop.detail(id), updated);
       toast.success(txt('matTranKyHop.toast.update'));
       onSuccess?.();

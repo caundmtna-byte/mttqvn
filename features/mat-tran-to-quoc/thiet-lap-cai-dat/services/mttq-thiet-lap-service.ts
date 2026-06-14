@@ -7,7 +7,6 @@ import { txt } from '@/lib/text';
 const repo = createRepository<MttqThietLap>({
   tableName: 'mttq_thiet_lap',
   select: MTTQ_THIET_LAP_SELECT_FULL,
-  delay: 400,
 });
 
 function normalize(raw: MttqThietLap): MttqThietLap {

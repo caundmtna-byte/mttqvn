@@ -62,6 +62,7 @@ function parentToFormValues(
     nam_tap_huan: d.nam_tap_huan,
     cap_tap_huan: d.cap_tap_huan,
     don_vi_id: toFormFk(d.don_vi_id),
+    to_chuc_id: toFormFk(d.to_chuc_id),
     ghi_chu: d.ghi_chu ?? undefined,
     chi_tiet: chiLines,
   };

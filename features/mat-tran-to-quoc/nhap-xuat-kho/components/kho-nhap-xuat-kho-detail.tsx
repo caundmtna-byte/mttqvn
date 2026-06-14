@@ -20,6 +20,7 @@ import {
   Ruler,
   StickyNote,
   Trash2,
+  User,
   Warehouse,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -34,7 +35,7 @@ import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/Det
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import EmbeddedChildDataGrid from '@/components/shared/EmbeddedChildDataGrid';
 import { TableRowIconButton } from '@/components/shared/row-actions';
-import { formatCurrency, formatDateShort, formatDateTimeShort, formatDecimal } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime, formatDecimal } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE, CONFIRM_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useConfirmStore } from '@/store/useConfirmStore';
@@ -329,7 +330,7 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
     </div>
   );
 
-  const subtitleParts = [data.so_phieu, data.ngay_phieu ? formatDateShort(data.ngay_phieu) : null].filter(
+  const subtitleParts = [data.so_phieu, data.ngay_phieu ? formatDate(data.ngay_phieu) : null].filter(
     (s): s is string => Boolean(s),
   );
 
@@ -385,7 +386,7 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
               />
               <DetailField
                 label={txt('matTranNhapXuatKho.detail.ngayPhieu')}
-                value={data.ngay_phieu ? formatDateShort(data.ngay_phieu) : undefined}
+                value={data.ngay_phieu ? formatDate(data.ngay_phieu) : undefined}
                 icon={<Calendar size={12} />}
                 emptyText={txt('common.emptyCell')}
               />
@@ -437,6 +438,28 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
                   ) : undefined
                 }
                 icon={<Calculator size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={
+                  data.loai_phieu === 'xuat_ngoai'
+                    ? txt('matTranNhapXuatKho.detail.nguoiNhanHang')
+                    : txt('matTranNhapXuatKho.detail.nguoiGiaoHang')
+                }
+                value={data.nguoi_giao_nhan ?? undefined}
+                icon={<User size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={txt('matTranNhapXuatKho.detail.boPhan')}
+                value={data.bo_phan ?? undefined}
+                icon={<Building2 size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={txt('matTranNhapXuatKho.detail.chungTuGoc')}
+                value={data.chung_tu_goc ?? undefined}
+                icon={<FileText size={12} />}
                 emptyText={txt('common.emptyCell')}
               />
               <DetailField
@@ -620,13 +643,13 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
             <DetailFieldGrid>
               <DetailField
                 label={txt('matTranNhapXuatKho.detail.tgTao')}
-                value={data.tg_tao ? formatDateTimeShort(data.tg_tao) : undefined}
+                value={data.tg_tao ? formatDateTime(data.tg_tao) : undefined}
                 icon={<Calendar size={12} />}
                 emptyText={txt('common.emptyCell')}
               />
               <DetailField
                 label={txt('matTranNhapXuatKho.detail.tgCapNhat')}
-                value={data.tg_cap_nhat ? formatDateTimeShort(data.tg_cap_nhat) : undefined}
+                value={data.tg_cap_nhat ? formatDateTime(data.tg_cap_nhat) : undefined}
                 icon={<Calendar size={12} />}
                 emptyText={txt('common.emptyCell')}
               />

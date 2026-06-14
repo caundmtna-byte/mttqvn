@@ -5,6 +5,8 @@ export interface ThamHoiToChucFilters {
   tien_do_filter: string[];
   to_chuc_filter: string[];
   dip_tham_hoi_filter: string[];
+  don_vi_tham_hoi_filter: string[];
+  phong_ban_filter: string[];
 }
 
 export interface ThamHoiToChuc {

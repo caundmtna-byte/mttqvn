@@ -36,6 +36,13 @@ import {
 import { useThamHoiToChucStore } from './store/useThamHoiToChucStore';
 import type { ThamHoiToChuc } from './core/types';
 import { formatDonViThamHoiDisplay } from './core/display-don-vi';
+import { DON_VI_THAM_HOI_TINH_VALUE } from './core/constants';
+import { donViFilterKey } from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
+import {
+  canMutateDttgRowByDonVi,
+  dttgRowVisibleByDonVi,
+  useDttgViewer,
+} from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 import { THAM_HOI_TO_CHUC_SEARCHABLE_KEYS, thamHoiToChucSearchRecord } from './utils/search-keys';
 import {
   countThamHoiToChucColumnSearchActive,
@@ -127,6 +134,12 @@ const ThamHoiToChucPage: React.FC = () => {
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteThamHoiToChucMany();
   const importMutation = useImportThamHoiToChuc(() => setShowImport(false));
+  const viewer = useDttgViewer('danTocThamHoiToChuc');
+
+  const viewableRows = useMemo(
+    () => rows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_tham_hoi_id])),
+    [rows, viewer],
+  );
 
   useEffect(() => {
     return () => resetState();
@@ -145,10 +158,18 @@ const ThamHoiToChucPage: React.FC = () => {
       const dipId = item.dip_tham_hoi_id?.trim();
       if (!dipId || !f.dip_tham_hoi_filter.includes(dipId)) return false;
     }
+    if (f.don_vi_tham_hoi_filter.length > 0) {
+      const dvKey = donViFilterKey(item.don_vi_tham_hoi_id, DON_VI_THAM_HOI_TINH_VALUE);
+      if (!f.don_vi_tham_hoi_filter.includes(dvKey)) return false;
+    }
+    if (f.phong_ban_filter.length > 0) {
+      const pb = item.phong_ban_tham_muu_id?.trim();
+      if (!pb || !f.phong_ban_filter.includes(pb)) return false;
+    }
     return matchesSearch;
   }, []);
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
   const sorted = useMemo(() => sortThamHoiToChucList(filtered, sort), [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
@@ -223,35 +244,41 @@ const ThamHoiToChucPage: React.FC = () => {
       filters.tien_do_filter.length > 0 ||
       filters.to_chuc_filter.length > 0 ||
       filters.dip_tham_hoi_filter.length > 0 ||
+      filters.don_vi_tham_hoi_filter.length > 0 ||
+      filters.phong_ban_filter.length > 0 ||
       Boolean(sort.column)
     );
   }, [searchTerm, filters, sort.column]);
 
   const emptyTitleResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('common.noResults')
         : txt('danTocThamHoiToChuc.emptyTitle'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   const emptyDescriptionResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('danTocThamHoiToChuc.emptyFilteredHint')
         : txt('danTocThamHoiToChuc.emptyHint'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   useEffect(() => {
     if (!viewingId) return;
-    const fresh = rows.find((r) => r.id === viewingId);
+    const fresh = viewableRows.find((r) => r.id === viewingId);
     if (!fresh) {
+      const row = rows.find((r) => r.id === viewingId);
+      if (row && !dttgRowVisibleByDonVi(viewer, [row.don_vi_tham_hoi_id])) {
+        toast.error(txt('danTocThamHoiToChuc.noViewRowPermission'));
+      }
       setViewingId(null);
       return;
     }
     queryClient.setQueryData(queryKeys.danTocThamHoiToChuc.detail(viewingId), fresh);
-  }, [rows, viewingId, queryClient]);
+  }, [rows, viewableRows, viewingId, queryClient, viewer]);
 
   const handleView = useCallback(
     (item: ThamHoiToChuc) => {
@@ -266,9 +293,14 @@ const ThamHoiToChucPage: React.FC = () => {
 
     const openId = searchParams.get('open')?.trim();
     if (openId) {
-      const row = rows.find((r) => r.id === openId);
+      const row = viewableRows.find((r) => r.id === openId);
       if (row) {
         handleView(row);
+        const next = new URLSearchParams(searchParams);
+        next.delete('open');
+        setSearchParams(next, { replace: true });
+      } else if (rows.some((r) => r.id === openId)) {
+        toast.error(txt('danTocThamHoiToChuc.noViewRowPermission'));
         const next = new URLSearchParams(searchParams);
         next.delete('open');
         setSearchParams(next, { replace: true });
@@ -297,9 +329,13 @@ const ThamHoiToChucPage: React.FC = () => {
       next.delete('dipId');
       setSearchParams(next, { replace: true });
     }
-  }, [rows, listQueryEnabled, searchParams, setSearchParams, handleView, setFilter]);
+  }, [rows, viewableRows, listQueryEnabled, searchParams, setSearchParams, handleView, setFilter]);
 
   const handleEditFromList = (item: ThamHoiToChuc) => {
+    if (!canMutateDttgRowByDonVi(viewer, [item.don_vi_tham_hoi_id])) {
+      toast.error(txt('danTocThamHoiToChuc.noEditOtherDonVi'));
+      return;
+    }
     startTransition(() => {
       setEditing(item);
       setShowForm(true);
@@ -307,6 +343,10 @@ const ThamHoiToChucPage: React.FC = () => {
   };
 
   const handleEditFromDetail = (d: ThamHoiToChuc) => {
+    if (!canMutateDttgRowByDonVi(viewer, [d.don_vi_tham_hoi_id])) {
+      toast.error(txt('danTocThamHoiToChuc.noEditOtherDonVi'));
+      return;
+    }
     startTransition(() => {
       setEditing(d);
       setShowForm(true);
@@ -314,6 +354,11 @@ const ThamHoiToChucPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
+    const row = rows.find((r) => r.id === id);
+    if (!canMutateDttgRowByDonVi(viewer, [row?.don_vi_tham_hoi_id])) {
+      toast.error(txt('danTocThamHoiToChuc.noDeleteOtherDonVi'));
+      return;
+    }
     confirm({
       title: txt('danTocThamHoiToChuc.deleteTitle'),
       message: txt('danTocThamHoiToChuc.deleteMessage'),
@@ -330,16 +375,27 @@ const ThamHoiToChucPage: React.FC = () => {
   };
 
   const handleDeleteMany = (ids: string[]) => {
+    const allowedIds = ids.filter((id) => {
+      const row = rows.find((r) => r.id === id);
+      return row && canMutateDttgRowByDonVi(viewer, [row.don_vi_tham_hoi_id]);
+    });
+    if (allowedIds.length === 0) {
+      toast.error(txt('danTocThamHoiToChuc.noDeleteOtherDonVi'));
+      return;
+    }
+    if (allowedIds.length < ids.length) {
+      toast.error(txt('danTocThamHoiToChuc.noDeleteOtherDonVi'));
+    }
     confirm({
       title: txt('danTocThamHoiToChuc.bulkDeleteTitle'),
-      message: txt('danTocThamHoiToChuc.bulkDeleteMessage', { count: ids.length }),
+      message: txt('danTocThamHoiToChuc.bulkDeleteMessage', { count: allowedIds.length }),
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        deleteMutation.mutate(allowedIds, {
           onSuccess: () => {
             clearSelection();
-            if (viewingId && ids.includes(viewingId)) setViewingId(null);
+            if (viewingId && allowedIds.includes(viewingId)) setViewingId(null);
           },
         });
       },
@@ -397,7 +453,7 @@ const ThamHoiToChucPage: React.FC = () => {
           onExport={handleExport}
           onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
-          items={rows}
+          items={viewableRows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">

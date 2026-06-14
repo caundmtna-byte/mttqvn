@@ -110,7 +110,7 @@ export function buildStandardDateRangePresets(options?: {
 
 export function isStandardDateRangeNonDefault(
   value: DateRangeValue,
-  defaultPreset: StandardDateRangePresetId = 'thisMonth',
+  defaultPreset: StandardDateRangePresetId = 'all',
 ): boolean {
   if (value.preset === 'custom') {
     return Boolean(value.customStart && value.customEnd);

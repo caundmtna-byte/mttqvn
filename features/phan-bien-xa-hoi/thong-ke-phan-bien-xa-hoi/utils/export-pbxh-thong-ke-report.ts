@@ -2,8 +2,7 @@ import { txt } from '@/lib/text';
 import { getTodayISODate } from '@/lib/utils';
 import type { ThucHienPhanBien } from '../../thuc-hien-phan-bien-xa-hoi/core/types';
 import type {
-  PbxhDonViChuTriTableRow,
-  PbxhNguoiTaoRankRow,
+  PbxhDonViThucHienTableRow,
   PbxhThongKeKpis,
   PbxhTopHoatDongRow,
   LabelCountRow,
@@ -11,11 +10,11 @@ import type {
   ResolvedDateRange,
 } from './aggregate-pbxh-thong-ke-stats';
 import { formatPbxhTienDoLabel } from './aggregate-pbxh-thong-ke-stats';
+import { getThucHienColumnDisplayValue } from '../../thuc-hien-phan-bien-xa-hoi/utils/column-display';
 
 export async function exportPbxhThongKeReportToExcel(input: {
   kpis: PbxhThongKeKpis;
-  donViRows: PbxhDonViChuTriTableRow[];
-  nguoiTaoRows: PbxhNguoiTaoRankRow[];
+  donViThucHienRows: PbxhDonViThucHienTableRow[];
   topHoatDongRows: PbxhTopHoatDongRow[];
   loaiHinhRows: { label: string; count: number }[];
   avgPhanTramLoaiHinhRows: PbxhAvgPhanTramBarRow[];
@@ -78,7 +77,8 @@ export async function exportPbxhThongKeReportToExcel(input: {
     txt('pbxhThongKe.report.overviewSheet'),
   );
 
-  const donViSheet = input.donViRows.map((r) => ({
+  const donViSheet = input.donViThucHienRows.map((r, i) => ({
+    [txt('pbxhThongKe.stats.tableColRank')]: i + 1,
     [txt('pbxhThongKe.stats.tableColDonVi')]: r.label,
     [txt('pbxhThongKe.stats.tableColTotal')]: r.total,
     [txt('pbxhThongKe.stats.tableColDangTh')]: r.dangThucHien,
@@ -92,32 +92,14 @@ export async function exportPbxhThongKeReportToExcel(input: {
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.json_to_sheet(donViSheet),
-      txt('pbxhThongKe.report.byDonViChuTriSheet'),
-    );
-  }
-
-  const nguoiTaoSheet = input.nguoiTaoRows.map((r, i) => ({
-    [txt('pbxhThongKe.stats.tableColRank')]: i + 1,
-    [txt('pbxhThongKe.stats.tableColNguoiTao')]: r.label,
-    [txt('pbxhThongKe.stats.tableColTotal')]: r.total,
-    [txt('pbxhThongKe.stats.tableColHoanThanh')]: r.hoanThanh,
-    [txt('pbxhThongKe.stats.tableColSoLanHoanThanh')]: r.sumSoLanHoanThanh,
-    [txt('pbxhThongKe.stats.tableColSoLanKhaoSat')]: r.sumSoLanKhaoSat,
-    [txt('pbxhThongKe.stats.tableColTyLeThucTe')]: r.tyLeThucTe,
-    [txt('pbxhThongKe.stats.tableColAvgPhanTram')]: r.avgPhanTram,
-  }));
-  if (nguoiTaoSheet.length > 0) {
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet(nguoiTaoSheet),
-      txt('pbxhThongKe.report.byNguoiTaoSheet'),
+      txt('pbxhThongKe.report.byDonViThucHienSheet'),
     );
   }
 
   const topHoatDongSheet = input.topHoatDongRows.map((r, i) => ({
     [txt('pbxhThongKe.stats.tableColRank')]: i + 1,
     [txt('pbxhThongKe.stats.tableColNoiDung')]: r.noi_dung,
-    [txt('pbxhThongKe.stats.tableColNguoiTao')]: r.nguoi_tao_label,
+    [txt('pbxhThongKe.stats.tableColDonViThucHien')]: r.don_vi_thuc_hien_label,
     [txt('pbxhThongKe.stats.tableColLoaiHinh')]: r.loai_hinh,
     [txt('pbxhThongKe.stats.tableColTinhTrang')]: r.tinh_trang,
     [txt('pbxhThongKe.stats.tableColSoLanHoanThanh')]: r.so_lan_hoan_thanh,
@@ -169,15 +151,14 @@ export async function exportPbxhThongKeReportToExcel(input: {
     [txt('pbxhThongKe.stats.tableColNoiDung')]: r.noi_dung,
     [txt('pbxhThongKe.stats.tableColLoaiHinh')]: r.loai_hinh,
     [txt('pbxhThongKe.stats.tableColTinhTrang')]: r.tinh_trang,
-    [txt('pbxhThongKe.stats.tableColDonViChuTri')]: r.ten_don_vi_chu_tri ?? '',
-    [txt('pbxhThongKe.stats.tableColNguoiTao')]:
-      (r.ho_va_ten_nguoi_tao ?? r.ten_tai_khoan_nguoi_tao ?? '').trim() || '',
+    [txt('pbxhThongKe.stats.tableColDonViThucHien')]: getThucHienColumnDisplayValue(r, 'don_vi_thuc_hien'),
+    [txt('pbxhThongKe.stats.tableColDonViChuTri')]: getThucHienColumnDisplayValue(r, 'ten_don_vi_chu_tri'),
     [txt('pbxhThongKe.stats.tableColTienDo')]: formatPbxhTienDoLabel(r),
     [txt('pbxhThongKe.stats.tableColSoLanHoanThanh')]: r.so_lan_hoan_thanh ?? 0,
     [txt('pbxhThongKe.stats.tableColSoLanKhaoSat')]: r.so_lan_khao_sat ?? 0,
-    [txt('pbxhThongKe.stats.tableColPhanTram')]: r.phan_tram_hoan_thanh,
-    [txt('pbxhThongKe.stats.tableColNgayKetThuc')]: r.ngay_ket_thuc ?? '',
-    [txt('pbxhThucHien.store.ngayBatDauCol')]: r.ngay_bat_dau ?? '',
+    [txt('pbxhThongKe.stats.tableColPhanTram')]: getThucHienColumnDisplayValue(r, 'phan_tram_hoan_thanh'),
+    [txt('pbxhThongKe.stats.tableColNgayKetThuc')]: getThucHienColumnDisplayValue(r, 'ngay_ket_thuc'),
+    [txt('pbxhThucHien.store.ngayBatDauCol')]: getThucHienColumnDisplayValue(r, 'ngay_bat_dau'),
     [txt('pbxhThucHien.store.capThucHienCol')]: r.cap_thuc_hien,
   }));
   XLSX.utils.book_append_sheet(

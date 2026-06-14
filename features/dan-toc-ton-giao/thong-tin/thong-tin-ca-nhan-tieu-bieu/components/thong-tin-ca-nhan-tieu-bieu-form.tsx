@@ -33,6 +33,7 @@ import {
 import { DOI_TUONG_VALUES } from '../core/constants';
 import type { ThongTinCaNhanTieuBieu } from '../core/types';
 import { useCreateThongTinCaNhanTieuBieu, useUpdateThongTinCaNhanTieuBieu } from '../hooks/use-thong-tin-ca-nhan-tieu-bieu';
+import { useDttgViewer } from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 
 const FORM_ID = 'dttg-thong-tin-ca-nhan-tieu-bieu-form';
 
@@ -51,6 +52,9 @@ const ThongTinCaNhanTieuBieuForm: React.FC<Props> = ({ initialData, onClose }) =
 
   const createMutation = useCreateThongTinCaNhanTieuBieu(onClose);
   const updateMutation = useUpdateThongTinCaNhanTieuBieu(onClose);
+  const viewer = useDttgViewer('danTocCaNhanTieuBieu');
+  const defaultDonViFromViewer =
+    viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewer.viewerDonViId);
 
   const tinhMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -92,8 +96,12 @@ const ThongTinCaNhanTieuBieuForm: React.FC<Props> = ({ initialData, onClose }) =
   });
 
   useEffect(() => {
-    reset(thongTinCaNhanTieuBieuToFormInput(initialData ?? null));
-  }, [initialData, reset]);
+    const base = thongTinCaNhanTieuBieuToFormInput(initialData ?? null);
+    if (!initialData && defaultDonViFromViewer && viewer.viewerDonViId) {
+      base.don_vi_id = viewer.viewerDonViId;
+    }
+    reset(base);
+  }, [initialData, reset, defaultDonViFromViewer, viewer.viewerDonViId]);
 
   const onSubmit: SubmitHandler<ThongTinCaNhanTieuBieuFormInput> = (data) => {
     const parsed = thongTinCaNhanTieuBieuSchema.parse(data) as ThongTinCaNhanTieuBieuFormValues;

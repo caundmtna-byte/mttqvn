@@ -4,7 +4,6 @@ import { parseTrangThaiHoatDongImport, type TrangThaiHoatDong } from '@/lib/cons
 import { getJobLevels } from '../../cap-bac/services/cap-bac-service';
 import { getDepartments } from '../../phong-ban/services/phong-ban-service';
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import {
   POSITION_RETURNING_FULL,
   POSITION_RETURNING_STATUS_ONLY,
@@ -15,7 +14,6 @@ import { txt } from '../../../../lib/text';
 const repo = createRepository<Position>({
   tableName: 'var_chuc_vu',
   select: POSITION_SELECT_FULL,
-  delay: 600,
 });
 
 function pickEmbedded<T>(v: unknown): T | undefined {
@@ -77,14 +75,6 @@ async function enrichPosition(raw: Position): Promise<Position> {
     capKey !== ''
       ? levels.find((l) => String(l.id).trim() === capKey)?.ten_cap_bac
       : undefined;
-  if (!isSupabase()) {
-    const depts = await getDepartments();
-    return {
-      ...base,
-      ten_cap_bac: ten_cap ?? base.ten_cap_bac,
-      ten_phong_ban: depts.find((d) => d.id === base.phong_ban_id)?.ten_phong_ban ?? base.ten_phong_ban,
-    };
-  }
   return {
     ...base,
     ten_cap_bac: ten_cap ?? base.ten_cap_bac,
@@ -93,9 +83,7 @@ async function enrichPosition(raw: Position): Promise<Position> {
 
 export const getPositions = async (): Promise<Position[]> => {
   const list = await repo.getAll({ orderBy: 'thu_tu', ascending: true });
-  const flattened = isSupabase()
-    ? (list as unknown as Record<string, unknown>[]).map((r) => flattenSupabaseRow(r))
-    : list;
+  const flattened = (list as unknown as Record<string, unknown>[]).map((r) => flattenSupabaseRow(r));
   return Promise.all((flattened as Position[]).map(enrichPosition));
 };
 
@@ -104,75 +92,39 @@ export const createPosition = async (data: PositionFormValues): Promise<Position
   const ten = data.ten_chuc_vu.trim();
   const moTa = data.mo_ta && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
 
-  if (isSupabase()) {
-    const inserted = await repo.insert(
-      {
-        ten_chuc_vu: ten,
-        mo_ta: moTa,
-        cap_bac: normInt16Fk(data.cap_bac ?? undefined),
-        phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
-        thu_tu: data.thu_tu ?? 0,
-        trang_thai: data.trang_thai,
-        tg_tao: now,
-        tg_cap_nhat: now,
-      } as unknown as Omit<Position, 'id'> & { id?: string },
-      { returningSelect: POSITION_RETURNING_FULL },
-    );
-    const flat = flattenSupabaseRow(inserted as unknown as Record<string, unknown>);
-    return enrichPosition(flat);
-  }
-
-  const id = `pos-${Date.now()}`;
   const inserted = await repo.insert(
     {
-      id,
       ten_chuc_vu: ten,
-      cap_bac: data.cap_bac && String(data.cap_bac).trim() !== '' ? String(data.cap_bac).trim() : null,
-      phong_ban_id: data.phong_ban_id && String(data.phong_ban_id).trim() !== '' ? String(data.phong_ban_id).trim() : null,
       mo_ta: moTa,
+      cap_bac: normInt16Fk(data.cap_bac ?? undefined),
+      phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
       thu_tu: data.thu_tu ?? 0,
       trang_thai: data.trang_thai,
       tg_tao: now,
       tg_cap_nhat: now,
-    } as Omit<Position, 'id'> & { id: string },
+    } as unknown as Omit<Position, 'id'> & { id?: string },
     { returningSelect: POSITION_RETURNING_FULL },
   );
-  return enrichPosition(inserted as Position);
+  const flat = flattenSupabaseRow(inserted as unknown as Record<string, unknown>);
+  return enrichPosition(flat);
 };
 
 export const updatePosition = async (id: string, data: PositionFormValues): Promise<Position> => {
-  const existingRaw = await repo.getById(id);
-  if (!existingRaw) throw new Error(txt('position.service.notFound'));
-  const existing = isSupabase()
-    ? normalizePositionRow(flattenSupabaseRow(existingRaw as unknown as Record<string, unknown>))
-    : (existingRaw as Position);
-
   const ten = data.ten_chuc_vu.trim();
   const moTa = data.mo_ta && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
 
-  const payload = isSupabase()
-    ? ({
-        ten_chuc_vu: ten,
-        mo_ta: moTa,
-        cap_bac: normInt16Fk(data.cap_bac ?? undefined),
-        phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
-        thu_tu: data.thu_tu ?? existing.thu_tu,
-        trang_thai: data.trang_thai,
-        tg_cap_nhat: new Date().toISOString(),
-      } as unknown as Partial<Position>)
-    : ({
-        ten_chuc_vu: ten,
-        mo_ta: moTa,
-        cap_bac: data.cap_bac && String(data.cap_bac).trim() !== '' ? String(data.cap_bac).trim() : null,
-        phong_ban_id:
-          data.phong_ban_id && String(data.phong_ban_id).trim() !== '' ? String(data.phong_ban_id).trim() : null,
-        thu_tu: data.thu_tu ?? existing.thu_tu,
-        trang_thai: data.trang_thai,
-        tg_cap_nhat: new Date().toISOString(),
-      } as Partial<Position>);
+  const payload = {
+    ten_chuc_vu: ten,
+    mo_ta: moTa,
+    cap_bac: normInt16Fk(data.cap_bac ?? undefined),
+    phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
+    thu_tu: data.thu_tu ?? 0,
+    trang_thai: data.trang_thai,
+    tg_cap_nhat: new Date().toISOString(),
+  } as unknown as Partial<Position>;
 
   const updated = await repo.update(id, payload, { returningSelect: POSITION_RETURNING_FULL });
-  const flat = isSupabase() ? flattenSupabaseRow(updated as unknown as Record<string, unknown>) : updated;
+  const flat = flattenSupabaseRow(updated as unknown as Record<string, unknown>);
   return enrichPosition(flat as Position);
 };
 
@@ -188,8 +140,7 @@ export const updatePositionStatus = async (ids: string[], status: TrangThaiHoatD
     ),
   );
   if (ids.length !== 1) return undefined;
-  let result = results[0] as Position;
-  if (isSupabase()) result = flattenSupabaseRow(result as unknown as Record<string, unknown>);
+  const result = flattenSupabaseRow(results[0] as unknown as Record<string, unknown>);
   return enrichPosition(result);
 };
 

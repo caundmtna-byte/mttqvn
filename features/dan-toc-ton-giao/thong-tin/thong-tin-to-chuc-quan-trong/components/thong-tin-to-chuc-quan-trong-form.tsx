@@ -34,6 +34,7 @@ import {
   useCreateThongTinToChucQuanTrong,
   useUpdateThongTinToChucQuanTrong,
 } from '../hooks/use-thong-tin-to-chuc-quan-trong';
+import { useDttgViewer } from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 
 const FORM_ID = 'dttg-thong-tin-to-chuc-quan-trong-form';
 
@@ -52,6 +53,9 @@ const ThongTinToChucQuanTrongForm: React.FC<Props> = ({ initialData, onClose }) 
 
   const createMutation = useCreateThongTinToChucQuanTrong(onClose);
   const updateMutation = useUpdateThongTinToChucQuanTrong(onClose);
+  const viewer = useDttgViewer('danTocToChucQuanTrong');
+  const defaultDonViFromViewer =
+    viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewer.viewerDonViId);
 
   const tinhMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -93,8 +97,12 @@ const ThongTinToChucQuanTrongForm: React.FC<Props> = ({ initialData, onClose }) 
   });
 
   useEffect(() => {
-    reset(thongTinToChucQuanTrongToFormInput(initialData ?? null));
-  }, [initialData, reset]);
+    const base = thongTinToChucQuanTrongToFormInput(initialData ?? null);
+    if (!initialData && defaultDonViFromViewer && viewer.viewerDonViId) {
+      base.don_vi_id = viewer.viewerDonViId;
+    }
+    reset(base);
+  }, [initialData, reset, defaultDonViFromViewer, viewer.viewerDonViId]);
 
   const onSubmit: SubmitHandler<ThongTinToChucQuanTrongFormInput> = (data) => {
     const parsed = thongTinToChucQuanTrongSchema.parse(data) as ThongTinToChucQuanTrongFormValues;

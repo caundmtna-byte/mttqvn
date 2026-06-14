@@ -4,7 +4,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
-import type { MttqLopTapHuan } from '../core/types';
+import type { MttqLopTapHuan, MttqLopTapHuanListRow } from '../core/types';
 import type { MttqTapHuanFormValues } from '../core/schema';
 import {
   createMttqLopTapHuan,
@@ -14,6 +14,7 @@ import {
   getMttqLopTapHuanChiTietFlatListForCanBoId,
   getMttqLopTapHuanList,
   updateMttqLopTapHuan,
+  mttqLopTapHuanToListRow,
 } from '../services/mttq-tap-huan-service';
 import type { MttqTapHuanChiTietFlatRow } from '../core/types';
 
@@ -78,7 +79,10 @@ export const useUpdateMttqLopTapHuan = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: MttqTapHuanFormValues }) =>
       updateMttqLopTapHuan(id, data),
     onSuccess: (updated, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
+      const listRow = mttqLopTapHuanToListRow(updated);
+      queryClient.setQueryData<MttqLopTapHuanListRow[]>(listKey, (cur) =>
+        cur?.map((r) => (r.id === id ? listRow : r)),
+      );
       void queryClient.invalidateQueries({ queryKey: chiTietFlatListKey });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.mttqLopTapHuan.byCanBoPrefix,

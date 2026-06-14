@@ -57,6 +57,7 @@ export const matTranTonKho = {
     refresh: 'Làm mới',
     periodLabel: '{{from}} — {{to}}',
     preset: {
+      all: 'Tất cả',
       thisMonth: 'Tháng này',
       lastMonth: 'Tháng trước',
       thisQuarter: 'Quý này',

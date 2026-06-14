@@ -10,7 +10,7 @@ import {
 import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';
 import GenericTable from '@/components/shared/GenericTable';
-import { formatCurrency, formatDateShort, formatDecimal } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDecimal } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import type { NhapXuatKhoCtFlatRow } from '../core/types';
@@ -112,7 +112,7 @@ const NhapXuatKhoCtFlatTable = memo(function NhapXuatKhoCtFlatTable({
         case 'ngay_phieu':
           return (
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
-              {item.ngay_phieu ? formatDateShort(item.ngay_phieu) : txt('common.emptyCell')}
+              {item.ngay_phieu ? formatDate(item.ngay_phieu) : txt('common.emptyCell')}
             </span>
           );
         case 'ten_hang_hoa':
@@ -220,7 +220,7 @@ const NhapXuatKhoCtFlatTable = memo(function NhapXuatKhoCtFlatTable({
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground mb-1">
                 <EnumBadge value={item.loai_phieu} config={loaiBadge} shape="pill" truncate />
                 <span className="tabular-nums">{item.so_phieu}</span>
-                {item.ngay_phieu ? <span>· {formatDateShort(item.ngay_phieu)}</span> : null}
+                {item.ngay_phieu ? <span>· {formatDate(item.ngay_phieu)}</span> : null}
               </div>
               {item.ten_kho_xuat || item.ten_kho_nhap ? (
                 <p className="text-xs text-muted-foreground m-0 truncate">

@@ -1,1 +1,0 @@
-import{u as n}from"./use-can-DU7xLdZl.js";function m(t){const a=n("view",t),e=n("create",t),o=n("edit",t),c=n("delete",t),i=n("export",t),s=n("import",t);return{canView:a,canCreate:e,canEdit:o,canDelete:c,canExport:i,canImport:s}}export{m as u};

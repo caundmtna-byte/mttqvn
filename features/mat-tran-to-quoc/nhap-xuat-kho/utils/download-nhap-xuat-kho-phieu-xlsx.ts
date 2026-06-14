@@ -1,8 +1,5 @@
 import { getTodayISODate } from '@/lib/utils';
-import {
-  layoutNhapXuatKhoPhieuMetaPairs,
-  type NhapXuatKhoPhieuDocumentModel,
-} from './build-nhap-xuat-kho-phieu-document';
+import type { NhapXuatKhoPhieuDocumentModel } from './build-nhap-xuat-kho-phieu-document';
 
 /** Xuất XLSX — UTF-8; font cell mặc định Excel (Calibri). */
 export async function downloadNhapXuatKhoPhieuXlsx(
@@ -12,51 +9,52 @@ export async function downloadNhapXuatKhoPhieuXlsx(
   const XLSX = await import('xlsx');
   const aoa: (string | number)[][] = [];
 
-  aoa.push([model.orgNameLine1]);
-  if (model.orgNameLine2) aoa.push([model.orgNameLine2]);
-  aoa.push([model.orgSubTitle.toUpperCase()]);
-  if (model.address) aoa.push([model.address]);
-  if (model.phone) aoa.push([`ĐT: ${model.phone}`]);
   aoa.push([
-    `Mẫu số: 01-KCT · Số: ${model.soPhieu} · ${model.signedDateLabel}: ${model.signedDateValue}`,
+    `${model.donViLabel}: ${model.donViValue}`,
+    '',
+    `${model.soPhieuLabel}: ${model.soPhieu}`,
+  ]);
+  aoa.push([
+    `${model.diaChiLabel}: ${model.diaChiValue}`,
+    model.docTitle,
+    `${model.mauSoLabel}: ${model.mauSo}`,
+  ]);
+  aoa.push([
+    `${model.boPhanLabel}: ${model.boPhanValue}`,
+    `${model.ngayLapPhieuLabel}: ${model.ngayPhieu}`,
+    model.thongTu,
   ]);
   aoa.push([]);
-  aoa.push([model.docTitle]);
-  aoa.push([`Ngày lập phiếu: ${model.ngayPhieu}`]);
-  aoa.push([]);
 
-  const metaPairs = layoutNhapXuatKhoPhieuMetaPairs(model.metaItems, {
-    label: model.signedDateLabel,
-    value: model.signedDateValue,
-  });
-  for (const pair of metaPairs) {
-    const row: string[] = [];
-    for (const item of pair) {
-      row.push(`${item.label}: ${item.value}`);
-    }
-    aoa.push(row);
+  for (const line of model.infoLines) {
+    aoa.push([`${line.label}: ${line.value}`]);
   }
   aoa.push([]);
 
   if (model.rows.length > 0) {
-    const headers = Object.keys(model.rows[0]);
+    const headers = model.columnHeaders;
     aoa.push(headers);
+    aoa.push(model.columnCodes);
     for (const r of model.rows) {
       aoa.push(headers.map((h) => r[h] ?? ''));
     }
+    if (model.showCongRow) {
+      aoa.push(['', '', '', '', model.congLabel, model.congValue, '']);
+    }
     aoa.push([]);
-    if (model.tongTien > 0) {
-      aoa.push(['', '', '', '', '', 'Tổng cộng:', model.tongTienFormatted]);
-      if (model.tongTienBangChu) {
-        aoa.push([`Bằng chữ: ${model.tongTienBangChu}.`]);
-      }
+    if (model.tongTienBangChu) {
+      aoa.push([`${model.tongTienBangChuLabel}: ${model.tongTienBangChu}.`]);
     }
   } else {
     aoa.push([model.emptyMessage]);
   }
 
   aoa.push([]);
-  aoa.push([`Ghi chú: ${model.ghiChu}`]);
+  aoa.push([`${model.chungTuGocLabel}: ${model.chungTuGoc}`]);
+  aoa.push([model.signatureDateLine]);
+  if (model.ghiChuNoiBo) {
+    aoa.push([`Ghi chú nội bộ: ${model.ghiChuNoiBo}`]);
+  }
   aoa.push([]);
   aoa.push([
     model.footer.col1Label,

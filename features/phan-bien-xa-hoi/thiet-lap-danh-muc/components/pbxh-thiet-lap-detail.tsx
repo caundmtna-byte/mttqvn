@@ -1,8 +1,7 @@
 import React from 'react';
-import { Edit, Trash2, Settings2, Calendar, Clock, FileText, ListOrdered } from 'lucide-react';
+import { Edit, Trash2, Settings2, Calendar, Clock, FileText, ListOrdered, CalendarClock } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
-import { formatDateTimeShort } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
@@ -12,6 +11,11 @@ import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { PbxhThietLap } from '../core/types';
 import { PBXH_LOAI_TAB_LABEL_KEY } from '../core/types';
+import {
+  formatPbxhThietLapDateTimeDisplay,
+  formatPbxhThietLapThuTuDisplay,
+  trimmedPbxhThietLapDisplay,
+} from '../utils/display-format';
 
 interface Props {
   data: PbxhThietLap;
@@ -23,6 +27,7 @@ interface Props {
 const PbxhThietLapDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('phanBienThietLapDanhMuc');
   const loaiLabel = txt(PBXH_LOAI_TAB_LABEL_KEY[data.loai]);
+  const emptyCell = txt('common.emptyCell');
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -86,27 +91,66 @@ const PbxhThietLapDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }
             </DetailSummaryIconTile>
           }
           title={data.ten}
-          subtitle={<p className="m-0">{loaiLabel}</p>}
+          subtitle={<p className="m-0 text-muted-foreground text-sm">{loaiLabel}</p>}
         />
 
         <DetailSection title={txt('page.articleSettings.detailBasic')} icon={<Settings2 size={14} />} variant="primary">
           <DetailFieldGrid>
-            <DetailField label={txt('page.articleSettings.colTen')} value={data.ten} icon={<Settings2 size={12} />} />
-            <DetailField label={txt('page.articleSettings.colThuTu')} value={String(data.thu_tu)} icon={<ListOrdered size={12} />} />
+            <DetailField
+              label={txt('page.articleSettings.colTen')}
+              icon={<Settings2 size={12} />}
+              value={
+                trimmedPbxhThietLapDisplay(data.ten) ? (
+                  <span className="font-semibold tracking-tight text-foreground">{data.ten}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('page.articleSettings.colThuTu')}
+              icon={<ListOrdered size={12} />}
+              value={
+                <span className="tabular-nums text-body-sm text-foreground">
+                  {formatPbxhThietLapThuTuDisplay(data.thu_tu)}
+                </span>
+              }
+            />
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('page.articleSettings.colMoTa')}
-              value={data.mo_ta ?? ''}
               icon={<FileText size={12} />}
-              emptyText="—"
+              value={
+                trimmedPbxhThietLapDisplay(data.mo_ta) ? (
+                  <p className="whitespace-pre-wrap break-words text-body-sm text-foreground">{data.mo_ta}</p>
+                ) : undefined
+              }
+              emptyText={emptyCell}
             />
           </DetailFieldGrid>
         </DetailSection>
 
         <DetailSection title={txt('page.articleSettings.detailSystem')} icon={<Clock size={14} />} variant="primary">
           <DetailFieldGrid>
-            <DetailField label={txt('page.articleSettings.colTgTao')} value={formatDateTimeShort(data.tg_tao)} icon={<Calendar size={12} />} />
-            <DetailField label={txt('page.articleSettings.colTgCapNhat')} value={formatDateTimeShort(data.tg_cap_nhat)} icon={<Calendar size={12} />} />
+            <DetailField
+              label={txt('page.articleSettings.colTgTao')}
+              icon={<Calendar size={12} />}
+              value={
+                formatPbxhThietLapDateTimeDisplay(data.tg_tao) ? (
+                  <span className="tabular-nums">{formatPbxhThietLapDateTimeDisplay(data.tg_tao)}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
+            <DetailField
+              label={txt('page.articleSettings.colTgCapNhat')}
+              icon={<CalendarClock size={12} />}
+              value={
+                formatPbxhThietLapDateTimeDisplay(data.tg_cap_nhat) ? (
+                  <span className="tabular-nums">{formatPbxhThietLapDateTimeDisplay(data.tg_cap_nhat)}</span>
+                ) : undefined
+              }
+              emptyText={emptyCell}
+            />
           </DetailFieldGrid>
         </DetailSection>
       </div>

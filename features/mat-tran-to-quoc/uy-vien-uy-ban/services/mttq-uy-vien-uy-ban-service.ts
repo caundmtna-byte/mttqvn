@@ -1,11 +1,9 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import { flattenMttqCanBoRow } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/services/mttq-can-bo-service';
-import { MTTQ_CAN_BO_MOCK_DATA } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/mock-data';
 import type { MttqUyVienUyBan, MttqUyVienUyBanListRow } from '../core/types';
 import { getUyVienDiemDanhSummariesForIds } from '@/features/mat-tran-to-quoc/ky-hop/services/mttq-diem-danh-service';
 import {
@@ -19,7 +17,6 @@ import {
   MTTQ_UY_VIEN_UY_BAN_SELECT_LIST,
   MTTQ_UY_VIEN_UY_BAN_SELECT_STATS,
 } from '../core/supabase-select';
-import { MTTQ_UY_VIEN_UY_BAN_MOCK } from '../mock-data';
 import { formatTenPhongBanHienThi } from '../utils/phong-ban-hien-thi';
 import {
   mapUyVienConstraintError,
@@ -35,18 +32,12 @@ type RepoRow = { id: string } & Record<string, unknown>;
 const repo = createRepository<RepoRow>({
   tableName: 'mttq_uy_vien_uy_ban',
   select: MTTQ_UY_VIEN_UY_BAN_SELECT_LIST,
-  delay: 400,
-  mockData: [],
 });
 
-const repoStats = isSupabase()
-  ? createRepository<RepoRow>({
-      tableName: 'mttq_uy_vien_uy_ban',
-      select: MTTQ_UY_VIEN_UY_BAN_SELECT_STATS,
-      delay: 400,
-      mockData: [],
-    })
-  : repo;
+const repoStats = createRepository<RepoRow>({
+  tableName: 'mttq_uy_vien_uy_ban',
+  select: MTTQ_UY_VIEN_UY_BAN_SELECT_STATS,
+});
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
   if (v == null) return undefined;
@@ -57,79 +48,6 @@ function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefi
 function nullableStr(v: unknown): string | null {
   if (v == null || v === '') return null;
   return String(v);
-}
-
-function mergeDisplayFromMockCanBo(canBoId: string): Pick<
-  MttqUyVienUyBan,
-  | 'ho_va_ten'
-  | 'chuc_vu_don_vi'
-  | 'ngay_sinh'
-  | 'gioi_tinh'
-  | 'dan_toc'
-  | 'ton_giao'
-  | 'dang_vien'
-  | 'so_dien_thoai'
-  | 'trinh_do_cm'
-  | 'trinh_do_llct'
-  | 'ten_to_chuc'
-  | 'ten_phong_ban_hien_thi'
-  | 'ten_don_vi_can_bo'
-  | 'dia_chi_can_bo'
-  | 'ten_trang_thai_can_bo'
-  | 'ngay_nhap_trang_thai'
-  | 'van_hoa'
-  | 'ngay_vao_dang'
-  | 'que_quan'
-  | 'noi_o_hien_nay'
-> {
-  const c = MTTQ_CAN_BO_MOCK_DATA.find((x) => String(x.id) === String(canBoId));
-  if (!c) {
-    return {
-      ho_va_ten: '',
-      chuc_vu_don_vi: null,
-      ngay_sinh: null,
-      gioi_tinh: null,
-      dan_toc: null,
-      ton_giao: null,
-      dang_vien: false,
-      so_dien_thoai: null,
-      trinh_do_cm: null,
-      trinh_do_llct: null,
-      ten_to_chuc: null,
-      ten_phong_ban_hien_thi: null,
-      ten_don_vi_can_bo: null,
-      dia_chi_can_bo: null,
-      ten_trang_thai_can_bo: null,
-      ngay_nhap_trang_thai: null,
-      van_hoa: null,
-      ngay_vao_dang: null,
-      que_quan: null,
-      noi_o_hien_nay: null,
-    };
-  }
-  return {
-    ho_va_ten: c.ho_ten,
-    chuc_vu_don_vi: c.ten_chuc_vu,
-    ngay_sinh: c.ngay_sinh,
-    gioi_tinh: c.gioi_tinh,
-    dan_toc: c.ten_dan_toc,
-    ton_giao: c.ton_giao,
-    dang_vien: c.dang_vien,
-    so_dien_thoai: c.dien_thoai,
-    trinh_do_cm: c.ten_trinh_do,
-    trinh_do_llct: c.ten_ly_luan_chinh_tri,
-    ten_to_chuc:
-      Array.isArray(c.ten_to_chuc_arr) && c.ten_to_chuc_arr.length > 0 ? c.ten_to_chuc_arr.join(', ') : null,
-    ten_phong_ban_hien_thi: formatTenPhongBanHienThi(c.ten_phong_ban, c.ten_bo_phan),
-    ten_don_vi_can_bo: c.ten_don_vi,
-    dia_chi_can_bo: c.dia_chi ?? null,
-    ten_trang_thai_can_bo: c.ten_trang_thai ?? null,
-    ngay_nhap_trang_thai: c.ngay_nhap_trang_thai,
-    van_hoa: c.van_hoa,
-    ngay_vao_dang: c.ngay_vao_dang,
-    que_quan: c.que_quan,
-    noi_o_hien_nay: c.noi_o_hien_nay,
-  };
 }
 
 export function flattenRow(row: Record<string, unknown>): MttqUyVienUyBan {
@@ -220,13 +138,6 @@ async function withUyVienDiemDanhSummaries(
   });
 }
 
-let mockRows = structuredClone(MTTQ_UY_VIEN_UY_BAN_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 function payloadFromForm(data: MttqUyVienUyBanFormValues) {
   return {
     can_bo_id: data.can_bo_id,
@@ -238,50 +149,6 @@ function payloadFromForm(data: MttqUyVienUyBanFormValues) {
   };
 }
 
-type ConflictCheckRow = {
-  id: string;
-  nhiem_ky_id: string;
-  can_bo_id: string;
-  ma_uv: string | null;
-};
-
-function mockConflictRows(): ConflictCheckRow[] {
-  return mockRows.map((r) => ({
-    id: r.id,
-    nhiem_ky_id: r.nhiem_ky_id,
-    can_bo_id: r.can_bo_id,
-    ma_uv: r.ma_uv,
-  }));
-}
-
-function findMockUyVienConflict(params: {
-  nhiemKyId: string;
-  canBoId?: string | null;
-  maUv?: string | null;
-  excludeId?: string | null;
-}): { kind: UyVienConflictKind; existingId: string } | null {
-  const nhiemKyId = String(params.nhiemKyId ?? '').trim();
-  if (!nhiemKyId) return null;
-  const exclude = String(params.excludeId ?? '').trim();
-  const canBoId = String(params.canBoId ?? '').trim();
-  const maUvNorm = normalizeMaUvForCompare(params.maUv);
-
-  for (const row of mockConflictRows()) {
-    if (exclude && String(row.id) === exclude) continue;
-    if (row.nhiem_ky_id !== nhiemKyId) continue;
-    if (canBoId && String(row.can_bo_id).trim() === canBoId) {
-      return { kind: 'can_bo', existingId: row.id };
-    }
-    if (maUvNorm) {
-      const rowMa = normalizeMaUvForCompare(row.ma_uv);
-      if (rowMa && rowMa === maUvNorm) {
-        return { kind: 'ma_uv', existingId: row.id };
-      }
-    }
-  }
-  return null;
-}
-
 export async function findUyVienConflict(params: {
   nhiemKyId: string;
   canBoId?: string | null;
@@ -290,10 +157,6 @@ export async function findUyVienConflict(params: {
 }): Promise<{ kind: UyVienConflictKind; existingId: string } | null> {
   const nhiemKyId = String(params.nhiemKyId ?? '').trim();
   if (!nhiemKyId) return null;
-
-  if (!isSupabase()) {
-    return findMockUyVienConflict(params);
-  }
 
   const supabase = getSupabase();
   if (!supabase) return null;
@@ -350,7 +213,7 @@ async function assertNoUyVienConflict(data: MttqUyVienUyBanFormValues, excludeId
 
 async function supabaseInsertUyVien(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
   const supabase = getSupabase();
-  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   const { data, error } = await supabase
     .from('mttq_uy_vien_uy_ban')
     .insert(payload)
@@ -366,7 +229,7 @@ async function supabaseInsertUyVien(payload: Record<string, unknown>): Promise<R
 
 async function supabaseUpdateUyVien(id: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
   const supabase = getSupabase();
-  if (!supabase) throw new Error('Supabase client is not configured.');
+  if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   const { data, error } = await supabase
     .from('mttq_uy_vien_uy_ban')
     .update(payload)
@@ -381,28 +244,7 @@ async function supabaseUpdateUyVien(id: string, payload: Record<string, unknown>
   return data as unknown as Record<string, unknown>;
 }
 
-function mockRowFromForm(data: MttqUyVienUyBanFormValues, id: string, idNguoiTao: string, now: string): MttqUyVienUyBan {
-  const disp = mergeDisplayFromMockCanBo(data.can_bo_id);
-  return {
-    id,
-    ...payloadFromForm(data),
-    ...disp,
-    ten_nhiem_ky: 'Mock nhiệm kỳ',
-    ten_don_vi: null,
-    id_nguoi_tao: idNguoiTao,
-    tg_tao: now,
-    tg_cap_nhat: now,
-    ho_va_ten_nguoi_tao: 'Mock',
-    ten_tai_khoan_nguoi_tao: 'mock',
-    id_phong_ban_nguoi_tao: null,
-  };
-}
-
 export async function getMttqUyVienUyBanList(donViId?: string | null): Promise<MttqUyVienUyBanListRow[]> {
-  if (!isSupabase()) {
-    const base = mockRows.map((r) => ({ ...r }));
-    return withUyVienDiemDanhSummaries(base, donViId);
-  }
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   const flat = list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
   return withUyVienDiemDanhSummaries(flat, donViId);
@@ -410,9 +252,6 @@ export async function getMttqUyVienUyBanList(donViId?: string | null): Promise<M
 
 /** Payload gọn cho trang báo cáo (không gộp điểm danh). */
 export async function getMttqUyVienUyBanStatsList(): Promise<MttqUyVienUyBan[]> {
-  if (!isSupabase()) {
-    return mockRows.map((r) => ({ ...r }));
-  }
   const list = await repoStats.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   return list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
 }
@@ -421,10 +260,6 @@ export async function getMttqUyVienUyBanStatsList(): Promise<MttqUyVienUyBan[]> 
 export async function getMttqUyVienUyBanListForNhiemKyId(nhiemKyId: string): Promise<MttqUyVienUyBanListRow[]> {
   const id = nhiemKyId.trim();
   if (!id) return [];
-  if (!isSupabase()) {
-    const base = mockRows.filter((r) => r.nhiem_ky_id === id).map((r) => ({ ...r }));
-    return withUyVienDiemDanhSummaries(base);
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -439,10 +274,6 @@ export async function getMttqUyVienUyBanListForNhiemKyId(nhiemKyId: string): Pro
 }
 
 export async function getMttqUyVienUyBanById(id: string): Promise<MttqUyVienUyBan | null> {
-  if (!isSupabase()) {
-    const r = mockRows.find((x) => x.id === id);
-    return r ? { ...r } : null;
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -464,14 +295,6 @@ export async function createMttqUyVienUyBan(
 
   await assertNoUyVienConflict(data);
 
-  if (!isSupabase()) {
-    const id = mockNextId();
-    const now = new Date().toISOString();
-    const row = mockRowFromForm(data, id, trimmed, now);
-    mockRows.push(row);
-    return { ...row };
-  }
-
   const inserted = await supabaseInsertUyVien({
     ...payloadFromForm(data),
     id_nguoi_tao: trimmed,
@@ -482,21 +305,6 @@ export async function createMttqUyVienUyBan(
 export async function updateMttqUyVienUyBan(id: string, data: MttqUyVienUyBanFormValues): Promise<MttqUyVienUyBan> {
   await assertNoUyVienConflict(data, id);
 
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('matTranUyVienUyBan.service.notFound'));
-    const now = new Date().toISOString();
-    const merged = {
-      ...mockRows[idx],
-      ...mockRowFromForm(data, id, mockRows[idx].id_nguoi_tao, now),
-      id,
-      id_nguoi_tao: mockRows[idx].id_nguoi_tao,
-      tg_tao: mockRows[idx].tg_tao,
-    };
-    mockRows[idx] = merged;
-    return { ...mockRows[idx] };
-  }
-
   const updated = await supabaseUpdateUyVien(id, {
     ...payloadFromForm(data),
     tg_cap_nhat: new Date().toISOString(),
@@ -506,17 +314,12 @@ export async function updateMttqUyVienUyBan(id: string, data: MttqUyVienUyBanFor
 
 export async function deleteMttqUyVienUyBanMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    mockRows = mockRows.filter((r) => !ids.includes(r.id));
-    return;
-  }
   await repo.remove(ids);
 }
 
 async function resolveNhiemKyIdByTen(ten: string): Promise<string | null> {
   const t = ten.trim();
   if (!t) return null;
-  if (!isSupabase()) return '1';
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -557,18 +360,6 @@ async function resolveCanBoIdFromImportRow(raw: Record<string, unknown>): Promis
 
   const nsRaw = raw.ngay_sinh != null && String(raw.ngay_sinh).trim() !== '' ? String(raw.ngay_sinh).trim() : '';
   const ns = nsRaw.length >= 10 ? nsRaw.slice(0, 10) : nsRaw || null;
-
-  if (!isSupabase()) {
-    const exact = MTTQ_CAN_BO_MOCK_DATA.find(
-      (c) =>
-        c.ho_ten.trim().toLowerCase() === hoTen.toLowerCase() &&
-        (ns == null || c.ngay_sinh == null || (c.ngay_sinh && c.ngay_sinh.slice(0, 10) === ns)),
-    );
-    if (exact) return String(exact.id);
-    const byName = MTTQ_CAN_BO_MOCK_DATA.filter((c) => c.ho_ten.trim().toLowerCase() === hoTen.toLowerCase());
-    if (byName.length === 1) return String(byName[0].id);
-    return null;
-  }
 
   const supabase = getSupabase();
   if (!supabase) return null;

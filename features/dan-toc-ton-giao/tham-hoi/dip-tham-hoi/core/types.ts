@@ -3,6 +3,8 @@ import type { TrangThaiDipThamHoi } from './constants';
 export interface DipThamHoiFilters {
   columnSearch: Record<string, string>;
   trang_thai_filter: string[];
+  don_vi_to_chuc_filter: string[];
+  phong_ban_filter: string[];
 }
 
 export interface DipThamHoi {

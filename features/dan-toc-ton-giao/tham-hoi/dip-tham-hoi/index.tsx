@@ -34,6 +34,13 @@ import {
 import { useDipThamHoiStore } from './store/useDipThamHoiStore';
 import type { DipThamHoi } from './core/types';
 import { formatDonViToChucDisplay } from './core/display-don-vi';
+import { DON_VI_TINH_VALUE } from './core/constants';
+import { donViFilterKey } from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
+import {
+  canMutateDttgRowByDonVi,
+  dttgRowVisibleByDonVi,
+  useDttgViewer,
+} from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 import { DIP_THAM_HOI_SEARCHABLE_KEYS, dipThamHoiSearchRecord } from './utils/search-keys';
 import { countDipThamHoiColumnSearchActive, dipThamHoiMatchesColumnSearch } from './utils/column-search';
 import { sortDipThamHoiList } from './utils/sort';
@@ -99,6 +106,12 @@ const DipThamHoiPage: React.FC = () => {
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useDipThamHoiDetail(viewingId, { enabled: detailEnabled });
   const deleteMutation = useDeleteDipThamHoiMany();
+  const viewer = useDttgViewer('danTocDipThamHoi');
+
+  const viewableRows = useMemo(
+    () => rows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_to_chuc_id])),
+    [rows, viewer],
+  );
 
   useEffect(() => () => resetState(), [resetState]);
 
@@ -115,10 +128,18 @@ const DipThamHoiPage: React.FC = () => {
     const matchesSearch = matchesSearchTerm(searchRecord, term, [...DIP_THAM_HOI_SEARCHABLE_KEYS]);
     if (!dipThamHoiMatchesColumnSearch(item, f.columnSearch)) return false;
     if (f.trang_thai_filter.length > 0 && !f.trang_thai_filter.includes(item.trang_thai)) return false;
+    if (f.don_vi_to_chuc_filter.length > 0) {
+      const dvKey = donViFilterKey(item.don_vi_to_chuc_id, DON_VI_TINH_VALUE);
+      if (!f.don_vi_to_chuc_filter.includes(dvKey)) return false;
+    }
+    if (f.phong_ban_filter.length > 0) {
+      const pb = item.phong_ban_tham_muu_id?.trim();
+      if (!pb || !f.phong_ban_filter.includes(pb)) return false;
+    }
     return matchesSearch;
   }, []);
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
   const sorted = useMemo(() => sortDipThamHoiList(filtered, sort), [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
@@ -175,35 +196,41 @@ const DipThamHoiPage: React.FC = () => {
       Boolean(searchTerm?.trim()) ||
       countDipThamHoiColumnSearchActive(cs) > 0 ||
       filters.trang_thai_filter.length > 0 ||
+      filters.don_vi_to_chuc_filter.length > 0 ||
+      filters.phong_ban_filter.length > 0 ||
       Boolean(sort.column)
     );
   }, [searchTerm, filters, sort.column]);
 
   const emptyTitleResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('common.noResults')
         : txt('danTocDipThamHoi.emptyTitle'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   const emptyDescriptionResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('danTocDipThamHoi.emptyFilteredHint')
         : txt('danTocDipThamHoi.emptyHint'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   useEffect(() => {
     if (!viewingId) return;
-    const fresh = rows.find((r) => r.id === viewingId);
+    const fresh = viewableRows.find((r) => r.id === viewingId);
     if (!fresh) {
+      const row = rows.find((r) => r.id === viewingId);
+      if (row && !dttgRowVisibleByDonVi(viewer, [row.don_vi_to_chuc_id])) {
+        toast.error(txt('danTocDipThamHoi.noViewRowPermission'));
+      }
       setViewingId(null);
       return;
     }
     queryClient.setQueryData(queryKeys.danTocDipThamHoi.detail(viewingId), fresh);
-  }, [rows, viewingId, queryClient]);
+  }, [rows, viewableRows, viewingId, queryClient, viewer]);
 
   const handleView = useCallback(
     (item: DipThamHoi) => {
@@ -213,7 +240,23 @@ const DipThamHoiPage: React.FC = () => {
     [queryClient],
   );
 
+  const handleEdit = (item: DipThamHoi) => {
+    if (!canMutateDttgRowByDonVi(viewer, [item.don_vi_to_chuc_id])) {
+      toast.error(txt('danTocDipThamHoi.noEditOtherDonVi'));
+      return;
+    }
+    startTransition(() => {
+      setEditing(item);
+      setShowForm(true);
+    });
+  };
+
   const handleDelete = (id: string) => {
+    const row = rows.find((r) => r.id === id);
+    if (!canMutateDttgRowByDonVi(viewer, [row?.don_vi_to_chuc_id])) {
+      toast.error(txt('danTocDipThamHoi.noDeleteOtherDonVi'));
+      return;
+    }
     confirm({
       title: txt('danTocDipThamHoi.deleteTitle'),
       message: txt('danTocDipThamHoi.deleteMessage'),
@@ -230,16 +273,27 @@ const DipThamHoiPage: React.FC = () => {
   };
 
   const handleDeleteMany = (ids: string[]) => {
+    const allowedIds = ids.filter((id) => {
+      const row = rows.find((r) => r.id === id);
+      return row && canMutateDttgRowByDonVi(viewer, [row.don_vi_to_chuc_id]);
+    });
+    if (allowedIds.length === 0) {
+      toast.error(txt('danTocDipThamHoi.noDeleteOtherDonVi'));
+      return;
+    }
+    if (allowedIds.length < ids.length) {
+      toast.error(txt('danTocDipThamHoi.noDeleteOtherDonVi'));
+    }
     confirm({
       title: txt('danTocDipThamHoi.bulkDeleteTitle'),
-      message: txt('danTocDipThamHoi.bulkDeleteMessage', { count: ids.length }),
+      message: txt('danTocDipThamHoi.bulkDeleteMessage', { count: allowedIds.length }),
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        deleteMutation.mutate(allowedIds, {
           onSuccess: () => {
             clearSelection();
-            if (viewingId && ids.includes(viewingId)) setViewingId(null);
+            if (viewingId && allowedIds.includes(viewingId)) setViewingId(null);
           },
         });
       },
@@ -282,7 +336,7 @@ const DipThamHoiPage: React.FC = () => {
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
-          items={rows}
+          items={viewableRows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">
@@ -299,12 +353,7 @@ const DipThamHoiPage: React.FC = () => {
             <DipThamHoiTable
               data={sorted}
               isLoading={isListLoading || (listQueryEnabled && isListFetching && rows.length === 0)}
-              onEdit={(item) => {
-                startTransition(() => {
-                  setEditing(item);
-                  setShowForm(true);
-                });
-              }}
+              onEdit={handleEdit}
               onDelete={handleDelete}
               onView={handleView}
               emptyTitle={emptyTitleResolved}
@@ -331,12 +380,7 @@ const DipThamHoiPage: React.FC = () => {
             <DipThamHoiDetail
               data={viewingData}
               onClose={() => setViewingId(null)}
-              onEdit={(d) => {
-                startTransition(() => {
-                  setEditing(d);
-                  setShowForm(true);
-                });
-              }}
+              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           </Suspense>

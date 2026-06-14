@@ -10,7 +10,6 @@ import { txt } from '@/lib/text';
 const repo = createRepository<BaiVietThietLapKhac>({
   tableName: 'bai_viet_thiet_lap_khac',
   select: THIET_LAP_KHAC_SELECT_FULL,
-  delay: 400,
 });
 
 function normalizeKhac(raw: BaiVietThietLapKhac): BaiVietThietLapKhac {

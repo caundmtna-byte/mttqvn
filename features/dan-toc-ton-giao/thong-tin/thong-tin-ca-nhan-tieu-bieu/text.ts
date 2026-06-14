@@ -1,5 +1,8 @@
 export const danTocCaNhanTieuBieu = {
   noViewPermission: 'Bạn không có quyền xem thông tin cá nhân tiêu biểu.',
+  noViewRowPermission: 'Bạn không có quyền xem hồ sơ cá nhân này.',
+  noEditOtherDonVi: 'Bạn chỉ được sửa bản ghi thuộc đơn vị của mình.',
+  noDeleteOtherDonVi: 'Bạn chỉ được xóa bản ghi thuộc đơn vị của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
   searchPlaceholder: 'Tìm theo họ tên, đối tượng, tôn giáo/dân tộc, xã phường…',
   emptyTitle: 'Chưa có cá nhân tiêu biểu',

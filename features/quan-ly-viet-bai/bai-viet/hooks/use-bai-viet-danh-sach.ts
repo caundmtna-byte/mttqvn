@@ -65,7 +65,9 @@ export const useUpdateBaiVietDanhSach = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: BaiVietDanhSachFormValues }) =>
       updateBaiVietDanhSach(id, data),
     onSuccess: (updated, { id }) => {
-      queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
       queryClient.setQueryData(queryKeys.baiVietDanhSach.detail(id), updated);
       toast.success(txt('articleList.toast.update'));
       onSuccess?.();

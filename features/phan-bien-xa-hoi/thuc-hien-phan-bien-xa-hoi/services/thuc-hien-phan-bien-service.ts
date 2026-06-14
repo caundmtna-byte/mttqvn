@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -8,16 +7,12 @@ import type { ThucHienPhanBien } from '../core/types';
 import type { CapThucHien, LoaiHinh, TinhTrang } from '../core/constants';
 import { TINH_TRANG_DEFAULT } from '../core/constants';
 import { PBXH_THUC_HIEN_RETURNING, PBXH_THUC_HIEN_SELECT } from '../core/supabase-select';
-import { computePhanTramHoanThanh } from '../core/compute-phan-tram';
-import { PBXH_THUC_HIEN_MOCK } from '../mock-data';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
 const repo = createRepository<RepoRow>({
   tableName: 'pbxh_thuc_hien_phan_bien_xa_hoi',
   select: PBXH_THUC_HIEN_SELECT,
-  delay: 350,
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -85,13 +80,6 @@ export function flattenThucHienPhanBienRow(row: Record<string, unknown>): ThucHi
   };
 }
 
-let mockRows = structuredClone(PBXH_THUC_HIEN_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 function formToPayload(data: ThucHienPhanBienFormValues): Record<string, unknown> {
   return {
     cap_thuc_hien: data.cap_thuc_hien,
@@ -114,17 +102,11 @@ function formToPayload(data: ThucHienPhanBienFormValues): Record<string, unknown
 }
 
 export async function getThucHienPhanBienList(): Promise<ThucHienPhanBien[]> {
-  if (!isSupabase()) {
-    return [...mockRows].sort((a, b) => b.tg_cap_nhat.localeCompare(a.tg_cap_nhat));
-  }
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   return list.map((row) => flattenThucHienPhanBienRow(row as unknown as Record<string, unknown>));
 }
 
 export async function getThucHienPhanBienById(id: string): Promise<ThucHienPhanBien | null> {
-  if (!isSupabase()) {
-    return mockRows.find((r) => r.id === id) ?? null;
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -144,33 +126,6 @@ export async function createThucHienPhanBien(
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('pbxhThucHien.service.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const now = new Date().toISOString();
-    const row: ThucHienPhanBien = {
-      id: mockNextId(),
-      ...formToPayload(data) as unknown as Omit<
-        ThucHienPhanBien,
-        'id' | 'tg_tao' | 'tg_cap_nhat' | 'id_nguoi_tao' | 'phan_tram_hoan_thanh'
-      >,
-      phan_tram_hoan_thanh: computePhanTramHoanThanh(data.so_lan_hoan_thanh, data.so_lan_khao_sat),
-      doi_tuong_id: data.doi_tuong_id ?? null,
-      hinh_thuc_id: data.hinh_thuc_id ?? null,
-      don_vi_chu_tri_id: data.don_vi_chu_tri_id ?? null,
-      phong_ban_tham_muu_id: data.phong_ban_tham_muu_id ?? null,
-      don_vi_thuc_hien_id: data.don_vi_thuc_hien_id ?? null,
-      ten_doi_tuong: null,
-      ten_hinh_thuc: null,
-      ten_don_vi_chu_tri: null,
-      ten_phong_ban: null,
-      ten_don_vi_thuc_hien: null,
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-    };
-    mockRows = [row, ...mockRows];
-    return row;
-  }
-
   const inserted = await repo.insert(
     {
       ...formToPayload(data),
@@ -187,35 +142,6 @@ export async function updateThucHienPhanBien(
   id: string,
   data: ThucHienPhanBienFormValues,
 ): Promise<ThucHienPhanBien> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx < 0) throw new Error(txt('pbxhThucHien.service.notFound'));
-    const now = new Date().toISOString();
-    const updated: ThucHienPhanBien = {
-      ...mockRows[idx],
-      cap_thuc_hien: data.cap_thuc_hien,
-      loai_hinh: data.loai_hinh,
-      noi_dung: data.noi_dung,
-      doi_tuong_id: data.doi_tuong_id ?? null,
-      hinh_thuc_id: data.hinh_thuc_id ?? null,
-      ngay_bat_dau: data.ngay_bat_dau ?? null,
-      ngay_ket_thuc: data.ngay_ket_thuc ?? null,
-      mo_ta_thoi_gian: data.mo_ta_thoi_gian ?? null,
-      tinh_trang: data.tinh_trang,
-      don_vi_chu_tri_id: data.don_vi_chu_tri_id ?? null,
-      phong_ban_tham_muu_id: data.phong_ban_tham_muu_id ?? null,
-      don_vi_thuc_hien_id: data.don_vi_thuc_hien_id ?? null,
-      ket_qua_kien_nghi: data.ket_qua_kien_nghi ?? null,
-      so_lan_hoan_thanh: data.so_lan_hoan_thanh ?? 0,
-      so_lan_khao_sat: data.so_lan_khao_sat ?? 0,
-      phan_tram_hoan_thanh: computePhanTramHoanThanh(data.so_lan_hoan_thanh, data.so_lan_khao_sat),
-      link_ket_qua: data.link_ket_qua ?? null,
-      tg_cap_nhat: now,
-    };
-    mockRows[idx] = updated;
-    return updated;
-  }
-
   const updated = await repo.update(
     id,
     {
@@ -228,9 +154,5 @@ export async function updateThucHienPhanBien(
 }
 
 export async function deleteThucHienPhanBienMany(ids: string[]): Promise<void> {
-  if (!isSupabase()) {
-    mockRows = mockRows.filter((r) => !ids.includes(r.id));
-    return;
-  }
   await repo.remove(ids);
 }

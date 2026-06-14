@@ -4,12 +4,10 @@ const EMBED = [
   'chuong_trinh:chuong_trinh_nam!cong_viec_danh_sach_id_chuong_trinh_fkey(ten_chuong_trinh)',
 ].join(',');
 
-const BASE_COLS = [
+const LIST_COLS = [
   'id',
   'muc_do',
   'ten_cong_viec',
-  'ghi_chu',
-  'link_tai_lieu',
   'thoi_han',
   'tien_do',
   'id_trach_nhiem',
@@ -24,12 +22,18 @@ const BASE_COLS = [
   'tg_cap_nhat',
 ].join(',');
 
+const FULL_ONLY_COLS = ['ghi_chu', 'link_tai_lieu'].join(',');
+
 /** Danh sách con trong drawer chương trình — embed trách nhiệm, không embed chương trình / người tạo. */
 const EMBED_BY_CHUONG = [
   'trach_nhiem:var_nhan_vien!cong_viec_danh_sach_id_trach_nhiem_fkey(ho_va_ten,ten_tai_khoan)',
 ].join(',');
 
-export const CONG_VIEC_DANH_SACH_SELECT_FULL = `${BASE_COLS},${EMBED}`;
-export const CONG_VIEC_DANH_SACH_RETURNING_FULL = CONG_VIEC_DANH_SACH_SELECT_FULL;
+export const CONG_VIEC_DANH_SACH_SELECT_LIST = `${LIST_COLS},${EMBED}`;
+export const CONG_VIEC_DANH_SACH_SELECT_FULL = `${LIST_COLS},${FULL_ONLY_COLS},${EMBED}`;
+export const CONG_VIEC_DANH_SACH_RETURNING = 'id,tg_cap_nhat';
 
-export const CONG_VIEC_BY_CHUONG_TRINH_SELECT = `${BASE_COLS},${EMBED_BY_CHUONG}`;
+export const CONG_VIEC_BY_CHUONG_TRINH_SELECT = `${LIST_COLS},${EMBED_BY_CHUONG}`;
+
+/** @deprecated use CONG_VIEC_DANH_SACH_SELECT_FULL */
+export const CONG_VIEC_DANH_SACH_RETURNING_FULL = CONG_VIEC_DANH_SACH_SELECT_FULL;

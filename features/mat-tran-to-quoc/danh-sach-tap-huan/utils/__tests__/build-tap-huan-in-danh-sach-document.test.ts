@@ -22,6 +22,7 @@ function lop(partial: Partial<MttqLopTapHuan>): MttqLopTapHuan {
     cap_tap_huan: 'Cấp xã',
     don_vi_id: '10',
     ten_don_vi: 'Xã Test',
+    to_chuc_id: null,
     ghi_chu: null,
     id_nguoi_tao: 'nv1',
     tg_tao: '',

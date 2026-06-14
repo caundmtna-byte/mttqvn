@@ -1,4 +1,5 @@
 import type { PbxhThietLap } from '../core/types';
+import { getPbxhThietLapColumnDisplayValue } from './column-display';
 
 export function countPbxhColumnSearchActive(
   columnSearch: Record<string, string>,
@@ -20,7 +21,7 @@ export function pbxhMatchesColumnSearch(
   for (const [colId, term] of Object.entries(columnSearch)) {
     const t = term?.trim();
     if (!t) continue;
-    const val = String((item as unknown as Record<string, unknown>)[colId] ?? '').toLowerCase();
+    const val = getPbxhThietLapColumnDisplayValue(item, colId).toLowerCase();
     if (!val.includes(t.toLowerCase())) return false;
   }
   const mo = (item.mo_ta ?? '').trim();

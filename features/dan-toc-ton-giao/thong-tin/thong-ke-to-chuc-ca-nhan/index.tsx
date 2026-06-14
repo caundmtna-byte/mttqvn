@@ -85,6 +85,10 @@ import {
   formatDonViLabel,
 } from './utils/aggregate-dttg-thong-tin-stats';
 import { exportDttgThongTinReportToExcel } from './utils/export-dttg-thong-tin-report';
+import {
+  dttgRowVisibleByDonVi,
+  useDttgViewer,
+} from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 
 const ThongTinToChucQuanTrongDetail = lazy(
   () => import('../thong-tin-to-chuc-quan-trong/components/thong-tin-to-chuc-quan-trong-detail'),
@@ -176,10 +180,20 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
     enabled: canView,
   });
   const isLoading = loadingToChuc || loadingCaNhan;
+  const viewer = useDttgViewer('danTocThongKeToChucCaNhan');
+
+  const viewableToChucRows = useMemo(
+    () => toChucRows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_id])),
+    [toChucRows, viewer],
+  );
+  const viewableCaNhanRows = useMemo(
+    () => caNhanRows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_id])),
+    [caNhanRows, viewer],
+  );
 
   const allRows = useMemo(
-    () => combineAndNormalize(toChucRows, caNhanRows),
-    [toChucRows, caNhanRows],
+    () => combineAndNormalize(viewableToChucRows, viewableCaNhanRows),
+    [viewableToChucRows, viewableCaNhanRows],
   );
 
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
@@ -411,12 +425,16 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
   };
 
   const handleOpenDetail = (row: DttgThongTinThongKeRow) => {
+    if (!dttgRowVisibleByDonVi(viewer, [row.don_vi_id])) {
+      toast.error(txt('dttgThongKeToChucCaNhan.noViewRowPermission'));
+      return;
+    }
     if (row.loai === 'to_chuc') {
       if (!canOpenToChucDetail) {
         toast.error(txt('dttgThongKeToChucCaNhan.noDetailPermission'));
         return;
       }
-      const source = toChucRows.find((r) => r.id === row.source_id);
+      const source = viewableToChucRows.find((r) => r.id === row.source_id);
       if (source) setViewingToChuc(source);
       return;
     }
@@ -424,7 +442,7 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
       toast.error(txt('dttgThongKeToChucCaNhan.noDetailPermission'));
       return;
     }
-    const source = caNhanRows.find((r) => r.id === row.source_id);
+    const source = viewableCaNhanRows.find((r) => r.id === row.source_id);
     if (source) setViewingCaNhan(source);
   };
 

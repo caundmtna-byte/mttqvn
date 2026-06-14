@@ -1,4 +1,3 @@
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -16,7 +15,6 @@ import {
   DTTG_DIP_THAM_HOI_TABLE,
   DTTG_DIP_THAM_HOI_VIEW,
 } from '../core/supabase-select';
-import { DTTG_DIP_THAM_HOI_MOCK } from '../mock-data';
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
   if (v == null) return undefined;
@@ -92,13 +90,6 @@ export function flattenDipThamHoiRow(row: Record<string, unknown>): DipThamHoi {
   };
 }
 
-let mockRows = structuredClone(DTTG_DIP_THAM_HOI_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 function formToPayload(data: DipThamHoiFormValues): Record<string, unknown> {
   return {
     ten_dip: data.ten_dip,
@@ -117,50 +108,6 @@ function formToPayload(data: DipThamHoiFormValues): Record<string, unknown> {
     so_luong_ca_nhan_du_kien: data.so_luong_ca_nhan_du_kien,
     trang_thai: data.trang_thai,
     ghi_chu: data.ghi_chu ?? null,
-  };
-}
-
-async function resolveXaPhuongTenById(id: string | null | undefined): Promise<string | null> {
-  if (id == null || id === '') return null;
-  const all = await getXaPhuongAll();
-  return all.find((x) => x.id === id)?.ten ?? null;
-}
-
-async function mockRowFromForm(
-  data: DipThamHoiFormValues,
-  base: Partial<DipThamHoi> = {},
-): Promise<DipThamHoi> {
-  const tenDonVi = await resolveXaPhuongTenById(data.don_vi_to_chuc_id);
-  const pbList = await getDepartments();
-  const pb = data.phong_ban_tham_muu_id
-    ? pbList.find((p) => p.id === data.phong_ban_tham_muu_id)
-    : undefined;
-  const soToChuc = data.so_luong_to_chuc_du_kien;
-  const soCaNhan = data.so_luong_ca_nhan_du_kien;
-  return {
-    id: base.id ?? mockNextId(),
-    ten_dip: data.ten_dip,
-    mo_ta: data.mo_ta ?? null,
-    thoi_gian_du_kien: data.thoi_gian_du_kien ?? null,
-    thoi_gian_thuc_te: data.thoi_gian_thuc_te ?? null,
-    don_vi_to_chuc_id: data.don_vi_to_chuc_id ?? null,
-    ten_don_vi_to_chuc: tenDonVi,
-    phong_ban_tham_muu_id: data.phong_ban_tham_muu_id ?? null,
-    ten_phong_ban: pb?.ten_phong_ban ?? base.ten_phong_ban ?? null,
-    so_luong_to_chuc_du_kien: soToChuc,
-    so_luong_ca_nhan_du_kien: soCaNhan,
-    so_luong_du_kien_tong: soToChuc + soCaNhan,
-    so_thuc_hien_to_chuc: base.so_thuc_hien_to_chuc ?? 0,
-    so_thuc_hien_ca_nhan: base.so_thuc_hien_ca_nhan ?? 0,
-    so_hoan_thanh_to_chuc: base.so_hoan_thanh_to_chuc ?? 0,
-    so_hoan_thanh_ca_nhan: base.so_hoan_thanh_ca_nhan ?? 0,
-    so_luong_thuc_te_tong: base.so_luong_thuc_te_tong ?? 0,
-    trang_thai: data.trang_thai,
-    ghi_chu: data.ghi_chu ?? null,
-    id_nguoi_tao: base.id_nguoi_tao ?? '',
-    tg_tao: base.tg_tao ?? new Date().toISOString(),
-    tg_cap_nhat: base.tg_cap_nhat ?? new Date().toISOString(),
-    ho_va_ten_nguoi_tao: base.ho_va_ten_nguoi_tao ?? 'Mock',
   };
 }
 
@@ -290,9 +237,6 @@ async function fetchViewRowById(id: string): Promise<DipThamHoi | null> {
 }
 
 export async function getDipThamHoiList(): Promise<DipThamHoi[]> {
-  if (!isSupabase()) {
-    return [...mockRows].sort((a, b) => b.tg_cap_nhat.localeCompare(a.tg_cap_nhat));
-  }
   return fetchDipRowsResilient();
 }
 
@@ -308,15 +252,19 @@ export async function getDipThamHoiOptions(): Promise<DipThamHoiOption[]> {
 }
 
 export async function getDipThamHoiById(id: string): Promise<DipThamHoi | null> {
-  if (!isSupabase()) {
-    return mockRows.find((r) => r.id === id) ?? null;
-  }
   return fetchViewRowById(id);
 }
 
 export async function getDipTenById(id: string): Promise<string | null> {
-  const row = await getDipThamHoiById(id);
-  return row?.ten_dip ?? null;
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from(DTTG_DIP_THAM_HOI_TABLE)
+    .select('ten_dip')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) handleSupabaseError(error);
+  return data?.ten_dip != null ? String(data.ten_dip) : null;
 }
 
 export async function createDipThamHoi(
@@ -324,11 +272,6 @@ export async function createDipThamHoi(
   idNguoiTao: string,
 ): Promise<DipThamHoi> {
   const parsed = dipThamHoiSchema.parse(data);
-  if (!isSupabase()) {
-    const created = await mockRowFromForm(parsed, { id_nguoi_tao: idNguoiTao });
-    mockRows = [created, ...mockRows];
-    return created;
-  }
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('danTocDipThamHoi.service.notFound'));
   const payload = { ...formToPayload(parsed), id_nguoi_tao: Number(idNguoiTao) };
@@ -345,13 +288,6 @@ export async function createDipThamHoi(
 
 export async function updateDipThamHoi(id: string, data: DipThamHoiFormValues): Promise<DipThamHoi> {
   const parsed = dipThamHoiSchema.parse(data);
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx < 0) throw new Error(txt('danTocDipThamHoi.service.notFound'));
-    const updated = await mockRowFromForm(parsed, { ...mockRows[idx], id });
-    mockRows[idx] = updated;
-    return updated;
-  }
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('danTocDipThamHoi.service.notFound'));
   const { error } = await supabase.from(DTTG_DIP_THAM_HOI_TABLE).update(formToPayload(parsed)).eq('id', id);
@@ -365,12 +301,6 @@ export async function updateDipThamHoiTrangThai(
   id: string,
   trangThai: TrangThaiDipThamHoi,
 ): Promise<DipThamHoi> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx < 0) throw new Error(txt('danTocDipThamHoi.service.notFound'));
-    mockRows[idx] = { ...mockRows[idx], trang_thai: trangThai, tg_cap_nhat: new Date().toISOString() };
-    return mockRows[idx];
-  }
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('danTocDipThamHoi.service.notFound'));
   const { error } = await supabase.from(DTTG_DIP_THAM_HOI_TABLE).update({ trang_thai: trangThai }).eq('id', id);
@@ -382,10 +312,6 @@ export async function updateDipThamHoiTrangThai(
 
 export async function deleteDipThamHoiMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    mockRows = mockRows.filter((r) => !ids.includes(r.id));
-    return;
-  }
   const supabase = getSupabase();
   if (!supabase) return;
   const { error } = await supabase.from(DTTG_DIP_THAM_HOI_TABLE).delete().in('id', ids.map(Number));

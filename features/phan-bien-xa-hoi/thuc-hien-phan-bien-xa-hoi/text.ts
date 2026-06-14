@@ -8,6 +8,10 @@ export const pbxhThucHien = {
   bulkDeleteTitle: 'Xóa nhiều bản ghi',
   bulkDeleteMessage: 'Bạn có chắc muốn xóa {{count}} bản ghi đã chọn? Hành động không hoàn tác.',
   detailTitle: 'Chi tiết phản biện xã hội',
+  detail: {
+    openLink: 'Mở link',
+    systemInfo: 'Thông tin hệ thống',
+  },
   tienDo: {
     conNgay: 'Còn {{count}} ngày',
     hetHanHomNay: 'Hết hạn hôm nay',

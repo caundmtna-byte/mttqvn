@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useUIStore } from '../store/useStore';
-import { isSupabase } from './data/config';
+import { isSupabaseConfigured } from './data/config';
 import { queryKeys } from './query-keys';
 import { masterDataQueryOptions } from './supabase/query-config';
 import { getThongTinToChuc } from '../features/he-thong/thong-tin-to-chuc/services/thong-tin-to-chuc-service';
@@ -88,7 +88,7 @@ export const ThongTinToChucSynchronizer: React.FC = () => {
   const { data } = useQuery({
     queryKey: queryKeys.thongTinToChuc.singleton,
     queryFn: getThongTinToChuc,
-    enabled: isSupabase(),
+    enabled: isSupabaseConfigured(),
     ...masterDataQueryOptions,
   });
   useEffect(() => {

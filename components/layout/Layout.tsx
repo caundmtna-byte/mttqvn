@@ -11,6 +11,7 @@ import {
   Eye, EyeOff, Lock
 } from 'lucide-react';
 import { NotificationBell } from '../notification';
+import { NOTIFICATIONS_SURFACE_ENABLED } from '@/lib/feature-flags';
 import { useAuthStore, useUIStore } from '../../store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
@@ -341,7 +342,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
           {/* Right: Notification + User */}
           <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-            <NotificationBell />
+            {NOTIFICATIONS_SURFACE_ENABLED ? <NotificationBell /> : null}
 
             {/* User Profile Dropdown */}
             <div className="relative" ref={userMenuRef}>

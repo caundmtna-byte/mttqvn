@@ -41,6 +41,8 @@ const mttqTapHuanObject = z.object({
   }),
   /** FK xã/phường — bắt buộc khi `cap_tap_huan` = Cấp xã; để rỗng khi Cấp tỉnh. */
   don_vi_id: z.string(),
+  /** FK `mttq_thiet_lap` loại to_chuc — bắt buộc. */
+  to_chuc_id: z.string().trim().min(1, txt('matTranTapHuan.validation.toChucRequired')),
   ghi_chu: optionalText,
   chi_tiet: z
     .array(mttqTapHuanChiTietLineSchema)

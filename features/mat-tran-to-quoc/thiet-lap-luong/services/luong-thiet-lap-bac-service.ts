@@ -1,4 +1,3 @@
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -16,35 +15,6 @@ function flattenBac(row: Record<string, unknown>): LuongThietLapBacRow {
     tg_tao: String(row.tg_tao ?? ''),
     tg_cap_nhat: String(row.tg_cap_nhat ?? ''),
   };
-}
-
-const mockBacByNgach: Record<string, LuongThietLapBacRow[]> = {};
-
-/** Xóa cache mock bậc khi xóa ngạch (tránh circular import từ ngach-service). */
-export function deleteLuongThietLapNgachMockBac(ngachId: string): void {
-  delete mockBacByNgach[ngachId];
-}
-
-/** Lần đầu tải mock: seed đủ B1–B9. Nếu đã có key (kể cả mảng rỗng sau CRUD) thì không ghi đè. */
-function seedMockBacIfUnset(ngachId: string): LuongThietLapBacRow[] {
-  if (Object.prototype.hasOwnProperty.call(mockBacByNgach, ngachId)) {
-    return mockBacByNgach[ngachId];
-  }
-  const now = new Date().toISOString();
-  const rows: LuongThietLapBacRow[] = [];
-  for (let i = 1; i <= 9; i += 1) {
-    rows.push({
-      id: `${ngachId}-b${i}`,
-      ngach_id: ngachId,
-      ma_bac: `B${i}`,
-      he_so: '1.0000',
-      thu_tu: i,
-      tg_tao: now,
-      tg_cap_nhat: now,
-    });
-  }
-  mockBacByNgach[ngachId] = rows;
-  return rows;
 }
 
 /** Các mã B1–B9 chưa có trong danh sách ngạch hiện tại (để thêm bậc). */
@@ -65,9 +35,6 @@ function sortBacRows(rows: LuongThietLapBacRow[]): LuongThietLapBacRow[] {
 
 export async function getLuongThietLapBacByNgach(ngachId: string): Promise<LuongThietLapBacRow[]> {
   if (!ngachId.trim()) return [];
-  if (!isSupabase()) {
-    return [...seedMockBacIfUnset(ngachId)].sort((a, b) => a.thu_tu - b.thu_tu);
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -79,12 +46,7 @@ export async function getLuongThietLapBacByNgach(ngachId: string): Promise<Luong
   return (data ?? []).map((r) => flattenBac(r as unknown as Record<string, unknown>));
 }
 
-/** Toàn bộ bậc (mock: seed theo danh sách ngạch đã biết). */
-export async function getLuongThietLapBacAll(ngachIds: string[] = []): Promise<LuongThietLapBacRow[]> {
-  if (!isSupabase()) {
-    const ids = ngachIds.length > 0 ? ngachIds : Object.keys(mockBacByNgach);
-    return sortBacRows(ids.flatMap((id) => seedMockBacIfUnset(id)));
-  }
+export async function getLuongThietLapBacAll(_ngachIds: string[] = []): Promise<LuongThietLapBacRow[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -112,28 +74,6 @@ export async function createLuongThietLapBac(input: CreateLuongThietLapBacInput)
   if (!LUONG_THIET_LAP_BAC_MA_CODES.includes(input.ma_bac)) {
     throw new Error(txt('matTranThietLapLuong.validation.bacMaInvalid'));
   }
-  if (!isSupabase()) {
-    if (!Object.prototype.hasOwnProperty.call(mockBacByNgach, ngachId)) {
-      mockBacByNgach[ngachId] = [];
-    }
-    const rows = mockBacByNgach[ngachId];
-    if (rows.some((r) => r.ma_bac === input.ma_bac)) {
-      throw new Error(txt('matTranThietLapLuong.validation.bacMaDuplicate'));
-    }
-    const now = new Date().toISOString();
-    const row: LuongThietLapBacRow = {
-      id: `mock-bac-${ngachId}-${input.ma_bac}-${Date.now()}`,
-      ngach_id: ngachId,
-      ma_bac: input.ma_bac,
-      he_so: String(input.he_so),
-      thu_tu: input.thu_tu,
-      tg_tao: now,
-      tg_cap_nhat: now,
-    };
-    rows.push(row);
-    mockBacByNgach[ngachId] = [...rows].sort((a, b) => a.thu_tu - b.thu_tu);
-    return row;
-  }
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('matTranThietLapLuong.service.notFound'));
   const { data, error } = await supabase
@@ -159,23 +99,6 @@ export async function updateLuongThietLapBac(id: string, patch: UpdateLuongThiet
   if (!Number.isFinite(patch.he_so) || patch.he_so <= 0) {
     throw new Error(txt('matTranThietLapLuong.validation.heSoInvalid'));
   }
-  if (!isSupabase()) {
-    for (const rows of Object.values(mockBacByNgach)) {
-      const idx = rows.findIndex((r) => r.id === id);
-      if (idx !== -1) {
-        const now = new Date().toISOString();
-        const u = {
-          ...rows[idx],
-          he_so: String(patch.he_so),
-          thu_tu: patch.thu_tu,
-          tg_cap_nhat: now,
-        };
-        rows[idx] = u;
-        return u;
-      }
-    }
-    throw new Error(txt('matTranThietLapLuong.service.notFound'));
-  }
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('matTranThietLapLuong.service.notFound'));
   const { data, error } = await supabase
@@ -189,16 +112,6 @@ export async function updateLuongThietLapBac(id: string, patch: UpdateLuongThiet
 }
 
 export async function deleteLuongThietLapBac(id: string): Promise<void> {
-  if (!isSupabase()) {
-    for (const [ngachId, rows] of Object.entries(mockBacByNgach)) {
-      const next = rows.filter((r) => r.id !== id);
-      if (next.length !== rows.length) {
-        mockBacByNgach[ngachId] = next;
-        return;
-      }
-    }
-    throw new Error(txt('matTranThietLapLuong.service.notFound'));
-  }
   const supabase = getSupabase();
   if (!supabase) throw new Error(txt('matTranThietLapLuong.service.notFound'));
   const { error } = await supabase.from('luong_thiet_lap_bac_luong').delete().eq('id', id);

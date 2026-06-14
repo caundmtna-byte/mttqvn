@@ -6,7 +6,11 @@ import type { ColumnConfig, GenericState } from '@/store/createGenericStore';
 import type { PbxhThietLap, PbxhThietLapFilters } from '../core/types';
 import { PbxhThietLapRowActions } from './pbxh-thiet-lap-row-actions';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
-import { formatDateShort } from '@/lib/utils';
+import {
+  formatPbxhThietLapDateTimeDisplay,
+  formatPbxhThietLapThuTuDisplay,
+  trimmedPbxhThietLapDisplay,
+} from '../utils/display-format';
 
 interface Props {
   store: GenericState<PbxhThietLapFilters>;
@@ -79,26 +83,47 @@ const PbxhThietLapTable = memo(function PbxhThietLapTable({
 
   const renderCell = useCallback(
     (colId: string, item: PbxhThietLap) => {
+      const empty = txt('common.emptyCell');
       switch (colId) {
         case 'thu_tu':
-          return <span className="text-sm font-medium text-muted-foreground tabular-nums">{item.thu_tu}</span>;
+          return (
+            <span className="text-sm font-medium text-muted-foreground tabular-nums">
+              {formatPbxhThietLapThuTuDisplay(item.thu_tu)}
+            </span>
+          );
         case 'ten':
           return (
             <div className="flex min-w-0 items-center gap-2">
               <Settings2 size={14} className="shrink-0 text-primary/70" aria-hidden />
-              <span className="truncate font-semibold text-foreground text-sm">{item.ten}</span>
+              <span className="truncate font-semibold text-foreground text-sm tracking-tight" title={item.ten}>
+                {item.ten}
+              </span>
             </div>
           );
-        case 'mo_ta':
+        case 'mo_ta': {
+          const label = trimmedPbxhThietLapDisplay(item.mo_ta);
           return (
-            <div className="truncate max-w-[200px] text-body-sm text-muted-foreground" title={item.mo_ta ?? ''}>
-              {item.mo_ta ?? <span className="text-muted-foreground">—</span>}
+            <div className="truncate max-w-[200px] text-body-sm text-muted-foreground" title={label ?? undefined}>
+              {label ?? empty}
             </div>
           );
-        case 'tg_tao':
-          return <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDateShort(item.tg_tao)}</span>;
-        case 'tg_cap_nhat':
-          return <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDateShort(item.tg_cap_nhat)}</span>;
+        }
+        case 'tg_tao': {
+          const label = formatPbxhThietLapDateTimeDisplay(item.tg_tao);
+          return (
+            <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+              {label || empty}
+            </span>
+          );
+        }
+        case 'tg_cap_nhat': {
+          const label = formatPbxhThietLapDateTimeDisplay(item.tg_cap_nhat);
+          return (
+            <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+              {label || empty}
+            </span>
+          );
+        }
         case 'actions':
           return (
             <PbxhThietLapRowActions
@@ -158,10 +183,12 @@ const PbxhThietLapTable = memo(function PbxhThietLapTable({
                 className="w-5 h-5 rounded border-border text-primary accent-primary shrink-0"
               />
             </div>
-            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.mo_ta ?? '—'}</p>
+            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+              {trimmedPbxhThietLapDisplay(item.mo_ta) ?? txt('common.emptyCell')}
+            </p>
             <div className="flex items-center justify-between pt-2 border-t border-border">
               <span className="text-xs text-muted-foreground tabular-nums">
-                {txt('page.articleSettings.colThuTu')}: {item.thu_tu}
+                {txt('page.articleSettings.colThuTu')}: {formatPbxhThietLapThuTuDisplay(item.thu_tu)}
               </span>
               <PbxhThietLapRowActions
                 compact

@@ -81,8 +81,12 @@ export const useUpdateMttqUyVienUyBan = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: MttqUyVienUyBanFormValues }) =>
       updateMttqUyVienUyBan(id, data),
     onSuccess: (updated, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: statsListKey });
+      queryClient.setQueryData<MttqUyVienUyBan[]>(listKey, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
+      queryClient.setQueryData<MttqUyVienUyBan[]>(statsListKey, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
       queryClient.setQueryData<MttqUyVienUyBan | null>(queryKeys.mttqUyVienUyBan.detail(id), updated);
       toast.success(txt('matTranUyVienUyBan.toast.update'));
       onSuccess?.();

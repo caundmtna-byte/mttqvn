@@ -83,7 +83,7 @@ const KhoNhapXuatKhoDetailDrawer = lazy(
 const CUSTOM_PRESET = 'custom';
 
 const initialDateRange: DateRangeValue = {
-  preset: 'thisMonth',
+  preset: 'all',
   customStart: '',
   customEnd: '',
 };
@@ -330,7 +330,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
   );
 
   const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, initialDateRange.preset as 'thisMonth'),
+    () => isStandardDateRangeNonDefault(dateRange, initialDateRange.preset as 'all'),
     [dateRange],
   );
 
@@ -503,6 +503,9 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
           ten_dot_cuu_tro: listRow.ten_dot_cuu_tro,
           so_dong: 0,
           ghi_chu: null,
+          nguoi_giao_nhan: null,
+          bo_phan: null,
+          chung_tu_goc: null,
           chi_tiet: [],
           tg_tao: '',
           tg_cap_nhat: '',

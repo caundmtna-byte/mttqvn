@@ -43,6 +43,11 @@ import {
   thongTinCaNhanTieuBieuMatchesColumnSearch,
 } from './utils/column-search';
 import { sortThongTinCaNhanTieuBieuList } from './utils/sort';
+import {
+  canMutateDttgRowByDonVi,
+  dttgRowVisibleByDonVi,
+  useDttgViewer,
+} from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 import ThongTinCaNhanTieuBieuToolbar from './components/thong-tin-ca-nhan-tieu-bieu-toolbar';
 import ThongTinCaNhanTieuBieuTable from './components/thong-tin-ca-nhan-tieu-bieu-table';
 
@@ -122,6 +127,12 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   const deleteMutation = useDeleteThongTinCaNhanTieuBieuMany();
   const statusMutation = useUpdateThongTinCaNhanTieuBieuStatus();
   const importMutation = useImportThongTinCaNhanTieuBieu(() => setShowImport(false));
+  const viewer = useDttgViewer('danTocCaNhanTieuBieu');
+
+  const viewableRows = useMemo(
+    () => rows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_id])),
+    [rows, viewer],
+  );
 
   useEffect(() => {
     return () => resetState();
@@ -143,7 +154,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
     return matchesSearch;
   }, []);
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
   const sorted = useMemo(() => sortThongTinCaNhanTieuBieuList(filtered, sort), [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
@@ -224,29 +235,33 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
 
   const emptyTitleResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('common.noResults')
         : txt('danTocCaNhanTieuBieu.emptyTitle'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   const emptyDescriptionResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('danTocCaNhanTieuBieu.emptyFilteredHint')
         : txt('danTocCaNhanTieuBieu.emptyHint'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   useEffect(() => {
     if (!viewingId) return;
-    const fresh = rows.find((r) => r.id === viewingId);
+    const fresh = viewableRows.find((r) => r.id === viewingId);
     if (!fresh) {
+      const row = rows.find((r) => r.id === viewingId);
+      if (row && !dttgRowVisibleByDonVi(viewer, [row.don_vi_id])) {
+        toast.error(txt('danTocCaNhanTieuBieu.noViewRowPermission'));
+      }
       setViewingId(null);
       return;
     }
     queryClient.setQueryData(queryKeys.danTocCaNhanTieuBieu.detail(viewingId), fresh);
-  }, [rows, viewingId, queryClient]);
+  }, [rows, viewableRows, viewingId, queryClient, viewer]);
 
   const handleView = useCallback(
     (item: ThongTinCaNhanTieuBieu) => {
@@ -257,6 +272,10 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   );
 
   const handleEditFromList = (item: ThongTinCaNhanTieuBieu) => {
+    if (!canMutateDttgRowByDonVi(viewer, [item.don_vi_id])) {
+      toast.error(txt('danTocCaNhanTieuBieu.noEditOtherDonVi'));
+      return;
+    }
     startTransition(() => {
       setEditing(item);
       setShowForm(true);
@@ -264,6 +283,10 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   };
 
   const handleEditFromDetail = (d: ThongTinCaNhanTieuBieu) => {
+    if (!canMutateDttgRowByDonVi(viewer, [d.don_vi_id])) {
+      toast.error(txt('danTocCaNhanTieuBieu.noEditOtherDonVi'));
+      return;
+    }
     startTransition(() => {
       setEditing(d);
       setShowForm(true);
@@ -271,6 +294,11 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
+    const row = rows.find((r) => r.id === id);
+    if (!canMutateDttgRowByDonVi(viewer, [row?.don_vi_id])) {
+      toast.error(txt('danTocCaNhanTieuBieu.noDeleteOtherDonVi'));
+      return;
+    }
     confirm({
       title: txt('danTocCaNhanTieuBieu.deleteTitle'),
       message: txt('danTocCaNhanTieuBieu.deleteMessage'),
@@ -287,16 +315,27 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   };
 
   const handleDeleteMany = (ids: string[]) => {
+    const allowedIds = ids.filter((id) => {
+      const row = rows.find((r) => r.id === id);
+      return row && canMutateDttgRowByDonVi(viewer, [row.don_vi_id]);
+    });
+    if (allowedIds.length === 0) {
+      toast.error(txt('danTocCaNhanTieuBieu.noDeleteOtherDonVi'));
+      return;
+    }
+    if (allowedIds.length < ids.length) {
+      toast.error(txt('danTocCaNhanTieuBieu.noDeleteOtherDonVi'));
+    }
     confirm({
       title: txt('danTocCaNhanTieuBieu.bulkDeleteTitle'),
-      message: txt('danTocCaNhanTieuBieu.bulkDeleteMessage', { count: ids.length }),
+      message: txt('danTocCaNhanTieuBieu.bulkDeleteMessage', { count: allowedIds.length }),
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        deleteMutation.mutate(allowedIds, {
           onSuccess: () => {
             clearSelection();
-            if (viewingId && ids.includes(viewingId)) setViewingId(null);
+            if (viewingId && allowedIds.includes(viewingId)) setViewingId(null);
           },
         });
       },
@@ -367,7 +406,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
           onExport={handleExport}
           onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
-          items={rows}
+          items={viewableRows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">

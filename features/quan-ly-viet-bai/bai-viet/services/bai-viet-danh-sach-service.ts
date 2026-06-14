@@ -1,19 +1,18 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { BaiVietDanhSach } from '../core/types';
 import type { BaiVietDanhSachFormValues } from '../core/schema';
 import {
-  BAI_VIET_DANH_SACH_RETURNING_FULL,
+  BAI_VIET_DANH_SACH_RETURNING,
   BAI_VIET_DANH_SACH_SELECT_FULL,
+  BAI_VIET_DANH_SACH_SELECT_LIST,
 } from '../core/supabase-select';
 
 const repo = createRepository<BaiVietDanhSach>({
   tableName: 'bai_viet_danh_sach',
-  select: BAI_VIET_DANH_SACH_SELECT_FULL,
-  delay: 400,
+  select: BAI_VIET_DANH_SACH_SELECT_LIST,
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -115,9 +114,12 @@ export async function createBaiVietDanhSach(
   };
 
   const inserted = await repo.insert(payload as Omit<BaiVietDanhSach, 'id'>, {
-    returningSelect: BAI_VIET_DANH_SACH_RETURNING_FULL,
+    returningSelect: BAI_VIET_DANH_SACH_RETURNING,
   });
-  return normalize(flattenBaiVietDanhSachRow(inserted as unknown as Record<string, unknown>));
+  const newId = String((inserted as { id: string }).id);
+  const full = await getBaiVietDanhSachById(newId);
+  if (!full) throw new Error(txt('articleList.service.notFound'));
+  return full;
 }
 
 export async function updateBaiVietDanhSach(
@@ -126,7 +128,7 @@ export async function updateBaiVietDanhSach(
 ): Promise<BaiVietDanhSach> {
   // Bỏ tiền-fetch `getById`: nếu id không tồn tại, `repo.update` throw lỗi PostgREST
   // (PGRST116) và toast hiển thị; tiết kiệm 1 round-trip + payload đầy đủ.
-  const updated = await repo.update(
+  await repo.update(
     id,
     {
       ten_bai: data.ten_bai.trim(),
@@ -137,9 +139,11 @@ export async function updateBaiVietDanhSach(
       id_trang_dang: data.id_trang_dang,
       link: data.link.trim(),
     } as Partial<BaiVietDanhSach>,
-    { returningSelect: BAI_VIET_DANH_SACH_RETURNING_FULL },
+    { returningSelect: BAI_VIET_DANH_SACH_RETURNING },
   );
-  return normalize(flattenBaiVietDanhSachRow(updated as unknown as Record<string, unknown>));
+  const full = await getBaiVietDanhSachById(id);
+  if (!full) throw new Error(txt('articleList.service.notFound'));
+  return full;
 }
 
 export async function deleteBaiVietDanhSachMany(ids: string[]): Promise<void> {
@@ -185,57 +189,6 @@ function toRpcBigint(id: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function filterBaiVietMockForPage(
-  all: BaiVietDanhSach[],
-  opts: {
-    search: string | null;
-    scope: BaiVietRpcScope;
-    viewerNhanVienId: string | null;
-    viewerDonViId: string | null;
-    theLoaiIds: readonly string[];
-    nguonDangIds: readonly string[];
-    trangDangIds: readonly string[];
-    nguoiTaoIds: readonly string[];
-  },
-): BaiVietDanhSach[] {
-  let list = [...all];
-  if (opts.search) {
-    const t = opts.search.toLowerCase();
-    list = list.filter(
-      (b) =>
-        b.ten_bai.toLowerCase().includes(t) ||
-        String(b.link ?? '')
-          .toLowerCase()
-          .includes(t),
-    );
-  }
-  if (opts.scope === 'mine') {
-    const id = String(opts.viewerNhanVienId ?? '').trim();
-    list = id ? list.filter((b) => String(b.id_nguoi_tao) === id) : [];
-  } else if (opts.scope === 'all_don_vi') {
-    const dv = String(opts.viewerDonViId ?? '').trim();
-    list = dv ? list.filter((b) => String(b.id_don_vi_nguoi_tao ?? '').trim() === dv) : [];
-  }
-  if (opts.theLoaiIds.length) {
-    const set = new Set(opts.theLoaiIds.map(String));
-    list = list.filter((b) => set.has(String(b.id_the_loai)));
-  }
-  if (opts.nguonDangIds.length) {
-    const set = new Set(opts.nguonDangIds.map(String));
-    list = list.filter((b) => set.has(String(b.id_nguon_dang)));
-  }
-  if (opts.trangDangIds.length) {
-    const set = new Set(opts.trangDangIds.map(String));
-    list = list.filter((b) => set.has(String(b.id_trang_dang)));
-  }
-  if (opts.nguoiTaoIds.length) {
-    const set = new Set(opts.nguoiTaoIds.map(String));
-    list = list.filter((b) => set.has(String(b.id_nguoi_tao)));
-  }
-  list.sort((a, b) => b.ngay_dang.localeCompare(a.ngay_dang) || a.ten_bai.localeCompare(b.ten_bai));
-  return list;
-}
-
 async function enrichBaiVietRowsByIds(ids: string[]): Promise<Map<string, BaiVietDanhSach>> {
   const map = new Map<string, BaiVietDanhSach>();
   if (ids.length === 0) return map;
@@ -274,25 +227,6 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
     .map((x) => Number(String(x).trim()))
     .filter((n) => Number.isFinite(n));
 
-  if (!isSupabase()) {
-    const all = await getBaiVietDanhSachList();
-    const filtered = filterBaiVietMockForPage(all, {
-      search: pSearch,
-      scope: q.scope,
-      viewerNhanVienId: q.viewerNhanVienId,
-      viewerDonViId: q.viewerDonViId,
-      theLoaiIds: q.theLoaiIds,
-      nguonDangIds: q.nguonDangIds,
-      trangDangIds: q.trangDangIds,
-      nguoiTaoIds: q.nguoiTaoIds,
-    });
-    const slice = filtered.slice(offset, offset + fetchLimit);
-    const hasNextPage = slice.length > pageSize;
-    const rows = slice.slice(0, pageSize);
-    const totalRecords = hasNextPage ? null : offset + rows.length;
-    return { rows, hasNextPage, totalRecords };
-  }
-
   const supabase = getSupabase();
   if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
 
@@ -323,26 +257,6 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
 export async function getBaiVietNguoiTaoFilterOptions(
   q: BaiVietNguoiTaoFilterOptionsQuery,
 ): Promise<BaiVietNguoiTaoFilterOption[]> {
-  if (!isSupabase()) {
-    const all = await getBaiVietDanhSachList();
-    const filtered =
-      q.scope === 'all_don_vi' && q.viewerDonViId
-        ? all.filter((b) => String(b.id_don_vi_nguoi_tao ?? '').trim() === String(q.viewerDonViId).trim())
-        : all;
-    const map = new Map<string, { label: string; count: number }>();
-    for (const row of filtered) {
-      const id = String(row.id_nguoi_tao);
-      const label =
-        row.ho_va_ten_nguoi_tao?.trim() || row.ten_tai_khoan_nguoi_tao?.trim() || id;
-      const prev = map.get(id);
-      if (prev) prev.count += 1;
-      else map.set(id, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([id, v]) => ({ id, label: v.label, count: v.count }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }
-
   const supabase = getSupabase();
   if (!supabase) return [];
 

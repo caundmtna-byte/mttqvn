@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, ListChecks } from 'lucide-react';
+import { Plus, Download, ListChecks, Building2, Users } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import { getLanguage } from '@/lib/utils';
@@ -10,8 +10,12 @@ import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { useDipThamHoiStore } from '../store/useDipThamHoiStore';
 import { countDipThamHoiColumnSearchActive } from '../utils/column-search';
-import { TRANG_THAI_VALUES } from '../core/constants';
+import { TRANG_THAI_VALUES, DON_VI_TINH_VALUE, DON_VI_TINH_LABEL } from '../core/constants';
 import type { DipThamHoi } from '../core/types';
+import {
+  buildDonViToChucFilterOptions,
+  buildPhongBanFilterOptions,
+} from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
 
 interface Props {
   onPageBack: () => void;
@@ -56,11 +60,30 @@ const DipThamHoiToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDel
       .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
   }, [itemRows]);
 
+  const donViOptions = useMemo(
+    () =>
+      buildDonViToChucFilterOptions(
+        itemRows,
+        'don_vi_to_chuc_id',
+        'ten_don_vi_to_chuc',
+        DON_VI_TINH_VALUE,
+        DON_VI_TINH_LABEL,
+      ),
+    [itemRows],
+  );
+
+  const phongBanOptions = useMemo(
+    () => buildPhongBanFilterOptions(itemRows, 'phong_ban_tham_muu_id', 'ten_phong_ban'),
+    [itemRows],
+  );
+
   const activeFilterCount = useMemo(
     () =>
       (searchTerm ? 1 : 0) +
       countDipThamHoiColumnSearchActive(filters.columnSearch ?? {}) +
-      (filters.trang_thai_filter.length > 0 ? 1 : 0),
+      (filters.trang_thai_filter.length > 0 ? 1 : 0) +
+      (filters.don_vi_to_chuc_filter.length > 0 ? 1 : 0) +
+      (filters.phong_ban_filter.length > 0 ? 1 : 0),
     [searchTerm, filters],
   );
 
@@ -68,6 +91,8 @@ const DipThamHoiToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDel
     setSearchTerm('');
     useDipThamHoiStore.getState().setFilter('columnSearch', {});
     setFilter('trang_thai_filter', []);
+    setFilter('don_vi_to_chuc_filter', []);
+    setFilter('phong_ban_filter', []);
     setSort(null, null);
   };
 
@@ -82,9 +107,25 @@ const DipThamHoiToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDel
           icon={ListChecks}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,26vw)] sm:max-w-[240px]"
         />
+        <FilterChipMultiSelect
+          options={donViOptions}
+          value={filters.don_vi_to_chuc_filter}
+          onChange={(val) => setFilter('don_vi_to_chuc_filter', val)}
+          placeholder={txt('danTocDipThamHoi.store.donViCol')}
+          icon={Building2}
+          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
+        />
+        <FilterChipMultiSelect
+          options={phongBanOptions}
+          value={filters.phong_ban_filter}
+          onChange={(val) => setFilter('phong_ban_filter', val)}
+          placeholder={txt('danTocDipThamHoi.store.phongBanCol')}
+          icon={Users}
+          className="shrink-0 w-full min-w-0 sm:w-[min(240px,30vw)] sm:max-w-[300px]"
+        />
       </div>
     ),
-    [trangThaiOptions, filters.trang_thai_filter, setFilter],
+    [trangThaiOptions, donViOptions, phongBanOptions, filters, setFilter],
   );
 
   const filterGroups = useMemo(
@@ -97,8 +138,24 @@ const DipThamHoiToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDel
         value: filters.trang_thai_filter,
         onChange: (val: string[]) => setFilter('trang_thai_filter', val),
       },
+      {
+        key: 'don_vi_to_chuc_filter',
+        label: txt('danTocDipThamHoi.store.donViCol'),
+        icon: Building2,
+        options: donViOptions,
+        value: filters.don_vi_to_chuc_filter,
+        onChange: (val: string[]) => setFilter('don_vi_to_chuc_filter', val),
+      },
+      {
+        key: 'phong_ban_filter',
+        label: txt('danTocDipThamHoi.store.phongBanCol'),
+        icon: Users,
+        options: phongBanOptions,
+        value: filters.phong_ban_filter,
+        onChange: (val: string[]) => setFilter('phong_ban_filter', val),
+      },
     ],
-    [trangThaiOptions, filters.trang_thai_filter, setFilter],
+    [trangThaiOptions, donViOptions, phongBanOptions, filters, setFilter],
   );
 
   const mobileActions = useMemo<ActionItem[]>(

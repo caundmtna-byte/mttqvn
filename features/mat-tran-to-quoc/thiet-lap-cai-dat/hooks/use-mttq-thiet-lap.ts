@@ -11,6 +11,7 @@ import {
   deleteMttqThietLap,
 } from '../services/mttq-thiet-lap-service';
 import type { MttqThietLapFormValues } from '../core/schema';
+import type { MttqThietLap } from '../core/types';
 
 const qk = queryKeys.mttqThietLap.all;
 
@@ -39,8 +40,11 @@ export const useUpdateMttqThietLap = (onSuccess?: () => void) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: MttqThietLapFormValues }) => updateMttqThietLap(id, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: qk });
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData<MttqThietLap[]>(qk, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
+      void queryClient.invalidateQueries({ queryKey: qk, refetchType: 'none' });
       toast.success(txt('page.matTranThietLap.toast.update'));
       onSuccess?.();
     },

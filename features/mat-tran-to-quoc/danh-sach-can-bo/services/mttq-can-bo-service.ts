@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { getDepartments } from '@/features/he-thong/phong-ban/services/phong-ban-service';
 import { resolveEffectiveCapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
@@ -12,33 +11,21 @@ import {
   MTTQ_CAN_BO_SELECT_LIST,
   MTTQ_CAN_BO_SELECT_STATS,
 } from '../core/supabase-select';
-import { MTTQ_CAN_BO_MOCK_DATA } from '../mock-data';
 
 const repoFull = createRepository<MttqCanBo>({
   tableName: 'mttq_can_bo',
   select: MTTQ_CAN_BO_SELECT_FULL,
-  delay: 400,
-  mockData: MTTQ_CAN_BO_MOCK_DATA,
 });
 
-/** Chỉ dùng khi Supabase; mock giữ một repo (FULL) để getAll/mutation dùng chung bộ nhớ. */
-const repoList = isSupabase()
-  ? createRepository<MttqCanBo>({
-      tableName: 'mttq_can_bo',
-      select: MTTQ_CAN_BO_SELECT_LIST,
-      delay: 400,
-      mockData: MTTQ_CAN_BO_MOCK_DATA,
-    })
-  : repoFull;
+const repoList = createRepository<MttqCanBo>({
+  tableName: 'mttq_can_bo',
+  select: MTTQ_CAN_BO_SELECT_LIST,
+});
 
-const repoStats = isSupabase()
-  ? createRepository<MttqCanBo>({
-      tableName: 'mttq_can_bo',
-      select: MTTQ_CAN_BO_SELECT_STATS,
-      delay: 400,
-      mockData: MTTQ_CAN_BO_MOCK_DATA,
-    })
-  : repoFull;
+const repoStats = createRepository<MttqCanBo>({
+  tableName: 'mttq_can_bo',
+  select: MTTQ_CAN_BO_SELECT_STATS,
+});
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
   if (v == null) return undefined;

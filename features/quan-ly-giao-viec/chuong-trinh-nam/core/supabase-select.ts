@@ -19,4 +19,7 @@ const LIST_COLS = [
 export const CHUONG_TRINH_NAM_SELECT_LIST = `${LIST_COLS},${EMBED}`;
 
 export const CHUONG_TRINH_NAM_SELECT_FULL = `${LIST_COLS},mo_ta,ghi_chu,${EMBED}`;
+export const CHUONG_TRINH_NAM_RETURNING = 'id,tg_cap_nhat';
+
+/** @deprecated use CHUONG_TRINH_NAM_RETURNING + getById */
 export const CHUONG_TRINH_NAM_RETURNING_FULL = CHUONG_TRINH_NAM_SELECT_FULL;

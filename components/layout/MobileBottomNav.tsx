@@ -4,6 +4,7 @@ import { txt } from '../../lib/text';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronLeft, Home, Wrench } from 'lucide-react';
 import { getParentPath } from '../shared/Breadcrumbs';
+import { NOTIFICATIONS_SURFACE_ENABLED } from '@/lib/feature-flags';
 import { cn } from '../../lib/utils';
 
 /** Bottom nav mobile: Trái Back | Giữa Trang chủ | Phải Notification. Chỉ hiện khi isMobile. */
@@ -62,8 +63,9 @@ const MobileBottomNav: React.FC = () => {
           </Link>
         </div>
 
-        {/* Phải: Notification – bấm mở trang thông báo */}
+        {/* Phải: Notification (ẩn khi module chưa sẵn sàng) */}
         <div className="flex-1 flex justify-center items-center min-w-0">
+          {NOTIFICATIONS_SURFACE_ENABLED ? (
           <Link
             to="/thong-bao"
             aria-label={txt('nav.notification')}
@@ -82,6 +84,7 @@ const MobileBottomNav: React.FC = () => {
               <Wrench size={9} strokeWidth={2.5} className="shrink-0" />
             </span>
           </Link>
+          ) : null}
         </div>
       </div>
     </nav>

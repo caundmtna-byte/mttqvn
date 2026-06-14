@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -7,16 +6,13 @@ import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/service
 import type { MttqKyHop, MttqKyHopDiemDanhSummary, MttqKyHopListRow } from '../core/types';
 import { getDiemDanhSummariesForKyHopIds } from './mttq-diem-danh-service';
 import { mttqKyHopSchema, type MttqKyHopFormInput, type MttqKyHopFormValues } from '../core/schema';
-import { MTTQ_KY_HOP_SELECT_FULL, MTTQ_KY_HOP_SELECT_LIST } from '../core/supabase-select';
-import { MTTQ_KY_HOP_MOCK } from '../mock-data';
+import { MTTQ_KY_HOP_RETURNING, MTTQ_KY_HOP_SELECT_FULL, MTTQ_KY_HOP_SELECT_LIST } from '../core/supabase-select';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
 const repo = createRepository<RepoRow>({
   tableName: 'mttq_ky_hop',
   select: MTTQ_KY_HOP_SELECT_LIST,
-  delay: 400,
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -77,13 +73,6 @@ export function flattenRow(row: Record<string, unknown>): MttqKyHop {
   };
 }
 
-let mockRows = structuredClone(MTTQ_KY_HOP_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 function payloadFromForm(data: MttqKyHopFormValues) {
   return {
     nhiem_ky_id: data.nhiem_ky_id,
@@ -97,10 +86,6 @@ function payloadFromForm(data: MttqKyHopFormValues) {
 }
 
 export async function getMttqKyHopList(): Promise<MttqKyHopListRow[]> {
-  if (!isSupabase()) {
-    const base = mockRows.map((r) => ({ ...r }));
-    return withDiemDanhSummaries(base);
-  }
   const list = await repo.getAll({ orderBy: 'ngay_hop', ascending: false });
   const flat = list.map((row) => flattenRow(row as unknown as Record<string, unknown>));
   return withDiemDanhSummaries(flat);
@@ -110,10 +95,6 @@ export async function getMttqKyHopList(): Promise<MttqKyHopListRow[]> {
 export async function getMttqKyHopListForNhiemKyId(nhiemKyId: string): Promise<MttqKyHopListRow[]> {
   const id = nhiemKyId.trim();
   if (!id) return [];
-  if (!isSupabase()) {
-    const base = mockRows.filter((r) => r.nhiem_ky_id === id).map((r) => ({ ...r }));
-    return withDiemDanhSummaries(base);
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -128,12 +109,6 @@ export async function getMttqKyHopListForNhiemKyId(nhiemKyId: string): Promise<M
 }
 
 export async function getMttqKyHopById(id: string): Promise<MttqKyHop | null> {
-  if (!isSupabase()) {
-    const r = mockRows.find((x) => x.id === id);
-    if (!r) return null;
-    const [merged] = await withDiemDanhSummaries([{ ...r }]);
-    return merged ?? null;
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -152,81 +127,41 @@ export async function createMttqKyHop(data: MttqKyHopFormValues, idNguoiTao: str
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('matTranKyHop.service.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const id = mockNextId();
-    const now = new Date().toISOString();
-    const row: MttqKyHop = {
-      id,
-      ...payloadFromForm(data),
-      ten_nhiem_ky: 'Mock nhiệm kỳ',
-      ten_don_vi: null,
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-      ho_va_ten_nguoi_tao: 'Mock',
-      ten_tai_khoan_nguoi_tao: 'mock',
-      diem_danh_co_mat: 0,
-      diem_danh_vang_mat: 0,
-      diem_danh_chua: 0,
-    };
-    mockRows.push(row);
-    const [out] = await withDiemDanhSummaries([row]);
-    return out ?? row;
-  }
-
   const inserted = await repo.insert(
     {
       ...payloadFromForm(data),
       id_nguoi_tao: trimmed,
     } as unknown as Omit<RepoRow, 'id'>,
-    { returningSelect: MTTQ_KY_HOP_SELECT_FULL },
+    { returningSelect: MTTQ_KY_HOP_RETURNING },
   );
-  const flat = flattenRow(inserted as unknown as Record<string, unknown>);
-  const [out] = await withDiemDanhSummaries([flat]);
-  return out ?? flat;
+  const id = String((inserted as { id: string }).id);
+  const full = await getMttqKyHopById(id);
+  if (!full) throw new Error(txt('matTranKyHop.service.notFound'));
+  return full;
 }
 
 export async function updateMttqKyHop(id: string, data: MttqKyHopFormValues): Promise<MttqKyHop> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('matTranKyHop.service.notFound'));
-    const now = new Date().toISOString();
-    mockRows[idx] = {
-      ...mockRows[idx],
-      ...payloadFromForm(data),
-      tg_cap_nhat: now,
-    };
-    const [out] = await withDiemDanhSummaries([mockRows[idx]]);
-    if (out) mockRows[idx] = out;
-    return out ?? { ...mockRows[idx] };
-  }
-
-  const updated = await repo.update(
+  await repo.update(
     id,
     {
       ...payloadFromForm(data),
       tg_cap_nhat: new Date().toISOString(),
     } as unknown as Partial<RepoRow>,
-    { returningSelect: MTTQ_KY_HOP_SELECT_FULL },
+    { returningSelect: MTTQ_KY_HOP_RETURNING },
   );
-  const flat = flattenRow(updated as unknown as Record<string, unknown>);
-  const [out] = await withDiemDanhSummaries([flat]);
-  return out ?? flat;
+  const full = await getMttqKyHopById(id);
+  if (!full) throw new Error(txt('matTranKyHop.service.notFound'));
+  return full;
 }
 
 export async function deleteMttqKyHopMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    mockRows = mockRows.filter((r) => !ids.includes(r.id));
-    return;
-  }
   await repo.remove(ids);
 }
 
 async function resolveNhiemKyIdByTen(ten: string): Promise<string | null> {
   const t = ten.trim();
   if (!t) return null;
-  if (!isSupabase()) return '1';
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase

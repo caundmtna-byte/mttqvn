@@ -19,5 +19,9 @@ const BASE_COLS = [
   'tg_cap_nhat',
 ].join(',');
 
-export const BAI_VIET_DANH_SACH_SELECT_FULL = `${BASE_COLS},${EMBED}`;
+export const BAI_VIET_DANH_SACH_SELECT_LIST = `${BASE_COLS},${EMBED}`;
+export const BAI_VIET_DANH_SACH_SELECT_FULL = BAI_VIET_DANH_SACH_SELECT_LIST;
+export const BAI_VIET_DANH_SACH_RETURNING = 'id,tg_cap_nhat';
+
+/** @deprecated use BAI_VIET_DANH_SACH_SELECT_FULL */
 export const BAI_VIET_DANH_SACH_RETURNING_FULL = BAI_VIET_DANH_SACH_SELECT_FULL;

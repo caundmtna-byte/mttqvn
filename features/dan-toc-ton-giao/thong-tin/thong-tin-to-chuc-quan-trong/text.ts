@@ -1,5 +1,8 @@
 export const danTocToChucQuanTrong = {
   noViewPermission: 'Bạn không có quyền xem thông tin tổ chức tôn giáo.',
+  noViewRowPermission: 'Bạn không có quyền xem hồ sơ tổ chức này.',
+  noEditOtherDonVi: 'Bạn chỉ được sửa bản ghi thuộc đơn vị của mình.',
+  noDeleteOtherDonVi: 'Bạn chỉ được xóa bản ghi thuộc đơn vị của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
   searchPlaceholder: 'Tìm theo tên cơ sở, chủ trì, xã phường, địa chỉ…',
   emptyTitle: 'Chưa có tổ chức tôn giáo',

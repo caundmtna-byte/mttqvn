@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -8,13 +7,13 @@ import type { CongViecDanhSachFormValues } from '../core/schema';
 import { CHIP_CHUONG_TRINH_NULL } from '../core/constants';
 import {
   CONG_VIEC_BY_CHUONG_TRINH_SELECT,
-  CONG_VIEC_DANH_SACH_RETURNING_FULL,
+  CONG_VIEC_DANH_SACH_RETURNING,
   CONG_VIEC_DANH_SACH_SELECT_FULL,
+  CONG_VIEC_DANH_SACH_SELECT_LIST,
 } from '../core/supabase-select';
 const repo = createRepository<CongViecDanhSach>({
   tableName: 'cong_viec_danh_sach',
-  select: CONG_VIEC_DANH_SACH_SELECT_FULL,
-  delay: 400,
+  select: CONG_VIEC_DANH_SACH_SELECT_LIST,
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -129,14 +128,6 @@ export async function getCongViecByChuongTrinhNamId(chuongTrinhId: string): Prom
   const id = String(chuongTrinhId ?? '').trim();
   if (!id) return [];
 
-  if (!isSupabase()) {
-    const all = await getCongViecDanhSachList();
-    return all
-      .filter((c) => c.id_chuong_trinh === id)
-      .slice(0, CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT)
-      .map((c) => normalize(c));
-  }
-
   const supabase = getSupabase();
   if (!supabase) return [];
 
@@ -168,9 +159,12 @@ export async function createCongViecDanhSach(
   const payload = formToPayload(data, trimmed);
 
   const inserted = await repo.insert(payload as unknown as Omit<CongViecDanhSach, 'id'>, {
-    returningSelect: CONG_VIEC_DANH_SACH_RETURNING_FULL,
+    returningSelect: CONG_VIEC_DANH_SACH_RETURNING,
   });
-  return normalize(flattenCongViecDanhSachRow(inserted as unknown as Record<string, unknown>));
+  const id = String((inserted as { id: string }).id);
+  const full = await getCongViecDanhSachById(id);
+  if (!full) throw new Error(txt('congViecDanhSach.service.notFound'));
+  return full;
 }
 
 export async function updateCongViecDanhSach(
@@ -180,10 +174,12 @@ export async function updateCongViecDanhSach(
   // Bỏ tiền-fetch `getById`: nếu id không tồn tại, PostgREST trả lỗi và toast hiển thị.
   const payload = formToPayload(data);
 
-  const updated = await repo.update(id, payload as unknown as Partial<CongViecDanhSach>, {
-    returningSelect: CONG_VIEC_DANH_SACH_RETURNING_FULL,
+  await repo.update(id, payload as unknown as Partial<CongViecDanhSach>, {
+    returningSelect: CONG_VIEC_DANH_SACH_RETURNING,
   });
-  return normalize(flattenCongViecDanhSachRow(updated as unknown as Record<string, unknown>));
+  const full = await getCongViecDanhSachById(id);
+  if (!full) throw new Error(txt('congViecDanhSach.service.notFound'));
+  return full;
 }
 
 export async function deleteCongViecDanhSachMany(ids: string[]): Promise<void> {
@@ -213,41 +209,6 @@ function toRpcBigint(id: string | null | undefined): number | null {
   if (id == null || String(id).trim() === '') return null;
   const n = Number(String(id).trim());
   return Number.isFinite(n) ? n : null;
-}
-
-function filterCongViecMockForPage(
-  all: CongViecDanhSach[],
-  opts: {
-    search: string | null;
-    listScope: CongViecListScopeRpc;
-    viewerNhanVienId: string | null;
-    trangThai: readonly string[];
-    mucDo: readonly string[];
-    idChuongTrinh: readonly string[];
-  },
-): CongViecDanhSach[] {
-  let list = [...all];
-  if (opts.search) {
-    const t = opts.search.toLowerCase();
-    list = list.filter((c) => c.ten_cong_viec.toLowerCase().includes(t));
-  }
-  const nv = String(opts.viewerNhanVienId ?? '').trim();
-  if (nv) {
-    if (opts.listScope === 'mine_do') list = list.filter((c) => String(c.id_trach_nhiem) === nv);
-    else if (opts.listScope === 'mine_related')
-      list = list.filter((c) => c.ids_ho_tro.some((id) => String(id) === nv));
-    else if (opts.listScope === 'mine_assign') list = list.filter((c) => String(c.id_nguoi_tao) === nv);
-  }
-  if (opts.trangThai.length) list = list.filter((c) => opts.trangThai.includes(c.trang_thai));
-  if (opts.mucDo.length) list = list.filter((c) => opts.mucDo.includes(c.muc_do));
-  if (opts.idChuongTrinh.length) {
-    list = list.filter((c) => {
-      const ct = c.id_chuong_trinh?.trim() ? c.id_chuong_trinh : CHIP_CHUONG_TRINH_NULL;
-      return opts.idChuongTrinh.includes(ct);
-    });
-  }
-  list.sort((a, b) => String(b.tg_cap_nhat).localeCompare(String(a.tg_cap_nhat)) || a.ten_cong_viec.localeCompare(b.ten_cong_viec));
-  return list;
 }
 
 async function enrichCongViecRowsByIds(ids: string[]): Promise<Map<string, CongViecDanhSach>> {
@@ -285,23 +246,6 @@ export async function getCongViecDanhSachPage(q: CongViecPageQuery): Promise<Con
     .filter((n) => Number.isFinite(n));
   const pChuongTrinh =
     chuongTrinhIds.length > 0 || chuongTrinhIncludeNull ? chuongTrinhIds : null;
-
-  if (!isSupabase()) {
-    const all = await getCongViecDanhSachList();
-    const filtered = filterCongViecMockForPage(all, {
-      search: pSearch,
-      listScope: q.listScope,
-      viewerNhanVienId: q.viewerNhanVienId,
-      trangThai: q.trangThai,
-      mucDo: q.mucDo,
-      idChuongTrinh: q.idChuongTrinh,
-    });
-    const slice = filtered.slice(offset, offset + fetchLimit);
-    const hasNextPage = slice.length > pageSize;
-    const rows = slice.slice(0, pageSize);
-    const totalRecords = hasNextPage ? null : offset + rows.length;
-    return { rows, hasNextPage, totalRecords };
-  }
 
   const supabase = getSupabase();
   if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };

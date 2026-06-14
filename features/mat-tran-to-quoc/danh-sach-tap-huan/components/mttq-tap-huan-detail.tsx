@@ -99,6 +99,7 @@ function parentToFormValues(
     nam_tap_huan: d.nam_tap_huan,
     cap_tap_huan: d.cap_tap_huan,
     don_vi_id: toFormFk(d.don_vi_id),
+    to_chuc_id: toFormFk(d.to_chuc_id),
     ghi_chu: d.ghi_chu ?? undefined,
     chi_tiet: chiLines,
   };
@@ -370,6 +371,16 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, viewer, onClose, onEdit, 
                 label={txt('matTranTapHuan.form.capTapHuan')}
                 value={<EnumBadge value={data.cap_tap_huan} config={capBadgeConfig} shape="pill" />}
                 icon={<Tag size={12} />}
+              />
+              <DetailField
+                label={txt('matTranTapHuan.form.toChuc')}
+                value={
+                  data.ten_to_chuc?.trim() ? (
+                    <span className="text-body-sm text-foreground">{data.ten_to_chuc}</span>
+                  ) : undefined
+                }
+                icon={<Building2 size={12} />}
+                emptyText={txt('common.emptyCell')}
               />
               <DetailField
                 label={txt('matTranTapHuan.form.donVi')}

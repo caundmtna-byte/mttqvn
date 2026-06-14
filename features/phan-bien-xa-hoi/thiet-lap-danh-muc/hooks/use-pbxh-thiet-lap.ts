@@ -11,6 +11,7 @@ import {
   deletePbxhThietLap,
 } from '../services/pbxh-thiet-lap-service';
 import type { PbxhThietLapFormValues } from '../core/schema';
+import type { PbxhThietLap } from '../core/types';
 
 const qk = queryKeys.pbxhThietLap.all;
 
@@ -39,8 +40,11 @@ export const useUpdatePbxhThietLap = (onSuccess?: () => void) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: PbxhThietLapFormValues }) => updatePbxhThietLap(id, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: qk });
+    onSuccess: (updated, { id }) => {
+      queryClient.setQueryData<PbxhThietLap[]>(qk, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
+      void queryClient.invalidateQueries({ queryKey: qk, refetchType: 'none' });
       toast.success(txt('page.pbxhThietLap.toast.update'));
       onSuccess?.();
     },

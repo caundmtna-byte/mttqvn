@@ -171,7 +171,7 @@ export const useUIStore = create<UIState>()(
         set((state) => ({ ...state, ...settings }));
       },
 
-      // Thông tin tổ chức + thương hiệu (persist; đồng bộ Supabase khi `isSupabase()` — có URL + anon key)
+      // Thông tin tổ chức + thương hiệu (persist; đồng bộ Supabase khi có VITE_SUPABASE_*)
       companyInfo: { ...DEFAULT_COMPANY_INFO },
       setCompanyInfo: (info) => set((state) => ({
         companyInfo: { ...state.companyInfo, ...info }

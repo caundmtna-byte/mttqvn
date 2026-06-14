@@ -1,36 +1,31 @@
-/**
- * Data source: dùng Supabase khi có đủ `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` (sau trim, không rỗng).
- * Ép mock toàn app: `VITE_FORCE_MOCK=true`, hoặc (deprecated) `VITE_DATA_SOURCE=mock`.
- */
-export type DataSource = 'mock' | 'supabase';
-
 function trimEnv(v: string | undefined): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
-function hasSupabaseCredentials(): boolean {
+export interface SupabaseEnv {
+  url: string;
+  anonKey: string;
+}
+
+/** Đọc URL + anon key từ `import.meta.env` (đã trim). */
+export function getSupabaseEnv(): SupabaseEnv | null {
   const url = trimEnv(import.meta.env.VITE_SUPABASE_URL as string | undefined);
-  const key = trimEnv(import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
-  return Boolean(url && key);
+  const anonKey = trimEnv(import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
+  if (!url || !anonKey) return null;
+  return { url, anonKey };
 }
 
-/** Ép mock dù đã cấu hình URL/key (dev / tương thích `.env` cũ). */
-function forceMock(): boolean {
-  if (import.meta.env.VITE_FORCE_MOCK === 'true') return true;
-  const legacy = (import.meta.env.VITE_DATA_SOURCE as string | undefined)?.trim().toLowerCase();
-  if (legacy === 'mock') return true;
-  return false;
+/** True khi đủ `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY`. */
+export function isSupabaseConfigured(): boolean {
+  return getSupabaseEnv() != null;
 }
 
-export function getDataSource(): DataSource {
-  if (forceMock()) return 'mock';
-  return hasSupabaseCredentials() ? 'supabase' : 'mock';
-}
+const CONFIG_ERROR =
+  'Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).';
 
-export function isSupabase(): boolean {
-  return getDataSource() === 'supabase';
-}
-
-export function isMock(): boolean {
-  return getDataSource() === 'mock';
+/** Throw nếu thiếu cấu hình Supabase — dùng trước auth/repository/API. */
+export function assertSupabaseConfigured(): SupabaseEnv {
+  const env = getSupabaseEnv();
+  if (!env) throw new Error(CONFIG_ERROR);
+  return env;
 }

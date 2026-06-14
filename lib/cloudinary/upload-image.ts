@@ -1,5 +1,3 @@
-import { isSupabase } from '@/lib/data/config';
-
 const DATA_URL_RE = /^data:([\w+/.-]+);base64,(.*)$/i;
 const HTTP_IMAGE_RE = /^https?:\/\//i;
 
@@ -79,10 +77,6 @@ export async function uploadImageFromFile(
   file: File,
   options: CloudinaryUploadOptions,
 ): Promise<string> {
-  if (!isSupabase()) {
-    return readFileAsDataUrl(file);
-  }
-
   const config = getCloudinaryConfig();
   if (!config) {
     throw new Error(
@@ -123,10 +117,6 @@ export async function uploadImageIfDataUrl(
     return trimmed;
   }
 
-  if (!isSupabase()) {
-    return trimmed;
-  }
-
   const config = getCloudinaryConfig();
   if (!config) {
     throw new Error(
@@ -146,15 +136,6 @@ export async function uploadImageIfDataUrl(
   }
 
   return postToCloudinary(form, config);
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Không thể đọc file'));
-    reader.readAsDataURL(file);
-  });
 }
 
 export const CLOUDINARY_FOLDERS = {

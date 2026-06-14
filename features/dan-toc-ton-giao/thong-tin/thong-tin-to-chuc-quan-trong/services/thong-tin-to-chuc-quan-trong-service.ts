@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -16,15 +15,12 @@ import {
   DTTG_THONG_TIN_TO_CHUC_QUAN_TRONG_RETURNING,
   DTTG_THONG_TIN_TO_CHUC_QUAN_TRONG_SELECT,
 } from '../core/supabase-select';
-import { DTTG_THONG_TIN_TO_CHUC_QUAN_TRONG_MOCK } from '../mock-data';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
 const repo = createRepository<RepoRow>({
   tableName: 'dttg_thong_tin_to_chuc_quan_trong',
   select: DTTG_THONG_TIN_TO_CHUC_QUAN_TRONG_SELECT,
-  delay: 350,
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -68,13 +64,6 @@ export function flattenThongTinToChucQuanTrongRow(row: Record<string, unknown>):
   };
 }
 
-let mockRows = structuredClone(DTTG_THONG_TIN_TO_CHUC_QUAN_TRONG_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 function formToPayload(data: ThongTinToChucQuanTrongFormValues): Record<string, unknown> {
   return {
     loai_hinh: data.loai_hinh,
@@ -90,17 +79,11 @@ function formToPayload(data: ThongTinToChucQuanTrongFormValues): Record<string, 
 }
 
 export async function getThongTinToChucQuanTrongList(): Promise<ThongTinToChucQuanTrong[]> {
-  if (!isSupabase()) {
-    return [...mockRows].sort((a, b) => b.tg_cap_nhat.localeCompare(a.tg_cap_nhat));
-  }
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   return list.map((row) => flattenThongTinToChucQuanTrongRow(row as unknown as Record<string, unknown>));
 }
 
 export async function getThongTinToChucQuanTrongById(id: string): Promise<ThongTinToChucQuanTrong | null> {
-  if (!isSupabase()) {
-    return mockRows.find((r) => r.id === id) ?? null;
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -120,30 +103,6 @@ export async function createThongTinToChucQuanTrong(
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('danTocToChucQuanTrong.service.noEmployeeProfile'));
 
-  if (!isSupabase()) {
-    const now = new Date().toISOString();
-    const row: ThongTinToChucQuanTrong = {
-      id: mockNextId(),
-      loai_hinh: data.loai_hinh,
-      ten_co_so: data.ten_co_so,
-      chu_tri: data.chu_tri,
-      lich_su_hinh_thanh: data.lich_su_hinh_thanh,
-      cong_tac_an_sinh: data.cong_tac_an_sinh,
-      don_vi_id: data.don_vi_id,
-      ten_don_vi: null,
-      ten_tinh: null,
-      dia_chi: data.dia_chi,
-      so_dien_thoai: data.so_dien_thoai,
-      trang_thai: data.trang_thai,
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-      ho_va_ten_nguoi_tao: 'Mock',
-    };
-    mockRows = [row, ...mockRows];
-    return { ...row };
-  }
-
   const inserted = await repo.insert(
     { ...formToPayload(data), id_nguoi_tao: Number(trimmed) },
     { returningSelect: DTTG_THONG_TIN_TO_CHUC_QUAN_TRONG_RETURNING },
@@ -155,27 +114,6 @@ export async function updateThongTinToChucQuanTrong(
   id: string,
   data: ThongTinToChucQuanTrongFormValues,
 ): Promise<ThongTinToChucQuanTrong> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('danTocToChucQuanTrong.service.notFound'));
-    const now = new Date().toISOString();
-    const row: ThongTinToChucQuanTrong = {
-      ...mockRows[idx],
-      loai_hinh: data.loai_hinh,
-      ten_co_so: data.ten_co_so,
-      chu_tri: data.chu_tri,
-      lich_su_hinh_thanh: data.lich_su_hinh_thanh,
-      cong_tac_an_sinh: data.cong_tac_an_sinh,
-      don_vi_id: data.don_vi_id,
-      dia_chi: data.dia_chi,
-      so_dien_thoai: data.so_dien_thoai,
-      trang_thai: data.trang_thai,
-      tg_cap_nhat: now,
-    };
-    mockRows = [...mockRows.slice(0, idx), row, ...mockRows.slice(idx + 1)];
-    return { ...row };
-  }
-
   const updated = await repo.update(id, formToPayload(data) as unknown as Partial<RepoRow>, {
     returningSelect: DTTG_THONG_TIN_TO_CHUC_QUAN_TRONG_RETURNING,
   });
@@ -186,15 +124,6 @@ export async function updateThongTinToChucQuanTrongStatus(
   id: string,
   trangThai: TrangThaiHoatDong,
 ): Promise<ThongTinToChucQuanTrong> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('danTocToChucQuanTrong.service.notFound'));
-    const now = new Date().toISOString();
-    const row: ThongTinToChucQuanTrong = { ...mockRows[idx], trang_thai: trangThai, tg_cap_nhat: now };
-    mockRows = [...mockRows.slice(0, idx), row, ...mockRows.slice(idx + 1)];
-    return { ...row };
-  }
-
   const updated = await repo.update(
     id,
     { trang_thai: trangThai } as unknown as Partial<RepoRow>,
@@ -205,11 +134,6 @@ export async function updateThongTinToChucQuanTrongStatus(
 
 export async function deleteThongTinToChucQuanTrongMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  if (!isSupabase()) {
-    const set = new Set(ids);
-    mockRows = mockRows.filter((r) => !set.has(r.id));
-    return;
-  }
   await repo.remove(ids);
 }
 
@@ -317,35 +241,10 @@ export async function importThongTinToChucQuanTrong(
   }
 
   if (validPayloads.length > 0) {
-    if (!isSupabase()) {
-      const now = new Date().toISOString();
-      for (const payload of validPayloads) {
-        const row: ThongTinToChucQuanTrong = {
-          id: mockNextId(),
-          loai_hinh: String(payload.loai_hinh ?? ''),
-          ten_co_so: String(payload.ten_co_so ?? ''),
-          chu_tri: nullableStr(payload.chu_tri),
-          lich_su_hinh_thanh: nullableStr(payload.lich_su_hinh_thanh),
-          cong_tac_an_sinh: nullableStr(payload.cong_tac_an_sinh),
-          don_vi_id: payload.don_vi_id == null ? null : String(payload.don_vi_id),
-          ten_don_vi: null,
-          ten_tinh: null,
-          dia_chi: nullableStr(payload.dia_chi),
-          so_dien_thoai: nullableStr(payload.so_dien_thoai),
-          trang_thai: String(payload.trang_thai ?? TRANG_THAI_HOAT_DONG_DEFAULT) as TrangThaiHoatDong,
-          id_nguoi_tao: trimmedNv,
-          tg_tao: now,
-          tg_cap_nhat: now,
-          ho_va_ten_nguoi_tao: 'Mock',
-        };
-        mockRows = [row, ...mockRows];
-      }
-    } else {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error(txt('danTocToChucQuanTrong.service.notFound'));
-      const { error } = await supabase.from('dttg_thong_tin_to_chuc_quan_trong').insert(validPayloads);
-      if (error) handleSupabaseError(error);
-    }
+    const supabase = getSupabase();
+    if (!supabase) throw new Error(txt('danTocToChucQuanTrong.service.notFound'));
+    const { error } = await supabase.from('dttg_thong_tin_to_chuc_quan_trong').insert(validPayloads);
+    if (error) handleSupabaseError(error);
   }
 
   return { created: validPayloads.length, errors, errorRows };

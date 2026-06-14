@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { isSupabase } from '@/lib/data/config';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -14,15 +13,12 @@ import {
   MTTQ_TANG_LUONG_SELECT_LIST,
 } from '../core/supabase-select';
 import { computeNgayDenHanGoc, getLatestRecordForCanBo } from '../utils/tang-luong-cycle';
-import { MTTQ_TANG_LUONG_MOCK } from '../mock-data';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
 const repo = createRepository<RepoRow>({
   tableName: 'mttq_tang_luong',
   select: MTTQ_TANG_LUONG_SELECT_LIST,
-  delay: 400,
-  mockData: [],
 });
 
 function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
@@ -157,15 +153,7 @@ export function flattenMttqTangLuongRow(
   };
 }
 
-let mockRows = structuredClone(MTTQ_TANG_LUONG_MOCK);
-
-function mockNextId(): string {
-  const maxId = Math.max(0, ...mockRows.map((r) => Number(r.id) || 0));
-  return String(maxId + 1);
-}
-
 async function assertBacBelongsToNgach(ngachId: string, bacId: string): Promise<void> {
-  if (!isSupabase()) return;
   const supabase = getSupabase();
   if (!supabase) return;
   const { data, error } = await supabase
@@ -216,7 +204,6 @@ async function buildToChucTenByIdMap(): Promise<Map<string, string>> {
 }
 
 async function buildChucVuTenByIdMap(): Promise<Map<string, string>> {
-  if (!isSupabase()) return new Map();
   const supabase = getSupabase();
   if (!supabase) return new Map();
   const { data, error } = await supabase.from('var_chuc_vu').select('id,ten_chuc_vu');
@@ -230,9 +217,6 @@ async function buildChucVuTenByIdMap(): Promise<Map<string, string>> {
 }
 
 export async function getMttqTangLuongList(): Promise<MttqTangLuongListRow[]> {
-  if (!isSupabase()) {
-    return [...mockRows].sort((a, b) => b.ngay_nang_luong.localeCompare(a.ngay_nang_luong));
-  }
   const [list, toChucById, chucVuById] = await Promise.all([
     repo.getAll({ orderBy: 'ngay_nang_luong', ascending: false }),
     buildToChucTenByIdMap(),
@@ -244,9 +228,6 @@ export async function getMttqTangLuongList(): Promise<MttqTangLuongListRow[]> {
 }
 
 export async function getMttqTangLuongById(id: string): Promise<MttqTangLuongListRow | null> {
-  if (!isSupabase()) {
-    return mockRows.find((r) => r.id === id) ?? null;
-  }
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -263,12 +244,6 @@ export async function getMttqTangLuongById(id: string): Promise<MttqTangLuongLis
 export async function getMttqTangLuongByCanBo(canBoId: string, limit = 20): Promise<MttqTangLuongListRow[]> {
   const id = canBoId.trim();
   if (!id) return [];
-  if (!isSupabase()) {
-    return mockRows
-      .filter((r) => r.can_bo_id === id)
-      .sort((a, b) => b.ngay_nang_luong.localeCompare(a.ngay_nang_luong))
-      .slice(0, limit);
-  }
   const supabase = getSupabase();
   if (!supabase) return [];
   const [{ data, error }, toChucById, chucVuById] = await Promise.all([
@@ -320,41 +295,14 @@ export async function createMttqTangLuong(
   const luong = resolveLuongFromForm(data);
   const payload = payloadFromForm(data, ngayDenHanGoc, luong);
 
-  if (!isSupabase()) {
-    const id = mockNextId();
-    const now = new Date().toISOString();
-    const row: MttqTangLuongListRow = {
-      id,
-      ...payload,
-      loai_ky: payload.loai_ky as MttqTangLuongListRow['loai_ky'],
-      ho_ten_can_bo: 'Mock cán bộ',
-      phong_ban_id: null,
-      chuc_vu_id: null,
-      ten_chuc_vu: null,
-      don_vi_id: null,
-      to_chuc_id: null,
-      can_bo_cap_quan_ly: [],
-      ten_phong_ban: null,
-      ten_bo_phan: null,
-      ten_don_vi: null,
-      ten_to_chuc: null,
-      ten_ngach_cu: null,
-      ma_bac_cu: null,
-      ten_ngach_moi: 'Mock ngạch',
-      ma_bac_moi: 'B1',
-      id_nguoi_tao: trimmed,
-      tg_tao: now,
-      tg_cap_nhat: now,
-    };
-    mockRows.push(row);
-    return row;
-  }
-
   const inserted = await repo.insert(
     { ...payload, id_nguoi_tao: trimmed } as unknown as Omit<RepoRow, 'id'>,
-    { returningSelect: MTTQ_TANG_LUONG_SELECT_FULL },
+    { returningSelect: MTTQ_TANG_LUONG_RETURNING },
   );
-  return flattenMttqTangLuongRow(inserted as unknown as Record<string, unknown>);
+  const id = String((inserted as { id: string }).id);
+  const full = await getMttqTangLuongById(id);
+  if (!full) throw new Error(txt('matTranTangLuong.service.notFound'));
+  return full;
 }
 
 export async function updateMttqTangLuong(
@@ -366,31 +314,15 @@ export async function updateMttqTangLuong(
   const luong = resolveLuongFromForm(data);
   const payload = payloadFromForm(data, ngayDenHanGoc, luong);
 
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('matTranTangLuong.service.notFound'));
-    mockRows[idx] = {
-      ...mockRows[idx],
-      ...payload,
-      loai_ky: payload.loai_ky as MttqTangLuongListRow['loai_ky'],
-      tg_cap_nhat: new Date().toISOString(),
-    };
-    return mockRows[idx];
-  }
-
-  const updated = await repo.update(id, payload as unknown as Partial<RepoRow>, {
-    returningSelect: MTTQ_TANG_LUONG_SELECT_FULL,
+  await repo.update(id, payload as unknown as Partial<RepoRow>, {
+    returningSelect: MTTQ_TANG_LUONG_RETURNING,
   });
-  return flattenMttqTangLuongRow(updated as unknown as Record<string, unknown>);
+  const full = await getMttqTangLuongById(id);
+  if (!full) throw new Error(txt('matTranTangLuong.service.notFound'));
+  return full;
 }
 
 export async function deleteMttqTangLuong(id: string): Promise<void> {
-  if (!isSupabase()) {
-    const idx = mockRows.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error(txt('matTranTangLuong.service.notFound'));
-    mockRows.splice(idx, 1);
-    return;
-  }
   const supabase = getSupabase();
   if (!supabase) return;
   const { error } = await supabase.from('mttq_tang_luong').delete().eq('id', id);
@@ -398,7 +330,10 @@ export async function deleteMttqTangLuong(id: string): Promise<void> {
 }
 
 export async function deleteMttqTangLuongMany(ids: string[]): Promise<void> {
-  for (const id of ids) {
-    await deleteMttqTangLuong(id);
-  }
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  if (unique.length === 0) return;
+  const supabase = getSupabase();
+  if (!supabase) return;
+  const { error } = await supabase.from('mttq_tang_luong').delete().in('id', unique);
+  handleSupabaseError(error);
 }

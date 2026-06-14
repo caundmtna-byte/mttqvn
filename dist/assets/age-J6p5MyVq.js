@@ -1,1 +1,0 @@
-function n(t){if(t==null||t==="")return null;const u=typeof t=="string"?t.slice(0,10):String(t).slice(0,10),e=new Date(`${u}T12:00:00`);if(Number.isNaN(e.getTime()))return null;const l=new Date;let r=l.getFullYear()-e.getFullYear();const o=l.getMonth()-e.getMonth();return(o<0||o===0&&l.getDate()<e.getDate())&&(r-=1),r>=0?r:null}export{n as c};

@@ -103,7 +103,9 @@ export const useUpdateCongViecDanhSach = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: CongViecDanhSachFormValues }) =>
       updateCongViecDanhSach(id, data),
     onSuccess: (updated, { id, data }) => {
-      queryClient.invalidateQueries({ queryKey: listKey });
+      queryClient.setQueryData<CongViecDanhSach[]>(listKey, (cur) =>
+        cur?.map((r) => (r.id === id ? updated : r)),
+      );
       queryClient.setQueryData(queryKeys.congViecDanhSach.detail(id), updated);
       invalidateCongViecByChuongQueries(queryClient, updated.id_chuong_trinh);
       invalidateCongViecByChuongQueries(queryClient, data.id_chuong_trinh ?? undefined);

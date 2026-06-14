@@ -145,6 +145,10 @@ export const ui = {
       "systemModuleDesc": "Cấu hình, phân quyền và nhân sự.",
       "licenseInfoDesc": "Quản lý sở hữu trí tuệ và thông tin nhà phát triển.",
       "placeholderModuleDesc": "Nội dung đang được cập nhật.",
+      "vietBaiModuleDesc": "Bài viết, hoa hồng và thống kê xuất bản.",
+      "phanBienModuleDesc": "Thực hiện phản biện, thiết lập danh mục và thống kê.",
+      "danTocModuleDesc": "Thông tin tôn giáo, thăm hồi và thống kê dân tộc.",
+      "trangThongTinKhacModuleDesc": "Trang thông tin và nội dung bổ sung.",
       "taskMgmtModuleDesc": "Công việc, giao việc và báo cáo tiến độ.",
       "matTranModuleDesc": "Tập huấn, khen thưởng, ủy viên ủy ban và thiết lập cán bộ."
     },
@@ -301,7 +305,7 @@ export const ui = {
     "taskDashboard": {
       "groupMain": "Giao việc & báo cáo",
       "yearProgram": "Chương trình BTT",
-      "yearProgramDesc": "Kế hoạch và chương trình công việc theo năm (đang phát triển).",
+      "yearProgramDesc": "Kế hoạch và chương trình công việc theo năm.",
       "tasks": "Công việc",
       "tasksDesc": "Danh sách, trạng thái và chi tiết công việc được giao.",
       "taskReport": "Báo cáo công việc",
@@ -603,6 +607,8 @@ export const ui = {
   },
   "common": {
     "save": "Lưu",
+    "permissionPickerTitle": "Phân quyền theo chức vụ",
+    "permissionPickerMessage": "Chọn các chức vụ được phép truy cập tài nguyên này.",
     "required": "Trường bắt buộc",
     "saving": "Đang lưu...",
     "cancel": "Hủy",

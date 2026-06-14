@@ -23,6 +23,7 @@ import {
 import { TRANG_THAI_VALUES, DON_VI_TINH_VALUE } from '../core/constants';
 import type { DipThamHoi } from '../core/types';
 import { useCreateDipThamHoi, useUpdateDipThamHoi } from '../hooks/use-dip-tham-hoi';
+import { useDttgViewer } from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
 
 const FORM_ID = 'dttg-dip-tham-hoi-form';
 
@@ -41,6 +42,9 @@ const DipThamHoiForm: React.FC<Props> = ({ initialData, onClose }) => {
   const { data: departments = [] } = useDepartments();
   const createMutation = useCreateDipThamHoi(onClose);
   const updateMutation = useUpdateDipThamHoi(onClose);
+  const viewer = useDttgViewer('danTocDipThamHoi');
+  const defaultDonViFromViewer =
+    viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewer.viewerDonViId);
 
   const tinhMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -94,8 +98,12 @@ const DipThamHoiForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   useEffect(() => {
-    reset(dipThamHoiToFormInput(initialData ?? null));
-  }, [initialData, reset]);
+    const base = dipThamHoiToFormInput(initialData ?? null);
+    if (!initialData && defaultDonViFromViewer && viewer.viewerDonViId) {
+      base.don_vi_to_chuc_id = viewer.viewerDonViId;
+    }
+    reset(base);
+  }, [initialData, reset, defaultDonViFromViewer, viewer.viewerDonViId]);
 
   const pending = createMutation.isPending || updateMutation.isPending || isSubmitting;
 

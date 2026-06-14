@@ -10,7 +10,6 @@ import { useCan } from '@/hooks/use-can';
 import ThongTinToChucForm from './components/thong-tin-to-chuc-form';
 import type { CompanyFormValues } from './core/types';
 import { saveThongTinToChuc } from './services/thong-tin-to-chuc-service';
-import { isSupabase } from '@/lib/data/config';
 import { queryKeys } from '@/lib/query-keys';
 
 const ThongTinToChucPage: React.FC = () => {
@@ -34,9 +33,7 @@ const ThongTinToChucPage: React.FC = () => {
     try {
       const saved = await saveThongTinToChuc(data);
       setCompanyInfo(saved);
-      if (isSupabase()) {
-        queryClient.setQueryData(queryKeys.thongTinToChuc.singleton, saved);
-      }
+      queryClient.setQueryData(queryKeys.thongTinToChuc.singleton, saved);
       toast.success(txt('company.saveSuccess'));
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Lỗi lưu');
