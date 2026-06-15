@@ -405,7 +405,7 @@ export async function getMttqKhenThuongChiTietFlatList(): Promise<MttqKhenThuong
       .order('id', { ascending: true })
       .range(from, to);
     if (error) handleSupabaseError(error);
-    return (rows ?? []) as Record<string, unknown>[];
+    return (rows ?? []) as unknown as Record<string, unknown>[];
   });
   return data.map((row) => flattenKhenThuongChiTietFlatRow(row));
 }

@@ -352,7 +352,7 @@ export async function getMttqLopTapHuanChiTietFlatList(): Promise<MttqTapHuanChi
         .order('id', { ascending: true })
         .range(from, to);
       if (error) handleSupabaseError(error);
-      return (rows ?? []) as Record<string, unknown>[];
+      return (rows ?? []) as unknown as Record<string, unknown>[];
     }),
     buildToChucTenByIdMap(),
   ]);

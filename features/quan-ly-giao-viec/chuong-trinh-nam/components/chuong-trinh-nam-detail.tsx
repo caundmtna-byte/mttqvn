@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useMemo, useState, startTransition } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState, startTransition } from 'react';
 import {
   ArrowRightLeft,
   Building2,
@@ -99,6 +99,12 @@ const ChuongTrinhNamDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
       })),
     [congViecRows, employeeMap],
   );
+
+  useEffect(() => {
+    if (!cvViewing) return;
+    const fresh = rowsEnriched.find((r) => r.id === cvViewing.id);
+    if (fresh && fresh !== cvViewing) setCvViewing(fresh);
+  }, [rowsEnriched, cvViewing]);
 
   const closeCvForm = useCallback(() => {
     setCvFormOpen(false);

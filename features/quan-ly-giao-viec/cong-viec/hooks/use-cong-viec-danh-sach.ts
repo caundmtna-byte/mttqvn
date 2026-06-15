@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
@@ -15,6 +15,7 @@ import {
   getCongViecDanhSachPage,
   updateCongViecDanhSach,
   type CongViecPageQuery,
+  type CongViecPageResult,
 } from '../services/cong-viec-danh-sach-service';
 
 const listKey = queryKeys.congViecDanhSach.all;
@@ -65,6 +66,31 @@ export const useCongViecByChuongTrinhNamId = (chuongTrinhId: string | null, opti
   });
 };
 
+function patchCongViecDanhSachCaches(
+  queryClient: QueryClient,
+  id: string,
+  updated: CongViecDanhSach,
+) {
+  queryClient.setQueryData<CongViecDanhSach[]>(listKey, (cur) =>
+    cur?.map((r) => (r.id === id ? updated : r)),
+  );
+
+  queryClient.setQueriesData<CongViecPageResult>(
+    { queryKey: ['cong-viec-danh-sach', 'page'], exact: false },
+    (old) =>
+      old
+        ? { ...old, rows: old.rows.map((r) => (r.id === id ? updated : r)) }
+        : old,
+  );
+
+  queryClient.setQueriesData<CongViecDanhSach[]>(
+    { queryKey: queryKeys.congViecDanhSach.byChuongTrinhPrefix, exact: false },
+    (old) => old?.map((r) => (r.id === id ? updated : r)),
+  );
+
+  queryClient.setQueryData(queryKeys.congViecDanhSach.detail(id), updated);
+}
+
 function invalidateCongViecByChuongQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   chuongTrinhId: string | null | undefined,
@@ -103,10 +129,7 @@ export const useUpdateCongViecDanhSach = (onSuccess?: () => void) => {
     mutationFn: ({ id, data }: { id: string; data: CongViecDanhSachFormValues }) =>
       updateCongViecDanhSach(id, data),
     onSuccess: (updated, { id, data }) => {
-      queryClient.setQueryData<CongViecDanhSach[]>(listKey, (cur) =>
-        cur?.map((r) => (r.id === id ? updated : r)),
-      );
-      queryClient.setQueryData(queryKeys.congViecDanhSach.detail(id), updated);
+      patchCongViecDanhSachCaches(queryClient, id, updated);
       invalidateCongViecByChuongQueries(queryClient, updated.id_chuong_trinh);
       invalidateCongViecByChuongQueries(queryClient, data.id_chuong_trinh ?? undefined);
       invalidateReportCache(queryClient);

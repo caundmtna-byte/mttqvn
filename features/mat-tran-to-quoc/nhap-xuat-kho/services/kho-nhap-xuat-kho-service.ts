@@ -203,7 +203,7 @@ export async function getNhapXuatKhoList(): Promise<NhapXuatKhoListRow[]> {
       .order('id', { ascending: false })
       .range(from, to);
     if (error) handleSupabaseError(error);
-    return (rows ?? []) as Record<string, unknown>[];
+    return (rows ?? []) as unknown as Record<string, unknown>[];
   });
   return data.map((row) => flattenListRow(row));
 }
@@ -231,7 +231,7 @@ export async function getNhapXuatKhoCtFlatList(): Promise<NhapXuatKhoCtFlatRow[]
       .order('id', { ascending: false })
       .range(from, to);
     if (error) handleSupabaseError(error);
-    return (rows ?? []) as Record<string, unknown>[];
+    return (rows ?? []) as unknown as Record<string, unknown>[];
   });
   return data.map((row) => flattenCtFlatRow(row));
 }
@@ -250,7 +250,7 @@ export async function getLastDonGiaMap(): Promise<Map<string, number>> {
       .order('ngay_phieu', { ascending: false, referencedTable: 'phieu' })
       .range(from, to);
     if (error) handleSupabaseError(error);
-    return (rows ?? []) as Record<string, unknown>[];
+    return (rows ?? []) as unknown as Record<string, unknown>[];
   });
 
   for (const row of data) {

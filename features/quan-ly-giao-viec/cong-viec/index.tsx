@@ -9,6 +9,8 @@ import React, {
   startTransition,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -58,6 +60,7 @@ type FormOrigin = 'list' | 'detail';
 
 const CongViecPage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
@@ -235,6 +238,14 @@ const CongViecPage: React.FC = () => {
 
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
+  const handleView = useCallback(
+    (item: CongViecDanhSachRow) => {
+      queryClient.setQueryData(queryKeys.congViecDanhSach.detail(item.id), item);
+      setViewing(item);
+    },
+    [queryClient],
+  );
+
   const handleEdit = (item: CongViecDanhSachRow) => {
     startTransition(() => {
       setFormOrigin(viewing ? 'detail' : 'list');
@@ -380,7 +391,7 @@ const CongViecPage: React.FC = () => {
             isLoading={isLoading}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onView={setViewing}
+            onView={handleView}
             serverSidePagination={Boolean(nhanVienId)}
             serverTotalRecords={serverTotalRecords}
             serverHasNextPage={serverHasNextPage}

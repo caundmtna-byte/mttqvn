@@ -56,6 +56,7 @@ export const articleList = {
     trangDangRequired: 'Chọn trang đăng',
     linkRequired: 'Nhập liên kết',
     linkUrl: 'Liên kết phải là URL hợp lệ (https://...)',
+    linkDuplicate: 'Liên kết này đã được dùng cho bài viết khác',
   },
   emptyTitle: 'Chưa có bài viết',
   emptyHint: 'Thêm bài viết mới hoặc điều chỉnh bộ lọc.',

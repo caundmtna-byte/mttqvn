@@ -15,6 +15,7 @@ import {
   updateBaiVietDanhSach,
   type BaiVietPageQuery,
 } from '../services/bai-viet-danh-sach-service';
+import { BaiVietLinkConflictError } from '../utils/bai-viet-link-conflict';
 
 const listKey = queryKeys.baiVietDanhSach.all;
 
@@ -55,7 +56,10 @@ export const useCreateBaiVietDanhSach = (onSuccess?: () => void) => {
       toast.success(txt('articleList.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
+    onError: (e: unknown) => {
+      if (e instanceof BaiVietLinkConflictError) return;
+      toast.error(getErrorMessage(e));
+    },
   });
 };
 
@@ -72,7 +76,10 @@ export const useUpdateBaiVietDanhSach = (onSuccess?: () => void) => {
       toast.success(txt('articleList.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
+    onError: (e: unknown) => {
+      if (e instanceof BaiVietLinkConflictError) return;
+      toast.error(getErrorMessage(e));
+    },
   });
 };
 

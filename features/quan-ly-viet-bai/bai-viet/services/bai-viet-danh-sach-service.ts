@@ -9,6 +9,12 @@ import {
   BAI_VIET_DANH_SACH_SELECT_FULL,
   BAI_VIET_DANH_SACH_SELECT_LIST,
 } from '../core/supabase-select';
+import {
+  BaiVietLinkConflictError,
+  escapeIlikePattern,
+  mapBaiVietLinkConstraintError,
+  normalizeBaiVietLinkForCompare,
+} from '../utils/bai-viet-link-conflict';
 
 const repo = createRepository<BaiVietDanhSach>({
   tableName: 'bai_viet_danh_sach',
@@ -95,6 +101,84 @@ export async function getBaiVietDanhSachById(id: string): Promise<BaiVietDanhSac
   return normalize(flattenBaiVietDanhSachRow(row as unknown as Record<string, unknown>));
 }
 
+export async function findBaiVietLinkConflict(params: {
+  link: string;
+  excludeId?: string | null;
+}): Promise<{ existingId: string } | null> {
+  const trimmed = String(params.link ?? '').trim();
+  const norm = normalizeBaiVietLinkForCompare(trimmed);
+  if (!norm) return null;
+
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const exclude = String(params.excludeId ?? '').trim();
+  let q = supabase
+    .from('bai_viet_danh_sach')
+    .select('id, link')
+    .ilike('link', escapeIlikePattern(trimmed))
+    .limit(5);
+  if (exclude) q = q.neq('id', exclude);
+
+  const { data, error } = await q;
+  if (error) handleSupabaseError(error);
+
+  const hit = (data ?? []).find(
+    (row) => normalizeBaiVietLinkForCompare(row.link as string) === norm,
+  );
+  if (hit?.id != null) {
+    return { existingId: String(hit.id) };
+  }
+  return null;
+}
+
+async function assertNoBaiVietLinkConflict(link: string, excludeId?: string): Promise<void> {
+  const conflict = await findBaiVietLinkConflict({ link, excludeId });
+  if (conflict) {
+    throw new BaiVietLinkConflictError(conflict.existingId);
+  }
+}
+
+async function supabaseInsertBaiViet(payload: Record<string, unknown>): Promise<{ id: string }> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    throw new Error(
+      'Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).',
+    );
+  }
+  const { data, error } = await supabase
+    .from('bai_viet_danh_sach')
+    .insert(payload)
+    .select(BAI_VIET_DANH_SACH_RETURNING)
+    .single();
+  if (error) {
+    const mapped = mapBaiVietLinkConstraintError(error);
+    if (mapped) throw mapped;
+    handleSupabaseError(error);
+  }
+  return data as { id: string };
+}
+
+async function supabaseUpdateBaiViet(id: string, payload: Record<string, unknown>): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    throw new Error(
+      'Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).',
+    );
+  }
+  const { error } = await supabase
+    .from('bai_viet_danh_sach')
+    .update(payload)
+    .eq('id', id)
+    .select(BAI_VIET_DANH_SACH_RETURNING)
+    .single();
+  if (error) {
+    const mapped = mapBaiVietLinkConstraintError(error);
+    if (mapped) throw mapped;
+    handleSupabaseError(error);
+  }
+}
+
 export async function createBaiVietDanhSach(
   data: BaiVietDanhSachFormValues,
   idNguoiTao: string,
@@ -113,10 +197,10 @@ export async function createBaiVietDanhSach(
     id_nguoi_tao: trimmed,
   };
 
-  const inserted = await repo.insert(payload as Omit<BaiVietDanhSach, 'id'>, {
-    returningSelect: BAI_VIET_DANH_SACH_RETURNING,
-  });
-  const newId = String((inserted as { id: string }).id);
+  await assertNoBaiVietLinkConflict(payload.link);
+
+  const inserted = await supabaseInsertBaiViet(payload);
+  const newId = String(inserted.id);
   const full = await getBaiVietDanhSachById(newId);
   if (!full) throw new Error(txt('articleList.service.notFound'));
   return full;
@@ -126,21 +210,21 @@ export async function updateBaiVietDanhSach(
   id: string,
   data: BaiVietDanhSachFormValues,
 ): Promise<BaiVietDanhSach> {
-  // Bỏ tiền-fetch `getById`: nếu id không tồn tại, `repo.update` throw lỗi PostgREST
+  // Bỏ tiền-fetch `getById`: nếu id không tồn tại, `supabaseUpdateBaiViet` throw lỗi PostgREST
   // (PGRST116) và toast hiển thị; tiết kiệm 1 round-trip + payload đầy đủ.
-  await repo.update(
-    id,
-    {
-      ten_bai: data.ten_bai.trim(),
-      id_the_loai: data.id_the_loai,
-      don_gia: data.don_gia,
-      ngay_dang: data.ngay_dang,
-      id_nguon_dang: data.id_nguon_dang,
-      id_trang_dang: data.id_trang_dang,
-      link: data.link.trim(),
-    } as Partial<BaiVietDanhSach>,
-    { returningSelect: BAI_VIET_DANH_SACH_RETURNING },
-  );
+  const payload = {
+    ten_bai: data.ten_bai.trim(),
+    id_the_loai: data.id_the_loai,
+    don_gia: data.don_gia,
+    ngay_dang: data.ngay_dang,
+    id_nguon_dang: data.id_nguon_dang,
+    id_trang_dang: data.id_trang_dang,
+    link: data.link.trim(),
+  };
+
+  await assertNoBaiVietLinkConflict(payload.link, id);
+
+  await supabaseUpdateBaiViet(id, payload);
   const full = await getBaiVietDanhSachById(id);
   if (!full) throw new Error(txt('articleList.service.notFound'));
   return full;

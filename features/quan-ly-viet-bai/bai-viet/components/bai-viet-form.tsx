@@ -17,6 +17,7 @@ import { baiVietDanhSachSchema, type BaiVietDanhSachFormValues } from '../core/s
 import type { BaiVietDanhSach } from '../core/types';
 import { useCreateBaiVietDanhSach, useUpdateBaiVietDanhSach } from '../hooks/use-bai-viet-danh-sach';
 import { useCanEditBaiVietDonGia } from '../hooks/use-can-edit-bai-viet-don-gia';
+import { BaiVietLinkConflictError } from '../utils/bai-viet-link-conflict';
 
 const DEFAULT_VALUES: BaiVietDanhSachFormValues = {
   ten_bai: '',
@@ -71,6 +72,7 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
     handleSubmit,
     control,
     setValue,
+    setError,
     formState: { errors },
     reset,
   } = useForm<BaiVietDanhSachFormValues>({
@@ -107,11 +109,17 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
     setValue('don_gia', typeof tl.don_gia === 'number' ? tl.don_gia : Number(tl.don_gia) || 0);
   }, [watchedTheLoai, theLoais, isEdit, canEditDonGia, setValue]);
 
-  const onSubmit: SubmitHandler<BaiVietDanhSachFormValues> = (data) => {
-    if (isEdit && initialData) {
-      updateMutation.mutate({ id: initialData.id, data });
-    } else {
-      createMutation.mutate({ data, idNguoiTao });
+  const onSubmit: SubmitHandler<BaiVietDanhSachFormValues> = async (data) => {
+    try {
+      if (isEdit && initialData) {
+        await updateMutation.mutateAsync({ id: initialData.id, data });
+      } else {
+        await createMutation.mutateAsync({ data, idNguoiTao });
+      }
+    } catch (e) {
+      if (e instanceof BaiVietLinkConflictError) {
+        setError('link', { type: 'manual', message: e.message });
+      }
     }
   };
 
