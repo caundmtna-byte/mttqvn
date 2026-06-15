@@ -1,6 +1,7 @@
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import type {
   KhoTonKhoRow,
   NhapXuatKhoCtFlatRow,
@@ -194,13 +195,17 @@ function rethrowMapped(err: unknown): never {
 export async function getNhapXuatKhoList(): Promise<NhapXuatKhoListRow[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('kho_nhap_xuat_kho')
-    .select(NHAP_XUAT_KHO_SELECT_LIST)
-    .order('ngay_phieu', { ascending: false })
-    .order('id', { ascending: false });
-  if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) => flattenListRow(row as unknown as Record<string, unknown>));
+  const data = await fetchAllPages<Record<string, unknown>>(async (from, to) => {
+    const { data: rows, error } = await supabase
+      .from('kho_nhap_xuat_kho')
+      .select(NHAP_XUAT_KHO_SELECT_LIST)
+      .order('ngay_phieu', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to);
+    if (error) handleSupabaseError(error);
+    return (rows ?? []) as Record<string, unknown>[];
+  });
+  return data.map((row) => flattenListRow(row));
 }
 
 export async function getNhapXuatKhoById(id: string): Promise<NhapXuatKhoDetail | null> {
@@ -219,12 +224,16 @@ export async function getNhapXuatKhoById(id: string): Promise<NhapXuatKhoDetail 
 export async function getNhapXuatKhoCtFlatList(): Promise<NhapXuatKhoCtFlatRow[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('kho_nhap_xuat_kho_ct')
-    .select(NHAP_XUAT_KHO_CT_SELECT_FLAT_LIST)
-    .order('id', { ascending: false });
-  if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) => flattenCtFlatRow(row as unknown as Record<string, unknown>));
+  const data = await fetchAllPages<Record<string, unknown>>(async (from, to) => {
+    const { data: rows, error } = await supabase
+      .from('kho_nhap_xuat_kho_ct')
+      .select(NHAP_XUAT_KHO_CT_SELECT_FLAT_LIST)
+      .order('id', { ascending: false })
+      .range(from, to);
+    if (error) handleSupabaseError(error);
+    return (rows ?? []) as Record<string, unknown>[];
+  });
+  return data.map((row) => flattenCtFlatRow(row));
 }
 
 /** Đơn giá gần nhất theo hang_hoa_id — lấy từ lần nhập gần nhất (ngay_phieu DESC). */
@@ -234,15 +243,18 @@ export async function getLastDonGiaMap(): Promise<Map<string, number>> {
   const supabase = getSupabase();
   if (!supabase) return map;
 
-  const { data, error } = await supabase
-    .from('kho_nhap_xuat_kho_ct')
-    .select('hang_hoa_id,don_gia,phieu:kho_nhap_xuat_kho!inner(ngay_phieu)')
-    .order('ngay_phieu', { ascending: false, referencedTable: 'phieu' });
+  const data = await fetchAllPages<Record<string, unknown>>(async (from, to) => {
+    const { data: rows, error } = await supabase
+      .from('kho_nhap_xuat_kho_ct')
+      .select('hang_hoa_id,don_gia,phieu:kho_nhap_xuat_kho!inner(ngay_phieu)')
+      .order('ngay_phieu', { ascending: false, referencedTable: 'phieu' })
+      .range(from, to);
+    if (error) handleSupabaseError(error);
+    return (rows ?? []) as Record<string, unknown>[];
+  });
 
-  if (error) handleSupabaseError(error);
-
-  for (const row of data ?? []) {
-    const r = row as Record<string, unknown>;
+  for (const row of data) {
+    const r = row;
     const hangHoaId = String(r.hang_hoa_id ?? '');
     if (!hangHoaId || map.has(hangHoaId)) continue;
     const donGia = toNumber(r.don_gia);

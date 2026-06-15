@@ -3,6 +3,7 @@
  */
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import type { NhapXuatKhoCtFlatRow } from '../../nhap-xuat-kho/core/types';
 import type { NhapXuatKhoLoaiPhieu } from '../../nhap-xuat-kho/core/constants';
 import {
@@ -24,25 +25,11 @@ import type {
 } from '../core/types';
 
 const VIEW_TON = 'kho_ton_kho_view';
-const PAGE_SIZE = 1000;
 
 interface TonKhoViewRow {
   kho_id: number | string;
   hang_hoa_id: number | string;
   ton_kho: number | string | null;
-}
-
-async function fetchAllPages<T>(fetchPage: (from: number, to: number) => Promise<T[]>): Promise<T[]> {
-  const out: T[] = [];
-  let from = 0;
-  for (;;) {
-    const to = from + PAGE_SIZE - 1;
-    const chunk = await fetchPage(from, to);
-    out.push(...chunk);
-    if (chunk.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
-  }
-  return out;
 }
 
 function rowToTonKho(r: TonKhoViewRow): TonKhoRecord {

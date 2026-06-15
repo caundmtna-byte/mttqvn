@@ -265,7 +265,7 @@ const MobileModuleDetail: React.FC<{
   );
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex flex-col animate-in slide-in-from-right-4 fade-in duration-200">
+    <div className="fixed inset-0 z-[100] bg-background flex flex-col animate-in slide-in-from-right-4 fade-in duration-200 lg:hidden">
       {/* Header */}
       <div className="flex items-center gap-2 p-3 border-b border-border bg-card shrink-0">
         <button onClick={onBack} className="shrink-0 h-8 px-2 -ml-1 flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 text-muted-foreground active:scale-95 transition-all">
@@ -471,6 +471,8 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
   useEffect(() => {
     if (didRestoreMobileModule.current) return;
     didRestoreMobileModule.current = true;
+    // Desktop dùng `activeModuleId` từ URL; chỉ mobile mở overlay chi tiết khi reload.
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) return;
     const raw = searchParams.get(PERMISSION_MODULE_QUERY_KEY);
     const moduleId = resolvePermissionModuleIdFromQuery(raw);
     if (moduleId) setMobileSelectedModule(moduleId);
@@ -485,7 +487,11 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
     setSelectedFunction(fn);
   }, [selectedModuleId]);
 
-  const handleSelectModule = (moduleId: string) => {
+  const handleDesktopSelectModule = (moduleId: string) => {
+    setActiveModuleId(moduleId);
+  };
+
+  const handleMobileSelectModule = (moduleId: string) => {
     setActiveModuleId(moduleId);
     setMobileSelectedModule(moduleId);
   };
@@ -642,7 +648,7 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
             </div>
           </div>
           {/* Module list */}
-          <MobileModuleList onSelectModule={handleSelectModule} />
+          <MobileModuleList onSelectModule={handleMobileSelectModule} />
         </div>
 
         {/* ─── Desktop: Sidebar ─── */}
@@ -683,7 +689,7 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
                               {isGrExp && gr.modules.map((m) => {
                                 const isActive = selectedModuleId === m.id;
                                 return (
-                                  <button key={m.id} onClick={() => handleSelectModule(m.id)} className={cn('w-full flex items-start gap-1.5 pl-5 pr-2 py-[5px] transition-all text-left', isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40 font-normal')}>
+                                  <button key={m.id} onClick={() => handleDesktopSelectModule(m.id)} className={cn('w-full flex items-start gap-1.5 pl-5 pr-2 py-[5px] transition-all text-left', isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40 font-normal')}>
                                     <span className={cn('w-1 h-1 rounded-full shrink-0 mt-[6px]', isActive ? 'bg-primary' : 'bg-muted-foreground/30')} />
                                     <span className="flex-1 min-w-0">
                                       <span className="text-[12px] block truncate">{txt(m.nameKey)}</span>

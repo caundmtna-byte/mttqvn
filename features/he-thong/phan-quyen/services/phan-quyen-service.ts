@@ -14,6 +14,7 @@ import {
   moduleKeysForDbLookup,
 } from '../core/module-storage-key';
 import { mergePqRowsToModulePermissions } from '../utils/module-permissions';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 
 export const SYSTEM_MODULES_CONFIG = getAllPermissionModules().map((m) => ({
   id: m.id,
@@ -87,33 +88,43 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Supabase client is not configured.');
 
-  const { data: chucVuList, error: cvErr } = await supabase
-    .from('var_chuc_vu')
-    .select('id, ten_chuc_vu, mo_ta, phong_ban_id, cap_bac, trang_thai, thu_tu, tg_cap_nhat')
-    .order('thu_tu', { ascending: true })
-    .order('id', { ascending: true });
-  if (cvErr) handleSupabaseError(cvErr);
+  const cvs = await fetchAllPages<VarChucVuRow>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('var_chuc_vu')
+      .select('id, ten_chuc_vu, mo_ta, phong_ban_id, cap_bac, trang_thai, thu_tu, tg_cap_nhat')
+      .order('thu_tu', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) handleSupabaseError(error);
+    return (data ?? []) as VarChucVuRow[];
+  });
 
-  const cvs = (chucVuList ?? []) as VarChucVuRow[];
   if (cvs.length === 0) return [];
 
-  const chucVuIds = cvs.map((c) => Number(c.id));
-
-  const { data: pbRows, error: pbErr } = await supabase
-    .from('var_phong_ban')
-    .select('id, ten_phong_ban, thu_tu');
-  if (pbErr) handleSupabaseError(pbErr);
+  const pbRows = await fetchAllPages<VarPhongBanRow>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('var_phong_ban')
+      .select('id, ten_phong_ban, thu_tu')
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) handleSupabaseError(error);
+    return (data ?? []) as VarPhongBanRow[];
+  });
 
   const pbMap = new Map<number, VarPhongBanRow>();
-  for (const p of (pbRows ?? []) as VarPhongBanRow[]) {
+  for (const p of pbRows) {
     pbMap.set(Number(p.id), p);
   }
 
-  const { data: pqRows, error: pqErr } = await supabase
-    .from('var_phan_quyen')
-    .select('module_key, chuc_vu_id, quyen')
-    .in('chuc_vu_id', chucVuIds);
-  if (pqErr) handleSupabaseError(pqErr);
+  const pqRows = await fetchAllPages<VarPhanQuyenRow>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('var_phan_quyen')
+      .select('module_key, chuc_vu_id, quyen')
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) handleSupabaseError(error);
+    return (data ?? []) as VarPhanQuyenRow[];
+  });
 
   // Egress optim: dùng RPC `get_nhan_vien_count_by_chuc_vu` (GROUP BY phía DB) thay
   // vì kéo toàn bộ `var_nhan_vien.id_chuc_vu` rồi count client. Fallback về full
@@ -121,9 +132,17 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
   const empCount = new Map<number, number>();
   const { data: cntRows, error: cntErr } = await supabase.rpc('get_nhan_vien_count_by_chuc_vu');
   if (cntErr || !cntRows) {
-    const { data: nvRows } = await supabase.from('var_nhan_vien').select('id_chuc_vu');
-    for (const r of nvRows ?? []) {
-      const raw = (r as { id_chuc_vu?: number | string | null }).id_chuc_vu;
+    const nvRows = await fetchAllPages<{ id_chuc_vu?: number | string | null }>(async (from, to) => {
+      const { data, error } = await supabase
+        .from('var_nhan_vien')
+        .select('id_chuc_vu')
+        .order('id', { ascending: true })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as { id_chuc_vu?: number | string | null }[];
+    });
+    for (const r of nvRows) {
+      const raw = r.id_chuc_vu;
       if (raw == null) continue;
       const n = Number(raw);
       if (!Number.isFinite(n)) continue;
@@ -138,7 +157,7 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
   }
 
   const pqByCv = new Map<number, VarPhanQuyenRow[]>();
-  for (const r of (pqRows ?? []) as VarPhanQuyenRow[]) {
+  for (const r of pqRows) {
     const cvId = Number(r.chuc_vu_id);
     if (!pqByCv.has(cvId)) pqByCv.set(cvId, []);
     pqByCv.get(cvId)!.push(r);

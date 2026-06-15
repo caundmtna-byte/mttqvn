@@ -2,6 +2,7 @@ import { createRepository } from '@/lib/data/create-repository';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import { resolveEffectiveCapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import type { MttqTangLuongListRow } from '../core/types';
@@ -206,10 +207,17 @@ async function buildToChucTenByIdMap(): Promise<Map<string, string>> {
 async function buildChucVuTenByIdMap(): Promise<Map<string, string>> {
   const supabase = getSupabase();
   if (!supabase) return new Map();
-  const { data, error } = await supabase.from('var_chuc_vu').select('id,ten_chuc_vu');
-  if (error) handleSupabaseError(error);
+  const rows = await fetchAllPages<{ id: number | string; ten_chuc_vu?: string | null }>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('var_chuc_vu')
+      .select('id,ten_chuc_vu')
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) handleSupabaseError(error);
+    return (data ?? []) as { id: number | string; ten_chuc_vu?: string | null }[];
+  });
   const entries: [string, string][] = [];
-  for (const r of data ?? []) {
+  for (const r of rows) {
     const ten = String(r.ten_chuc_vu ?? '').trim();
     if (ten !== '') entries.push([String(r.id), ten]);
   }

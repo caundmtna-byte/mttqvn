@@ -2,6 +2,7 @@ import { createRepository } from '@/lib/data/create-repository';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import type {
   MttqLopTapHuan,
@@ -343,17 +344,19 @@ export async function getMttqLopTapHuanList(): Promise<MttqLopTapHuanListRow[]> 
 export async function getMttqLopTapHuanChiTietFlatList(): Promise<MttqTapHuanChiTietFlatRow[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const [{ data, error }, toChucById] = await Promise.all([
-    supabase
-      .from('mttq_lop_tap_huan_ct')
-      .select(MTTQ_LOP_TAP_HUAN_CT_SELECT_FLAT_LIST)
-      .order('id', { ascending: true }),
+  const [data, toChucById] = await Promise.all([
+    fetchAllPages<Record<string, unknown>>(async (from, to) => {
+      const { data: rows, error } = await supabase
+        .from('mttq_lop_tap_huan_ct')
+        .select(MTTQ_LOP_TAP_HUAN_CT_SELECT_FLAT_LIST)
+        .order('id', { ascending: true })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (rows ?? []) as Record<string, unknown>[];
+    }),
     buildToChucTenByIdMap(),
   ]);
-  if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) =>
-    flattenChiTietFlatRow(row as unknown as Record<string, unknown>, toChucById),
-  );
+  return data.map((row) => flattenChiTietFlatRow(row, toChucById));
 }
 
 function sortTapHuanChiTietFlatByLopDesc(rows: MttqTapHuanChiTietFlatRow[]): MttqTapHuanChiTietFlatRow[] {

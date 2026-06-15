@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import type { Json, PublicTableName } from '@/lib/supabase/database.types';
 import type { IRepository, RepositoryMutationOptions, RepositoryQueryOptions } from './repository';
 
@@ -32,17 +33,29 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
 
   async getAll(options?: RepositoryQueryOptions): Promise<T[]> {
     const supabase = ensureClient();
-    let query = supabase.from(this.tableName).select(this.select);
-    if (options?.orderBy) {
-      query = query.order(options.orderBy, { ascending: options.ascending !== false });
-    }
     const offset = options?.offset ?? 0;
     const limit = options?.limit;
-    const pageSize = limit ?? SUPABASE_DEFAULT_MAX_ROWS;
-    query = query.range(offset, offset + pageSize - 1);
-    const { data, error } = await query;
-    if (error) handleSupabaseError(error);
-    return (data ?? []) as unknown as T[];
+
+    const buildQuery = () => {
+      let query = supabase.from(this.tableName).select(this.select);
+      if (options?.orderBy) {
+        query = query.order(options.orderBy, { ascending: options.ascending !== false });
+      }
+      return query;
+    };
+
+    if (limit != null) {
+      const { data, error } = await buildQuery().range(offset, offset + limit - 1);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as unknown as T[];
+    }
+
+    const rows = await fetchAllPages<unknown>(async (from, to) => {
+      const { data, error } = await buildQuery().range(from, to);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as unknown[];
+    });
+    return rows as T[];
   }
 
   async getById(id: string): Promise<T | null> {
