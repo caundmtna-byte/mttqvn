@@ -11,9 +11,9 @@ import {
 import { parseQuyenTextToActions, actionsToQuyenText } from '../core/var-phan-quyen-quyen-map';
 import {
   getModuleStorageKey,
-  resolveModuleIdFromStorageKey,
   moduleKeysForDbLookup,
 } from '../core/module-storage-key';
+import { mergePqRowsToModulePermissions } from '../utils/module-permissions';
 
 export const SYSTEM_MODULES_CONFIG = getAllPermissionModules().map((m) => ({
   id: m.id,
@@ -62,15 +62,7 @@ function mapVarChucVuToPosition(
   soNhanVien: number,
 ): PositionPermission {
   const idStr = String(cv.id);
-  const quyen_han: ModulePermission[] = pqRows.map((r) => {
-    const rawKey = String(r.module_key);
-    const moduleId = resolveModuleIdFromStorageKey(rawKey) ?? rawKey;
-    return {
-      module_id: moduleId,
-      module_name: getModuleName(moduleId),
-      actions: parseQuyenTextToActions(r.quyen),
-    };
-  });
+  const quyen_han = mergePqRowsToModulePermissions(pqRows);
 
   return {
     id: idStr,

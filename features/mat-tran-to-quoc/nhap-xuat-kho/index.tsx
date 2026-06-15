@@ -23,7 +23,6 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
 import { formatCurrency } from '@/lib/utils';
@@ -90,13 +89,12 @@ const NhapXuatKhoPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefStockTransactions');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
     user &&
-      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+      (user.role === 'admin' || (matrixActive && canView)),
   );
 
   const chucVuKey = user
@@ -105,7 +103,6 @@ const NhapXuatKhoPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled &&
     user != null &&
     user.role !== 'admin' &&
     chucVuKey.trim() !== '' &&

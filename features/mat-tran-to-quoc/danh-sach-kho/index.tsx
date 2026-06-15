@@ -23,7 +23,6 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import ExportDialog from '@/components/shared/ExportDialog';
 import {
   useKhoDanhSachKhoList,
@@ -61,13 +60,12 @@ const KhoDanhSachKhoPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefWarehouseList');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
     user &&
-      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+      (user.role === 'admin' || (matrixActive && canView)),
   );
 
   const chucVuKey = user
@@ -76,7 +74,6 @@ const KhoDanhSachKhoPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled &&
     user != null &&
     user.role !== 'admin' &&
     chucVuKey.trim() !== '' &&

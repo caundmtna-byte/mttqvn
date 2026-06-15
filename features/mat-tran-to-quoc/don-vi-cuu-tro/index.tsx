@@ -23,7 +23,6 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog from '@/components/shared/ImportDialog';
 import ErrorState from '@/components/shared/ErrorState';
@@ -64,14 +63,13 @@ const KhoDonViCuuTroPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefSupportUnits');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
   /** Tránh bật query khi `matrixActive` còn false rồi tắt ngay khi hydrate (legacy `canView` → ma trận): request có thể bị hủy và danh sách trống dù RLS/DB có dữ liệu. */
   const listQueryEnabled = Boolean(
     user &&
-      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+      (user.role === 'admin' || (matrixActive && canView)),
   );
 
   const chucVuKey = user
@@ -80,7 +78,6 @@ const KhoDonViCuuTroPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled &&
     user != null &&
     user.role !== 'admin' &&
     chucVuKey.trim() !== '' &&

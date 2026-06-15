@@ -1,6 +1,6 @@
 import { useHydratePositionPermissions } from '@/hooks/use-hydrate-position-permissions';
 
-/** Hydrate quyền theo chức vụ sau đăng nhập khi `VITE_USE_PERMISSION_MATRIX=true`. */
+/** Hydrate quyền theo chức vụ sau đăng nhập từ `var_phan_quyen`. */
 export function PermissionMatrixSynchronizer() {
   useHydratePositionPermissions();
   return null;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { txt } from '../../../../lib/text';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { getParentPath } from '../../../../components/shared/Breadcrumbs';
 import {
   Shield, ChevronRight, Check, Minus, Save, ChevronDown,
@@ -18,7 +18,13 @@ import LoadingSpinnerWithText from '../../../../components/shared/LoadingSpinner
 import FilterChipSingleSelect from '../../../../components/shared/FilterChipSingleSelect';
 import { cn } from '../../../../lib/utils';
 import { useUpdateModulePermissions } from '../hooks/use-phan-quyen';
+import {
+  usePermissionModuleSearchParam,
+  resolvePermissionModuleIdFromQuery,
+  PERMISSION_MODULE_QUERY_KEY,
+} from '../hooks/use-permission-module-search-param';
 import { useCan } from '@/hooks/use-can';
+import { getModuleActionsFromRole } from '../utils/module-permissions';
 
 interface Props {
   roles: PositionPermission[];
@@ -69,9 +75,16 @@ const syncAll = (actions: ActionType[]): ActionType[] => {
   return actions;
 };
 
-const getFirstModuleId = (): string =>
-  PERMISSION_FUNCTIONS[0]?.groups?.[0]?.modules?.[0]?.id ?? 'he-thong/nhan-vien';
-
+function findFunctionGroupKeysForModule(moduleId: string): { fnId: string; groupKey: string } | null {
+  for (const fn of PERMISSION_FUNCTIONS) {
+    for (const gr of fn.groups) {
+      if (gr.modules.some((m) => m.id === moduleId)) {
+        return { fnId: fn.id, groupKey: `${fn.id}:${gr.groupTitleKey}` };
+      }
+    }
+  }
+  return null;
+}
 
 /* ─── Desktop: Function Dropdown ─── */
 const FunctionDropdown: React.FC<{
@@ -151,8 +164,7 @@ const MobileModuleDetail: React.FC<{
   useEffect(() => {
     const p: Record<string, ActionType[]> = {};
     roles.forEach((role) => {
-      const mp = role.quyen_han.find((q) => q.module_id === moduleId);
-      p[role.id] = mp ? syncAll([...mp.actions]) : [];
+      p[role.id] = getModuleActionsFromRole(role, moduleId);
     });
     queueMicrotask(() => setLocalPerms(p));
   }, [moduleId, roles]);
@@ -433,6 +445,9 @@ const MobileModuleList: React.FC<{
 const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { activeModuleId: selectedModuleId, setActiveModuleId, ensureModuleKeyInUrl } =
+    usePermissionModuleSearchParam();
+  const [searchParams] = useSearchParams();
   const goBackToParent = () => {
     const p = getParentPath(location.pathname, txt);
     navigate(p ?? '/he-thong');
@@ -442,12 +457,42 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set(
     PERMISSION_FUNCTIONS.flatMap((fn) => fn.groups.map((gr) => `${fn.id}:${gr.groupTitleKey}`)),
   ));
-  const [selectedModuleId, setSelectedModuleId] = useState<string>(getFirstModuleId);
   const [mobileSelectedModule, setMobileSelectedModule] = useState<string | null>(null);
+  const didRestoreMobileModule = useRef(false);
   const [selectedDeptFilter, setSelectedDeptFilter] = useState<string | null>(null);
   const [localPermissions, setLocalPermissions] = useState<Record<string, ActionType[]>>({});
   const updateMutation = useUpdateModulePermissions();
   const canEditMatrix = useCan('edit', 'permissions');
+
+  useEffect(() => {
+    ensureModuleKeyInUrl();
+  }, [ensureModuleKeyInUrl]);
+
+  useEffect(() => {
+    if (didRestoreMobileModule.current) return;
+    didRestoreMobileModule.current = true;
+    const raw = searchParams.get(PERMISSION_MODULE_QUERY_KEY);
+    const moduleId = resolvePermissionModuleIdFromQuery(raw);
+    if (moduleId) setMobileSelectedModule(moduleId);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const loc = findFunctionGroupKeysForModule(selectedModuleId);
+    if (!loc) return;
+    setExpandedFunctions((prev) => new Set([...prev, loc.fnId]));
+    setExpandedGroups((prev) => new Set([...prev, loc.groupKey]));
+    const fn = PERMISSION_FUNCTIONS.find((f) => f.id === loc.fnId) ?? null;
+    setSelectedFunction(fn);
+  }, [selectedModuleId]);
+
+  const handleSelectModule = (moduleId: string) => {
+    setActiveModuleId(moduleId);
+    setMobileSelectedModule(moduleId);
+  };
+
+  const handleMobileBack = () => {
+    setMobileSelectedModule(null);
+  };
 
   const toggleGroupExpand = (key: string) => {
     setExpandedGroups((prev) => {
@@ -464,8 +509,7 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
   useEffect(() => {
     const p: Record<string, ActionType[]> = {};
     roles.forEach((role) => {
-      const mp = role.quyen_han.find((q) => q.module_id === selectedModuleId);
-      p[role.id] = mp ? syncAll([...mp.actions]) : [];
+      p[role.id] = getModuleActionsFromRole(role, selectedModuleId);
     });
     queueMicrotask(() => setLocalPermissions(p));
   }, [selectedModuleId, roles]);
@@ -576,7 +620,7 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
         <MobileModuleDetail
           moduleId={mobileSelectedModule}
           roles={roles}
-          onBack={() => setMobileSelectedModule(null)}
+          onBack={handleMobileBack}
         />
       )}
 
@@ -598,7 +642,7 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
             </div>
           </div>
           {/* Module list */}
-          <MobileModuleList onSelectModule={(id) => setMobileSelectedModule(id)} />
+          <MobileModuleList onSelectModule={handleSelectModule} />
         </div>
 
         {/* ─── Desktop: Sidebar ─── */}
@@ -639,7 +683,7 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
                               {isGrExp && gr.modules.map((m) => {
                                 const isActive = selectedModuleId === m.id;
                                 return (
-                                  <button key={m.id} onClick={() => setSelectedModuleId(m.id)} className={cn('w-full flex items-start gap-1.5 pl-5 pr-2 py-[5px] transition-all text-left', isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40 font-normal')}>
+                                  <button key={m.id} onClick={() => handleSelectModule(m.id)} className={cn('w-full flex items-start gap-1.5 pl-5 pr-2 py-[5px] transition-all text-left', isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40 font-normal')}>
                                     <span className={cn('w-1 h-1 rounded-full shrink-0 mt-[6px]', isActive ? 'bg-primary' : 'bg-muted-foreground/30')} />
                                     <span className="flex-1 min-w-0">
                                       <span className="text-[12px] block truncate">{txt(m.nameKey)}</span>

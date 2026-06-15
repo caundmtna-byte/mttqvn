@@ -23,7 +23,6 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { queryKeys } from '@/lib/query-keys';
@@ -86,7 +85,6 @@ const DanhSachTangLuongPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranSalaryIncreaseList');
   const { canCreate, canEdit, canDelete, canExport } = useResourcePermissions('matTranSalaryIncreaseList');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
@@ -96,14 +94,13 @@ const DanhSachTangLuongPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled &&
     user != null &&
     user.role !== 'admin' &&
     chucVuKey.trim() !== '' &&
     !matrixActive;
 
   const listQueryEnabled = Boolean(
-    user && (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+    user && (user.role === 'admin' || (matrixActive && canView)),
   );
 
   const [mainTab, setMainTab] = useTabSearchParam(TANG_LUONG_MAIN_TABS, 'lich_su');

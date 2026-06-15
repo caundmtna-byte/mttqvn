@@ -23,7 +23,6 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ErrorState from '@/components/shared/ErrorState';
 import {
@@ -62,13 +61,12 @@ const DipThamHoiPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'danTocDipThamHoi');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
   /** Chạy list khi user có quyền xem (kể cả legacy trước hydrate); tránh list trống im lặng khi matrixActive chưa true. */
   const listQueryEnabled = Boolean(
-    user && (user.role === 'admin' || !matrixEnabled || canView),
+    user && (user.role === 'admin' || canView),
   );
 
   const prevMatrixActive = useRef(matrixActive);
@@ -78,15 +76,15 @@ const DipThamHoiPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled && user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
-    if (matrixEnabled && !matrixActive) return;
+    if (!matrixActive) return;
     didRedirect.current = true;
     toast.error(txt('danTocDipThamHoi.noViewPermission'));
     navigate('/dan-toc-ton-giao', { replace: true });
-  }, [user, canView, matrixEnabled, matrixActive, navigate]);
+  }, [user, canView, matrixActive, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DipThamHoi | null>(null);

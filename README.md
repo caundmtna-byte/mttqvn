@@ -12,7 +12,7 @@
 ## Supabase
 
 1. Tạo project trên [Supabase](https://supabase.com), lấy **URL** và **anon key**.
-2. Copy `.env.example` → `.env.local` và điền `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. **Không commit** `.env.local` (đã nằm trong `.gitignore`). Trên Vercel: đặt cùng biến trong Environment Variables.
+2. Copy `.env.example` → `.env.local` và điền `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. **Không commit** `.env.local` (đã nằm trong `.gitignore`). Trên Vercel: chỉ cần hai biến Supabase trên (ma trận phân quyền luôn bật sau đăng nhập, không cần flag env riêng).
 3. Sinh type TypeScript cho PostgREST (khuyến nghị khi schema ổn định):
 
    ```bash

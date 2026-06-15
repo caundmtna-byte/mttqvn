@@ -54,7 +54,6 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import ErrorState from '@/components/shared/ErrorState';
@@ -120,7 +119,6 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefSupportReport');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const { canExport } = useResourcePermissions('matTranReliefSupportReport');
   const canOpenPhieuDetail = useCan('view', 'matTranReliefStockTransactions');
@@ -128,7 +126,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
 
   const listQueryEnabled = Boolean(
     user &&
-      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+      (user.role === 'admin' || (matrixActive && canView)),
   );
 
   const chucVuKey = user
@@ -137,7 +135,6 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled &&
     user != null &&
     user.role !== 'admin' &&
     chucVuKey.trim() !== '' &&

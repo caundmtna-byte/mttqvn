@@ -23,7 +23,6 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
 import {
@@ -63,14 +62,13 @@ const KhoDotCuuTroPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefCampaign');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
   /** Tránh bật query khi ma trận chưa hydrate rồi hủy request — danh sách trống / cache lệch. */
   const listQueryEnabled = Boolean(
     user &&
-      (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+      (user.role === 'admin' || (matrixActive && canView)),
   );
 
   const chucVuKey = user
@@ -79,7 +77,6 @@ const KhoDotCuuTroPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled &&
     user != null &&
     user.role !== 'admin' &&
     chucVuKey.trim() !== '' &&

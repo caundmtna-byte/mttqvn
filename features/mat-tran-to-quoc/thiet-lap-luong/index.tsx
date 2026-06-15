@@ -7,7 +7,6 @@ import TabGroup from '@/components/ui/TabGroup';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import LuongNgachTabPanel from './components/luong-ngach-tab-panel';
 import LuongBacTabPanel from './components/luong-bac-tab-panel';
 
@@ -18,7 +17,6 @@ const ThietLapLuongPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranSalarySetup');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
@@ -28,10 +26,10 @@ const ThietLapLuongPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled && user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
 
   const listQueryEnabled = Boolean(
-    user && (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+    user && (user.role === 'admin' || (matrixActive && canView)),
   );
 
   useEffect(() => {

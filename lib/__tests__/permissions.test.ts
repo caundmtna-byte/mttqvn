@@ -15,7 +15,7 @@ const member: User = {
   email: 'u@test.com',
   role: 'user',
   created_at: '',
-  /** Ma trận bật (`VITE_USE_PERMISSION_MATRIX`) — không có chức vụ thì `can()` deny toàn bộ. */
+  /** Không có chức vụ thì `can()` deny toàn bộ module nghiệp vụ. */
   id_chuc_vu: '1',
 };
 
@@ -32,7 +32,13 @@ describe('can', () => {
     expect(can(admin, 'delete', 'employees')).toBe(true);
   });
 
-  it('member can view but not delete employees (legacy matrix off)', () => {
+  it('member without id_chuc_vu cannot access business modules', () => {
+    const noChucVu: User = { ...member, id_chuc_vu: undefined };
+    expect(can(noChucVu, 'view', 'employees')).toBe(false);
+    expect(can(noChucVu, 'edit', 'profile')).toBe(false);
+  });
+
+  it('member can view but not delete employees before matrix hydrate', () => {
     expect(can(member, 'view', 'employees')).toBe(true);
     expect(can(member, 'delete', 'employees')).toBe(false);
   });

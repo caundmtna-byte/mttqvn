@@ -1,7 +1,6 @@
 import type { User } from '@/types';
 import type { ActionType } from '@/features/he-thong/phan-quyen/core/types';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 
 /**
  * Hành động gắn với UI (nút, route) — mở rộng theo nghiệp vụ.
@@ -218,8 +217,8 @@ export function can(
     return true;
   }
 
-  // Matrix mode: không có chức vụ → không có quyền gì
-  if (isPermissionMatrixEnabled() && !user.id_chuc_vu) {
+  // Không có chức vụ → không có quyền module nghiệp vụ
+  if (!user.id_chuc_vu) {
     return false;
   }
 

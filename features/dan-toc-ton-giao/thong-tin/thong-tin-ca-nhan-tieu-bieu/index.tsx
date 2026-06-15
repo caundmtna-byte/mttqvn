@@ -23,7 +23,6 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
-import { isPermissionMatrixEnabled } from '@/lib/permission-matrix-env';
 import { formatDate } from '@/lib/utils';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog from '@/components/shared/ImportDialog';
@@ -72,12 +71,11 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'danTocCaNhanTieuBieu');
-  const matrixEnabled = isPermissionMatrixEnabled();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
-    user && (user.role === 'admin' || !matrixEnabled || (matrixActive && canView)),
+    user && (user.role === 'admin' || (matrixActive && canView)),
   );
 
   const chucVuKey = user
@@ -86,7 +84,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
       : String(user.id_chuc_vu ?? '')
     : '';
   const waitingMatrixHydrate =
-    matrixEnabled && user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
