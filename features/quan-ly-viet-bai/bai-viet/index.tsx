@@ -24,10 +24,10 @@ import ExportDialog from '@/components/shared/ExportDialog';
 import { useTheLoais } from '../thiet-lap-bai-viet/hooks/use-the-loai';
 import { useThietLapKhacAll } from '../thiet-lap-bai-viet/hooks/use-thiet-lap-khac';
 import {
-  canLoadArticleAllTab,
-  resolveBaiVietAllTabRpcScope,
-  useArticleAllTabViewer,
-  rowVisibleOnArticleAllTab,
+  canLoadArticleList,
+  resolveBaiVietListRpcScope,
+  useArticleListViewer,
+  rowVisibleOnArticleList,
 } from '../hooks/use-article-all-tab-viewer';
 import { useBaiVietDanhSachPage, useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
 import { useBaiVietNguoiTaoFilterOptions } from './hooks/use-bai-viet-nguoi-tao-filter-options';
@@ -86,12 +86,12 @@ const BaiVietDanhSachPage: React.FC = () => {
     setPage,
   } = useBaiVietDanhSachStore();
 
-  const allTabViewer = useArticleAllTabViewer();
+  const listViewer = useArticleListViewer();
   const { data: theLoais = [] } = useTheLoais({ enabled: canView });
   const { data: khacRows = [] } = useThietLapKhacAll({ enabled: canView });
 
-  const rpcScope = resolveBaiVietAllTabRpcScope(allTabViewer);
-  const pageQueryEnabled = canView && canLoadArticleAllTab(allTabViewer);
+  const rpcScope = resolveBaiVietListRpcScope(listViewer);
+  const pageQueryEnabled = canView && canLoadArticleList(listViewer);
 
   const pageQuery = useMemo(
     () => ({
@@ -99,8 +99,8 @@ const BaiVietDanhSachPage: React.FC = () => {
       pageSize: pagination.pageSize,
       search: searchTerm,
       scope: rpcScope,
-      viewerNhanVienId: rpcScope === 'mine' ? allTabViewer.viewerNhanVienId : null,
-      viewerDonViId: rpcScope === 'all_don_vi' ? allTabViewer.viewerDonViId : null,
+      viewerNhanVienId: rpcScope === 'mine' ? listViewer.viewerNhanVienId : null,
+      viewerDonViId: null,
       theLoaiIds: filters.id_the_loai,
       nguonDangIds: filters.id_nguon_dang,
       trangDangIds: filters.id_trang_dang,
@@ -111,8 +111,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       pagination.pageSize,
       searchTerm,
       rpcScope,
-      allTabViewer.viewerDonViId,
-      allTabViewer.viewerNhanVienId,
+      listViewer.viewerNhanVienId,
       filters.id_the_loai,
       filters.id_nguon_dang,
       filters.id_trang_dang,
@@ -126,8 +125,8 @@ const BaiVietDanhSachPage: React.FC = () => {
   });
 
   const { data: nguoiTaoFilterRows = [] } = useBaiVietNguoiTaoFilterOptions({
-    scope: rpcScope === 'mine' ? 'all' : rpcScope,
-    viewerDonViId: rpcScope === 'all_don_vi' ? allTabViewer.viewerDonViId : null,
+    scope: 'all',
+    viewerDonViId: null,
     enabled: pageQueryEnabled && rpcScope !== 'mine',
   });
 
@@ -154,20 +153,36 @@ const BaiVietDanhSachPage: React.FC = () => {
 
   useEffect(() => {
     if (!viewing) return;
+    if (!rowVisibleOnArticleList(listViewer, viewing)) {
+      toast.error(txt('articleList.noViewRowPermission'));
+      setViewing(null);
+      return;
+    }
     const fresh = rows.find((r) => r.id === viewing.id);
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
-  }, [rows, viewing]);
+  }, [rows, viewing, listViewer]);
+
+  const handleView = useCallback(
+    (item: BaiVietDanhSach) => {
+      if (!rowVisibleOnArticleList(listViewer, item)) {
+        toast.error(txt('articleList.noViewRowPermission'));
+        return;
+      }
+      setViewing(item);
+    },
+    [listViewer],
+  );
 
   const filterFn = useCallback(
     (item: BaiVietDanhSach, _term: string, f: typeof filters) => {
-      if (!rowVisibleOnArticleAllTab(allTabViewer, item)) return false;
+      if (!rowVisibleOnArticleList(listViewer, item)) return false;
       if (f.id_the_loai?.length && !f.id_the_loai.includes(String(item.id_the_loai))) return false;
       if (f.id_nguon_dang?.length && !f.id_nguon_dang.includes(String(item.id_nguon_dang))) return false;
       if (f.id_trang_dang?.length && !f.id_trang_dang.includes(String(item.id_trang_dang))) return false;
       if (f.id_nguoi_tao?.length && !f.id_nguoi_tao.includes(String(item.id_nguoi_tao))) return false;
       return baiVietMatchesColumnSearch(item, f);
     },
-    [allTabViewer],
+    [listViewer],
   );
 
   const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
@@ -379,7 +394,7 @@ const BaiVietDanhSachPage: React.FC = () => {
             isLoading={isLoading}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onView={setViewing}
+            onView={handleView}
             serverSidePagination
             serverTotalRecords={serverTotalRecords}
             serverHasNextPage={serverHasNextPage}

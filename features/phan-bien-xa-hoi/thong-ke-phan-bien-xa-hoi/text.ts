@@ -3,6 +3,7 @@ export const pbxhThongKe = {
   title: 'Thống kê kiểm tra, GS và PBXH',
   noViewPermission: 'Bạn không có quyền xem Thống kê kiểm tra, GS và PBXH.',
   noDetailPermission: 'Bạn không có quyền xem chi tiết hoạt động phản biện xã hội.',
+  noViewRowPermission: 'Bạn không có quyền xem bản ghi này.',
   loading: 'Đang tải thống kê…',
   noData: 'Không có dữ liệu trong khoảng và bộ lọc đã chọn.',
   noDataHint: 'Thử đổi khoảng thời gian hoặc bỏ bớt bộ lọc.',

@@ -55,6 +55,7 @@ import { chartFillForCategoricalBar } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { AnimatePresence } from 'framer-motion';
 import { useCan } from '@/hooks/use-can';
@@ -63,6 +64,10 @@ import ChartTooltip from '@/components/ui/ChartTooltip';
 import { congViecDeadlineChipClass } from '@/features/quan-ly-giao-viec/cong-viec/core/display-badges';
 import type { CongViecDeadlineChipTone } from '@/features/quan-ly-giao-viec/cong-viec/core/display-badges';
 import { useThucHienPhanBienList } from '../thuc-hien-phan-bien-xa-hoi/hooks/use-thuc-hien-phan-bien';
+import {
+  canViewPbxhThucHienRow,
+  usePbxhThucHienViewer,
+} from '../thuc-hien-phan-bien-xa-hoi/hooks/use-pbxh-thuc-hien-viewer';
 import type { ThucHienPhanBien } from '../thuc-hien-phan-bien-xa-hoi/core/types';
 import {
   CAP_THUC_HIEN_VALUES,
@@ -171,7 +176,20 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   const canView = useCan('view', 'phanBienThongKe');
   const canOpenDetail = useCan('view', 'phanBienThucHien');
   const { canExport } = useResourcePermissions('phanBienThongKe');
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const didRedirect = useRef(false);
+
+  const listQueryEnabled = Boolean(
+    user && (user.role === 'admin' || (matrixActive && canView)),
+  );
+
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  const waitingMatrixHydrate =
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -180,7 +198,18 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     navigate('/phan-bien-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
-  const { data: rows = [], isLoading } = useThucHienPhanBienList({ enabled: canView });
+  const {
+    data: rows = [],
+    isLoading,
+    isFetching,
+  } = useThucHienPhanBienList({ enabled: listQueryEnabled });
+  const isListLoading = isLoading || waitingMatrixHydrate;
+  const viewer = usePbxhThucHienViewer('phanBienThongKe');
+
+  const rowsInScope = useMemo(
+    () => rows.filter((r) => canViewPbxhThucHienRow(viewer, r)),
+    [rows, viewer],
+  );
 
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
   const [dims, setDims] = useState<PbxhThongKeDimensionFilters>(initialDims);
@@ -188,6 +217,14 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [viewing, setViewing] = useState<ThucHienPhanBien | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    if (!viewing) return;
+    if (!canViewPbxhThucHienRow(viewer, viewing)) {
+      toast.error(txt('pbxhThongKe.noViewRowPermission'));
+      setViewing(null);
+    }
+  }, [viewing, viewer]);
 
   const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
@@ -197,14 +234,14 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   );
 
   const filtered = useMemo(
-    () => filterRowsForPbxhThongKe(rows, resolvedRange, dims),
-    [rows, resolvedRange, dims],
+    () => filterRowsForPbxhThongKe(rowsInScope, resolvedRange, dims),
+    [rowsInScope, resolvedRange, dims],
   );
 
   const kpis = useMemo(() => computePbxhThongKeKpis(filtered), [filtered]);
   const chartRange = useMemo(
-    () => resolvePbxhThongKeTrendChartRange(resolvedRange, rows),
-    [resolvedRange, rows],
+    () => resolvePbxhThongKeTrendChartRange(resolvedRange, rowsInScope),
+    [resolvedRange, rowsInScope],
   );
   const bucket = useMemo(() => pickPbxhTrendBucket(chartRange.start, chartRange.end), [chartRange]);
   const trendSeries = useMemo(
@@ -236,43 +273,43 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   const capOptions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const v of CAP_THUC_HIEN_VALUES) counts.set(v, 0);
-    for (const r of rows) counts.set(r.cap_thuc_hien, (counts.get(r.cap_thuc_hien) ?? 0) + 1);
+    for (const r of rowsInScope) counts.set(r.cap_thuc_hien, (counts.get(r.cap_thuc_hien) ?? 0) + 1);
     return CAP_THUC_HIEN_VALUES.map((value) => ({
       value,
       label: value,
       count: counts.get(value) ?? 0,
     }));
-  }, [rows]);
+  }, [rowsInScope]);
 
   const loaiHinhOptions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const v of LOAI_HINH_VALUES) counts.set(v, 0);
-    for (const r of rows) counts.set(r.loai_hinh, (counts.get(r.loai_hinh) ?? 0) + 1);
+    for (const r of rowsInScope) counts.set(r.loai_hinh, (counts.get(r.loai_hinh) ?? 0) + 1);
     return LOAI_HINH_VALUES.map((value) => ({
       value,
       label: value,
       count: counts.get(value) ?? 0,
     }));
-  }, [rows]);
+  }, [rowsInScope]);
 
   const tinhTrangOptions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const v of TINH_TRANG_VALUES) counts.set(v, 0);
-    for (const r of rows) counts.set(r.tinh_trang, (counts.get(r.tinh_trang) ?? 0) + 1);
+    for (const r of rowsInScope) counts.set(r.tinh_trang, (counts.get(r.tinh_trang) ?? 0) + 1);
     return TINH_TRANG_VALUES.map((value) => ({
       value,
       label: value,
       count: counts.get(value) ?? 0,
     }));
-  }, [rows]);
+  }, [rowsInScope]);
 
   const donViThucHienOptions = useMemo(
     () =>
-      buildDimOptions(rows, (r) => ({
+      buildDimOptions(rowsInScope, (r) => ({
         id: getPbxhStatsDonViThucHienKey(r),
         label: getPbxhStatsDonViThucHienLabel(r),
       })),
-    [rows],
+    [rowsInScope],
   );
 
   const tienDoOptions = useMemo(() => {
@@ -292,7 +329,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     };
     const counts = new Map<string, number>();
     for (const id of PBXH_TIEN_DO_FILTER_IDS) counts.set(id, 0);
-    for (const r of rows) {
+    for (const r of rowsInScope) {
       const k = getPbxhTienDoFilterId(r);
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }
@@ -301,7 +338,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
       label: labelOf(value),
       count: counts.get(value) ?? 0,
     }));
-  }, [rows]);
+  }, [rowsInScope]);
 
   const filterGroups = useMemo<FilterGroup[]>(
     () => [
@@ -519,6 +556,10 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
       toast.error(txt('pbxhThongKe.noDetailPermission'));
       return;
     }
+    if (!canViewPbxhThucHienRow(viewer, row)) {
+      toast.error(txt('pbxhThongKe.noViewRowPermission'));
+      return;
+    }
     setViewing(row);
   };
 
@@ -617,7 +658,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
       />
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-        {isLoading ? (
+        {isListLoading || (listQueryEnabled && isFetching && rowsInScope.length === 0) ? (
           <p className="text-sm text-muted-foreground">{txt('pbxhThongKe.loading')}</p>
         ) : filtered.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">

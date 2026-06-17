@@ -30,6 +30,10 @@ import {
   useThucHienPhanBienDetail,
   useDeleteThucHienPhanBienMany,
 } from './hooks/use-thuc-hien-phan-bien';
+import {
+  canViewPbxhThucHienRow,
+  usePbxhThucHienViewer,
+} from './hooks/use-pbxh-thuc-hien-viewer';
 import { useThucHienPhanBienStore } from './store/useThucHienPhanBienStore';
 import type { ThucHienPhanBien } from './core/types';
 import { THUC_HIEN_PHAN_BIEN_SEARCH_KEYS } from './utils/search-keys';
@@ -109,6 +113,12 @@ const ThucHienPhanBienPage: React.FC = () => {
   const { data: viewingData } = useThucHienPhanBienDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteThucHienPhanBienMany();
+  const viewer = usePbxhThucHienViewer('phanBienThucHien');
+
+  const viewableRows = useMemo(
+    () => rows.filter((r) => canViewPbxhThucHienRow(viewer, r)),
+    [rows, viewer],
+  );
 
   useEffect(() => {
     return () => resetState();
@@ -134,7 +144,7 @@ const ThucHienPhanBienPage: React.FC = () => {
     return matchesSearch;
   }, []);
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
   const sorted = useMemo(() => sortThucHienPhanBienList(filtered, sort), [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
@@ -218,28 +228,32 @@ const ThucHienPhanBienPage: React.FC = () => {
 
   const emptyTitleResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
         ? txt('common.noResults')
         : txt('pbxhThucHien.empty'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, viewableRows.length, hasListFilters],
   );
 
   useEffect(() => {
     if (!viewingId) return;
-    const fresh = rows.find((r) => r.id === viewingId);
+    const fresh = viewableRows.find((r) => r.id === viewingId);
     if (!fresh) {
       setViewingId(null);
       return;
     }
     queryClient.setQueryData(queryKeys.pbxhThucHien.detail(viewingId), fresh);
-  }, [rows, viewingId, queryClient]);
+  }, [viewableRows, viewingId, queryClient]);
 
   const handleView = useCallback(
     (item: ThucHienPhanBien) => {
+      if (!canViewPbxhThucHienRow(viewer, item)) {
+        toast.error(txt('pbxhThucHien.noViewRowPermission'));
+        return;
+      }
       queryClient.setQueryData(queryKeys.pbxhThucHien.detail(item.id), item);
       setViewingId(item.id);
     },
-    [queryClient],
+    [queryClient, viewer],
   );
 
   const handleEditFromList = (item: ThucHienPhanBien) => {
@@ -327,7 +341,7 @@ const ThucHienPhanBienPage: React.FC = () => {
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
-          items={rows}
+          items={viewableRows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">

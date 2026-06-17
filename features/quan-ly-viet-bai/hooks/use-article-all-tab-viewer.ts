@@ -91,3 +91,53 @@ export function canLoadArticleAllTab(viewer: ArticleAllTabViewer): boolean {
   if (viewer.chucVuCapQuanLy === 'Xã phường') return Boolean(viewer.viewerDonViId);
   return Boolean(viewer.viewerNhanVienId);
 }
+
+/** Phạm vi trang Danh sách bài viết — chỉ bài mình tạo, trừ cap_bac=1 / quan_tri module articles. */
+export interface ArticleListViewer {
+  /** True ⇒ xem mọi bài: cap_bac=1, quan_tri (`articles`), admin, legacy. */
+  viewAll: boolean;
+  /** `var_nhan_vien.id` — so khớp `id_nguoi_tao` khi không bypass. */
+  viewerNhanVienId: string | null;
+}
+
+/**
+ * Viewer cho trang Danh sách bài viết (`/quan-ly-viet-bai/bai-viet`).
+ *
+ * Không bypass theo `cap_quan_ly` Tỉnh/Xã — chỉ `cap_bac === 1` hoặc grant admin/all trên module **articles**.
+ */
+export function useArticleListViewer(): ArticleListViewer {
+  const user = useAuthStore((s) => s.user);
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
+  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
+
+  return useMemo(() => {
+    const articlesMod = APP_RESOURCE_TO_MODULE.articles;
+    const articlesGrants = articlesMod ? (grantsByModule[articlesMod] ?? []) : [];
+    const viewAll =
+      user?.role === 'admin' ||
+      !matrixActive ||
+      isChucVuCapBacOne(chucVuCapBac) ||
+      grantsHaveAdminOrAll(articlesGrants);
+    const nv = user?.nhan_vien_id?.toString().trim();
+    return {
+      viewAll,
+      viewerNhanVienId: nv ? nv : null,
+    };
+  }, [user?.role, user?.nhan_vien_id, matrixActive, grantsByModule, chucVuCapBac]);
+}
+
+export function rowVisibleOnArticleList(viewer: ArticleListViewer, row: BaiVietDanhSach): boolean {
+  if (viewer.viewAll) return true;
+  if (!viewer.viewerNhanVienId) return false;
+  return String(row.id_nguoi_tao) === viewer.viewerNhanVienId;
+}
+
+/** RPC scope cho Danh sách bài viết. */
+export function resolveBaiVietListRpcScope(viewer: ArticleListViewer): BaiVietRpcScope {
+  return viewer.viewAll ? 'all' : 'mine';
+}
+
+export function canLoadArticleList(viewer: ArticleListViewer): boolean {
+  return viewer.viewAll || Boolean(viewer.viewerNhanVienId);
+}

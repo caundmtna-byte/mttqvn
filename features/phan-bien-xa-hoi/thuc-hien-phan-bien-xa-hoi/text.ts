@@ -1,5 +1,7 @@
 export const pbxhThucHien = {
   noViewPermission: 'Bạn không có quyền xem module Kiểm tra, GS và PBXH.',
+  noViewRowPermission: 'Bạn không có quyền xem bản ghi này.',
+  noDonViScopePermission: 'Bạn chỉ được chọn đơn vị thực hiện thuộc xã/phường của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
   searchPlaceholder: 'Tìm theo nội dung, đối tượng, đơn vị…',
   empty: 'Chưa có bản ghi phản biện xã hội',

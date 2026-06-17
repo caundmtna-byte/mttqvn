@@ -14,6 +14,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
+import { toast } from 'sonner';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
@@ -35,6 +36,10 @@ import {
 import { CAP_THUC_HIEN_VALUES, LOAI_HINH_VALUES, TINH_TRANG_VALUES, PBXH_DON_VI_THUC_HIEN_TINH_VALUE } from '../core/constants';
 import type { ThucHienPhanBien } from '../core/types';
 import { useCreateThucHienPhanBien, useUpdateThucHienPhanBien } from '../hooks/use-thuc-hien-phan-bien';
+import {
+  isPbxhScopedToXaPhuong,
+  usePbxhThucHienViewer,
+} from '../hooks/use-pbxh-thuc-hien-viewer';
 
 const FORM_ID = 'pbxh-thuc-hien-form';
 
@@ -55,6 +60,8 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const createMutation = useCreateThucHienPhanBien(onClose);
   const updateMutation = useUpdateThucHienPhanBien(onClose);
+  const viewer = usePbxhThucHienViewer('phanBienThucHien');
+  const scopedToXa = isPbxhScopedToXaPhuong(viewer);
 
   const doiTuongOptions = useMemo(
     () =>
@@ -104,8 +111,11 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
         value: String(x.id),
         subLabel: tinhMap.get(x.id_tinh_thanh),
       }));
+    if (scopedToXa && viewer.viewerDonViId) {
+      return rest.filter((x) => x.value === viewer.viewerDonViId);
+    }
     return [tinhCap, ...rest];
-  }, [xaPhuongAll, tinhMap]);
+  }, [xaPhuongAll, tinhMap, scopedToXa, viewer.viewerDonViId]);
 
   const capOptions = useMemo(() => CAP_THUC_HIEN_VALUES.map((v) => ({ label: v, value: v })), []);
   const loaiHinhOptions = useMemo(() => LOAI_HINH_VALUES.map((v) => ({ label: v, value: v })), []);
@@ -128,8 +138,13 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   useEffect(() => {
-    reset(thucHienPhanBienToFormInput(initialData ?? null));
-  }, [initialData, reset]);
+    const base = thucHienPhanBienToFormInput(initialData ?? null);
+    if (!initialData && scopedToXa && viewer.viewerDonViId) {
+      reset({ ...base, don_vi_thuc_hien_id: viewer.viewerDonViId });
+    } else {
+      reset(base);
+    }
+  }, [initialData, reset, scopedToXa, viewer.viewerDonViId]);
 
   const soLanHoanThanh = watch('so_lan_hoan_thanh');
   const soLanKhaoSat = watch('so_lan_khao_sat');
@@ -139,6 +154,13 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   const onSubmit: SubmitHandler<ThucHienPhanBienFormValues> = (parsed) => {
+    if (scopedToXa && viewer.viewerDonViId) {
+      const dv = parsed.don_vi_thuc_hien_id?.trim() ?? '';
+      if (!dv || dv !== viewer.viewerDonViId) {
+        toast.error(txt('pbxhThucHien.noDonViScopePermission'));
+        return;
+      }
+    }
     if (isEdit && initialData) {
       updateMutation.mutate({ id: initialData.id, data: parsed });
     } else {
