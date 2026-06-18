@@ -154,7 +154,7 @@ const ThamHoiToChucForm: React.FC<Props> = ({ initialData, defaultDipId, onClose
   });
 
   const onSubmit: SubmitHandler<ThamHoiToChucFormInput> = (data) => {
-    const parsed = thamHoiToChucSchema.parse(data) as ThamHoiToChucFormValues;
+    const parsed = data as unknown as ThamHoiToChucFormValues;
     if (isEdit && initialData) {
       updateMutation.mutate({ id: initialData.id, data: parsed });
     } else {

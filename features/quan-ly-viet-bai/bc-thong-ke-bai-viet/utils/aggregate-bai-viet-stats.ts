@@ -86,10 +86,11 @@ export function computeArticleStatsKpis(filtered: BaiVietDanhSach[]): {
 export type TrendBucket = 'day' | 'month';
 
 export function pickTrendBucket(start: string, end: string): TrendBucket {
+  if (!start || !end) return 'month';
   const a = dayjs(start.slice(0, 10));
   const b = dayjs(end.slice(0, 10));
   const days = b.diff(a, 'day');
-  return days > 62 ? 'month' : 'day';
+  return !Number.isFinite(days) || days > 62 ? 'month' : 'day';
 }
 
 export interface TrendPoint {
@@ -105,8 +106,21 @@ export function buildTrendSeries(
   range: ResolvedDateRange,
   bucket: TrendBucket,
 ): TrendPoint[] {
-  const start = dayjs(range.start.slice(0, 10));
-  const end = dayjs(range.end.slice(0, 10));
+  let startStr = range.start;
+  let endStr = range.end;
+
+  // allTime hoặc empty start/end → tự suy min/max từ data để tránh vòng lặp vô tận
+  if (!startStr || !endStr) {
+    if (filtered.length === 0) return [];
+    const dates = filtered.map(getArticleStatsDateFromCreatedAt).filter(Boolean);
+    if (dates.length === 0) return [];
+    startStr = dates.reduce((a, b) => (a < b ? a : b));
+    endStr = dates.reduce((a, b) => (a > b ? a : b));
+  }
+
+  const start = dayjs(startStr.slice(0, 10));
+  const end = dayjs(endStr.slice(0, 10));
+  if (!start.isValid() || !end.isValid()) return [];
   const keys: string[] = [];
   if (bucket === 'day') {
     for (let cur = start; !cur.isAfter(end, 'day'); cur = cur.add(1, 'day')) {

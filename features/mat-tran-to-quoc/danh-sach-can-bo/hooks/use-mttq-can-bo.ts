@@ -100,9 +100,6 @@ export const useImportMttqCanBo = (onSuccess?: () => void) => {
       if (result.created > 0) {
         toast.success(txt('matTranCanBo.import.toastSuccess', { count: String(result.created) }));
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 5).join('; '));
-      }
       onSuccess?.();
     },
     onError: (e: unknown) => toast.error(getErrorMessage(e)),

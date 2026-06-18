@@ -469,7 +469,7 @@ const DanhSachCanBoPage: React.FC = () => {
   const IMPORT_COLUMNS = useMemo(
     () => [
       { key: 'id_phong_ban', label: txt('matTranCanBo.import.colPhongBan'), required: true },
-      { key: 'to_chuc_id', label: txt('matTranCanBo.import.colToChuc'), required: true },
+      { key: 'to_chuc_ids', label: txt('matTranCanBo.import.colToChuc'), required: true },
       { key: 'ho_ten', label: txt('matTranCanBo.import.colHoTen'), required: true },
       { key: 'ngay_sinh', label: txt('matTranCanBo.import.colNgaySinh'), required: true },
       { key: 'gioi_tinh', label: txt('matTranCanBo.import.colGioiTinh'), required: true },
@@ -481,6 +481,7 @@ const DanhSachCanBoPage: React.FC = () => {
       { key: 'ly_luan_chinh_tri_id', label: txt('matTranCanBo.import.colLyLuan'), required: true },
       { key: 'dien_thoai', label: txt('matTranCanBo.import.colDienThoai'), required: true },
       { key: 'chuc_vu_id', label: txt('matTranCanBo.import.colChucVu'), required: true },
+      { key: 'cap_quan_ly', label: txt('matTranCanBo.import.colCapQuanLy'), required: false },
       { key: 'don_vi_id', label: txt('matTranCanBo.import.colDonVi'), required: false },
       { key: 'ngay_tham_gia_to_chuc', label: txt('matTranCanBo.import.colNgayThamGia'), required: true },
       { key: 'trang_thai_id', label: txt('matTranCanBo.import.colTrangThai'), required: true },
@@ -506,6 +507,8 @@ const DanhSachCanBoPage: React.FC = () => {
         [txt('matTranCanBo.import.huongR4k'), txt('matTranCanBo.import.huongR4v')],
         [txt('matTranCanBo.import.huongR5k'), txt('matTranCanBo.import.huongR5v')],
         [txt('matTranCanBo.import.huongR6k'), txt('matTranCanBo.import.huongR6v')],
+        [txt('matTranCanBo.import.huongR7k'), txt('matTranCanBo.import.huongR7v')],
+        [txt('matTranCanBo.import.huongR8k'), txt('matTranCanBo.import.huongR8v')],
       ],
     };
 
@@ -646,7 +649,7 @@ const DanhSachCanBoPage: React.FC = () => {
       if (!nhanVienId) {
         throw new Error(txt('matTranCanBo.service.noEmployeeProfile'));
       }
-      await importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
+      return importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
     },
     [importMutation, nhanVienId],
   );

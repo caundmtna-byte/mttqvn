@@ -1,4 +1,8 @@
 import { txt } from '@/lib/text';
+import { getSupabase } from '@/lib/supabase/client';
+import { handleSupabaseError } from '@/lib/supabase/errors';
+import type { ImportErrorRow } from '@/components/shared/ImportDialog';
+import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
 import type { Position } from '@/features/he-thong/chuc-vu/core/types';
 import { getPositions } from '@/features/he-thong/chuc-vu/services/chuc-vu-service';
 import type { Department } from '@/features/he-thong/phong-ban/core/types';
@@ -7,10 +11,11 @@ import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-da
 import type { MttqThietLapLoai } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/core/types';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import { MTTQ_CAN_BO_GIOI_TINH, type MttqCanBoGioiTinh } from '../core/constants';
+import { normalizeCapQuanLyInput, type CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 import { buildMttqCanBoSchema, type MttqCanBoFormValues } from '../core/schema';
 import { chucVuBelongsToRootPhongBan } from '../utils/chuc-vu-options-for-phong-ban';
 import { parseImportTonGiao } from '../utils/ton-giao-form';
-import { createMttqCanBo } from './mttq-can-bo-service';
+import { formToPayload } from './mttq-can-bo-service';
 
 const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
 
@@ -75,6 +80,22 @@ function parseImportGioiTinh(raw: unknown): string {
   return ci ?? s;
 }
 
+/** « Tỉnh », « Xã phường » — phân tách bằng dấu phẩy/chấm phẩy. Để trống = không gán. */
+function parseImportCapQuanLy(
+  raw: unknown,
+): { ok: true; values: CapQuanLy[] } | { ok: false; errorKey: string } {
+  const s = trimCell(raw);
+  if (!s) return { ok: true, values: [] };
+  const parts = s.split(/[,;|/]+/).map((p) => p.trim()).filter(Boolean);
+  const values: CapQuanLy[] = [];
+  for (const part of parts) {
+    const norm = normalizeCapQuanLyInput(part);
+    if (!norm) return { ok: false, errorKey: 'matTranCanBo.import.errorCapQuanLyInvalid' };
+    if (!values.includes(norm)) values.push(norm);
+  }
+  return { ok: true, values };
+}
+
 function resolveThietLapId(
   raw: unknown,
   items: { id: string; ten: string }[],
@@ -87,6 +108,24 @@ function resolveThietLapId(
   const byTen = items.find((x) => x.ten.trim().toLowerCase() === key);
   if (byTen) return { id: byTen.id };
   return { errorKey: 'matTranCanBo.import.errorThietLapResolve' };
+}
+
+/** Một hoặc nhiều tổ chức — phân tách bằng dấu phẩy/chấm phẩy (id hoặc tên). */
+function resolveThietLapIds(
+  raw: unknown,
+  items: { id: string; ten: string }[],
+): { ok: true; ids: string[] } | { ok: false; errorKey: string } {
+  const s = trimCell(raw);
+  if (!s) return { ok: false, errorKey: 'matTranCanBo.import.errorThietLapEmpty' };
+  const parts = s.split(/[,;|/]+/).map((p) => p.trim()).filter(Boolean);
+  const ids: string[] = [];
+  for (const part of parts) {
+    const resolved = resolveThietLapId(part, items);
+    if ('errorKey' in resolved) return { ok: false, errorKey: resolved.errorKey };
+    if (!ids.includes(resolved.id)) ids.push(resolved.id);
+  }
+  if (ids.length === 0) return { ok: false, errorKey: 'matTranCanBo.import.errorThietLapEmpty' };
+  return { ok: true, ids };
 }
 
 function resolveDepartmentId(
@@ -117,14 +156,18 @@ function resolveChucVuId(
   return { errorKey: 'matTranCanBo.import.errorChucVuResolve' };
 }
 
-function resolveDonVi(raw: unknown, xa: { id: string; ten: string }[]): string {
+function resolveDonVi(
+  raw: unknown,
+  xa: { id: string; ten: string }[],
+): { id: string } | { errorKey: string } {
   const s = trimCell(raw);
-  if (!s) return '';
+  if (!s) return { id: '' };
   const byId = xa.find((x) => String(x.id) === s);
-  if (byId) return byId.id;
+  if (byId) return { id: byId.id };
   const key = s.toLowerCase();
   const byTen = xa.find((x) => x.ten.trim().toLowerCase() === key);
-  return byTen ? byTen.id : s;
+  if (byTen) return { id: byTen.id };
+  return { errorKey: 'matTranCanBo.import.errorDonViResolve' };
 }
 
 function thietByLoai(
@@ -150,8 +193,9 @@ function rowToFormValues(
   const pb = resolveDepartmentId(row.id_phong_ban, ctx.departments);
   if ('errorKey' in pb) return { ok: false, errorKey: pb.errorKey };
 
-  const toChucResolved = resolveThietLapId(row.to_chuc_id, ctx.toChuc);
-  if ('errorKey' in toChucResolved) return { ok: false, errorKey: toChucResolved.errorKey };
+  const toChucRaw = row.to_chuc_ids ?? row.to_chuc_id;
+  const toChucResolved = resolveThietLapIds(toChucRaw, ctx.toChuc);
+  if (!toChucResolved.ok) return { ok: false, errorKey: toChucResolved.errorKey };
 
   const danToc = resolveThietLapId(row.dan_toc_id, ctx.danToc);
   if ('errorKey' in danToc) return { ok: false, errorKey: danToc.errorKey };
@@ -171,6 +215,12 @@ function rowToFormValues(
     return { ok: false, errorKey: 'matTranCanBo.import.errorChucVuPhongBanMismatch' };
   }
 
+  const donVi = resolveDonVi(row.don_vi_id, ctx.xa);
+  if ('errorKey' in donVi) return { ok: false, errorKey: donVi.errorKey };
+
+  const capQuanLy = parseImportCapQuanLy(row.cap_quan_ly);
+  if (!capQuanLy.ok) return { ok: false, errorKey: capQuanLy.errorKey };
+
   const hoTen = trimCell(row.ho_ten);
   if (!hoTen) return { ok: false, errorKey: 'matTranCanBo.import.errorHoTenEmpty' };
 
@@ -187,7 +237,7 @@ function rowToFormValues(
 
   const data: MttqCanBoFormValues = {
     id_phong_ban: pb.id,
-    to_chuc_ids: [toChucResolved.id],
+    to_chuc_ids: toChucResolved.ids,
     ho_ten: hoTen,
     ngay_sinh: ngaySinh,
     gioi_tinh: parseImportGioiTinh(row.gioi_tinh) as MttqCanBoGioiTinh,
@@ -199,8 +249,8 @@ function rowToFormValues(
     ly_luan_chinh_tri_id: lyLuan.id,
     dien_thoai: trimCell(row.dien_thoai),
     chuc_vu_id: cv.id,
-    cap_quan_ly: [],
-    don_vi_id: resolveDonVi(row.don_vi_id, ctx.xa),
+    cap_quan_ly: capQuanLy.values,
+    don_vi_id: donVi.id,
     ngay_tham_gia_to_chuc: ngayThamGia,
     trang_thai_id: tt.id,
     ngay_nhap_trang_thai: ngayNhapTT,
@@ -215,14 +265,15 @@ function rowToFormValues(
 export async function importMttqCanBoRows(
   rows: Record<string, unknown>[],
   idNguoiTao: string,
-): Promise<{ created: number; errors: string[] }> {
+): Promise<{ created: number; errors: string[]; errorRows: ImportErrorRow[] }> {
   const trimmedCreator = idNguoiTao.trim();
   if (!trimmedCreator) {
     throw new Error(txt('matTranCanBo.service.noEmployeeProfile'));
   }
 
   const errors: string[] = [];
-  let created = 0;
+  const errorRows: ImportErrorRow[] = [];
+  const validPayloads: Record<string, unknown>[] = [];
 
   const [positions, departments, thietLapAll, xaList] = await Promise.all([
     getPositions(),
@@ -261,29 +312,44 @@ export async function importMttqCanBoRows(
   };
 
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const mapped = rowToFormValues(row, ctx);
+    const raw = rows[i];
+    const rowNumRaw = raw[IMPORT_ROW_NUM_KEY];
+    const rowNum =
+      typeof rowNumRaw === 'number' && rowNumRaw > 0
+        ? rowNumRaw
+        : Number.isFinite(Number(rowNumRaw)) && Number(rowNumRaw) > 0
+          ? Number(rowNumRaw)
+          : i + 2;
+    const rowData = { ...raw };
+    delete rowData[IMPORT_ROW_NUM_KEY];
+
+    const mapped = rowToFormValues(rowData, ctx);
     if (!mapped.ok) {
-      errors.push(txt('matTranCanBo.import.rowPrefix', { row: String(i + 2) }) + txt(mapped.errorKey));
+      const msg = txt('matTranCanBo.import.rowPrefix', { row: String(rowNum) }) + txt(mapped.errorKey);
+      errors.push(msg);
+      errorRows.push({ rowNum, data: rowData, message: msg });
       continue;
     }
     const parsed = schema.safeParse(mapped.data);
     if (!parsed.success) {
       const msg =
-        parsed.error.flatten().formErrors[0] ??
-        parsed.error.issues[0]?.message ??
-        parsed.error.message;
-      errors.push(txt('matTranCanBo.import.rowPrefix', { row: String(i + 2) }) + msg);
+        txt('matTranCanBo.import.rowPrefix', { row: String(rowNum) }) +
+        (parsed.error.flatten().formErrors[0] ??
+          parsed.error.issues[0]?.message ??
+          parsed.error.message);
+      errors.push(msg);
+      errorRows.push({ rowNum, data: rowData, message: msg });
       continue;
     }
-    try {
-      await createMttqCanBo(parsed.data, trimmedCreator);
-      created++;
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : txt('matTranCanBo.import.errorCreate');
-      errors.push(txt('matTranCanBo.import.rowPrefix', { row: String(i + 2) }) + msg);
-    }
+    validPayloads.push(formToPayload(parsed.data, trimmedCreator));
   }
 
-  return { created, errors };
+  if (validPayloads.length > 0) {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error(txt('matTranCanBo.service.notFound'));
+    const { error } = await supabase.from('mttq_can_bo').insert(validPayloads);
+    if (error) handleSupabaseError(error);
+  }
+
+  return { created: validPayloads.length, errors, errorRows };
 }

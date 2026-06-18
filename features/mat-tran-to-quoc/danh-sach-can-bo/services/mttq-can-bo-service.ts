@@ -209,7 +209,7 @@ function normalize(raw: MttqCanBo): MttqCanBo {
   };
 }
 
-function formToPayload(data: MttqCanBoFormValues, idNguoiTao?: string) {
+export function formToPayload(data: MttqCanBoFormValues, idNguoiTao?: string) {
   const phongBanFk = data.id_phong_ban.trim() !== '' ? data.id_phong_ban.trim() : null;
   const base = {
     to_chuc_ids: Array.isArray(data.to_chuc_ids) ? data.to_chuc_ids : [],

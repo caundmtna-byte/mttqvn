@@ -3,21 +3,25 @@ import { txt } from '@/lib/text';
 import { DON_VI_THAM_HOI_TINH_VALUE, TIEN_DO_DEFAULT, TIEN_DO_VALUES } from './constants';
 import type { ThamHoiToChuc } from './types';
 
-const optionalLink = z
-  .string()
-  .trim()
-  .transform((s) => s)
-  .pipe(
-    z
-      .union([z.literal(''), z.string().url(txt('danTocThamHoiToChuc.validation.linkUrl'))])
-      .transform((s) => (s === '' ? undefined : s)),
-  );
+const optionalLink = z.preprocess(
+  (val) => (val == null ? '' : val),
+  z
+    .string()
+    .trim()
+    .pipe(
+      z
+        .union([z.literal(''), z.string().url(txt('danTocThamHoiToChuc.validation.linkUrl'))])
+        .transform((s) => (s === '' ? undefined : s)),
+    ),
+);
 
-const optionalText = z
-  .string()
-  .trim()
-  .optional()
-  .transform((s) => (s === '' ? undefined : s));
+const optionalText = z.preprocess(
+  (val) => (val == null ? '' : val),
+  z
+    .string()
+    .trim()
+    .transform((s) => (s === '' ? undefined : s)),
+);
 
 const donViThamHoiIdField = z
   .union([z.string(), z.null(), z.undefined()])

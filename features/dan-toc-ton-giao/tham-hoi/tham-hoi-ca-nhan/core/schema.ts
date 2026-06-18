@@ -9,21 +9,25 @@ import {
 import type { ThamHoiCaNhan } from './types';
 import { dbDateToMonthYear } from '../utils/thoi-gian-du-kien';
 
-const optionalLink = z
-  .string()
-  .trim()
-  .transform((s) => s)
-  .pipe(
-    z
-      .union([z.literal(''), z.string().url(txt('danTocThamHoiCaNhan.validation.linkUrl'))])
-      .transform((s) => (s === '' ? undefined : s)),
-  );
+const optionalLink = z.preprocess(
+  (val) => (val == null ? '' : val),
+  z
+    .string()
+    .trim()
+    .pipe(
+      z
+        .union([z.literal(''), z.string().url(txt('danTocThamHoiCaNhan.validation.linkUrl'))])
+        .transform((s) => (s === '' ? undefined : s)),
+    ),
+);
 
-const optionalText = z
-  .string()
-  .trim()
-  .optional()
-  .transform((s) => (s === '' ? undefined : s));
+const optionalText = z.preprocess(
+  (val) => (val == null ? '' : val),
+  z
+    .string()
+    .trim()
+    .transform((s) => (s === '' ? undefined : s)),
+);
 
 const optionalId = z
   .union([z.string(), z.null(), z.undefined()])

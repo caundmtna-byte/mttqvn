@@ -41,6 +41,7 @@ import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { AnimatePresence } from 'framer-motion';
@@ -111,6 +112,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
   const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const canExport =
     useCan('export', 'articleStats') || useCan('export', 'articles');
   const canViewStats = useCan('view', 'articleStats');
@@ -118,14 +120,26 @@ const BcThongKeBaiVietPage: React.FC = () => {
   const canOpenPage = canViewStats || canViewArticles;
   const didRedirect = useRef(false);
 
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  const waitingMatrixHydrate =
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+
+  const listQueryEnabled = Boolean(
+    user && !waitingMatrixHydrate && (user.role === 'admin' || (matrixActive && canOpenPage)),
+  );
+
   useEffect(() => {
-    if (!user || canOpenPage || didRedirect.current) return;
+    if (!user || waitingMatrixHydrate || canOpenPage || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('articleStats.noViewPermission'));
     navigate('/quan-ly-viet-bai', { replace: true });
-  }, [user, canOpenPage, navigate]);
+  }, [user, waitingMatrixHydrate, canOpenPage, navigate]);
 
-  const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: canOpenPage });
+  const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: listQueryEnabled });
   const deleteMutation = useDeleteBaiVietDanhSachMany();
 
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
@@ -447,7 +461,11 @@ const BcThongKeBaiVietPage: React.FC = () => {
       </Tooltip>
     ) : null;
 
-  if (!canOpenPage) {
+  if (!canOpenPage && !waitingMatrixHydrate) {
+    return null;
+  }
+
+  if (waitingMatrixHydrate || (isLoading && rows.length === 0)) {
     return (
       <div
         className="flex flex-col items-center justify-center min-h-[40vh] px-4"
