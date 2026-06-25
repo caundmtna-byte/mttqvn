@@ -73,7 +73,7 @@ import {
 } from './lib/app-sync';
 import { PermissionMatrixSynchronizer } from './components/auth/PermissionMatrixSynchronizer';
 import { AuthSessionSynchronizer } from './components/auth/AuthSessionSynchronizer';
-import { PlaceholderModuleRoutes } from './lib/placeholder-module-routes';
+import { PLACEHOLDER_MODULE_PATHS } from './lib/placeholder-module-routes';
 
 const EmployeePage = lazy(() => import('./features/he-thong/nhan-vien/index'));
 const ThongTinToChucPage = lazy(() => import('./features/he-thong/thong-tin-to-chuc/index'));
@@ -192,7 +192,9 @@ const App = () => {
           />
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" element={<KhoBaoCaoHoTroPage />} />
-          <PlaceholderModuleRoutes element={<DashboardModulePlaceholder />} />
+          {PLACEHOLDER_MODULE_PATHS.map((path) => (
+            <Route key={path} path={path} element={<DashboardModulePlaceholder />} />
+          ))}
           <Route path="/hanh-chinh" element={<HanhChinhDashboard />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
           <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
