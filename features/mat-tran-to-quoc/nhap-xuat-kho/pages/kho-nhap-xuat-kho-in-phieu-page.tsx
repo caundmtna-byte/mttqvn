@@ -21,7 +21,7 @@ import { downloadNhapXuatKhoPhieuPdf } from '../utils/download-nhap-xuat-kho-phi
 import { downloadNhapXuatKhoPhieuXlsx } from '../utils/download-nhap-xuat-kho-phieu-xlsx';
 import { printNhapXuatKhoPhieuDocument } from '../utils/print-nhap-xuat-kho-phieu';
 
-const LIST_PATH = '/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho';
+const LIST_PATH = '/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho';
 const PREVIEW_PREFIX = 'nhap-xuat-kho-phieu-preview';
 
 const KhoNhapXuatKhoInPhieuPage: React.FC = () => {

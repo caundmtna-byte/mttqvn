@@ -110,7 +110,7 @@ const HangHoaPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranHangHoa.noViewPermission'));
-    navigate('/mat-tran-to-quoc', { replace: true });
+    navigate('/an-sinh-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const [dmShowForm, setDmShowForm] = useState(false);
@@ -313,7 +313,7 @@ const HangHoaPage: React.FC = () => {
     [activeTab, tabs],
   );
 
-  const goBack = () => navigate('/mat-tran-to-quoc');
+  const goBack = () => navigate('/an-sinh-xa-hoi');
 
   const handleDeleteDm = (id: string) => {
     confirm({

@@ -58,18 +58,6 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         ],
       },
       {
-        groupTitleKey: 'page.matTranDashboard.groupReliefWarehouse',
-        modules: [
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro', nameKey: 'page.matTranDashboard.reliefCampaign' },
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods' },
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho', nameKey: 'page.matTranDashboard.reliefStockTransactions' },
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory' },
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList' },
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
-          { id: 'mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportReport' },
-        ],
-      },
-      {
         groupTitleKey: 'page.matTranDashboard.groupSalaryManagement',
         modules: [
           { id: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong', nameKey: 'page.matTranDashboard.salaryIncreaseList' },
@@ -145,6 +133,27 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'trang-thong-tin-khac/mat-tran-so', nameKey: 'page.externalLinksDashboard.matTranSo' },
           { id: 'trang-thong-tin-khac/quan-ly-van-ban', nameKey: 'page.externalLinksDashboard.quanLyVanBan' },
           { id: 'trang-thong-tin-khac/lich-cong-tac-ban-tt', nameKey: 'page.externalLinksDashboard.lichCongTacBanTt' },
+          { id: 'trang-thong-tin-khac/so-tay-dang-vien', nameKey: 'page.externalLinksDashboard.soTayDangVien' },
+          { id: 'trang-thong-tin-khac/thu-tuc-hanh-chinh-dang', nameKey: 'page.externalLinksDashboard.thuTucHanhChinhDang' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'an-sinh-xa-hoi',
+    nameKey: 'nav.anSinhXaHoi',
+    color: 'pink',
+    groups: [
+      {
+        groupTitleKey: 'page.matTranDashboard.groupReliefWarehouse',
+        modules: [
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro', nameKey: 'page.matTranDashboard.reliefCampaign' },
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods' },
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho', nameKey: 'page.matTranDashboard.reliefStockTransactions' },
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory' },
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList' },
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportReport' },
         ],
       },
     ],

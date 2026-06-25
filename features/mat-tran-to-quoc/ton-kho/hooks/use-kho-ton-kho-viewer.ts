@@ -30,7 +30,7 @@ export function useKhoTonKhoViewer(): KhoTonKhoViewer {
 
   return useMemo(() => {
     const moduleId =
-      APP_RESOURCE_TO_MODULE.matTranReliefInventory ?? 'mat-tran-to-quoc/kho-cuu-tro/ton-kho';
+      APP_RESOURCE_TO_MODULE.matTranReliefInventory ?? 'an-sinh-xa-hoi/kho-cuu-tro/ton-kho';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||

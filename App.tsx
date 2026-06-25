@@ -20,6 +20,9 @@ const ThucHienPhanBienPage = lazy(() => import('./features/phan-bien-xa-hoi/thuc
 const ThietLapDanhMucPbxhPage = lazy(() => import('./features/phan-bien-xa-hoi/thiet-lap-danh-muc/index'));
 const ThongKePhanBienXaHoiPage = lazy(() => import('./features/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi/index'));
 const DanTocTonGiaoDashboard = lazy(() => import('./pages/dashboards/DanTocTonGiaoDashboard'));
+const AnSinhXaHoiDashboard = lazy(() => import('./pages/dashboards/AnSinhXaHoiDashboard'));
+const HanhChinhDashboard = lazy(() => import('./pages/dashboards/HanhChinhDashboard'));
+const DashboardModulePlaceholder = lazy(() => import('./pages/DashboardModulePlaceholder'));
 const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet-lap-bai-viet/index'));
 const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
 const HoaHongVietBaiPage = lazy(() => import('./features/quan-ly-viet-bai/hoa-hong-viet-bai/index'));
@@ -70,6 +73,7 @@ import {
 } from './lib/app-sync';
 import { PermissionMatrixSynchronizer } from './components/auth/PermissionMatrixSynchronizer';
 import { AuthSessionSynchronizer } from './components/auth/AuthSessionSynchronizer';
+import { PlaceholderModuleRoutes } from './lib/placeholder-module-routes';
 
 const EmployeePage = lazy(() => import('./features/he-thong/nhan-vien/index'));
 const ThongTinToChucPage = lazy(() => import('./features/he-thong/thong-tin-to-chuc/index'));
@@ -127,21 +131,21 @@ const App = () => {
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<KyHopPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<UyVienUyBanPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien" element={<BaoCaoUyVienPage />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<KhoDotCuuTroPage />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<HangHoaPage />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho" element={<NhapXuatKhoPage />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro" replace />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa" replace />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho" replace />} />
           <Route
             path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho/:phieuId/in-phieu"
             element={<KhoNhapXuatKhoInPhieuPage />}
           />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/ton-kho" element={<TonKhoPage />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/ton-kho" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/ton-kho" replace />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho" replace />} />
           <Route
             path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro"
-            element={<Navigate to="/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro" replace />}
+            element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" replace />}
           />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro" element={<KhoBaoCaoHoTroPage />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" replace />} />
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" replace />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo" element={<BaoCaoCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
@@ -172,6 +176,24 @@ const App = () => {
           <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong" element={<DtTgThongTinToChucQuanTrongPage />} />
           <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu" element={<DtTgThongTinCaNhanTieuBieuPage />} />
           <Route path="/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan" element={<DtTgThongKeToChucCaNhanPage />} />
+          <Route path="/an-sinh-xa-hoi" element={<AnSinhXaHoiDashboard />} />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro" element={<KhoDotCuuTroPage />} />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa" element={<HangHoaPage />} />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho" element={<NhapXuatKhoPage />} />
+          <Route
+            path="/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho/:phieuId/in-phieu"
+            element={<KhoNhapXuatKhoInPhieuPage />}
+          />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/ton-kho" element={<TonKhoPage />} />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
+          <Route
+            path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-ho-tro"
+            element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" replace />}
+          />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" element={<KhoBaoCaoHoTroPage />} />
+          <PlaceholderModuleRoutes element={<DashboardModulePlaceholder />} />
+          <Route path="/hanh-chinh" element={<HanhChinhDashboard />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
           <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 

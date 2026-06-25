@@ -41,10 +41,10 @@ const TonKhoPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranTonKho.noViewPermission'));
-    navigate('/mat-tran-to-quoc', { replace: true });
+    navigate('/an-sinh-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
-  const handleBack = () => navigate('/mat-tran-to-quoc');
+  const handleBack = () => navigate('/an-sinh-xa-hoi');
 
   const tabs = useMemo(
     () => [

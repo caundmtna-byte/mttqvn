@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Newspaper, MessageCircle, MonitorSmartphone, FileStack, CalendarDays } from 'lucide-react';
+import { Newspaper, MessageCircle, MonitorSmartphone, FileStack, CalendarDays, BookOpen, ClipboardList } from 'lucide-react';
 import { txt } from '../../lib/text';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -14,6 +14,8 @@ const ZALO_OA_URL = 'https://oa.zalo.me/home';
 const MAT_TRAN_SO_URL = 'https://app.mattranso.vn/';
 const QUAN_LY_VAN_BAN_URL = 'https://dhtn.mattran.vn/app-view/';
 const LICH_CONG_TAC_BAN_TT_URL = 'https://mttqnghean.vnptioffice.vn/Lichcongtac/lichtv9.aspx';
+const SO_TAY_DANG_VIEN_URL = 'https://sotaydangvien.dcs.vn/auth/login';
+const THU_TUC_HANH_CHINH_DANG_URL = 'https://dichvucong.dcs.vn/web/home';
 
 function openExternal(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -70,6 +72,22 @@ const TrangThongTinKhacDashboard: React.FC = () => {
             description: txt('page.externalLinksDashboard.lichCongTacBanTtDesc'),
             icon: CalendarDays,
             color: 'bg-emerald-600',
+          },
+          {
+            path: '/trang-thong-tin-khac/so-tay-dang-vien',
+            externalUrl: SO_TAY_DANG_VIEN_URL,
+            title: txt('page.externalLinksDashboard.soTayDangVien'),
+            description: txt('page.externalLinksDashboard.soTayDangVienDesc'),
+            icon: BookOpen,
+            color: 'bg-red-700',
+          },
+          {
+            path: '/trang-thong-tin-khac/thu-tuc-hanh-chinh-dang',
+            externalUrl: THU_TUC_HANH_CHINH_DANG_URL,
+            title: txt('page.externalLinksDashboard.thuTucHanhChinhDang'),
+            description: txt('page.externalLinksDashboard.thuTucHanhChinhDangDesc'),
+            icon: ClipboardList,
+            color: 'bg-violet-600',
           },
         ],
       },

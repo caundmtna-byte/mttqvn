@@ -9,6 +9,8 @@ import {
   Megaphone,
   UsersRound,
   LayoutGrid,
+  HeartHandshake,
+  Building2,
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -62,6 +64,20 @@ export const SIDEBAR_MENU: MenuItem[] = [
     descriptionKey: 'page.home.danTocModuleDesc',
     icon: UsersRound,
     gradient: 'bg-gradient-to-br from-indigo-600 to-indigo-900 dark:from-indigo-500 dark:to-indigo-800',
+  },
+  {
+    path: '/an-sinh-xa-hoi',
+    nameKey: 'nav.anSinhXaHoi',
+    descriptionKey: 'page.home.anSinhXaHoiModuleDesc',
+    icon: HeartHandshake,
+    gradient: 'bg-gradient-to-br from-pink-600 to-pink-900 dark:from-pink-500 dark:to-pink-800',
+  },
+  {
+    path: '/hanh-chinh',
+    nameKey: 'nav.hanhChinh',
+    descriptionKey: 'page.home.hanhChinhModuleDesc',
+    icon: Building2,
+    gradient: 'bg-gradient-to-br from-sky-600 to-sky-900 dark:from-sky-500 dark:to-sky-800',
   },
   {
     path: '/trang-thong-tin-khac',

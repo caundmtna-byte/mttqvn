@@ -29,6 +29,12 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'matTranSession',
       'matTranCommitteeMembers',
       'matTranCommitteeMemberStats',
+      'matTranSalaryIncreaseList',
+      'matTranSalarySetup',
+    ];
+  }
+  if (path === '/an-sinh-xa-hoi') {
+    return [
       'matTranReliefCampaign',
       'matTranReliefGoods',
       'matTranReliefStockTransactions',
@@ -36,8 +42,6 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'matTranReliefWarehouseList',
       'matTranReliefSupportUnits',
       'matTranReliefSupportReport',
-      'matTranSalaryIncreaseList',
-      'matTranSalarySetup',
     ];
   }
   if (path === '/quan-ly-viet-bai') {
@@ -53,6 +57,8 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'otherInfoMatTranSo',
       'otherInfoQuanLyVanBan',
       'otherInfoLichCongTacBanTt',
+      'otherInfoSoTayDangVien',
+      'otherInfoThuTucHanhChinhDang',
     ];
   }
   if (path === '/phan-bien-xa-hoi') {

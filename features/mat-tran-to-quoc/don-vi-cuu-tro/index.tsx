@@ -87,7 +87,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranDonViCuuTro.noViewPermission'));
-    navigate('/mat-tran-to-quoc', { replace: true });
+    navigate('/an-sinh-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -322,7 +322,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
     <div className="flex flex-col h-page relative">
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <KhoDonViCuuTroToolbar
-          onPageBack={() => navigate('/mat-tran-to-quoc')}
+          onPageBack={() => navigate('/an-sinh-xa-hoi')}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');

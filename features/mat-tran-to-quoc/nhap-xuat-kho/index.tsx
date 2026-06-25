@@ -117,7 +117,7 @@ const NhapXuatKhoPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranNhapXuatKho.noViewPermission'));
-    navigate('/mat-tran-to-quoc', { replace: true });
+    navigate('/an-sinh-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -531,7 +531,7 @@ const NhapXuatKhoPage: React.FC = () => {
           <>
             <NhapXuatKhoToolbar
               tabSlot={tabSlot}
-              onPageBack={() => navigate('/mat-tran-to-quoc')}
+              onPageBack={() => navigate('/an-sinh-xa-hoi')}
               onAdd={() => {
                 startTransition(() => {
                   setFormOrigin('list');
@@ -559,7 +559,7 @@ const NhapXuatKhoPage: React.FC = () => {
           <>
             <NhapXuatKhoCtFlatToolbar
               tabSlot={tabSlot}
-              onPageBack={() => navigate('/mat-tran-to-quoc')}
+              onPageBack={() => navigate('/an-sinh-xa-hoi')}
               onExport={handleExportCt}
               items={viewableCtRows}
             />

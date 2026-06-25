@@ -4,8 +4,15 @@ import { PERMISSION_FUNCTIONS } from './permission-modules-config';
 const LEGACY_MODULE_STORAGE_KEY_TO_ID: Record<string, string> = {
   'hoa-hong-viet-bai': 'quan-ly-viet-bai/nhuan-but-viet-bai',
   'quan-ly-viet-bai/hoa-hong-viet-bai': 'quan-ly-viet-bai/nhuan-but-viet-bai',
-  'don-vi-ho-tro': 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
-  'mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro': 'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro',
+  'don-vi-ho-tro': 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro',
+  'mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro': 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro',
+  'mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro': 'an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro',
+  'mat-tran-to-quoc/kho-cuu-tro/hang-hoa': 'an-sinh-xa-hoi/kho-cuu-tro/hang-hoa',
+  'mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho': 'an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho',
+  'mat-tran-to-quoc/kho-cuu-tro/ton-kho': 'an-sinh-xa-hoi/kho-cuu-tro/ton-kho',
+  'mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho': 'an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho',
+  'mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro': 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro',
+  'mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro': 'an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro',
 };
 
 function lastPathSegment(moduleId: string): string {
