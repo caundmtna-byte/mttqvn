@@ -48,6 +48,8 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'quyDanhMucKhoan',
       'quyDanhMucTaiKhoan',
       'quyBaoCaoThongKe',
+      'nhaDaiDoanKetList',
+      'nhaDaiDoanKetThongKe',
     ];
   }
   if (path === '/quan-ly-viet-bai') {

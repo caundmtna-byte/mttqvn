@@ -292,6 +292,17 @@ export const queryKeys = {
     /** Toàn bộ dòng sổ trong khoảng ngày — chỉ dùng cho màn Báo cáo thống kê. */
     baoCao: (args: unknown) => ['quy-so-thu-chi', 'bao-cao', args] as const,
   },
+  /**
+   * Nhà đại đoàn kết — bảng giao dịch, trang danh sách phân trang phía máy chủ.
+   * `page(args)` phải ôm TRỌN bộ lọc + sắp xếp, nếu không hai bộ lọc khác nhau
+   * sẽ dùng chung một ô cache.
+   */
+  nhaDaiDoanKet: {
+    all: ['nha-dai-doan-ket'] as const,
+    detail: (id: string) => ['nha-dai-doan-ket', 'detail', id] as const,
+    /** Một trang từ RPC `get_nddk_page`. */
+    page: (args: unknown) => ['nha-dai-doan-ket', 'page', args] as const,
+  },
   mttqTangLuong: {
     all: ['mttq-tang-luong'] as const,
     detail: (id: string) => ['mttq-tang-luong', 'detail', id] as const,

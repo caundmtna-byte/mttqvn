@@ -78,6 +78,8 @@ export type AppResource =
   | 'quyDanhMucKhoan'
   | 'quyDanhMucTaiKhoan'
   | 'quyBaoCaoThongKe'
+  | 'nhaDaiDoanKetList'
+  | 'nhaDaiDoanKetThongKe'
   | 'profile'
   | 'notifications'
   | '*';
@@ -149,6 +151,15 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   quyDanhMucKhoan: 'an-sinh-xa-hoi/quy/danh-muc-chi-phi',
   quyDanhMucTaiKhoan: 'an-sinh-xa-hoi/quy/danh-muc-tai-khoan',
   quyBaoCaoThongKe: 'an-sinh-xa-hoi/quy/bao-cao-thong-ke',
+  /**
+   * Nhà đại đoàn kết. `module_key` lưu DB là KHÓA NGẮN, và segment cuối ở đây
+   * ('danh-sach' / 'thong-ke') quá chung nên hai module này khai `storageKey`
+   * tường minh trong `permission-modules-config.ts`:
+   * 'nha-dai-doan-ket' và 'thong-ke-nha-dai-doan-ket'. RLS của bảng
+   * `nddk_nha_dai_doan_ket` gọi `fn_co_quyen('nha-dai-doan-ket', …)`.
+   */
+  nhaDaiDoanKetList: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
+  nhaDaiDoanKetThongKe: 'an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */

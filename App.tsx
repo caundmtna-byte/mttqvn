@@ -82,6 +82,10 @@ const QuyDanhMucKhoanPage = lazy(() => import('./features/quy/danh-muc-khoan/ind
 const QuyDanhMucTaiKhoanPage = lazy(() => import('./features/quy/danh-muc-tai-khoan/index'));
 const QuyBaoCaoThongKePage = lazy(() => import('./features/quy/bao-cao-thong-ke/index'));
 
+// Nhà đại đoàn kết — hai trang thật, thay cho nhóm placeholder cũ.
+const NhaDaiDoanKetPage = lazy(() => import('./features/nha-dai-doan-ket/danh-sach/index'));
+const NhaDaiDoanKetThongKePage = lazy(() => import('./features/nha-dai-doan-ket/thong-ke/index'));
+
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import {
@@ -289,6 +293,21 @@ const App = () => {
           <Route
             path="/an-sinh-xa-hoi/quy-cuu-tro/bao-cao-thong-ke"
             element={<QuyBaoCaoThongKePage key="cuu_tro" quy="cuu_tro" />}
+          />
+
+          {/*
+            Nhà đại đoàn kết. Đường dẫn cũ `/sua-chua-nang-cap` không còn là một
+            module: "Sửa chữa" nay là một giá trị của trường Loại hình hỗ trợ,
+            nên chuyển hướng về danh sách thay vì để link cũ chết.
+          */}
+          <Route path="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach" element={<NhaDaiDoanKetPage />} />
+          <Route
+            path="/an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke"
+            element={<NhaDaiDoanKetThongKePage />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/nha-dai-doan-ket/sua-chua-nang-cap"
+            element={<Navigate to="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach" replace />}
           />
 
           {PLACEHOLDER_MODULE_PATHS.map((path) => (

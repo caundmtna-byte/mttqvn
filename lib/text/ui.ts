@@ -378,9 +378,13 @@ export const ui = {
       "baoCaoThongKe": "Báo cáo thống kê",
       "baoCaoThongKeDesc": "Tổng hợp thu – chi và báo cáo theo kỳ.",
       "danhSachNhaDaiDoanKet": "Danh sách nhà đại đoàn kết",
-      "danhSachNhaDaiDoanKetDesc": "Hồ sơ và thông tin các nhà đại đoàn kết.",
-      "suaChuaNangCap": "Sửa chữa nâng cấp",
-      "suaChuaNangCapDesc": "Theo dõi đề án sửa chữa và nâng cấp nhà.",
+      "danhSachNhaDaiDoanKetDesc": "Hồ sơ hỗ trợ xây mới và sửa chữa nhà đại đoàn kết.",
+      /**
+       * Thẻ "Sửa chữa nâng cấp" đã bị gỡ: "Sửa chữa" là một giá trị của trường
+       * Loại hình hỗ trợ trong chính bảng dữ liệu, không phải một module riêng.
+       */
+      "thongKeNhaDaiDoanKet": "Thống kê nhà đại đoàn kết",
+      "thongKeNhaDaiDoanKetDesc": "Tổng hợp số nhà, số tiền theo năm, nguồn và xã phường.",
       "backToParent": "Quay lại An sinh xã hội"
     },
     "hanhChinhDashboard": {

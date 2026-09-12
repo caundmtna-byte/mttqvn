@@ -92,7 +92,7 @@ người nhập liệu tự ban hành quyết định khen thưởng của chín
 
 | Bản chất bảng | Kiểu phân trang | Ví dụ |
 |---|---|---|
-| **Giao dịch** — mỗi nghiệp vụ một dòng, tăng theo thời gian, không có trần | **Server-side** (RPC) | `bai_viet_danh_sach`, `cong_viec_danh_sach`, `kho_nhap_xuat_kho(_ct)`, `mttq_diem_danh_uy_vien`, `mttq_khen_thuong(_ct)`, `mttq_lop_tap_huan(_ct)`, `mttq_tang_luong`, `dttg_tham_hoi_*`, `pbxh_thuc_hien_*` |
+| **Giao dịch** — mỗi nghiệp vụ một dòng, tăng theo thời gian, không có trần | **Server-side** (RPC) | `bai_viet_danh_sach`, `cong_viec_danh_sach`, `kho_nhap_xuat_kho(_ct)`, `mttq_diem_danh_uy_vien`, `mttq_khen_thuong(_ct)`, `mttq_lop_tap_huan(_ct)`, `mttq_tang_luong`, `dttg_tham_hoi_*`, `pbxh_thuc_hien_*`, `nddk_nha_dai_doan_ket` |
 | **Danh mục** — có trần tự nhiên (số xã, số biên chế, số chức danh…) | **Client-side** | `var_ssn_xa_phuong` (131), `var_chuc_vu` (116), `var_nhan_vien` (199), `mttq_can_bo` (233), `var_phong_ban`, mọi `*_thiet_lap`, `var_phan_quyen` |
 
 Phân trang server cho bảng danh mục là phức tạp hoá vĩnh viễn mà không bao giờ thu lợi — đừng làm.
@@ -167,6 +167,10 @@ kỳ** — khi làm chốt sổ theo kỳ phải thay bằng cách tính có s�
   nên mất sạch lịch sử.
 - `mttq_khen_thuong.nguoi_duyet_id` / `tg_duyet` do **máy chủ gán** khi chuyển
   sang "Đã ban hành", và tự xoá khi rời khỏi trạng thái đó.
+- `nddk_nha_dai_doan_ket` **có ghi vết** `lich_su_trang_thai` nhưng **không** có
+  luật chuyển trạng thái: một căn đang tạm dừng quay lại thực hiện là chuyện
+  bình thường. Cột `ngay_cap_nhat_trang_thai` do trigger
+  `fn_nddk_set_ngay_trang_thai` gán, form **không có ô nhập** cho nó.
 
 > ⚠️ **Quyền `approve` vẫn chưa được kiểm ở client.** `ActionType` có `'approve'`,
 > ma trận phân quyền có cột đó, nhưng **không một lời gọi `can(user,'approve',…)`

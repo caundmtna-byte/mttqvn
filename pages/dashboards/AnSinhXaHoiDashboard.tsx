@@ -12,6 +12,7 @@ import {
   BookOpen,
   Tags,
   Wallet,
+  Home,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
@@ -155,6 +156,29 @@ const AnSinhXaHoiDashboard: React.FC = () => {
           baoCao: 'bg-yellow-600',
         }),
       },
+      {
+        groupTitle: txt('page.anSinhXaHoiDashboard.groupNhaDaiDoanKet'),
+        items: [
+          {
+            path: '/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
+            resource: 'nhaDaiDoanKetList' as const,
+            title: txt('page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet'),
+            description: txt('page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKetDesc'),
+            icon: Home,
+            color: 'bg-emerald-500',
+          },
+          {
+            path: '/an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke',
+            resource: 'nhaDaiDoanKetThongKe' as const,
+            title: txt('page.anSinhXaHoiDashboard.thongKeNhaDaiDoanKet'),
+            description: txt('page.anSinhXaHoiDashboard.thongKeNhaDaiDoanKetDesc'),
+            icon: BarChart3,
+            color: 'bg-teal-500',
+          },
+        ],
+      },
+      // Nhóm An sinh không còn màn hình "sắp có"; spread giữ lại để nhóm mới
+      // thêm vào `AN_SINH_PLACEHOLDER_GROUPS` tự hiện mà không phải sửa file này.
       ...AN_SINH_PLACEHOLDER_GROUPS.map((g) => ({
         groupTitle: txt(g.groupTitleKey),
         items: g.modules.map((item) => ({

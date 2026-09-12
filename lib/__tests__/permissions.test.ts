@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { can, type AppResource } from '../permissions';
+import { can, APP_RESOURCE_TO_MODULE, type AppResource } from '../permissions';
 import type { User } from '@/types';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 
@@ -270,6 +270,58 @@ describe.each(RELIEF_WAREHOUSE_MODULES)(
       usePermissionGrantStore.getState().setMatrixGrants({}, 1);
       expect(can(member, 'delete', resource)).toBe(true);
       expect(can(member, 'import', resource)).toBe(true);
+    });
+  },
+);
+
+/**
+ * Nhà đại đoàn kết — hai module dùng `storageKey` tường minh
+ * ('nha-dai-doan-ket' / 'thong-ke-nha-dai-doan-ket') vì segment cuối đường dẫn
+ * quá chung. `can()` vẫn tra theo `module_id` đầy đủ, nên phải chắc hai hằng
+ * trong `APP_RESOURCE_TO_MODULE` không bị đổi lệch.
+ */
+const NHA_DAI_DOAN_KET_MODULES: { resource: AppResource; moduleId: string; label: string }[] = [
+  {
+    resource: 'nhaDaiDoanKetList',
+    moduleId: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
+    label: 'danh-sach',
+  },
+  {
+    resource: 'nhaDaiDoanKetThongKe',
+    moduleId: 'an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke',
+    label: 'thong-ke',
+  },
+];
+
+describe.each(NHA_DAI_DOAN_KET_MODULES)(
+  'matrix: Nhà đại đoàn kết — $label',
+  ({ resource, moduleId }) => {
+    beforeEach(() => {
+      usePermissionGrantStore.getState().clearMatrix();
+    });
+
+    it('module_id khớp APP_RESOURCE_TO_MODULE', () => {
+      expect(APP_RESOURCE_TO_MODULE[resource]).toBe(moduleId);
+    });
+
+    it('view token grants view/export only', () => {
+      usePermissionGrantStore.getState().setMatrixGrants({ [moduleId]: ['view'] }, 2);
+      expect(can(member, 'view', resource)).toBe(true);
+      expect(can(member, 'export', resource)).toBe(true);
+      expect(can(member, 'create', resource)).toBe(false);
+      expect(can(member, 'edit', resource)).toBe(false);
+      expect(can(member, 'delete', resource)).toBe(false);
+    });
+
+    it('không có dòng phân quyền ⇒ không mở được module', () => {
+      usePermissionGrantStore.getState().setMatrixGrants({}, 2);
+      expect(can(member, 'view', resource)).toBe(false);
+    });
+
+    it('cap_bac=1 bypasses matrix', () => {
+      usePermissionGrantStore.getState().setMatrixGrants({}, 1);
+      expect(can(member, 'view', resource)).toBe(true);
+      expect(can(member, 'delete', resource)).toBe(true);
     });
   },
 );

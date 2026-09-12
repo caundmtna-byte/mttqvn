@@ -34,7 +34,7 @@ const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-tai-khoan': { label: t('page.anSinhXaHoiDashboard.danhMucTaiKhoan'), parentPath: '/an-sinh-xa-hoi' },
   '/an-sinh-xa-hoi/quy-cuu-tro/bao-cao-thong-ke': { label: t('page.anSinhXaHoiDashboard.baoCaoThongKe'), parentPath: '/an-sinh-xa-hoi' },
   '/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach': { label: t('page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet'), parentPath: '/an-sinh-xa-hoi' },
-  '/an-sinh-xa-hoi/nha-dai-doan-ket/sua-chua-nang-cap': { label: t('page.anSinhXaHoiDashboard.suaChuaNangCap'), parentPath: '/an-sinh-xa-hoi' },
+  '/an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke': { label: t('page.anSinhXaHoiDashboard.thongKeNhaDaiDoanKet'), parentPath: '/an-sinh-xa-hoi' },
   '/hanh-chinh/quan-ly-tai-san/danh-sach-tai-san': { label: t('page.hanhChinhDashboard.danhSachTaiSan'), parentPath: '/hanh-chinh' },
   '/hanh-chinh/quan-ly-tai-san/cap-phat-thu-hoi-luan-chuyen': { label: t('page.hanhChinhDashboard.capPhatThuHoiLuanChuyen'), parentPath: '/hanh-chinh' },
   '/hanh-chinh/quan-ly-tai-san/chi-phi-tai-san': { label: t('page.hanhChinhDashboard.chiPhiTaiSan'), parentPath: '/hanh-chinh' },

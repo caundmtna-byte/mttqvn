@@ -1,7 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-  Home,
-  Hammer,
   Package,
   ArrowLeftRight,
   Coins,
@@ -24,32 +22,15 @@ export interface PlaceholderGroupDef {
 }
 
 /**
- * Hai nhóm Quỹ (Vì người nghèo, Cứu trợ) ĐÃ RA KHỎI danh sách này: tám trang đó
- * nay là module thật (`features/quy/**`), có route riêng trong `App.tsx` và thẻ
- * riêng trong `pages/dashboards/AnSinhXaHoiDashboard.tsx`. Giữ chúng ở đây nữa
- * sẽ sinh `<Route>` placeholder đè lên route thật.
+ * Hai nhóm Quỹ (Vì người nghèo, Cứu trợ) và nhóm Nhà đại đoàn kết ĐÃ RA KHỎI
+ * danh sách này: các trang đó nay là module thật (`features/quy/**`,
+ * `features/nha-dai-doan-ket/**`), có route riêng trong `App.tsx` và thẻ riêng
+ * trong `pages/dashboards/AnSinhXaHoiDashboard.tsx`. Giữ chúng ở đây nữa sẽ
+ * sinh `<Route>` placeholder đè lên route thật.
+ *
+ * Mảng rỗng là đúng: nhóm An sinh xã hội không còn màn hình "sắp có" nào.
  */
-export const AN_SINH_PLACEHOLDER_GROUPS: PlaceholderGroupDef[] = [
-  {
-    groupTitleKey: 'page.anSinhXaHoiDashboard.groupNhaDaiDoanKet',
-    modules: [
-      {
-        path: '/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
-        titleKey: 'page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet',
-        descKey: 'page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKetDesc',
-        icon: Home,
-        color: 'bg-emerald-500',
-      },
-      {
-        path: '/an-sinh-xa-hoi/nha-dai-doan-ket/sua-chua-nang-cap',
-        titleKey: 'page.anSinhXaHoiDashboard.suaChuaNangCap',
-        descKey: 'page.anSinhXaHoiDashboard.suaChuaNangCapDesc',
-        icon: Hammer,
-        color: 'bg-teal-500',
-      },
-    ],
-  },
-];
+export const AN_SINH_PLACEHOLDER_GROUPS: PlaceholderGroupDef[] = [];
 
 export const HANH_CHINH_PLACEHOLDER_GROUPS: PlaceholderGroupDef[] = [
   {

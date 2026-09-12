@@ -190,6 +190,28 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'an-sinh-xa-hoi/quy/bao-cao-thong-ke', nameKey: 'page.anSinhXaHoiDashboard.baoCaoThongKe' },
         ],
       },
+      {
+        /**
+         * Nhà đại đoàn kết. `storageKey` khai TƯỜNG MINH vì `module_key` lưu DB
+         * là segment cuối đường dẫn — ở đây là 'danh-sach' / 'thong-ke', quá
+         * chung và sẽ đụng module khác về sau. Hai chuỗi dưới cũng là tham số
+         * của `fn_co_quyen(...)` trong RLS bảng `nddk_nha_dai_doan_ket`, nên
+         * đổi ở đây là phải đổi cả migration.
+         */
+        groupTitleKey: 'page.anSinhXaHoiDashboard.groupNhaDaiDoanKet',
+        modules: [
+          {
+            id: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
+            nameKey: 'page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet',
+            storageKey: 'nha-dai-doan-ket',
+          },
+          {
+            id: 'an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke',
+            nameKey: 'page.anSinhXaHoiDashboard.thongKeNhaDaiDoanKet',
+            storageKey: 'thong-ke-nha-dai-doan-ket',
+          },
+        ],
+      },
     ],
   },
   {

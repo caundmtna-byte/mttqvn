@@ -35,7 +35,7 @@ export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-tai-khoan', nameKey: 'page.anSinhXaHoiDashboard.danhMucTaiKhoan', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/an-sinh-xa-hoi/quy-cuu-tro/bao-cao-thong-ke', nameKey: 'page.anSinhXaHoiDashboard.baoCaoThongKe', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach', nameKey: 'page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
-  { path: '/an-sinh-xa-hoi/nha-dai-doan-ket/sua-chua-nang-cap', nameKey: 'page.anSinhXaHoiDashboard.suaChuaNangCap', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
+  { path: '/an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke', nameKey: 'page.anSinhXaHoiDashboard.thongKeNhaDaiDoanKet', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/hanh-chinh', nameKey: 'nav.hanhChinh', groupKey: 'nav.commandPalette.groupHanhChinh' },
   { path: '/hanh-chinh/quan-ly-tai-san/danh-sach-tai-san', nameKey: 'page.hanhChinhDashboard.danhSachTaiSan', groupKey: 'nav.commandPalette.groupHanhChinh' },
   { path: '/hanh-chinh/quan-ly-tai-san/cap-phat-thu-hoi-luan-chuyen', nameKey: 'page.hanhChinhDashboard.capPhatThuHoiLuanChuyen', groupKey: 'nav.commandPalette.groupHanhChinh' },

@@ -44,6 +44,8 @@ import { dttgThongKeToChucCaNhan } from '../../features/dan-toc-ton-giao/thong-t
 import { pbxhThucHien } from '../../features/phan-bien-xa-hoi/thuc-hien-phan-bien-xa-hoi/text';
 import { pbxhThietLap } from '../../features/phan-bien-xa-hoi/thiet-lap-danh-muc/text';
 import { pbxhThongKe } from '../../features/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi/text';
+import { nhaDaiDoanKet } from '../../features/nha-dai-doan-ket/danh-sach/text';
+import { nhaDaiDoanKetThongKe } from '../../features/nha-dai-doan-ket/thong-ke/text';
 import { diaBan } from '../../features/he-thong/danh-sach-tinh-thanh/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
@@ -104,6 +106,8 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('pbxhThucHien', pbxhThucHien),
   ...flatten('pbxhThietLap', pbxhThietLap),
   ...flatten('pbxhThongKe', pbxhThongKe),
+  ...flatten('nhaDaiDoanKet', nhaDaiDoanKet),
+  ...flatten('nhaDaiDoanKetThongKe', nhaDaiDoanKetThongKe),
   ...flatten('tenure', tenure),
   ...flatten('taiLieu', taiLieu),
   ...flatten('diaBan', diaBan),
@@ -166,6 +170,8 @@ export {
   matTranTonKho,
   matTranReliefSupportReport,
   matTranThietLapLuong,
+  nhaDaiDoanKet,
+  nhaDaiDoanKetThongKe,
   diaBan,
 };
 export { fmt };
