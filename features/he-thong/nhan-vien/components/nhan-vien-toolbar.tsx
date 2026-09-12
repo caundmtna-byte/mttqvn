@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { txt } from '../../../../lib/text';
-import { Plus, Building2, Briefcase, Tag, Check, Power, Upload } from 'lucide-react';
+import { Plus, Building2, Briefcase, Tag, Check, Power, Upload, Download } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import Tooltip from '../../../../components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
@@ -20,15 +20,18 @@ interface Props {
   employees: Employee[];
   onAdd: () => void;
   onImport?: () => void;
+  onExport?: () => void;
   onDeleteMany: (ids: string[]) => void;
   onStatusChangeMany: (ids: string[], status: TrangThaiNhanVien) => void;
 }
 
-const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onImport, onDeleteMany, onStatusChangeMany }) => {
-  const { canCreate, canEdit, canDelete, canImport } = useResourcePermissions('employees');
+const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onImport, onExport, onDeleteMany, onStatusChangeMany }) => {
+  const { canCreate, canEdit, canDelete, canImport, canExport } = useResourcePermissions('employees');
   // Nhập = ghi thêm bản ghi ⇒ phải có quyền `them`. Chỉ dựa vào `canImport` là hở:
   // `can()` cho token `view` đi qua cả export lẫn import.
   const showImportButton = canCreate && canImport && Boolean(onImport);
+  // Xuất = đọc lại đúng dữ liệu đang hiển thị ⇒ chỉ cần quyền xuất (đi kèm quyền xem).
+  const showExportButton = canExport && Boolean(onExport);
 
   const {
     searchTerm, setSearchTerm,
@@ -141,8 +144,30 @@ const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onImport, onDelete
     [departmentOptions, positionOptions, statusOptions, filters.id_phong_ban, filters.id_chuc_vu, filters.trang_thai, setFilter],
   );
 
+  const mobileActions = useMemo(
+    () => [
+      ...(showExportButton && onExport
+        ? [{ key: 'export', label: txt('common.export'), icon: Download, onClick: onExport, description: '' }]
+        : []),
+    ],
+    [showExportButton, onExport],
+  );
+
   const renderActions = (
     <>
+      {showExportButton && onExport ? (
+        <Tooltip content={txt('common.export')} placement="bottom">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExport}
+            aria-label={txt('common.export')}
+            className="inline-flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 h-8 w-8 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+          >
+            <Download className="w-4 h-4" aria-hidden />
+          </Button>
+        </Tooltip>
+      ) : null}
       {showImportButton && onImport ? (
         <Tooltip content={txt('common.import')} placement="bottom">
           <Button
@@ -201,6 +226,7 @@ const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onImport, onDelete
       actions={renderActions}
       filters={filtersSlot}
       filterGroups={filterGroups}
+      mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}
       bulkActions={bulkStatusActions ?? undefined}

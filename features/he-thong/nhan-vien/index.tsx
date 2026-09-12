@@ -28,6 +28,8 @@ import { getXaPhuongAll } from '../danh-sach-tinh-thanh/services/dia-ban-service
 import { geoDataQueryOptions } from '@/lib/supabase/query-config';
 import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
 import ImportDialog, { type ImportColumn, type ImportTemplateSheet } from '@/components/shared/ImportDialog';
+import ExportDialog from '@/components/shared/ExportDialog';
+import { useExportData } from '@/lib/useExportData';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import EmployeeToolbar from './components/nhan-vien-toolbar';
 import EmployeeTable from './components/nhan-vien-table';
@@ -44,6 +46,7 @@ import { useListWithFilter } from '../../../lib/hooks';
 import { matchesSearchTerm } from '../../../lib/searchUtils';
 import { employeeMatchesColumnSearch } from './utils/column-search';
 import { mergeEmployeeChucVuFromPositions } from './utils/merge-employee-chuc-vu-from-positions';
+import { useNhanVienViewer, nhanVienRowVisible } from './hooks/use-nhan-vien-viewer';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
 
 const EmployeeForm = lazy(() => import('./components/nhan-vien-form'));
@@ -125,6 +128,7 @@ const EmployeePage: React.FC = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [viewingEmp, setViewingEmp] = useState<Employee | null>(null);
   const [statusChangeTarget, setStatusChangeTarget] = useState<Employee | null>(null);
@@ -138,6 +142,7 @@ const EmployeePage: React.FC = () => {
 
   const {
     searchTerm, filters, sort,
+    pagination, selectedIds, columns,
     resetState, clearSelection,
   } = useEmployeeStore();
 
@@ -162,10 +167,22 @@ const EmployeePage: React.FC = () => {
     [employees, positions],
   );
 
+  /**
+   * Phạm vi xem theo dòng — Xã phường thấy đơn vị mình, Tỉnh/quản trị thấy tất cả,
+   * còn lại thấy phòng ban mình (luôn kèm hồ sơ của chính mình). Mọi thứ phía dưới
+   * (bảng, bộ lọc, đếm, thao tác hàng loạt và **dữ liệu xuất file**) đều đọc từ đây,
+   * để không có đường nào lấy ra được hồ sơ ngoài phạm vi.
+   */
+  const nhanVienViewer = useNhanVienViewer();
+  const scopedEmployees = useMemo(
+    () => employeesDisplay.filter((e) => nhanVienRowVisible(nhanVienViewer, e)),
+    [employeesDisplay, nhanVienViewer],
+  );
+
   useEffect(() => { viewingEmpRef.current = viewingEmp; }, [viewingEmp]);
   useEffect(() => { editingEmpRef.current = editingEmp; }, [editingEmp]);
   useEffect(() => { formOriginRef.current = formOrigin; }, [formOrigin]);
-  useEffect(() => { employeesRef.current = employeesDisplay; }, [employeesDisplay]);
+  useEffect(() => { employeesRef.current = scopedEmployees; }, [scopedEmployees]);
 
   /** Prefetch master data cho form. */
   useEffect(() => {
@@ -200,14 +217,14 @@ const EmployeePage: React.FC = () => {
     const viewing = viewingEmpRef.current;
     if (!viewing) return;
     const row = employees.find((e) => e.id === viewing.id);
-    if (!row) {
+    if (!row || !nhanVienRowVisible(nhanVienViewer, row)) {
       queueMicrotask(() => setViewingEmp(null));
       return;
     }
     const patched = { ...viewing, ...row };
     const merged = mergeEmployeeChucVuFromPositions(patched, positions);
     if (merged !== viewing) queueMicrotask(() => setViewingEmp(merged));
-  }, [employees, positions]);
+  }, [employees, positions, nhanVienViewer]);
 
   const filterFn = useCallback(
     (emp: Employee, term: string, f: typeof filters) => {
@@ -229,7 +246,37 @@ const EmployeePage: React.FC = () => {
     [],
   );
 
-  const filteredEmployees = useListWithFilter(employeesDisplay, searchTerm, filters, filterFn);
+  const filteredEmployees = useListWithFilter(scopedEmployees, searchTerm, filters, filterFn);
+
+  const EXPORT_COLUMNS = useMemo(
+    () => [
+      { key: 'ten_tai_khoan', label: txt('employee.store.usernameCol') },
+      { key: 'ho_va_ten', label: txt('employee.store.nameCol') },
+      { key: 'ten_phong_ban', label: txt('employee.store.departmentCol') },
+      { key: 'ten_bo_phan', label: txt('employee.store.unitCol') },
+      { key: 'ten_chuc_vu', label: txt('employee.store.positionCol') },
+      { key: 'cap_quan_ly', label: txt('position.store.managementLevelCol') },
+      { key: 'ten_don_vi', label: txt('employee.store.donViCol') },
+      { key: 'ten_to_chuc_arr', label: txt('matTranCanBo.store.toChucCol') },
+      { key: 'trang_thai', label: txt('employee.store.statusCol') },
+    ],
+    [],
+  );
+
+  const exportMapFn = useCallback(
+    (item: Employee) => ({
+      ten_tai_khoan: item.ten_tai_khoan,
+      ho_va_ten: item.ho_va_ten,
+      ten_phong_ban: item.ten_phong_ban ?? '',
+      ten_bo_phan: item.ten_bo_phan ?? '',
+      ten_chuc_vu: item.ten_chuc_vu ?? '',
+      cap_quan_ly: item.cap_quan_ly?.join(', ') ?? '',
+      ten_don_vi: item.ten_don_vi ?? '',
+      ten_to_chuc_arr: item.ten_to_chuc_arr?.join(', ') ?? '',
+      trang_thai: item.trang_thai,
+    }),
+    [],
+  );
 
   const sortedEmployees = useMemo(() => {
     if (!sort.column || !sort.direction) return filteredEmployees;
@@ -320,6 +367,34 @@ const EmployeePage: React.FC = () => {
     [queryClient, positions],
   );
 
+  /**
+   * Dữ liệu xuất bám đúng những gì đang thấy: `sortedEmployees` đã đi qua phạm vi
+   * xem (`scopedEmployees`) rồi mới tới bộ lọc và sắp xếp. Không có nhánh nào
+   * tải lại toàn bộ bảng cho phạm vi "Tất cả".
+   */
+  const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } =
+    useExportData({
+      data: sortedEmployees,
+      isOpen: showExport,
+      mapFn: exportMapFn,
+      pagination,
+      selectedIds,
+      keyExtractor: (e) => e.id,
+    });
+
+  const visibleExportColumnKeys = useMemo(
+    () => columns.filter((c) => c.visible).map((c) => c.id),
+    [columns],
+  );
+
+  const handleExport = useCallback(() => {
+    if (sortedEmployees.length === 0) {
+      toast.warning(txt('employee.noExportData'));
+      return;
+    }
+    setShowExport(true);
+  }, [sortedEmployees.length]);
+
   const closeDetail = useCallback(() => setViewingEmp(null), []);
 
   const closeForm = useCallback(() => {
@@ -382,7 +457,7 @@ const EmployeePage: React.FC = () => {
   );
 
   const handleDeleteMany = (ids: string[]) => {
-    const emps = employeesDisplay.filter((e) => ids.includes(e.id));
+    const emps = scopedEmployees.filter((e) => ids.includes(e.id));
     confirm({
       title: txt('employee.bulkDeleteTitle'),
       message: txt('employee.bulkDeleteMessage', { count: ids.length }),
@@ -501,7 +576,7 @@ const EmployeePage: React.FC = () => {
     <div className="flex flex-col h-page relative">
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <EmployeeToolbar
-          employees={employeesDisplay}
+          employees={scopedEmployees}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');
@@ -509,6 +584,7 @@ const EmployeePage: React.FC = () => {
             });
           }}
           onImport={() => setShowImport(true)}
+          onExport={handleExport}
           onDeleteMany={handleDeleteMany}
           onStatusChangeMany={handleStatusChangeMany}
         />
@@ -519,7 +595,7 @@ const EmployeePage: React.FC = () => {
             isLoading={isLoading}
             isError={isError}
             onRetry={() => void refetch()}
-            employeesForFilterCounts={employeesDisplay}
+            employeesForFilterCounts={scopedEmployees}
             onEdit={handleEdit}
             onView={handleView}
             onDelete={handleDelete}
@@ -586,6 +662,19 @@ const EmployeePage: React.FC = () => {
           />
         )}
       </AnimatePresence>
+
+      {showExport && (
+        <ExportDialog
+          open={showExport}
+          onClose={() => setShowExport(false)}
+          columns={EXPORT_COLUMNS}
+          data={exportData}
+          paginatedData={paginatedExportData}
+          selectedData={selectedExportData}
+          fileName={txt('employee.exportFileName')}
+          visibleColumnKeys={visibleExportColumnKeys}
+        />
+      )}
     </div>
   );
 };
