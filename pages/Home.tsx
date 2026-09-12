@@ -3,7 +3,6 @@ import { txt } from '../lib/text';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import MainCard from '../components/dashboard/MainCard';
-import HomeMetrics from '../features/trang-chu/components/home-metrics';
 import { useAuthStore } from '../store/useStore';
 import { usePermissionGrantStore } from '../store/usePermissionGrantStore';
 import { SIDEBAR_MENU } from '../lib/sidebar-menu';
@@ -71,12 +70,6 @@ const Home: React.FC = () => {
       </div>
 
       <div className="h-px bg-border w-full mb-6" />
-
-      {/*
-        Thẻ chỉ số: tự lo phần quyền + phạm vi xem + khung chờ bên trong, kể cả lúc
-        ma trận quyền chưa về. Không render gì khi người dùng không có quyền nào.
-      */}
-      <HomeMetrics />
 
       <motion.div
         variants={container}

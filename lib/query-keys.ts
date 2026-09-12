@@ -125,18 +125,6 @@ export const queryKeys = {
       p_view_all: boolean;
     }) => ['cong-viec-bao-cao', 'filter-options', range] as const,
   },
-  /** Thẻ chỉ số Trang chủ — số liệu tóm tắt, đã khoá phạm vi theo người đang xem. */
-  trangChu: {
-    all: ['trang-chu'] as const,
-    /** KPI công việc của chính người dùng (RPC `cong_viec_bao_cao_kpi`). */
-    congViecKpi: (args: unknown) => ['trang-chu', 'cong-viec-kpi', args] as const,
-    /** Kỳ họp sắp diễn ra — khoá gồm cả phạm vi xem để không dùng nhầm cache người khác. */
-    kyHopSapToi: (scope: unknown, today: string) =>
-      ['trang-chu', 'ky-hop-sap-toi', scope, today] as const,
-    /** Cán bộ sắp đến hạn nâng bậc lương — khoá gồm cả phạm vi xem. */
-    tangLuongSapDenHan: (scope: unknown, soNgay: number) =>
-      ['trang-chu', 'tang-luong-sap-den-han', scope, soNgay] as const,
-  },
   mttqCanBo: {
     all: ['mttq-can-bo'] as const,
     /** Danh sách gọn cho báo cáo thống kê (select nhẹ hơn LIST). */
