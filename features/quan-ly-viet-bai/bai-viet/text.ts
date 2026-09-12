@@ -49,6 +49,7 @@ export const articleList = {
   },
   validation: {
     tenBaiRequired: 'Nhập tên bài',
+    tenBaiDuplicate: 'Tên bài này đã tồn tại, đặt tên khác',
     theLoaiRequired: 'Chọn thể loại',
     donGiaMin: 'Đơn giá không âm',
     ngayDangRequired: 'Chọn ngày đăng',

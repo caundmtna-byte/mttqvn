@@ -33,6 +33,7 @@ const BY_CONSTRAINT: Record<string, string> = {
   uq_kho_danh_muc_hang_hoa_ten_lower: 'Danh mục hàng hoá này đã có. Vui lòng đặt tên khác.',
   uq_kho_danh_sach_hang_hoa_dm_ten_lower: 'Hàng hoá này đã có trong danh mục đã chọn.',
   uq_bai_viet_danh_sach_link_lower: 'Đường dẫn bài viết này đã được nhập trước đó.',
+  uq_bai_viet_danh_sach_ten_bai_lower: 'Tên bài viết này đã được nhập trước đó.',
   uq_bai_viet_thiet_lap_the_loai_ten_lower: 'Thể loại này đã tồn tại.',
   uq_bai_viet_thiet_lap_khac_loai_ten_lower: 'Tên này đã tồn tại trong thiết lập. Vui lòng đặt tên khác.',
   uq_pbxh_thiet_lap_loai_ten_lower: 'Tên này đã có trong danh mục phản biện xã hội.',

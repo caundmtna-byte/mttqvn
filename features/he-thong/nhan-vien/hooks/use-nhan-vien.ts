@@ -9,6 +9,7 @@ import {
   deleteEmployees,
   updateEmployeeStatus,
   restoreEmployees,
+  resetEmployeePassword,
   AuthUserExistsError,
   type AuthConflictDecision,
 } from '../services/nhan-vien-service';
@@ -167,6 +168,39 @@ export const useUpdateEmployeeWithAuthDecision = (onSuccess?: () => void) => {
     },
   });
 };
+
+/**
+ * Quản trị viên đặt lại mật khẩu cho một nhân viên.
+ *
+ * Không đụng tới cache danh sách: mật khẩu không nằm trong `var_nhan_vien`.
+ * Nếu Edge Function từ chối mật khẩu admin gõ và tự sinh chuỗi khác, chuỗi đó
+ * được hiện trong toast **không tự tắt** — đây là lần duy nhất đọc được nó.
+ */
+export const useResetEmployeePassword = (onSuccess?: () => void) =>
+  useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) =>
+      resetEmployeePassword(id, password),
+    onSuccess: (res) => {
+      if (res.generatedPassword) {
+        const pw = res.generatedPassword;
+        toast.warning(txt('employee.resetPassword.toastFallback'), {
+          description: `${res.username} — ${pw}`,
+          duration: Infinity,
+          closeButton: true,
+          action: {
+            label: txt('common.copy'),
+            onClick: () => void navigator.clipboard?.writeText(pw),
+          },
+        });
+      } else {
+        toast.success(txt('employee.resetPassword.toastSuccess', { username: res.username }));
+      }
+      onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      toast.error(txt('employee.resetPassword.toastFailed', { reason: getErrorMessage(err) }));
+    },
+  });
 
 /** Đặt trạng thái cho các nhân viên được chọn, giữ nguyên phần còn lại. */
 export function datTrangThaiNhanVien(

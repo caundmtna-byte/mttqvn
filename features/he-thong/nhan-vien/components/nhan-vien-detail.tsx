@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { txt } from '../../../../lib/text';
 import {
-  Edit, Trash2, User, AtSign, Building2, Briefcase, Layers, MapPin, MapPinned, Power, Calendar, Clock, RefreshCw, Network,
+  Edit, Trash2, User, AtSign, Building2, Briefcase, Layers, MapPin, MapPinned, Power, Calendar, Clock, RefreshCw, Network, KeyRound,
 } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
 import EnumBadge from '../../../../components/ui/EnumBadge';
@@ -18,6 +18,7 @@ import DetailToolbar, { DetailToolbarAction } from '../../../../components/share
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '../../../../lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { capQuanLyBadgeConfig } from '../../chuc-vu/utils/cap-quan-ly';
+import { useCanResetEmployeePassword } from '../hooks/use-can-reset-password';
 
 interface Props {
   data: Employee;
@@ -25,10 +26,19 @@ interface Props {
   onEdit: (item: Employee) => void;
   onDelete: (id: string) => void;
   onStatusChange?: (item: Employee) => void;
+  onResetPassword?: (item: Employee) => void;
 }
 
-const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onStatusChange }) => {
+const EmployeeDetail: React.FC<Props> = ({
+  data,
+  onClose,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onResetPassword,
+}) => {
   const { canEdit, canDelete } = useResourcePermissions('employees');
+  const canResetPassword = useCanResetEmployeePassword();
 
   const capQuanLyBadge = useMemo(
     () => capQuanLyBadgeConfig(txt('position.capQuanLyTinh'), txt('position.capQuanLyXaPhuong')),
@@ -43,6 +53,16 @@ const EmployeeDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, onSt
             icon: <RefreshCw size={16} />,
             onClick: () => onStatusChange(data),
             variant: 'info' as const,
+          },
+        ]
+      : []),
+    ...(onResetPassword && canResetPassword
+      ? [
+          {
+            label: txt('employee.resetPassword.action'),
+            icon: <KeyRound size={16} />,
+            onClick: () => onResetPassword(data),
+            variant: 'warning' as const,
           },
         ]
       : []),

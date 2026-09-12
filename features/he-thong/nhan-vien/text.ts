@@ -383,6 +383,26 @@ export const employee = {
     "generatedPasswordTitle": "Mật khẩu đăng nhập mới — hãy sao chép và đưa cho người dùng",
     "authDeleted": "Đã xóa tài khoản đăng nhập cũ"
   },
+  "resetPassword": {
+    "action": "Đổi mật khẩu",
+    "title": "Đổi mật khẩu đăng nhập",
+    "subtitle": "Đặt mật khẩu mới cho tài khoản",
+    "warning": "Mật khẩu cũ bị ghi đè ngay. Người dùng đang đăng nhập vẫn giữ phiên hiện tại cho tới khi đăng xuất.",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Nhập lại mật khẩu mới",
+    "placeholder": "Ít nhất 8 ký tự",
+    "hint": "Tối thiểu 8 ký tự, không có khoảng trắng ở đầu/cuối. Hãy bàn giao trực tiếp cho người dùng.",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "errorTrong": "Chưa nhập mật khẩu mới",
+    "errorQuaNgan": "Mật khẩu phải có ít nhất 8 ký tự",
+    "errorKhongKhop": "Hai lần nhập mật khẩu không giống nhau",
+    "errorCoKhoangTrang": "Mật khẩu không được có khoảng trắng ở đầu hoặc cuối",
+    "errorNoUsername": "Nhân viên chưa có tên tài khoản đăng nhập",
+    "toastSuccess": "Đã đổi mật khẩu cho tài khoản {{username}}",
+    "toastFallback": "Máy chủ từ chối mật khẩu vừa nhập và đã sinh mật khẩu khác — hãy sao chép ngay",
+    "toastFailed": "Đổi mật khẩu không thành công. Lý do: {{reason}}"
+  },
   "authConflict": {
     "title": "Tài khoản đăng nhập đã tồn tại",
     "desc": "Email {{email}} đã có sẵn trên hệ thống. Bạn muốn xử lý thế nào?",

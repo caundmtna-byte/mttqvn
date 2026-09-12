@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, RefreshCw, Trash2 } from 'lucide-react';
+import { Edit, KeyRound, RefreshCw, Trash2 } from 'lucide-react';
 import { txt } from '../../../../lib/text';
 import {
   DataTableRowActions,
@@ -8,6 +8,7 @@ import {
 } from '../../../../components/shared/row-actions';
 import type { Employee } from '../core/types';
 import { useCan } from '@/hooks/use-can';
+import { useCanResetEmployeePassword } from '../hooks/use-can-reset-password';
 
 export interface EmployeeTableRowActionsProps {
   item: Employee;
@@ -16,6 +17,8 @@ export interface EmployeeTableRowActionsProps {
   onEdit: (item: Employee) => void;
   onDelete: (id: string) => void;
   onStatusChange: (item: Employee) => void;
+  /** Quản trị viên đặt mật khẩu mới cho tài khoản của nhân viên này. */
+  onResetPassword: (item: Employee) => void;
   /** Hàng thao tác trên card mobile: nút gọn, cùng hàng với checkbox. */
   compact?: boolean;
 }
@@ -27,11 +30,15 @@ export function EmployeeTableRowActions({
   onEdit,
   onDelete,
   onStatusChange,
+  onResetPassword,
   compact = false,
 }: EmployeeTableRowActionsProps) {
   const close = () => onMenuOpenChange(null);
   const canEdit = useCan('edit', 'employees');
   const canDelete = useCan('delete', 'employees');
+  // Đổi mật khẩu KHÔNG đi theo `canEdit`: sửa hồ sơ không đồng nghĩa với được
+  // chiếm tài khoản đăng nhập của người khác.
+  const canResetPassword = useCanResetEmployeePassword();
 
   const overflowItems: RowOverflowMenuItem[] = [
     ...(canEdit
@@ -42,6 +49,19 @@ export function EmployeeTableRowActions({
             icon: <RefreshCw size={14} />,
             onClick: () => {
               onStatusChange(item);
+              close();
+            },
+          },
+        ]
+      : []),
+    ...(canResetPassword
+      ? [
+          {
+            key: 'reset-password',
+            label: txt('employee.resetPassword.action'),
+            icon: <KeyRound size={14} />,
+            onClick: () => {
+              onResetPassword(item);
               close();
             },
           },

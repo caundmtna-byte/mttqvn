@@ -9,6 +9,15 @@ import { getSupabase } from './client';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
+/**
+ * Độ dài tối thiểu Edge Function chấp nhận cho mật khẩu admin tự đặt.
+ *
+ * Phải khớp `MIN_PASSWORD_LENGTH` trong `supabase/functions/admin-user/index.ts`:
+ * chuỗi ngắn hơn KHÔNG bị từ chối mà bị Edge Function lặng lẽ thay bằng mật khẩu
+ * ngẫu nhiên — admin tưởng đã đặt được mật khẩu mình gõ, thực tế thì không.
+ */
+export const MIN_ADMIN_PASSWORD_LENGTH = 8;
+
 type AdminAction = 'check' | 'create' | 'reset_password' | 'delete';
 
 interface AdminResponse {
@@ -65,9 +74,20 @@ export async function createAuthUser(username: string): Promise<{ password?: str
   return { password: res.password };
 }
 
-/** Đặt lại mật khẩu. Trả về mật khẩu mới hệ thống sinh (chỉ có đúng một lần). */
-export async function resetAuthUserPassword(username: string): Promise<{ password?: string }> {
-  const res = await callAdminUser('reset_password', username);
+/**
+ * Đặt lại mật khẩu.
+ *
+ * - Không truyền `password` ⇒ Edge Function sinh chuỗi ngẫu nhiên và trả về
+ *   (chỉ có đúng một lần).
+ * - Truyền `password` ⇒ dùng đúng chuỗi đó, và `password` trả về là `undefined`.
+ *   Nếu chuỗi ngắn hơn {@link MIN_ADMIN_PASSWORD_LENGTH}, Edge Function bỏ qua
+ *   và sinh ngẫu nhiên — nên phía gọi phải tự kiểm độ dài trước.
+ */
+export async function resetAuthUserPassword(
+  username: string,
+  password?: string,
+): Promise<{ password?: string }> {
+  const res = await callAdminUser('reset_password', username, password ? { password } : undefined);
   return { password: res.password };
 }
 

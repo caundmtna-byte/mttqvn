@@ -20,6 +20,11 @@ import {
   mapBaiVietLinkConstraintError,
   normalizeBaiVietLinkForCompare,
 } from '../utils/bai-viet-link-conflict';
+import {
+  BaiVietTenBaiConflictError,
+  mapBaiVietTenBaiConstraintError,
+  normalizeBaiVietTenBaiForCompare,
+} from '../utils/bai-viet-ten-bai-conflict';
 
 const repo = createRepository<BaiVietDanhSach>({
   tableName: 'bai_viet_danh_sach',
@@ -137,6 +142,49 @@ export async function findBaiVietLinkConflict(params: {
   return null;
 }
 
+/**
+ * Tìm bài khác đang mang cùng tên (bỏ qua hoa/thường và khoảng trắng thừa).
+ * Chỉ là lớp báo lỗi sớm cho người nhập: lớp chặn thật là unique index
+ * `uq_bai_viet_danh_sach_ten_bai_lower` dưới DB.
+ */
+export async function findBaiVietTenBaiConflict(params: {
+  tenBai: string;
+  excludeId?: string | null;
+}): Promise<{ existingId: string } | null> {
+  const trimmed = String(params.tenBai ?? '').trim();
+  const norm = normalizeBaiVietTenBaiForCompare(trimmed);
+  if (!norm) return null;
+
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const exclude = String(params.excludeId ?? '').trim();
+  let q = supabase
+    .from('bai_viet_danh_sach')
+    .select('id, ten_bai')
+    .ilike('ten_bai', escapeIlikePattern(trimmed))
+    .limit(5);
+  if (exclude) q = q.neq('id', exclude);
+
+  const { data, error } = await q;
+  if (error) handleSupabaseError(error);
+
+  const hit = (data ?? []).find(
+    (row) => normalizeBaiVietTenBaiForCompare(row.ten_bai as string) === norm,
+  );
+  if (hit?.id != null) {
+    return { existingId: String(hit.id) };
+  }
+  return null;
+}
+
+async function assertNoBaiVietTenBaiConflict(tenBai: string, excludeId?: string): Promise<void> {
+  const conflict = await findBaiVietTenBaiConflict({ tenBai, excludeId });
+  if (conflict) {
+    throw new BaiVietTenBaiConflictError(conflict.existingId);
+  }
+}
+
 async function assertNoBaiVietLinkConflict(link: string, excludeId?: string): Promise<void> {
   const conflict = await findBaiVietLinkConflict({ link, excludeId });
   if (conflict) {
@@ -157,7 +205,7 @@ async function supabaseInsertBaiViet(payload: Record<string, unknown>): Promise<
     .select(BAI_VIET_DANH_SACH_RETURNING)
     .single();
   if (error) {
-    const mapped = mapBaiVietLinkConstraintError(error);
+    const mapped = mapBaiVietLinkConstraintError(error) ?? mapBaiVietTenBaiConstraintError(error);
     if (mapped) throw mapped;
     handleSupabaseError(error);
   }
@@ -178,7 +226,7 @@ async function supabaseUpdateBaiViet(id: string, payload: Record<string, unknown
     .select(BAI_VIET_DANH_SACH_RETURNING)
     .single();
   if (error) {
-    const mapped = mapBaiVietLinkConstraintError(error);
+    const mapped = mapBaiVietLinkConstraintError(error) ?? mapBaiVietTenBaiConstraintError(error);
     if (mapped) throw mapped;
     handleSupabaseError(error);
   }
@@ -202,6 +250,7 @@ export async function createBaiVietDanhSach(
     id_nguoi_tao: trimmed,
   };
 
+  await assertNoBaiVietTenBaiConflict(payload.ten_bai);
   await assertNoBaiVietLinkConflict(payload.link);
 
   const inserted = await supabaseInsertBaiViet(payload);
@@ -227,6 +276,7 @@ export async function updateBaiVietDanhSach(
     link: data.link.trim(),
   };
 
+  await assertNoBaiVietTenBaiConflict(payload.ten_bai, id);
   await assertNoBaiVietLinkConflict(payload.link, id);
 
   await supabaseUpdateBaiViet(id, payload);

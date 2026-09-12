@@ -18,6 +18,7 @@ import type { BaiVietDanhSach } from '../core/types';
 import { useCreateBaiVietDanhSach, useUpdateBaiVietDanhSach } from '../hooks/use-bai-viet-danh-sach';
 import { useCanEditBaiVietDonGia } from '../hooks/use-can-edit-bai-viet-don-gia';
 import { BaiVietLinkConflictError } from '../utils/bai-viet-link-conflict';
+import { BaiVietTenBaiConflictError } from '../utils/bai-viet-ten-bai-conflict';
 
 const DEFAULT_VALUES: BaiVietDanhSachFormValues = {
   ten_bai: '',
@@ -119,6 +120,8 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
     } catch (e) {
       if (e instanceof BaiVietLinkConflictError) {
         setError('link', { type: 'manual', message: e.message });
+      } else if (e instanceof BaiVietTenBaiConflictError) {
+        setError('ten_bai', { type: 'manual', message: e.message });
       }
     }
   };

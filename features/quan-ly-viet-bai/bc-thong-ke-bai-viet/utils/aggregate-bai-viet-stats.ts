@@ -250,3 +250,76 @@ export function sortLookupRows(
   });
   return sorted;
 }
+
+/* ------------------------------------------------------------------ *
+ * Tổng hợp theo xã/phường
+ *
+ * Bài viết không có cột đơn vị riêng: đơn vị của bài = đơn vị (`don_vi_id`)
+ * của NGƯỜI TẠO, lấy qua embed `nguoi_tao`. Tên xã tra từ danh mục
+ * `var_ssn_xa_phuong` (cache 24h) thay vì embed thêm vào từng dòng bài viết —
+ * embed lồng sẽ lặp lại tên xã cho hàng nghìn dòng, tốn egress vô ích.
+ * ------------------------------------------------------------------ */
+
+/** Khoá nhóm cho bài của người tạo chưa gắn đơn vị. */
+export const ARTICLE_STATS_DON_VI_UNKNOWN = '__khong_xac_dinh__';
+
+export interface DonViStatsRow {
+  /** Id xã/phường, hoặc `ARTICLE_STATS_DON_VI_UNKNOWN` khi người tạo chưa gắn đơn vị. */
+  id: string;
+  label: string;
+  soBai: number;
+  tongDonGia: number;
+  /** Đơn giá trung bình mỗi bài của xã (0 khi không có bài). */
+  avgDonGia: number;
+  /** Tỷ trọng số bài trên tổng số bài đã lọc, đơn vị % (0 khi không có bài nào). */
+  tyTrongSoBai: number;
+}
+
+/**
+ * Gộp bài viết theo xã/phường của người tạo.
+ * Sắp giảm dần theo số bài → tổng đơn giá → tên; nhóm "chưa xác định" luôn ở cuối
+ * để không chen giữa các xã thật trong bảng báo cáo.
+ */
+export function aggregateByDonVi(
+  filtered: BaiVietDanhSach[],
+  tenDonViById: ReadonlyMap<string, string>,
+  unknownLabel: string,
+): DonViStatsRow[] {
+  const tally = new Map<string, { label: string; soBai: number; tongDonGia: number }>();
+
+  for (const item of filtered) {
+    const raw = item.id_don_vi_nguoi_tao;
+    const id = raw != null && String(raw).trim() !== '' ? String(raw).trim() : ARTICLE_STATS_DON_VI_UNKNOWN;
+    const label =
+      id === ARTICLE_STATS_DON_VI_UNKNOWN ? unknownLabel : tenDonViById.get(id)?.trim() || id;
+    const tien = Number(item.don_gia) || 0;
+    const prev = tally.get(id);
+    if (prev) {
+      prev.soBai += 1;
+      prev.tongDonGia += tien;
+    } else {
+      tally.set(id, { label, soBai: 1, tongDonGia: tien });
+    }
+  }
+
+  const tongSoBai = filtered.length;
+  const rows = [...tally.entries()].map(([id, v]) => ({
+    id,
+    label: v.label,
+    soBai: v.soBai,
+    tongDonGia: v.tongDonGia,
+    avgDonGia: v.soBai > 0 ? v.tongDonGia / v.soBai : 0,
+    tyTrongSoBai: tongSoBai > 0 ? (v.soBai * 100) / tongSoBai : 0,
+  }));
+
+  rows.sort((a, b) => {
+    const aUnknown = a.id === ARTICLE_STATS_DON_VI_UNKNOWN;
+    const bUnknown = b.id === ARTICLE_STATS_DON_VI_UNKNOWN;
+    if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
+    if (b.soBai !== a.soBai) return b.soBai - a.soBai;
+    if (b.tongDonGia !== a.tongDonGia) return b.tongDonGia - a.tongDonGia;
+    return a.label.localeCompare(b.label, 'vi');
+  });
+
+  return rows;
+}

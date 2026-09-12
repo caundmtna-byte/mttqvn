@@ -32,7 +32,7 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import EmployeeToolbar from './components/nhan-vien-toolbar';
 import EmployeeTable from './components/nhan-vien-table';
 
-import { useEmployees, useDeleteWithUndo, useUpdateStatusEmployee, useImportEmployees } from './hooks/use-nhan-vien';
+import { useEmployees, useDeleteWithUndo, useUpdateStatusEmployee, useImportEmployees, useResetEmployeePassword } from './hooks/use-nhan-vien';
 import { getEmployeeById } from './services/nhan-vien-service';
 import { useEmployeeStore } from './store/useEmployeeStore';
 import { Employee } from './core/types';
@@ -49,6 +49,7 @@ import ToggleSwitch from '@/components/ui/ToggleSwitch';
 const EmployeeForm = lazy(() => import('./components/nhan-vien-form'));
 const EmployeeDetail = lazy(() => import('./components/nhan-vien-detail'));
 const EmployeeStatusChangeDialog = lazy(() => import('./components/nhan-vien-status-change-dialog'));
+const EmployeeResetPasswordDialog = lazy(() => import('./components/nhan-vien-doi-mat-khau-dialog'));
 
 /** Chọn trạng thái Hoạt động / Khóa trong dialog xác nhận (có state để switch hiển thị đúng). */
 const EmployeeStatusSwitchPicker: React.FC<{
@@ -127,6 +128,7 @@ const EmployeePage: React.FC = () => {
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [viewingEmp, setViewingEmp] = useState<Employee | null>(null);
   const [statusChangeTarget, setStatusChangeTarget] = useState<Employee | null>(null);
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<Employee | null>(null);
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
 
   const viewingEmpRef = useRef<Employee | null>(null);
@@ -183,6 +185,7 @@ const EmployeePage: React.FC = () => {
 
   const { deleteWithUndo } = useDeleteWithUndo();
   const statusMutation = useUpdateStatusEmployee();
+  const resetPasswordMutation = useResetEmployeePassword(() => setResetPasswordTarget(null));
   const confirm = useConfirmStore((s) => s.confirm);
 
   useEffect(() => {
@@ -355,6 +358,18 @@ const EmployeePage: React.FC = () => {
     setStatusChangeTarget(item);
   }, []);
 
+  const handleResetPassword = useCallback((item: Employee) => {
+    setResetPasswordTarget(item);
+  }, []);
+
+  const handleResetPasswordSave = useCallback(
+    async (password: string) => {
+      if (!resetPasswordTarget) return;
+      await resetPasswordMutation.mutateAsync({ id: resetPasswordTarget.id, password });
+    },
+    [resetPasswordTarget, resetPasswordMutation],
+  );
+
   const handleStatusSave = useCallback(
     async (status: TrangThaiNhanVien) => {
       if (!statusChangeTarget) return;
@@ -509,6 +524,7 @@ const EmployeePage: React.FC = () => {
             onView={handleView}
             onDelete={handleDelete}
             onStatusChange={handleStatusChange}
+            onResetPassword={handleResetPassword}
           />
         </div>
       </div>
@@ -531,6 +547,7 @@ const EmployeePage: React.FC = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
+              onResetPassword={handleResetPassword}
             />
           </Suspense>
         )}
@@ -542,6 +559,16 @@ const EmployeePage: React.FC = () => {
               isSubmitting={statusMutation.isPending}
               onClose={() => setStatusChangeTarget(null)}
               onSave={handleStatusSave}
+            />
+          </Suspense>
+        )}
+        {resetPasswordTarget && (
+          <Suspense fallback={null}>
+            <EmployeeResetPasswordDialog
+              employee={resetPasswordTarget}
+              isSubmitting={resetPasswordMutation.isPending}
+              onClose={() => setResetPasswordTarget(null)}
+              onSave={handleResetPasswordSave}
             />
           </Suspense>
         )}

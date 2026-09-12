@@ -19,10 +19,11 @@ import {
   Download,
   Share2,
   LayoutTemplate,
+  MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { cn, formatCurrency, getLanguage } from '@/lib/utils';
+import { cn, formatCurrency, formatDecimal, getLanguage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -57,6 +58,7 @@ import {
   canLoadArticleAllTab,
 } from '../hooks/use-article-all-tab-viewer';
 import type { BaiVietDanhSach } from '../bai-viet/core/types';
+import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import {
   type ArticleStatsDimensionFilters,
   resolveArticleStatsDateRange,
@@ -68,6 +70,7 @@ import {
   sortLookupRows,
   type LookupSortKey,
   getArticleStatsDateFromCreatedAt,
+  aggregateByDonVi,
 } from './utils/aggregate-bai-viet-stats';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import { useCan } from '@/hooks/use-can';
@@ -172,6 +175,16 @@ const BcThongKeBaiVietPage: React.FC = () => {
   );
   const deleteMutation = useDeleteBaiVietDanhSachMany();
 
+  /**
+   * Tên xã/phường tra từ danh mục (cache 24h + localStorage) chứ không embed vào
+   * từng dòng bài viết — embed sẽ lặp lại tên xã cho hàng nghìn dòng, tốn egress.
+   */
+  const { data: xaPhuongList = [] } = useXaPhuongForTab(true, '', { enabled: listQueryEnabled });
+  const tenDonViById = useMemo(
+    () => new Map(xaPhuongList.map((x) => [String(x.id), x.ten])),
+    [xaPhuongList],
+  );
+
   const {
     dateRange,
     setDateRange,
@@ -234,6 +247,25 @@ const BcThongKeBaiVietPage: React.FC = () => {
     const rowsTop = aggregateTopCounts(filtered, 'nguoi_tao', 10);
     return rowsTop.map((r) => ({ id: r.id, label: r.label, value: r.value }));
   }, [filtered]);
+
+  const donViRows = useMemo(
+    () => aggregateByDonVi(filtered, tenDonViById, txt('articleStats.donViKhongXacDinh')),
+    [filtered, tenDonViById],
+  );
+
+  const donViChartData = useMemo(
+    () => donViRows.slice(0, 10).map((r) => ({ label: r.label, count: r.soBai })),
+    [donViRows],
+  );
+
+  const donViTotals = useMemo(
+    () =>
+      donViRows.reduce(
+        (acc, r) => ({ soBai: acc.soBai + r.soBai, tongDonGia: acc.tongDonGia + r.tongDonGia }),
+        { soBai: 0, tongDonGia: 0 },
+      ),
+    [donViRows],
+  );
 
   const sortedLookup = useMemo(
     () => sortLookupRows(filtered, sortKey, sortDir),
@@ -309,6 +341,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
       { key: 'ten_nguon_dang', label: txt('articleStats.tableColNguon') },
       { key: 'ten_trang_dang', label: txt('articleStats.tableColTrang') },
       { key: 'ho_va_ten_nguoi_tao', label: txt('articleStats.tableColNguoi') },
+      { key: 'ten_don_vi', label: txt('articleStats.tableColDonVi') },
       { key: 'link', label: txt('articleStats.tableColLink') },
       { key: 'range_start', label: txt('articleStats.exportRangeFrom') },
       { key: 'range_end', label: txt('articleStats.exportRangeTo') },
@@ -325,11 +358,13 @@ const BcThongKeBaiVietPage: React.FC = () => {
       ten_nguon_dang: item.ten_nguon_dang ?? '',
       ten_trang_dang: item.ten_trang_dang ?? '',
       ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? item.ten_tai_khoan_nguoi_tao ?? '',
+      ten_don_vi:
+        (item.id_don_vi_nguoi_tao ? tenDonViById.get(String(item.id_don_vi_nguoi_tao)) : '') ?? '',
       link: item.link,
       range_start: resolvedRange.start,
       range_end: resolvedRange.end,
     }),
-    [resolvedRange.start, resolvedRange.end],
+    [resolvedRange.start, resolvedRange.end, tenDonViById],
   );
 
   const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
@@ -605,6 +640,101 @@ const BcThongKeBaiVietPage: React.FC = () => {
                 emptyKey="articleStats.noData"
                 maxHeight="max-h-[220px]"
               />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <StatsCard title={txt('articleStats.chartTopDonVi')} icon={MapPin}>
+                <div
+                  className="w-full min-w-0"
+                  style={{ height: Math.max(240, donViChartData.length * 34) }}
+                >
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <BarChart
+                      data={donViChartData}
+                      layout="vertical"
+                      margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        tick={{ fontSize: 11 }}
+                        width={128}
+                        interval={0}
+                      />
+                      <RechartsTooltip content={<ChartTooltip />} />
+                      <ColoredBar
+                        data={donViChartData}
+                        dataKey="count"
+                        name={txt('articleStats.tableColSoBai')}
+                        radius={[0, 4, 4, 0]}
+                        getFill={(_, i) => chartFillByIndex(i)}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </StatsCard>
+
+              <StatsCard title={txt('articleStats.tableDonViTitle')} icon={MapPin}>
+                <div className="overflow-x-auto max-h-[min(420px,50vh)] overflow-y-auto -m-4">
+                  <table className="w-full text-sm min-w-[520px]">
+                    <thead className="sticky top-0 z-[1] bg-card border-b border-border">
+                      <tr className="text-left text-muted-foreground">
+                        <th className="py-2 px-3 font-medium">{txt('articleStats.tableColDonVi')}</th>
+                        <th className="py-2 pr-3 font-medium text-right whitespace-nowrap">
+                          {txt('articleStats.tableColSoBai')}
+                        </th>
+                        <th className="py-2 pr-3 font-medium text-right whitespace-nowrap">
+                          {txt('articleStats.tableColTyTrong')}
+                        </th>
+                        <th className="py-2 pr-3 font-medium text-right whitespace-nowrap">
+                          {txt('articleStats.tableColTongDonGia')}
+                        </th>
+                        <th className="py-2 pr-3 font-medium text-right whitespace-nowrap">
+                          {txt('articleStats.tableColTbDonGia')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {donViRows.map((row) => (
+                        <tr key={row.id} className="border-b border-border/60">
+                          <td className="py-2 px-3 max-w-[200px] truncate">{row.label}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{row.soBai}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">
+                            {formatDecimal(row.tyTrongSoBai, 1)}%
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums">
+                            {formatCurrency(row.tongDonGia)}
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums">
+                            {formatCurrency(Math.round(row.avgDonGia))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="sticky bottom-0 bg-card border-t border-border">
+                      <tr className="font-medium">
+                        <td className="py-2 px-3">{txt('articleStats.tableRowTong')}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{donViTotals.soBai}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {donViTotals.soBai > 0 ? `${formatDecimal(100, 1)}%` : '—'}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {formatCurrency(donViTotals.tongDonGia)}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {formatCurrency(
+                            donViTotals.soBai > 0
+                              ? Math.round(donViTotals.tongDonGia / donViTotals.soBai)
+                              : 0,
+                          )}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </StatsCard>
             </div>
 
             <StatsCard title={txt('articleStats.tableLookupTitle')} icon={Layers}>

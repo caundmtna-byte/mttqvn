@@ -32,6 +32,7 @@ interface Props {
   onEdit: (item: Employee) => void;
   onDelete: (id: string) => void;
   onStatusChange: (item: Employee) => void;
+  onResetPassword: (item: Employee) => void;
   onView: (item: Employee) => void;
 }
 
@@ -44,6 +45,7 @@ const EmployeeTable = memo(function EmployeeTable({
   onEdit,
   onDelete,
   onStatusChange,
+  onResetPassword,
   onView,
 }: Props) {
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null);
@@ -268,12 +270,13 @@ const EmployeeTable = memo(function EmployeeTable({
             onEdit={onEdit}
             onDelete={onDelete}
             onStatusChange={onStatusChange}
+            onResetPassword={onResetPassword}
           />
         );
       default:
         return null;
     }
-  }, [onEdit, onDelete, onStatusChange, rowMenuOpenId, capQuanLyBadge]);
+  }, [onEdit, onDelete, onStatusChange, onResetPassword, rowMenuOpenId, capQuanLyBadge]);
 
   const renderMobileCard = useCallback((item: Employee, isSelected: boolean) => (
     <MobileListCard
@@ -339,10 +342,11 @@ const EmployeeTable = memo(function EmployeeTable({
           onEdit={onEdit}
           onDelete={onDelete}
           onStatusChange={onStatusChange}
+          onResetPassword={onResetPassword}
         />
       )}
     />
-  ), [onEdit, onDelete, onStatusChange, onView, rowMenuOpenId, toggleSelection]);
+  ), [onEdit, onDelete, onStatusChange, onResetPassword, onView, rowMenuOpenId, toggleSelection]);
 
   return (
     <GenericTable

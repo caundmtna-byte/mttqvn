@@ -328,6 +328,27 @@ export const createEmployeeWithAuthDecision = async (
   return insertEmployeeRow(data);
 };
 
+/**
+ * Quản trị viên đặt lại mật khẩu đăng nhập cho MỘT nhân viên.
+ *
+ * `ten_tai_khoan` lấy lại từ cơ sở dữ liệu chứ không tin dòng đang hiển thị —
+ * bảng có thể đã cũ, và đặt nhầm mật khẩu sang tài khoản khác là mất quyền
+ * kiểm soát tài khoản đó.
+ *
+ * Trả `generatedPassword` khi (và chỉ khi) Edge Function tự sinh mật khẩu —
+ * nghĩa là mật khẩu admin gõ đã bị nó từ chối; UI phải hiển thị chuỗi này thay
+ * vì báo suông "đã đổi".
+ */
+export const resetEmployeePassword = async (
+  id: string,
+  password: string,
+): Promise<{ username: string; generatedPassword?: string }> => {
+  const username = await requireEmployeeTenTaiKhoan(id);
+  if (!username) throw new Error(txt('employee.resetPassword.errorNoUsername'));
+  const res = await resetAuthUserPassword(username, password);
+  return { username, generatedPassword: res.password };
+};
+
 async function requireEmployeeTenTaiKhoan(id: string): Promise<string> {
   const supabase = getSupabase();
   if (supabase) {
