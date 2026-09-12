@@ -31,6 +31,8 @@ import { getXaPhuongAll } from '../../danh-sach-tinh-thanh/services/dia-ban-serv
 import { queryKeys } from '@/lib/query-keys';
 import { geoDataQueryOptions } from '@/lib/supabase/query-config';
 import { getDefaultEmployeeFormValues, employeeToFormValues } from '../utils/employee-to-form';
+import { useNhanVienViewer } from '../hooks/use-nhan-vien-viewer';
+import { useAuthStore } from '@/store/useStore';
 import AuthConflictDialog from './auth-conflict-dialog';
 import { useSignedEmployeeAvatarSrc } from '../hooks/use-signed-employee-avatar-src';
 
@@ -92,14 +94,6 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
     defaultValues: getDefaultEmployeeFormValues(),
   });
 
-  useEffect(() => {
-    if (initialData) {
-      reset(employeeToFormValues(initialData));
-    } else {
-      reset(getDefaultEmployeeFormValues());
-    }
-  }, [initialData, reset]);
-
   const selectedDept = useWatch({ control, name: 'id_phong_ban' });
   const selectedUnit = useWatch({ control, name: 'id_bo_phan' });
   const deptById = useMemo(
@@ -120,6 +114,28 @@ const EmployeeForm: React.FC<Props> = ({ initialData, onClose }) => {
         .map((d) => ({ label: d.ten_phong_ban, value: d.id })),
     [departments],
   );
+
+  const viewer = useNhanVienViewer();
+  const user = useAuthStore((s) => s.user);
+  /** Operator cấp Xã phường — lập hồ sơ mới thì điền sẵn phòng ban / cấp quản lý / đơn vị. */
+  const viewerDefaultValues = useMemo(
+    () =>
+      getDefaultEmployeeFormValues({
+        isXaPhuongViewer: viewer.chucVuCapQuanLy === 'Xã phường',
+        viewerDonViId: viewer.viewerDonViId,
+        viewerPhongBanId: user?.id_phong_ban ?? null,
+        selectablePhongBanIds: departmentOptions.map((o) => o.value),
+      }),
+    [viewer.chucVuCapQuanLy, viewer.viewerDonViId, user?.id_phong_ban, departmentOptions],
+  );
+
+  useEffect(() => {
+    if (initialData) {
+      reset(employeeToFormValues(initialData));
+    } else {
+      reset(viewerDefaultValues);
+    }
+  }, [initialData, reset, viewerDefaultValues]);
 
   const unitOptions = useMemo(
     () =>

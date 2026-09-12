@@ -160,6 +160,8 @@ const ThamHoiCaNhanForm: React.FC<Props> = ({ initialData, defaultDipId, onClose
     }
     if (!initialData && defaultDonViFromViewer && viewer.viewerDonViId) {
       base.don_vi_tham_hoi_id = viewer.viewerDonViId;
+      // Địa bàn của người được thăm — mặc định theo xã của người nhập, vẫn đổi được.
+      base.xa_phuong_id = viewer.viewerDonViId;
     }
     reset(base);
   }, [initialData, defaultDipId, reset, defaultDonViFromViewer, viewer.viewerDonViId]);

@@ -18,11 +18,11 @@ import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/service
 import { queryKeys } from '@/lib/query-keys';
 import { geoDataQueryOptions } from '@/lib/supabase/query-config';
 import { buildMttqCanBoSchema, type MttqCanBoFormValues } from '../core/schema';
-import { MTTQ_CAN_BO_FORM_DEFAULT_VALUES } from '../core/default-form-values';
 import type { MttqCanBo } from '../core/types';
 import { useCreateMttqCanBo, useUpdateMttqCanBo } from '../hooks/use-mttq-can-bo';
 import { mttqCanBoRowToFormValues } from '../utils/can-bo-row-to-form-values';
 import { buildMttqCanBoChucVuOptions } from '../utils/chuc-vu-options-for-phong-ban';
+import { buildCanBoDefaultsForViewer } from '../utils/can-bo-defaults-for-viewer';
 import { useMttqCanBoViewer } from '../hooks/use-mttq-can-bo-viewer';
 import MttqCanBoFormBody from './mttq-can-bo-form-body';
 
@@ -73,8 +73,9 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
 
   const viewer = useMttqCanBoViewer();
   const viewerDonViId = viewer.viewerDonViId;
-  /** Operator cấp Xã phường — auto-fill `don_vi_id` mặc định khi tạo mới (không khóa). */
-  const defaultDonViFromViewer = viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewerDonViId);
+  /** Operator cấp Xã phường — điền sẵn phòng ban / cấp quản lý / đơn vị khi tạo mới (không khóa). */
+  const isXaPhuongViewer = viewer.chucVuCapQuanLy === 'Xã phường';
+  const defaultDonViFromViewer = isXaPhuongViewer && Boolean(viewerDonViId);
 
   const optToChuc = useMemo(() => optionsByLoai(thietLapAll, 'to_chuc'), [thietLapAll]);
   const optDanToc = useMemo(() => optionsByLoai(thietLapAll, 'dan_toc'), [thietLapAll]);
@@ -89,6 +90,18 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
         .map((d) => ({ label: d.ten_phong_ban, value: d.id }))
         .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
     [departments],
+  );
+
+  const viewerDefaultValues = useMemo(
+    () =>
+      buildCanBoDefaultsForViewer({
+        isXaPhuongViewer,
+        viewerDonViId,
+        viewerPhongBanId: user?.id_phong_ban ?? null,
+        departments,
+        selectablePhongBanIds: departmentOptions.map((o) => o.value),
+      }),
+    [isXaPhuongViewer, viewerDonViId, user?.id_phong_ban, departments, departmentOptions],
   );
 
   const canBoResolver = useMemo(
@@ -106,7 +119,7 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
     watch,
   } = useForm<MttqCanBoFormValues>({
     resolver: canBoResolver,
-    defaultValues: MTTQ_CAN_BO_FORM_DEFAULT_VALUES,
+    defaultValues: viewerDefaultValues,
   });
 
   const selectedPhongBan = watch('id_phong_ban');
@@ -170,13 +183,9 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
     if (initialData) {
       reset(mttqCanBoRowToFormValues(initialData, departments));
     } else {
-      const defaults = { ...MTTQ_CAN_BO_FORM_DEFAULT_VALUES };
-      if (defaultDonViFromViewer && viewerDonViId) {
-        defaults.don_vi_id = viewerDonViId;
-      }
-      reset(defaults);
+      reset(viewerDefaultValues);
     }
-  }, [initialData, reset, departments, defaultDonViFromViewer, viewerDonViId]);
+  }, [initialData, reset, departments, viewerDefaultValues]);
 
   const onSubmit: SubmitHandler<MttqCanBoFormValues> = (data) => {
     if (!isEdit && !idNguoiTao) {

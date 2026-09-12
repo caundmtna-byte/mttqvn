@@ -69,6 +69,7 @@ import { getTapHuanThuocDienBadgeConfig } from '../utils/display-format';
 import { tapHuanCanBoThreeColFromCanBo } from '../utils/snapshot-from-can-bo';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import { buildTapHuanCanBoOptions } from '../utils/can-bo-options-for-lop';
+import { buildTapHuanDefaultsForViewer } from '../utils/tap-huan-defaults-for-viewer';
 
 const DEFAULT_VALUES: MttqTapHuanFormValues = {
   ten_lop_tap_huan: '',
@@ -132,6 +133,16 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
   const { data: thietLapAll = [] } = useMttqThietLapAll();
   const viewer = useMttqLopTapHuanViewer();
+  /** Operator cấp Xã phường — mở lớp mới thì mặc định Cấp xã + đơn vị của mình (không khóa). */
+  const viewerDefaultValues = useMemo(
+    () =>
+      buildTapHuanDefaultsForViewer({
+        base: DEFAULT_VALUES,
+        isXaPhuongViewer: viewer.chucVuCapQuanLy === 'Xã phường',
+        viewerDonViId: viewer.viewerDonViId,
+      }),
+    [viewer.chucVuCapQuanLy, viewer.viewerDonViId],
+  );
 
   const validationSchema = useMemo(() => createMttqTapHuanSchema(canBoList), [canBoList]);
 
@@ -168,7 +179,7 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
     setValue,
   } = useForm<MttqTapHuanFormValues>({
     resolver: zodResolver(validationSchema) as Resolver<MttqTapHuanFormValues>,
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: viewerDefaultValues,
   });
 
   const { fields, append, remove, update } = useFieldArray({ control, name: 'chi_tiet' });
@@ -271,9 +282,9 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
             : [],
       });
     } else {
-      reset({ ...DEFAULT_VALUES });
+      reset(viewerDefaultValues);
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, viewerDefaultValues]);
 
   const openAddLine = useCallback(() => {
     setLineDrawer({ mode: 'add' });

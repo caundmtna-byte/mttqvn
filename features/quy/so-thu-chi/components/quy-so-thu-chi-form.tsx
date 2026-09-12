@@ -31,6 +31,7 @@ import { useQuyTaiKhoanOptions } from '../../danh-muc-tai-khoan/hooks/use-quy-da
 import { quySoThuChiSchema, type QuySoThuChiFormValues } from '../core/schema';
 import type { QuySoThuChiListRow } from '../core/types';
 import { useCreateQuySoThuChi, useUpdateQuySoThuChi } from '../hooks/use-quy-so-thu-chi';
+import { useQuyViewer } from '../../shared/use-quy-viewer';
 
 const FORM_ID = 'quy-so-thu-chi-form';
 
@@ -67,6 +68,10 @@ const QuySoThuChiForm: React.FC<Props> = ({ quy, initialData, onClose }) => {
   const { data: khoanOptions = [] } = useQuyKhoanOptions(quy);
   const { data: taiKhoanOptions = [] } = useQuyTaiKhoanOptions(quy);
   const { data: xaList = [] } = useXaPhuongForTab(true, '');
+  const viewer = useQuyViewer();
+  /** Tài khoản cấp Xã phường — điền sẵn "Xã/phường liên quan" khi tạo phiếu (không khóa). */
+  const defaultDonViFromViewer =
+    viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewer.viewerDonViId);
 
   const {
     register,
@@ -111,6 +116,14 @@ const QuySoThuChiForm: React.FC<Props> = ({ quy, initialData, onClose }) => {
       });
     }
   }, [initialData, reset]);
+
+  const donViIdWatch = watch('don_vi_id');
+  useEffect(() => {
+    if (initialData) return;
+    if (defaultDonViFromViewer && viewer.viewerDonViId && !donViIdWatch) {
+      setValue('don_vi_id', viewer.viewerDonViId);
+    }
+  }, [initialData, defaultDonViFromViewer, viewer.viewerDonViId, donViIdWatch, setValue]);
 
   /**
    * Chỉ hiện khoản mục CÙNG LOẠI với phiếu và đang hoạt động.

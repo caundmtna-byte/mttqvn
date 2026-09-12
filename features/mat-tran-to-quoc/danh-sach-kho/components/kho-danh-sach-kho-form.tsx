@@ -15,6 +15,7 @@ import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hook
 import { khoDanhSachKhoSchema, type KhoDanhSachKhoFormValues } from '../core/schema';
 import type { KhoDanhSachKhoListRow } from '../core/types';
 import { useCreateKhoDanhSachKho, useUpdateKhoDanhSachKho } from '../hooks/use-kho-danh-sach-kho';
+import { useKhoDanhSachKhoViewer } from '../hooks/use-kho-danh-sach-kho-viewer';
 
 const FORM_ID = 'kho-danh-sach-kho-form';
 
@@ -33,6 +34,14 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
   const isEdit = Boolean(initialData);
   const { data: tinhList = [] } = useTinhThanhList();
   const { data: xaList = [] } = useXaPhuongForTab(true, '');
+
+  const viewer = useKhoDanhSachKhoViewer();
+  /**
+   * Tài khoản cấp Xã phường — điền sẵn đơn vị khi tạo kho (không khóa).
+   * Bỏ trống thì kho mới biến mất khỏi Tồn kho / Nhập–xuất kho của chính người tạo.
+   */
+  const defaultDonViFromViewer =
+    viewer.chucVuCapQuanLy === 'Xã phường' && Boolean(viewer.viewerDonViId);
 
   const createMutation = useCreateKhoDanhSachKho(onClose);
   const updateMutation = useUpdateKhoDanhSachKho(onClose);
@@ -81,10 +90,12 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
             : '',
         mo_ta: initialData.mo_ta ?? '',
       });
+    } else if (defaultDonViFromViewer && viewer.viewerDonViId) {
+      reset({ ...DEFAULT_VALUES, don_vi_id: viewer.viewerDonViId });
     } else {
       reset(DEFAULT_VALUES);
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, defaultDonViFromViewer, viewer.viewerDonViId]);
 
   const onSubmit: SubmitHandler<KhoDanhSachKhoFormValues> = (data) => {
     if (isEdit && initialData) {

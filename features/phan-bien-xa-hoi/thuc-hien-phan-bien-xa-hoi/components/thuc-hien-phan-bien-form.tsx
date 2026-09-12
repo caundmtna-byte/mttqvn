@@ -40,6 +40,7 @@ import {
   isPbxhScopedToXaPhuong,
   usePbxhThucHienViewer,
 } from '../hooks/use-pbxh-thuc-hien-viewer';
+import { buildPbxhThucHienDefaults } from '../utils/pbxh-thuc-hien-defaults-for-viewer';
 
 const FORM_ID = 'pbxh-thuc-hien-form';
 
@@ -139,12 +140,20 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   useEffect(() => {
     const base = thucHienPhanBienToFormInput(initialData ?? null);
-    if (!initialData && scopedToXa && viewer.viewerDonViId) {
-      reset({ ...base, don_vi_thuc_hien_id: viewer.viewerDonViId });
-    } else {
+    if (initialData) {
       reset(base);
+      return;
     }
-  }, [initialData, reset, scopedToXa, viewer.viewerDonViId]);
+    reset(
+      buildPbxhThucHienDefaults({
+        base,
+        scopedToXa,
+        viewerDonViId: viewer.viewerDonViId,
+        viewerPhongBanId: user?.id_phong_ban ?? null,
+        phongBanIds: phongBanOptions.map((o) => o.value),
+      }),
+    );
+  }, [initialData, reset, scopedToXa, viewer.viewerDonViId, user?.id_phong_ban, phongBanOptions]);
 
   const soLanHoanThanh = watch('so_lan_hoan_thanh');
   const soLanKhaoSat = watch('so_lan_khao_sat');

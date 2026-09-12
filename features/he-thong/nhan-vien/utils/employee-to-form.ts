@@ -2,9 +2,28 @@ import { isCapQuanLy } from '../../chuc-vu/utils/cap-quan-ly';
 import type { Employee } from '../core/types';
 import type { EmployeeFormValues } from '../core/schema';
 
-/** Giá trị mặc định cho form tạo mới nhân viên. */
-export function getDefaultEmployeeFormValues(): EmployeeFormValues {
-  return {
+export interface EmployeeViewerDefaults {
+  /** Người đang thao tác có chức vụ cấp **Xã phường**. */
+  isXaPhuongViewer: boolean;
+  /** `var_nhan_vien.don_vi_id` của người đang thao tác. */
+  viewerDonViId?: string | null;
+  /** `var_nhan_vien.id_phong_ban` của người đang thao tác. */
+  viewerPhongBanId?: string | null;
+  /** Id phòng ban đang hiện trên combobox (phòng gốc, đang hoạt động). */
+  selectablePhongBanIds?: readonly string[];
+}
+
+/**
+ * Giá trị mặc định cho form tạo mới nhân viên.
+ *
+ * Truyền `viewerDefaults` khi người đang thao tác là cấp Xã phường: hồ sơ họ lập
+ * gần như luôn thuộc chính xã mình, nên điền sẵn phòng ban + cấp quản lý + đơn vị.
+ * Chỉ là **mặc định, không khóa**. `id_bo_phan` cố ý để trống — không suy diễn bộ phận con.
+ */
+export function getDefaultEmployeeFormValues(
+  viewerDefaults?: EmployeeViewerDefaults,
+): EmployeeFormValues {
+  const values: EmployeeFormValues = {
     ten_tai_khoan: '',
     ho_va_ten: '',
     hinh_anh: null,
@@ -16,6 +35,21 @@ export function getDefaultEmployeeFormValues(): EmployeeFormValues {
     don_vi_id: '',
     trang_thai: 'Hoạt động',
   };
+  if (!viewerDefaults?.isXaPhuongViewer) return values;
+
+  values.cap_quan_ly = ['Xã phường'];
+
+  const donVi =
+    viewerDefaults.viewerDonViId != null ? String(viewerDefaults.viewerDonViId).trim() : '';
+  if (donVi) values.don_vi_id = donVi;
+
+  const phongBan =
+    viewerDefaults.viewerPhongBanId != null ? String(viewerDefaults.viewerPhongBanId).trim() : '';
+  if (phongBan && (viewerDefaults.selectablePhongBanIds ?? []).includes(phongBan)) {
+    values.id_phong_ban = phongBan;
+  }
+
+  return values;
 }
 
 /** Map `Employee` → giá trị form (khi mở chế độ chỉnh sửa). */
