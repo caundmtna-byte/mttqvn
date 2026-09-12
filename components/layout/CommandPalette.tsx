@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
-  FileKey,
   LayoutDashboard,
   Users,
   Network,
@@ -21,7 +20,6 @@ import { cn } from '@/lib/utils';
 
 const PATH_ICONS: Record<string, LucideIcon> = {
   '/': Home,
-  '/thong-tin-ban-quyen': FileKey,
   '/he-thong': LayoutDashboard,
   '/he-thong/nhan-vien': Users,
   '/he-thong/phong-ban': Network,

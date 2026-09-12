@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { DipThamHoiFormValues } from '../core/schema';
 import type { TrangThaiDipThamHoi } from '../core/constants';
 import type { DipThamHoi } from '../core/types';
@@ -63,7 +62,6 @@ export function useCreateDipThamHoi(onSuccess?: () => void) {
       toast.success(txt('danTocDipThamHoi.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -80,7 +78,6 @@ export function useUpdateDipThamHoi(onSuccess?: () => void) {
       toast.success(txt('danTocDipThamHoi.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -97,7 +94,6 @@ export function useUpdateDipThamHoiTrangThai(onSuccess?: () => void) {
       toast.success(txt('danTocDipThamHoi.toast.changeStatus'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -113,6 +109,5 @@ export function useDeleteDipThamHoiMany() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.danTocDipThamHoi.options });
       toast.success(txt('danTocDipThamHoi.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }

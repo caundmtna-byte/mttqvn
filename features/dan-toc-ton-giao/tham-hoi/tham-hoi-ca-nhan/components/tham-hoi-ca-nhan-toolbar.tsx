@@ -9,15 +9,12 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { useDipThamHoiOptions } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-tham-hoi';
+import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
+import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import { useThongTinCaNhanTieuBieuList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/hooks/use-thong-tin-ca-nhan-tieu-bieu';
 import { useThamHoiCaNhanStore } from '../store/useThamHoiCaNhanStore';
 import { countThamHoiCaNhanColumnSearchActive } from '../utils/column-search';
 import { TRANG_THAI_VALUES, DON_VI_THAM_HOI_CQMTTQ_VALUE, DON_VI_THAM_HOI_CQMTTQ_LABEL } from '../core/constants';
-import type { ThamHoiCaNhan } from '../core/types';
-import {
-  buildDipThamHoiFilterOptions,
-  buildDonViThamHoiFilterOptions,
-  buildPhongBanFilterOptions,
-} from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
 
 interface Props {
   onPageBack: () => void;
@@ -25,7 +22,6 @@ interface Props {
   onExport: () => void;
   onImport: () => void;
   onDeleteMany: (ids: string[]) => void;
-  items?: ThamHoiCaNhan[] | null;
 }
 
 const ThamHoiCaNhanToolbar: React.FC<Props> = ({
@@ -34,11 +30,18 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
   onExport,
   onImport,
   onDeleteMany,
-  items,
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('danTocThamHoiCaNhan');
-  const itemRows = Array.isArray(items) ? items : [];
+
+  // Tuỳ chọn lọc lấy từ HẰNG SỐ nghiệp vụ và BẢNG DANH MỤC, không phải từ các
+  // dòng đang tải: danh sách nay phân trang phía máy chủ nên suy từ dòng chỉ ra
+  // được giá trị có mặt trên đúng trang đang xem. Bỏ luôn con số đếm kèm mỗi
+  // lựa chọn vì dưới phân trang server nó chỉ đếm được một trang — số sai còn
+  // tệ hơn không có số.
   const { data: dipList = [] } = useDipThamHoiOptions();
+  const { data: caNhanList = [] } = useThongTinCaNhanTieuBieuList();
+  const { data: phongBanList = [] } = useDepartments();
+  const { data: xaPhuongList = [] } = useXaPhuongForTab(true, '');
 
   const {
     searchTerm,
@@ -56,70 +59,52 @@ const ThamHoiCaNhanToolbar: React.FC<Props> = ({
 
   const selectedCount = selectedIds.size;
 
-  const trangThaiOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of itemRows) {
-      const key = r.trang_thai?.trim();
-      if (!key) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    for (const v of TRANG_THAI_VALUES) {
-      if (!map.has(v)) map.set(v, 0);
-    }
-    return [...map.entries()]
-      .map(([value, count]) => ({ value, label: value, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [itemRows]);
-
-  const caNhanOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    for (const r of itemRows) {
-      if (!r.ca_nhan_id) continue;
-      const label = r.ho_va_ten?.trim() || r.ca_nhan_id;
-      const cur = map.get(r.ca_nhan_id);
-      if (cur) cur.count += 1;
-      else map.set(r.ca_nhan_id, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [itemRows]);
+  const trangThaiOptions = useMemo(
+    () => TRANG_THAI_VALUES.map((value) => ({ value, label: value })),
+    [],
+  );
 
   const dipOptions = useMemo(
-    () => buildDipThamHoiFilterOptions(itemRows, dipList, filters.dip_tham_hoi_filter),
-    [itemRows, dipList, filters.dip_tham_hoi_filter],
+    () =>
+      dipList
+        .map((d) => ({ value: d.id, label: d.ten_dip }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [dipList],
+  );
+
+  const caNhanOptions = useMemo(
+    () =>
+      caNhanList
+        .map((c) => ({ value: c.id, label: c.ho_va_ten?.trim() || c.id }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [caNhanList],
   );
 
   const phongBanOptions = useMemo(
-    () => buildPhongBanFilterOptions(itemRows, 'phong_ban_tham_muu_id', 'ten_phong_ban'),
-    [itemRows],
-  );
-
-  const donViThamHoiOptions = useMemo(
     () =>
-      buildDonViThamHoiFilterOptions(
-        itemRows,
-        'don_vi_tham_hoi_id',
-        'ten_don_vi_tham_hoi',
-        DON_VI_THAM_HOI_CQMTTQ_VALUE,
-        DON_VI_THAM_HOI_CQMTTQ_LABEL,
-      ),
-    [itemRows],
+      phongBanList
+        .map((p) => ({ value: p.id, label: p.ten_phong_ban?.trim() || p.id }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [phongBanList],
   );
 
-  const xaPhuongOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    for (const r of itemRows) {
-      if (!r.xa_phuong_id) continue;
-      const label = r.ten_xa_phuong?.trim() || r.xa_phuong_id;
-      const cur = map.get(r.xa_phuong_id);
-      if (cur) cur.count += 1;
-      else map.set(r.xa_phuong_id, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [itemRows]);
+  const xaPhuongOptions = useMemo(
+    () =>
+      xaPhuongList
+        .map((x) => ({ value: x.id, label: x.ten?.trim() || x.id }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [xaPhuongList],
+  );
+
+  // Đơn vị thăm hỏi = xã/phường, cộng chip "CQMTTQ Tỉnh" cho dòng để trống
+  // (service quy nó thành `p_don_vi_include_null`).
+  const donViThamHoiOptions = useMemo(
+    () => [
+      { value: DON_VI_THAM_HOI_CQMTTQ_VALUE, label: DON_VI_THAM_HOI_CQMTTQ_LABEL },
+      ...xaPhuongOptions,
+    ],
+    [xaPhuongOptions],
+  );
 
   const activeFilterCount = useMemo(() => {
     return (

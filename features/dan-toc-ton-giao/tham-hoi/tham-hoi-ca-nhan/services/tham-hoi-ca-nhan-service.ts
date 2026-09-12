@@ -1,4 +1,10 @@
 import { createRepository } from '@/lib/data/create-repository';
+import {
+  buildRpcSortParam,
+  fetchAllServerPages,
+  readRpcTotalCount,
+  type ServerSortState,
+} from '@/lib/data/server-paging';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -12,7 +18,12 @@ import type { ThamHoiCaNhanFormValues } from '../core/schema';
 import { thamHoiCaNhanSchema } from '../core/schema';
 import type { ThamHoiCaNhan } from '../core/types';
 import type { TrangThaiThamHoi } from '../core/constants';
-import { DON_VI_THAM_HOI_CQMTTQ_LABEL, TRANG_THAI_DEFAULT, TRANG_THAI_VALUES } from '../core/constants';
+import {
+  DON_VI_THAM_HOI_CQMTTQ_LABEL,
+  DON_VI_THAM_HOI_CQMTTQ_VALUE,
+  TRANG_THAI_DEFAULT,
+  TRANG_THAI_VALUES,
+} from '../core/constants';
 import {
   DTTG_THAM_HOI_CA_NHAN_RETURNING,
   DTTG_THAM_HOI_CA_NHAN_SELECT,
@@ -168,6 +179,159 @@ async function buildPayload(
 export async function getThamHoiCaNhanList(): Promise<ThamHoiCaNhan[]> {
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   return list.map((row) => flattenThamHoiCaNhanRow(row as unknown as Record<string, unknown>));
+}
+
+// ---------------------------------------------------------------------------
+// Phân trang phía máy chủ (RPC) — xem CLAUDE.md "Chọn kiểu phân trang"
+// ---------------------------------------------------------------------------
+
+/** Cột được RPC sắp xếp; phải khớp khối ORDER BY trong migration. */
+export const THAM_HOI_CA_NHAN_SERVER_SORT_COLUMNS = [
+  'ho_va_ten',
+  'dip_tham_hoi',
+  'thoi_gian_du_kien',
+  'don_vi_tham_hoi',
+  'ten_phong_ban',
+  'ten_xa_phuong',
+  'trang_thai',
+  'ket_qua_ghi_chu',
+  'tg_cap_nhat',
+] as const;
+
+/**
+ * Nhãn hiển thị gửi kèm xuống RPC.
+ *
+ * Cột "Đơn vị thăm hỏi" để trống nghĩa là cơ quan MTTQ tỉnh — đó là chuỗi được
+ * tính ra, không có trong bảng. Muốn sắp xếp / tìm theo cột đúng như người dùng
+ * nhìn thấy thì SQL phải dựng lại đúng chuỗi đó, nên truyền nhãn xuống thay vì
+ * chép cứng câu chữ vào SQL.
+ */
+export function buildThamHoiCaNhanDisplayLabels(): Record<string, string> {
+  return { don_vi_cqmttq: DON_VI_THAM_HOI_CQMTTQ_LABEL };
+}
+
+export type ThamHoiCaNhanPageQuery = {
+  page: number;
+  pageSize: number;
+  search: string;
+  sort?: ServerSortState | null;
+  /** Phạm vi xem — suy từ useDttgViewer. */
+  viewAll: boolean;
+  viewerDonViId: string | null;
+  trangThai: readonly string[];
+  caNhanIds: readonly string[];
+  phongBanIds: readonly string[];
+  xaPhuongIds: readonly string[];
+  dipIds: readonly string[];
+  /** Đơn vị thăm hỏi; chip "Cơ quan MTTQ tỉnh" mang giá trị DON_VI_THAM_HOI_CQMTTQ_VALUE. */
+  donViThamHoiIds: readonly string[];
+  columnSearch: Record<string, string> | null;
+};
+
+export type ThamHoiCaNhanPageResult = {
+  rows: ThamHoiCaNhan[];
+  hasNextPage: boolean;
+  totalRecords: number;
+};
+
+function toNullableRpcId(v: string | null | undefined): number | null {
+  if (v == null) return null;
+  const t = String(v).trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+function toRpcIdArray(list: readonly string[]): number[] | null {
+  const out = list.map((x) => Number(String(x).trim())).filter((n) => Number.isFinite(n));
+  return out.length > 0 ? out : null;
+}
+
+function toRpcTextArray(list: readonly string[]): string[] | null {
+  return list.length > 0 ? [...list] : null;
+}
+
+/** Bỏ ô trống để RPC không phải lọc theo chuỗi rỗng; rỗng hết ⇒ null. */
+function cleanRpcColumnSearch(
+  cs: Record<string, string> | null | undefined,
+): Record<string, string> | null {
+  if (!cs) return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(cs)) {
+    const t = v?.trim();
+    if (t) out[k] = t;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+/** RPC trả dòng phẳng — dựng lại hình dạng embed để dùng chung flatten. */
+function rpcRowToThamHoiCaNhan(raw: Record<string, unknown>): ThamHoiCaNhan {
+  const {
+    ho_va_ten,
+    ten_phong_ban,
+    ten_dip_tham_hoi,
+    ten_don_vi_tham_hoi,
+    ten_xa_phuong,
+    ho_va_ten_nguoi_tao,
+    ten_tai_khoan_nguoi_tao,
+    total_count: _totalCount,
+    ...base
+  } = raw;
+  return flattenThamHoiCaNhanRow({
+    ...base,
+    ca_nhan: { ho_va_ten },
+    phong_ban: { ten_phong_ban },
+    dip: { ten_dip: ten_dip_tham_hoi },
+    don_vi_tham_hoi: { ten: ten_don_vi_tham_hoi },
+    xa_phuong: { ten: ten_xa_phuong },
+    nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+  });
+}
+
+export async function getThamHoiCaNhanPage(
+  q: ThamHoiCaNhanPageQuery,
+): Promise<ThamHoiCaNhanPageResult> {
+  const supabase = getSupabase();
+  if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
+  const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
+  const page = Math.max(1, Math.floor(q.page));
+  const offset = (page - 1) * pageSize;
+  const search = q.search?.trim() ?? '';
+
+  const { data, error } = await supabase.rpc('get_dttg_tham_hoi_ca_nhan_page', {
+    p_search: search.length > 0 ? search : null,
+    p_limit: pageSize,
+    p_offset: offset,
+    p_sort: buildRpcSortParam(q.sort, THAM_HOI_CA_NHAN_SERVER_SORT_COLUMNS),
+    p_view_all: q.viewAll,
+    p_viewer_don_vi_id: toNullableRpcId(q.viewerDonViId),
+    p_trang_thai: toRpcTextArray(q.trangThai),
+    p_ca_nhan_ids: toRpcIdArray(q.caNhanIds),
+    p_phong_ban_ids: toRpcIdArray(q.phongBanIds),
+    p_xa_phuong_ids: toRpcIdArray(q.xaPhuongIds),
+    p_dip_ids: toRpcIdArray(q.dipIds),
+    p_don_vi_ids: toRpcIdArray(q.donViThamHoiIds.filter((x) => x !== DON_VI_THAM_HOI_CQMTTQ_VALUE)),
+    p_don_vi_include_null: q.donViThamHoiIds.includes(DON_VI_THAM_HOI_CQMTTQ_VALUE),
+    p_column_search: cleanRpcColumnSearch(q.columnSearch),
+    p_labels: buildThamHoiCaNhanDisplayLabels(),
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  const raw = (data ?? []) as unknown as Record<string, unknown>[];
+  const rows = raw.map(rpcRowToThamHoiCaNhan);
+  const totalFromPage = readRpcTotalCount(raw);
+  // Trang rỗng ngoài trang 1 không mang được tổng ⇒ hỏi lại trang đầu.
+  const totalRecords =
+    totalFromPage ??
+    (offset > 0 ? (await getThamHoiCaNhanPage({ ...q, page: 1, pageSize: 1 })).totalRecords : 0);
+  return { rows, hasNextPage: offset + rows.length < totalRecords, totalRecords };
+}
+
+/** Kéo toàn bộ bản ghi khớp bộ lọc để xuất file. */
+export function getThamHoiCaNhanAllForExport(
+  q: Omit<ThamHoiCaNhanPageQuery, 'page' | 'pageSize'>,
+): Promise<ThamHoiCaNhan[]> {
+  return fetchAllServerPages(q, getThamHoiCaNhanPage);
 }
 
 export async function getThamHoiCaNhanById(id: string): Promise<ThamHoiCaNhan | null> {

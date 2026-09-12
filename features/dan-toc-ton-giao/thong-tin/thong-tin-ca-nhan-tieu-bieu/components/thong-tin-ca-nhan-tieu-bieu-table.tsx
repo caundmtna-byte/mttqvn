@@ -14,6 +14,9 @@ import { ThongTinCaNhanTieuBieuTableRowActions } from './thong-tin-ca-nhan-tieu-
 interface Props {
   data: ThongTinCaNhanTieuBieu[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: ThongTinCaNhanTieuBieu) => void;
   onDelete: (id: string) => void;
   onView?: (item: ThongTinCaNhanTieuBieu) => void;
@@ -24,6 +27,8 @@ interface Props {
 const ThongTinCaNhanTieuBieuTable = memo(function ThongTinCaNhanTieuBieuTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -209,6 +214,8 @@ const ThongTinCaNhanTieuBieuTable = memo(function ThongTinCaNhanTieuBieuTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('danTocCaNhanTieuBieu.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('danTocCaNhanTieuBieu.emptyHint')}

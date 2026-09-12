@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { txt } from '../../../lib/text';
@@ -12,14 +13,17 @@ const SecurityPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'permissions');
   const navigate = useNavigate();
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('permission.noViewPermission'));
     navigate('/he-thong', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const { data: roles = [], isLoading: isLoadingRoles } = useRoles({ enabled: canView });
 

@@ -23,7 +23,7 @@ import ArticleTheLoaiTable from './article-the-loai-table';
 import { useArticleTheLoaiStore } from '../store/useArticleTheLoaiStore';
 import { useTheLoais, useDeleteTheLoais } from '../hooks/use-the-loai';
 import type { BaiVietTheLoai } from '../core/types';
-import { theLoaiMatchesColumnSearch } from '../utils/column-search-the-loai';
+import { countTheLoaiColumnSearchActive, theLoaiMatchesColumnSearch } from '../utils/column-search-the-loai';
 import { ARTICLE_THE_LOAI_SEARCH_KEYS } from '../utils/search-keys';
 
 const TheLoaiForm = lazy(() => import('./the-loai-form'));
@@ -62,7 +62,7 @@ const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({
   const { searchTerm, filters, sort, resetState, clearSelection, selectedIds, pagination, columns } =
     useArticleTheLoaiStore();
 
-  const { data: rows = [], isLoading } = useTheLoais({ enabled: queriesEnabled });
+  const { data: rows = [], isLoading, isError, refetch } = useTheLoais({ enabled: queriesEnabled });
   const deleteMut = useDeleteTheLoais();
 
   useEffect(() => () => resetState(), [resetState]);
@@ -108,6 +108,18 @@ const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({
     }
     return sorted;
   }, [filteredRows, sort.column, sort.direction]);
+
+  /** Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc". */
+  const hasListFilters = useMemo(
+    () =>
+      Boolean(searchTerm?.trim()) ||
+      countTheLoaiColumnSearchActive(filters.columnSearch, filters.don_gia_bucket) > 0 ||
+      filters.don_gia_bucket === 'free' ||
+      filters.don_gia_bucket === 'paid',
+    [searchTerm, filters.columnSearch, filters.don_gia_bucket],
+  );
+
+  const listFilteredEmpty = sortedRows.length === 0 && rows.length > 0 && hasListFilters;
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -228,10 +240,13 @@ const ArticleTheLoaiTabPanel: React.FC<ArticleTheLoaiTabPanelProps> = ({
           <ArticleTheLoaiTable
             data={sortedRows}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
             onRowClick={setViewing}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            emptyTitle={txt('page.articleSettings.emptyTheLoai')}
+            emptyTitle={listFilteredEmpty ? txt('common.noResults') : txt('page.articleSettings.emptyTheLoai')}
+            emptyDescription={listFilteredEmpty ? txt('shared.empty.filteredHint') : undefined}
           />
         </div>
       </div>

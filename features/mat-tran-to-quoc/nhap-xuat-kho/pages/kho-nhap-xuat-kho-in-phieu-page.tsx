@@ -7,6 +7,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { useCan } from '@/hooks/use-can';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { getThongTinToChuc } from '@/features/he-thong/thong-tin-to-chuc/services/thong-tin-to-chuc-service';
 import DocumentListPreviewLayout, {
   type DocumentListDownloadFormat,
@@ -29,6 +30,9 @@ const KhoNhapXuatKhoInPhieuPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefStockTransactions');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
   const pdfBusy = useRef(false);
 
@@ -42,11 +46,11 @@ const KhoNhapXuatKhoInPhieuPage: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranNhapXuatKho.noViewPermission'));
     navigate(LIST_PATH, { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   useEffect(() => {
     if (!phieuId || isLoading) return;

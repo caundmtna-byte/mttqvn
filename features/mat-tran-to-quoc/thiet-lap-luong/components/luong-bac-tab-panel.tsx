@@ -81,7 +81,12 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
 
   const ngachIds = useMemo(() => ngachRows.map((r) => r.id), [ngachRows]);
 
-  const { data: allBacRows = [], isLoading: bacLoading } = useLuongThietLapBacList(ngachIds, {
+  const {
+    data: allBacRows = [],
+    isLoading: bacLoading,
+    isError: bacIsError,
+    refetch: refetchBac,
+  } = useLuongThietLapBacList(ngachIds, {
     enabled: listQueryEnabled && ngachRows.length > 0,
   });
 
@@ -341,6 +346,8 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
             <LuongBacTable
               data={sorted}
               isLoading={bacLoading}
+              isError={bacIsError}
+              onRetry={() => void refetchBac()}
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDeleteBac}

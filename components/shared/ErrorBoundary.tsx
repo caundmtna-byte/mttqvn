@@ -6,6 +6,11 @@ import ErrorState from './ErrorState';
 
 interface Props {
   children: ReactNode;
+  /**
+   * Đổi giá trị này ⇒ boundary tự reset. Dùng cho boundary bọc từng route
+   * (`location.key`): điều hướng sang trang khác là hồi phục, không cần reload.
+   */
+  resetKey?: string | number;
 }
 
 interface State {
@@ -84,6 +89,12 @@ class ErrorBoundaryClass extends Component<Props, State> {
     }
     if (!import.meta.env.DEV && typeof Sentry?.captureException === 'function') {
       Sentry.captureException(error, { extra: { componentStack: errorInfo?.componentStack } });
+    }
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null, isRetrying: false });
     }
   }
 

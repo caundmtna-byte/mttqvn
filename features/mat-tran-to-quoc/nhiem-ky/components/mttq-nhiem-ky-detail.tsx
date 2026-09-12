@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { CalendarClock, CalendarDays, ClipboardList, Edit, Hash, Info, StickyNote, Trash2, Type, User, Users } from 'lucide-react';
+import { CalendarClock, CalendarDays, ClipboardList, Edit, Hash, Info, Lock, LockOpen, StickyNote, Trash2, Type, User, Users } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import { formatDateTimeShort } from '@/lib/utils';
@@ -32,6 +32,7 @@ import {
   useDeleteMttqUyVienUyBanMany,
 } from '@/features/mat-tran-to-quoc/uy-vien-uy-ban/hooks/use-mttq-uy-vien-uy-ban';
 import type { MttqNhiemKy } from '../core/types';
+import { useSetMttqNhiemKyDaKhoa } from '../hooks/use-mttq-nhiem-ky';
 import MttqNhiemKyDetailKyHopTab from './mttq-nhiem-ky-detail-ky-hop-tab';
 import MttqNhiemKyDetailUyVienTab from './mttq-nhiem-ky-detail-uy-vien-tab';
 
@@ -68,6 +69,7 @@ interface Props {
 const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const navigate = useNavigate();
   const { canEdit, canDelete } = useResourcePermissions('matTranTerm');
+  const setDaKhoaMutation = useSetMttqNhiemKyDaKhoa();
   const confirm = useConfirmStore((s) => s.confirm);
   const queryClient = useQueryClient();
   const [detailTab, setDetailTab] = useState<string>(TAB_INFO);
@@ -303,6 +305,19 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
     });
   };
 
+  const handleToggleKhoa = () => {
+    const dangKhoa = data.da_khoa;
+    confirm({
+      title: txt(dangKhoa ? 'matTranNhiemKy.khoaSo.xacNhanMoKhoaTitle' : 'matTranNhiemKy.khoaSo.xacNhanKhoaTitle'),
+      message: txt(dangKhoa ? 'matTranNhiemKy.khoaSo.xacNhanMoKhoaMessage' : 'matTranNhiemKy.khoaSo.xacNhanKhoaMessage'),
+      // `mutateAsync` (không phải `mutate`) để ConfirmDialog hiện trạng thái
+      // đang chạy và bắt được lỗi; `void` vì nó trả về bản ghi, không phải void.
+      onConfirm: async () => {
+        await setDaKhoaMutation.mutateAsync({ id: data.id, daKhoa: !dangKhoa });
+      },
+    });
+  };
+
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
       <Button
@@ -315,7 +330,28 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
       </Button>
       {canEdit || canDelete ? (
         <div className="flex items-center gap-2">
+          {/*
+            Khoá sổ nằm cùng hàng với Sửa/Xoá vì nó là thao tác cùng cấp, nhưng
+            đặt TRƯỚC để khi nhiệm kỳ đã khoá thì chỗ này chỉ còn đúng một nút
+            "Mở khoá" — không để người dùng bấm Sửa rồi mới nhận lỗi từ máy chủ.
+          */}
           {canEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={setDaKhoaMutation.isPending}
+              onClick={handleToggleKhoa}
+              className="h-8 px-3 text-xs border border-border text-muted-foreground hover:text-foreground"
+            >
+              {data.da_khoa ? (
+                <LockOpen className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+              ) : (
+                <Lock className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+              )}
+              {txt(data.da_khoa ? 'matTranNhiemKy.khoaSo.nutMoKhoa' : 'matTranNhiemKy.khoaSo.nutKhoa')}
+            </Button>
+          )}
+          {canEdit && !data.da_khoa && (
             <Button
               size="sm"
               onClick={() => {
@@ -328,7 +364,7 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
               {BTN_EDIT()}
             </Button>
           )}
-          {canDelete && (
+          {canDelete && !data.da_khoa && (
             <Button
               variant="ghost"
               size="sm"
@@ -371,6 +407,20 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
               </p>
             }
           />
+
+          {/*
+            Nhiệm kỳ đã khoá thì nút Sửa/Xoá biến mất ở cả đây lẫn các tab con.
+            Không nói rõ lý do thì cán bộ tưởng mình mất quyền — nên báo thẳng.
+          */}
+          {data.da_khoa ? (
+            <div
+              role="status"
+              className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-body-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+            >
+              <Lock className="w-4 h-4 shrink-0" aria-hidden />
+              <span>{txt('matTranNhiemKy.khoaSo.canhBaoDaKhoa')}</span>
+            </div>
+          ) : null}
 
           <div className="w-full overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
             <TabGroup tabs={tabs} activeTab={detailTab} onChange={handleDetailTabChange} />

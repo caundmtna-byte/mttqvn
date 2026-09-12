@@ -23,7 +23,7 @@ import PbxhThietLapTable from './pbxh-thiet-lap-table';
 import type { GenericState } from '@/store/createGenericStore';
 import { useDeletePbxhThietLap } from '../hooks/use-pbxh-thiet-lap';
 import type { PbxhThietLap, PbxhThietLapFilters, PbxhThietLapLoai } from '../core/types';
-import { pbxhMatchesColumnSearch } from '../utils/column-search';
+import { countPbxhColumnSearchActive, pbxhMatchesColumnSearch } from '../utils/column-search';
 import { getPbxhThietLapColumnDisplayValue } from '../utils/column-display';
 import { PBXH_THIET_LAP_SEARCH_KEYS } from '../utils/search-keys';
 
@@ -45,12 +45,15 @@ export interface PbxhThietLapListPanelProps {
   loai: PbxhThietLapLoai;
   items: PbxhThietLap[];
   isLoading: boolean;
+  /** Query danh sách lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   store: GenericState<PbxhThietLapFilters>;
   tabGroup: React.ReactNode;
   onPageBack: () => void;
 }
 
-export function PbxhThietLapListPanel({ loai, items, isLoading, store, tabGroup, onPageBack }: PbxhThietLapListPanelProps) {
+export function PbxhThietLapListPanel({ loai, items, isLoading, isError, onRetry, store, tabGroup, onPageBack }: PbxhThietLapListPanelProps) {
   const confirm = useConfirmStore((s) => s.confirm);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PbxhThietLap | null>(null);
@@ -106,6 +109,21 @@ export function PbxhThietLapListPanel({ loai, items, isLoading, store, tabGroup,
     }
     return sorted;
   }, [filteredRows, sort.column, sort.direction]);
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * danh sách gốc có bản ghi mà lọc/tìm kiếm ra rỗng.
+   */
+  const hasListFilters = useMemo(
+    () =>
+      Boolean(searchTerm?.trim()) ||
+      countPbxhColumnSearchActive(filters.columnSearch, filters.mo_ta_bucket) > 0 ||
+      filters.mo_ta_bucket === 'has' ||
+      filters.mo_ta_bucket === 'empty',
+    [searchTerm, filters.columnSearch, filters.mo_ta_bucket],
+  );
+
+  const listFilteredEmpty = sortedRows.length === 0 && items.length > 0 && hasListFilters;
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -224,10 +242,13 @@ export function PbxhThietLapListPanel({ loai, items, isLoading, store, tabGroup,
           store={store}
           data={sortedRows}
           isLoading={isLoading}
+          isError={isError}
+          onRetry={onRetry}
           onRowClick={setViewing}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          emptyTitle={txt('page.pbxhThietLap.empty')}
+          emptyTitle={listFilteredEmpty ? txt('common.noResults') : txt('page.pbxhThietLap.empty')}
+          emptyDescription={listFilteredEmpty ? txt('shared.empty.filteredHint') : undefined}
         />
       </div>
 

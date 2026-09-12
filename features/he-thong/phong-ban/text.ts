@@ -61,7 +61,11 @@ export const department = {
     "createSuccess": "Tạo phòng ban thành công",
     "updateSuccess": "Cập nhật thành công",
     "deleteSuccess": "Xóa phòng ban thành công",
-    "importSuccess": "Đã import {{count}} phòng ban"
+    "importSuccess": "Đã import {{count}} phòng ban",
+    "deleteManySuccess": "Đã xóa {{count}} phòng ban",
+    "deleteManyPartial": "Đã xóa {{done}}/{{total}} phòng ban. {{failed}} phòng ban không xóa được: {{reason}}",
+    "statusManySuccess": "Đã đổi trạng thái {{count}} phòng ban",
+    "statusManyPartial": "Đã đổi trạng thái {{done}}/{{total}} phòng ban. {{failed}} phòng ban giữ nguyên: {{reason}}"
   },
   "importTemplateName": "Mau_Import_Phong_Ban",
   "service": {

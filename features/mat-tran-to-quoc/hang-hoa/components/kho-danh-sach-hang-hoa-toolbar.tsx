@@ -1,5 +1,5 @@
 import React, { useMemo, type ReactNode } from 'react';
-import { Plus, Download, AlignLeft, FolderTree, CircleDot } from 'lucide-react';
+import { Plus, Download, Upload, AlignLeft, FolderTree, CircleDot } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import type { Option } from '@/components/ui/MultiSelect';
 import { txt } from '@/lib/text';
@@ -18,6 +18,7 @@ interface Props {
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
+  onImport?: () => void;
   onDeleteMany: (ids: string[]) => void;
   danhMucList: KhoDanhMucHangHoaListRow[];
   items?: KhoDanhSachHangHoaListRow[] | null;
@@ -28,11 +29,16 @@ const KhoDanhSachHangHoaToolbar: React.FC<Props> = ({
   onPageBack,
   onAdd,
   onExport,
+  onImport,
   onDeleteMany,
   danhMucList,
   items,
 }) => {
-  const { canCreate, canExport, canDelete } = useResourcePermissions('matTranReliefGoods');
+  const { canCreate, canExport, canDelete, canImport } = useResourcePermissions('matTranReliefGoods');
+  // Nút Nhập đòi HAI điều kiện: quyền `them` (nhập là ghi thêm bản ghi) và token
+  // `import`. Chỉ dựa vào `canImport` là chưa đủ — `can()` cho token `view` đi qua
+  // cả export lẫn import, nghĩa là người chỉ được XEM cũng thấy nút Nhập.
+  const showImportButton = canCreate && canImport && Boolean(onImport);
   const itemRows = Array.isArray(items) ? items : [];
 
   const {
@@ -175,17 +181,35 @@ const KhoDanhSachHangHoaToolbar: React.FC<Props> = ({
   );
 
   const mobileActions = useMemo<ActionItem[]>(
-    () =>
-      canExport
+    () => [
+      ...(showImportButton && onImport
+        ? [{ key: 'import', label: txt('common.import'), icon: Upload, onClick: onImport, description: '' }]
+        : []),
+      ...(canExport
         ? [{ key: 'export', label: txt('common.export'), icon: Download, onClick: onExport, description: '' }]
-        : [],
-    [canExport, onExport],
+        : []),
+    ],
+    [showImportButton, onImport, canExport, onExport],
   );
 
   const renderActions = (
     <>
-      {canExport ? (
+      {showImportButton || canExport ? (
         <div className="hidden sm:flex items-center gap-2">
+          {showImportButton && onImport ? (
+            <Tooltip content={txt('common.import')} placement="bottom">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onImport}
+            aria-label={txt('common.import')}
+                className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+              >
+                <Upload className="w-4 h-4" aria-hidden />
+              </Button>
+            </Tooltip>
+          ) : null}
+          {canExport ? (
           <Tooltip content={txt('common.export')} placement="bottom">
             <Button
               variant="outline"
@@ -196,6 +220,7 @@ const KhoDanhSachHangHoaToolbar: React.FC<Props> = ({
               <Download className="w-4 h-4" />
             </Button>
           </Tooltip>
+          ) : null}
         </div>
       ) : null}
       {canCreate && (

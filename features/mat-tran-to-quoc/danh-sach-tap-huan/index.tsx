@@ -28,6 +28,7 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import ExportDialog from '@/components/shared/ExportDialog';
@@ -105,14 +106,17 @@ const DanhSachTapHuanPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranTrainingList');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranTapHuan.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [mainTab, setMainTab] = useTabSearchParam(TAP_HUAN_MAIN_TABS, 'lop');
   const [thongKeThuocDien, setThongKeThuocDien] = useState<string[]>([]);
@@ -147,7 +151,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     columns: chiColumns,
   } = useMttqTapHuanChiTietListStore();
 
-  const { data: rows = [], isLoading } = useMttqLopTapHuanList({ enabled: canView });
+  const { data: rows = [], isLoading, isError, refetch } = useMttqLopTapHuanList({ enabled: canView });
   const { data: chiTietFlatRows = [], isLoading: isLoadingChiTietFlat } = useMttqLopTapHuanChiTietFlatList({
     enabled: canView && (mainTab === 'chi_tiet' || mainTab === 'thong_ke'),
   });
@@ -704,8 +708,9 @@ const DanhSachTapHuanPage: React.FC = () => {
             id: row.id_lop_tap_huan,
             data: lopTapHuanToFormValues({ ...full, chi_tiet: nextChi }),
           });
-        } catch (e: unknown) {
-          toast.error(getErrorMessage(e));
+        } catch {
+          // Không toast ở đây: mutation đã có handler lỗi toàn cục, bắt thêm ở đây
+          // làm hiện HAI toast nội dung giống hệt chồng lên nhau.
         }
       },
     });
@@ -718,7 +723,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewingId === id) setViewingId(null);
           },
@@ -734,7 +739,7 @@ const DanhSachTapHuanPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewingId && ids.includes(viewingId)) setViewingId(null);
@@ -829,6 +834,8 @@ const DanhSachTapHuanPage: React.FC = () => {
               <MttqLopTapHuanTable
                 data={sorted}
                 isLoading={isLoading}
+                isError={isError}
+                onRetry={() => void refetch()}
                 capHeaderOptions={capChipOptions}
                 namHeaderOptions={namChipOptions}
                 onEdit={handleEditFromList}

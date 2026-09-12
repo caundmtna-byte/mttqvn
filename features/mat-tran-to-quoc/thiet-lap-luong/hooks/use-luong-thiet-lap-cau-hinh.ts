@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { LuongThietLapCauHinhRow } from '../core/types';
 import { getLuongThietLapCauHinh, updateLuongThietLapCauHinhMucLuong } from '../services/luong-thiet-lap-cau-hinh-service';
 
@@ -26,6 +25,5 @@ export function useUpdateLuongThietLapCauHinh() {
       queryClient.setQueryData<LuongThietLapCauHinhRow | null>(singletonKey, row);
       toast.success(txt('matTranThietLapLuong.toast.mlcs'));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }

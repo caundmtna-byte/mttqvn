@@ -6,7 +6,13 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
  * Hành động gắn với UI (nút, route) — mở rộng theo nghiệp vụ.
  * Khi có policy server-side, vẫn phải kiểm tra lại API.
  */
-export type AppAction = 'view' | 'create' | 'edit' | 'delete' | 'export' | 'import';
+/**
+ * `approve` = quyền **Duyệt** (`phe_duyet` trong ma trận). Tách khỏi `edit` vì
+ * "sửa được hồ sơ" không đồng nghĩa với "được ban hành quyết định" — trước đây
+ * nút đổi trạng thái chỉ gác bằng `canEdit`, nên người nhập liệu tự ban hành
+ * quyết định khen thưởng của chính mình.
+ */
+export type AppAction = 'view' | 'create' | 'edit' | 'delete' | 'export' | 'import' | 'approve';
 
 /**
  * Tài nguyên (module) — thêm khi có module mới.
@@ -60,6 +66,18 @@ export type AppResource =
   | 'danTocThamHoiCaNhan'
   | 'danTocThamHoiThongKe'
   | 'danTocThongKeToChucCaNhan'
+  /**
+   * Quỹ tiền — **một resource dùng chung cho CẢ HAI quỹ** (Vì người nghèo và
+   * Cứu trợ). Lý do: RLS trên Supabase siết quyền ghi theo `module_key` là
+   * segment cuối đường dẫn (`so-thu-chi`, `danh-muc-chi-phi`,
+   * `danh-muc-tai-khoan`), mà hai quỹ dùng chung ba key đó. Khai báo hai bộ
+   * resource riêng ở client chỉ tạo ảo giác tách được quyền, trong khi DB vẫn
+   * cho/chặn cả hai như nhau.
+   */
+  | 'quySoThuChi'
+  | 'quyDanhMucKhoan'
+  | 'quyDanhMucTaiKhoan'
+  | 'quyBaoCaoThongKe'
   | 'profile'
   | 'notifications'
   | '*';
@@ -120,6 +138,17 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   danTocThamHoiCaNhan: 'dan-toc-ton-giao/tham-hoi/tham-hoi-ca-nhan',
   danTocThamHoiThongKe: 'dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi',
   danTocThongKeToChucCaNhan: 'dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan',
+  /**
+   * Quỹ tiền — `module_id` cố ý KHÔNG mang tên quỹ nào (`.../quy/...`) vì một
+   * dòng phân quyền áp cho cả Quỹ vì người nghèo lẫn Quỹ cứu trợ. Segment cuối
+   * chính là `module_key` mà RLS kiểm tra, nên phải giữ nguyên chữ.
+   * `bao-cao-thong-ke` không có bảng riêng (chỉ đọc lại sổ) nên không xuất hiện
+   * trong RLS, nhưng vẫn cần một dòng phân quyền để ẩn/hiện màn báo cáo.
+   */
+  quySoThuChi: 'an-sinh-xa-hoi/quy/so-thu-chi',
+  quyDanhMucKhoan: 'an-sinh-xa-hoi/quy/danh-muc-chi-phi',
+  quyDanhMucTaiKhoan: 'an-sinh-xa-hoi/quy/danh-muc-tai-khoan',
+  quyBaoCaoThongKe: 'an-sinh-xa-hoi/quy/bao-cao-thong-ke',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */
@@ -132,13 +161,23 @@ export function mapAppActionToActionType(action: AppAction): ActionType {
 }
 
 /**
- * Luật member (chưa hydrate matrix từ API chức vụ).
+ * Luật áp dụng khi ma trận quyền CHƯA hydrate (hoặc hydrate thất bại).
+ *
+ * **Deny-by-default.** Trước đây hàm này có dòng `if (action === 'view') return true;`
+ * — cho xem MỌI module. Vì `usePermissionGrantStore` không persist nên `matrixActive`
+ * là `false` sau mỗi lần tải lại trang, và nếu truy vấn quyền lỗi thì nó ở lại `false`
+ * suốt phiên ⇒ toàn bộ hệ thống mở toang. Cộng với RLS `USING (true)` ở Supabase thì
+ * dữ liệu về thật, không chỉ là menu hiện thừa.
+ *
+ * Chỉ giữ hai ngoại lệ không thuộc nghiệp vụ: hồ sơ cá nhân và thông báo của chính mình.
+ *
+ * Trong lúc chờ, UI **không được** coi `false` ở đây là "không có quyền" — phải đọc
+ * `matrixLoading` (xem `hooks/use-module-access.ts`) và hiện trạng thái tải.
  */
 function legacyCan(user: User, action: AppAction, resource: AppResource): boolean {
   void user;
   if (resource === 'profile' && (action === 'edit' || action === 'view')) return true;
   if (resource === 'notifications' && action === 'view') return true;
-  if (action === 'view') return true;
   return false;
 }
 
@@ -167,14 +206,18 @@ function canDepartmentsWithCapBac(
   void user;
   const moduleId = APP_RESOURCE_TO_MODULE.departments;
   if (!moduleId) return false;
-  const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete', 'export', 'import'];
+  const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete', 'export', 'import', 'approve'];
   if (isChucVuCapBacOne(chucVuCapBac) && capBypassActions.includes(action)) {
     return true;
   }
   const need = mapAppActionToActionType(action);
   const allowed = grantsByModule[moduleId] ?? [];
-  if ((action === 'export' || action === 'import') && grantsAllow(allowed, 'view')) {
+  // Xem được ⇒ xuất được; nhập thì phải có quyền thêm mới (xem ghi chú ở `can`).
+  if (action === 'export' && grantsAllow(allowed, 'view')) {
     return true;
+  }
+  if (action === 'import') {
+    return grantsAllow(allowed, mapAppActionToActionType('create'));
   }
   return grantsAllow(allowed, need);
 }
@@ -229,7 +272,7 @@ export function can(
   const { matrixActive, grantsByModule, chucVuCapBac } = usePermissionGrantStore.getState();
   if (matrixActive) {
     // cap_bac=1: bypass đủ thao tác UI (kể cả xuất/nhập) cho mọi module có trong APP_RESOURCE_TO_MODULE
-    const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete', 'export', 'import'];
+    const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete', 'export', 'import', 'approve'];
     if (
       isChucVuCapBacOne(chucVuCapBac) &&
       APP_RESOURCE_TO_MODULE[resource] !== undefined &&
@@ -241,13 +284,20 @@ export function can(
     if (resource === 'departments') {
       return canDepartmentsWithCapBac(user, action, grantsByModule, chucVuCapBac);
     }
-    // Có quyền xem module ⇒ được xuất/nhập (client-side; RLS/API vẫn là chuẩn bảo vệ dữ liệu).
+    // Xem được ⇒ xuất được: dữ liệu đó vốn đã hiện trên màn hình rồi.
+    //
+    // NHẬP thì KHÔNG: nhập từ Excel là GHI hàng loạt vào cơ sở dữ liệu, nên phải
+    // có quyền thêm mới. Trước đây gộp chung hai hành động nên người chỉ được
+    // xem vẫn thấy và bấm được nút Nhập.
     if (
-      (action === 'export' || action === 'import') &&
+      action === 'export' &&
       APP_RESOURCE_TO_MODULE[resource] !== undefined &&
       matrixCan(user, 'view', resource)
     ) {
       return true;
+    }
+    if (action === 'import') {
+      return matrixCan(user, 'create', resource);
     }
     return matrixCan(user, action, resource);
   }

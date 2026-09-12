@@ -6,11 +6,13 @@ import { FolderOpen, Coins, FileText, Users, TrendingUp, Download } from 'lucide
 import { txt } from '@/lib/text';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import ExportDialog from '@/components/shared/ExportDialog';
 import TabGroup from '@/components/ui/TabGroup';
 import Button from '@/components/ui/Button';
+import ErrorState from '@/components/shared/ErrorState';
 import Tooltip from '@/components/ui/Tooltip';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
@@ -52,17 +54,23 @@ const HoaHongVietBaiPage: React.FC = () => {
   /** Tab "Tất cả": quyền xem danh sách bài hoặc module Nhuận bút trong ma trận phân quyền. */
   const canViewArticles = useCan('view', 'articles');
   const canViewCommissionModule = useCan('view', 'articleCommission');
-  const canExport =
-    useCan('export', 'articleCommission') || useCan('export', 'articles');
+  // Gọi tách hai dòng: `useCan(x) || useCan(y)` short-circuit nên hook thứ hai
+  // không chạy khi hook đầu trả true → sai thứ tự hook giữa các lần render.
+  const canExportArticleCommission = useCan('export', 'articleCommission');
+  const canExportArticles = useCan('export', 'articles');
+  const canExport = canExportArticleCommission || canExportArticles;
   const canOpenPage = canViewArticles || canViewCommissionModule;
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canOpenPage || didRedirect.current) return;
+    if (!user || permissionsLoading || canOpenPage || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('articleCommission.noViewPermission'));
     navigate('/quan-ly-viet-bai', { replace: true });
-  }, [user, canOpenPage, navigate]);
+  }, [user, permissionsLoading, canOpenPage, navigate]);
 
   const [scopeRaw, setScopeRaw] = useTabSearchParam(
     [TAB_MINE, TAB_ALL] as const satisfies readonly CommissionScope[],
@@ -81,7 +89,12 @@ const HoaHongVietBaiPage: React.FC = () => {
   const [authorIds, setAuthorIds] = useState<string[]>([]);
   const [showExport, setShowExport] = useState(false);
 
-  const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: canOpenPage });
+  const {
+    data: rows = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useBaiVietDanhSachList({ enabled: canOpenPage });
   const allTabViewer = useCommissionAllTabViewer();
 
   const presets = useMemo(() => buildStandardDateRangePresets(), []);
@@ -232,6 +245,13 @@ const HoaHongVietBaiPage: React.FC = () => {
     if (scope === TAB_ALL && authorIds.length > 0) n += 1;
     return n;
   }, [dateRange.preset, theLoaiIds.length, authorIds.length, scope]);
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * dữ liệu trong phạm vi xem có bản ghi mà bộ lọc đang bật lọc hết sạch.
+   */
+  const commissionFilteredEmpty =
+    agg.filteredRows.length === 0 && scopedRows.length > 0 && activeFilterCount > 0;
 
   const filterGroups: FilterGroup[] = useMemo(
     () => [
@@ -408,7 +428,11 @@ const HoaHongVietBaiPage: React.FC = () => {
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
-        {isLoading ? (
+        {isError ? (
+          <div className="py-12 flex items-center justify-center">
+            <ErrorState className="w-full max-w-md" onRetry={() => void refetch()} primaryButtons />
+          </div>
+        ) : isLoading ? (
           <div className="space-y-4 py-2 animate-pulse" aria-busy="true" aria-label={txt('articleCommission.loading')}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {[1, 2, 3, 4].map((i) => (
@@ -432,8 +456,19 @@ const HoaHongVietBaiPage: React.FC = () => {
               </>
             ) : (
               <>
-                <p className="text-sm font-medium text-foreground">{txt('articleCommission.noData')}</p>
-                <p className="text-xs text-muted-foreground">{txt('articleCommission.noDataHint')}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {commissionFilteredEmpty ? txt('common.noResults') : txt('articleCommission.noData')}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {commissionFilteredEmpty
+                    ? txt('shared.empty.filteredHint')
+                    : txt('articleCommission.noDataHint')}
+                </p>
+                {commissionFilteredEmpty && (
+                  <Button type="button" variant="outline" size="sm" onClick={handleClearFilters}>
+                    {txt('common.clearFilter')}
+                  </Button>
+                )}
               </>
             )}
           </div>

@@ -20,7 +20,7 @@ import {
 } from '../core/supabase-select';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import { SUPABASE_DEFAULT_MAX_ROWS } from '@/lib/data/supabase-repository';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import {
   uploadImageIfDataUrl,
   avatarCloudinaryFolder,
@@ -53,7 +53,8 @@ const repo = createRepository<Employee>({
 });
 
 export type GetEmployeesParams = {
-  limit?: number;
+  /** Bỏ trống hoặc null = đọc đủ bảng. */
+  limit?: number | null;
   offset?: number;
   orderBy?: string;
   ascending?: boolean;
@@ -129,13 +130,28 @@ export const getEmployees = async (params: GetEmployeesParams = {}): Promise<Emp
   const supabase = getSupabase();
   if (!supabase) return [];
 
-  const pageSize = limit ?? SUPABASE_DEFAULT_MAX_ROWS;
-  let q = supabase.from('var_nhan_vien').select(EMPLOYEE_SELECT_LIST);
-  if (orderBy) q = q.order(orderBy, { ascending: ascending !== false });
-  q = q.range(offset, offset + pageSize - 1);
-  const { data, error } = await q;
-  if (error) handleSupabaseError(error);
-  const list = (data ?? []) as unknown as Employee[];
+  const buildQuery = () => {
+    let q = supabase.from('var_nhan_vien').select(EMPLOYEE_SELECT_LIST);
+    if (orderBy) q = q.order(orderBy, { ascending: ascending !== false });
+    return q;
+  };
+
+  // `limit` null/undefined ⇒ đọc ĐỦ bảng, không cắt ở một con số cứng.
+  let list: Employee[];
+  if (limit != null) {
+    const { data, error } = await buildQuery().range(offset, offset + limit - 1);
+    if (error) handleSupabaseError(error);
+    list = (data ?? []) as unknown as Employee[];
+  } else {
+    list = (await fetchAllPages<unknown>(
+      async (from, to) => {
+        const { data, error } = await buildQuery().range(from, to);
+        if (error) handleSupabaseError(error);
+        return (data ?? []) as unknown[];
+      },
+      { label: 'var_nhan_vien' },
+    )) as Employee[];
+  }
 
   if (list.length === 0) return list;
   const [depts, positions, xaAll, tinhAll, thietLapAll] = await Promise.all([
@@ -291,8 +307,11 @@ export const createEmployee = async (data: EmployeeFormValues): Promise<Employee
   const username = data.ten_tai_khoan.trim().toLowerCase();
   const { exists } = await checkAuthUserExists(username);
   if (exists) throw new AuthUserExistsError(username);
-  await createAuthUser(username);
-  return insertEmployeeRow(data);
+  const { password } = await createAuthUser(username);
+  const employee = await insertEmployeeRow(data);
+  // Mật khẩu do hệ thống sinh chỉ trả về đúng một lần — đính vào kết quả để UI
+  // hiển thị cho quản trị viên đưa tận tay người dùng (trước đây mặc định '123456').
+  return password ? { ...employee, __generatedPassword: password } : employee;
 };
 
 /** Tiếp tục tạo nhân viên sau khi admin đã chọn xử lý conflict. */
@@ -302,7 +321,9 @@ export const createEmployeeWithAuthDecision = async (
 ): Promise<Employee> => {
   const username = data.ten_tai_khoan.trim().toLowerCase();
   if (decision === 'reset') {
-    await resetAuthUserPassword(username);
+    const { password } = await resetAuthUserPassword(username);
+    const employee = await insertEmployeeRow(data);
+    return password ? { ...employee, __generatedPassword: password } : employee;
   }
   return insertEmployeeRow(data);
 };

@@ -14,8 +14,6 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { txt } from '@/lib/text';
-import { matchesSearchTerm } from '@/lib/searchUtils';
-import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
@@ -26,22 +24,24 @@ import { useCan } from '@/hooks/use-can';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ErrorState from '@/components/shared/ErrorState';
 import {
-  useThucHienPhanBienList,
   useThucHienPhanBienDetail,
   useDeleteThucHienPhanBienMany,
 } from './hooks/use-thuc-hien-phan-bien';
 import {
   canViewPbxhThucHienRow,
+  isPbxhViewUnrestricted,
   usePbxhThucHienViewer,
 } from './hooks/use-pbxh-thuc-hien-viewer';
+import { useServerPagedList } from '@/hooks/use-server-paged-list';
+import {
+  getThucHienPhanBienAllForExport,
+  getThucHienPhanBienPage,
+} from './services/thuc-hien-phan-bien-service';
 import { useThucHienPhanBienStore } from './store/useThucHienPhanBienStore';
 import type { ThucHienPhanBien } from './core/types';
-import { THUC_HIEN_PHAN_BIEN_SEARCH_KEYS } from './utils/search-keys';
 import {
   countThucHienColumnSearchActive,
-  thucHienMatchesColumnSearch,
 } from './utils/column-search';
-import { sortThucHienPhanBienList } from './utils/sort';
 import { getThucHienColumnDisplayValue } from './utils/column-display';
 import ThucHienPhanBienToolbar from './components/thuc-hien-phan-bien-toolbar';
 import ThucHienPhanBienTable from './components/thuc-hien-phan-bien-table';
@@ -65,6 +65,7 @@ const ThucHienPhanBienPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'phanBienThucHien');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
@@ -76,8 +77,10 @@ const ThucHienPhanBienPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -102,50 +105,57 @@ const ThucHienPhanBienPage: React.FC = () => {
     columns,
   } = useThucHienPhanBienStore();
 
+  const viewer = usePbxhThucHienViewer('phanBienThucHien');
+
+  // Phạm vi xem đi xuống RPC: cấp Xã phường chỉ thấy dòng thuộc đơn vị mình.
+  const pageExtraParams = useMemo(
+    () => ({
+      // Xem ghi chú cùng loại ở module Nhập xuất kho: chỉ cấp Xã phường bị bó
+      // theo đơn vị, và người chưa được gán đơn vị phải thấy rỗng.
+      viewAll: isPbxhViewUnrestricted(viewer) || viewer.chucVuCapQuanLy !== 'Xã phường',
+      viewerDonViId: viewer.chucVuCapQuanLy === 'Xã phường' ? viewer.viewerDonViId : null,
+      capThucHien: filters.cap_thuc_hien_filter,
+      loaiHinh: filters.loai_hinh_filter,
+      tinhTrang: filters.tinh_trang_filter,
+      donViChuTriIds: filters.don_vi_chu_tri_filter,
+      columnSearch: filters.columnSearch ?? null,
+    }),
+    [
+      viewer,
+      filters.cap_thuc_hien_filter,
+      filters.loai_hinh_filter,
+      filters.tinh_trang_filter,
+      filters.don_vi_chu_tri_filter,
+      filters.columnSearch,
+    ],
+  );
+
   const {
-    data: rows = [],
+    rows,
+    totalRecords: listTotal,
+    hasNextPage: listHasNext,
     isLoading,
     isError: isListError,
-    isFetching: isListFetching,
     refetch: refetchList,
-  } = useThucHienPhanBienList({ enabled: listQueryEnabled });
+    params: listPageQuery,
+  } = useServerPagedList({
+    pagination,
+    searchTerm,
+    sort,
+    extraParams: pageExtraParams,
+    queryKey: queryKeys.pbxhThucHien.page,
+    fetchFn: getThucHienPhanBienPage,
+    enabled: listQueryEnabled,
+  });
+
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useThucHienPhanBienDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteThucHienPhanBienMany();
-  const viewer = usePbxhThucHienViewer('phanBienThucHien');
-
-  const viewableRows = useMemo(
-    () => rows.filter((r) => canViewPbxhThucHienRow(viewer, r)),
-    [rows, viewer],
-  );
 
   useEffect(() => {
     return () => resetState();
   }, [resetState]);
-
-  const filterFn = useCallback((item: ThucHienPhanBien, term: string, f: typeof filters) => {
-    const matchesSearch = matchesSearchTerm(
-      {
-        ...(item as unknown as Record<string, unknown>),
-        ten_don_vi_thuc_hien: getThucHienColumnDisplayValue(item, 'don_vi_thuc_hien'),
-      },
-      term,
-      [...THUC_HIEN_PHAN_BIEN_SEARCH_KEYS],
-    );
-    if (!thucHienMatchesColumnSearch(item, f.columnSearch)) return false;
-    if (f.cap_thuc_hien_filter.length > 0 && !f.cap_thuc_hien_filter.includes(item.cap_thuc_hien)) return false;
-    if (f.loai_hinh_filter.length > 0 && !f.loai_hinh_filter.includes(item.loai_hinh)) return false;
-    if (f.tinh_trang_filter.length > 0 && !f.tinh_trang_filter.includes(item.tinh_trang)) return false;
-    if (f.don_vi_chu_tri_filter.length > 0) {
-      const id = item.don_vi_chu_tri_id?.trim();
-      if (!id || !f.don_vi_chu_tri_filter.includes(id)) return false;
-    }
-    return matchesSearch;
-  }, []);
-
-  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
-  const sorted = useMemo(() => sortThucHienPhanBienList(filtered, sort), [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -200,13 +210,19 @@ const ThucHienPhanBienPage: React.FC = () => {
   );
 
   const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
-    data: sorted,
+    data: rows,
     isOpen: showExport,
     mapFn: exportMapFn,
     pagination,
     selectedIds,
     keyExtractor: (r) => r.id,
   });
+
+  // Phạm vi "Tất cả" phải ra đủ số dòng khớp bộ lọc, không phải trang đang xem.
+  const fetchAllForExport = useCallback(async () => {
+    const all = await getThucHienPhanBienAllForExport(listPageQuery);
+    return all.map(exportMapFn);
+  }, [listPageQuery, exportMapFn]);
 
   const visibleColumnKeys = useMemo(
     () => columns.filter((c) => c.visible && c.id !== 'actions').map((c) => c.id),
@@ -226,23 +242,16 @@ const ThucHienPhanBienPage: React.FC = () => {
     );
   }, [searchTerm, filters, sort.column]);
 
-  const emptyTitleResolved = useMemo(
-    () =>
-      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
-        ? txt('common.noResults')
-        : txt('pbxhThucHien.empty'),
-    [sorted.length, viewableRows.length, hasListFilters],
-  );
+  // Phân trang phía máy chủ: không còn biết tổng số dòng chưa lọc, nên phân
+  // biệt "rỗng thật" / "không khớp lọc" theo việc có bộ lọc đang bật hay không.
+  const emptyTitleResolved =
+    listTotal === 0 && hasListFilters ? txt('common.noResults') : txt('pbxhThucHien.empty');
 
   useEffect(() => {
     if (!viewingId) return;
-    const fresh = viewableRows.find((r) => r.id === viewingId);
-    if (!fresh) {
-      setViewingId(null);
-      return;
-    }
-    queryClient.setQueryData(queryKeys.pbxhThucHien.detail(viewingId), fresh);
-  }, [viewableRows, viewingId, queryClient]);
+    const fresh = rows.find((r) => r.id === viewingId);
+    if (fresh) queryClient.setQueryData(queryKeys.pbxhThucHien.detail(viewingId), fresh);
+  }, [rows, viewingId, queryClient]);
 
   const handleView = useCallback(
     (item: ThucHienPhanBien) => {
@@ -304,7 +313,7 @@ const ThucHienPhanBienPage: React.FC = () => {
   };
 
   const handleExport = () => {
-    if (sorted.length === 0) {
+    if (listTotal === 0) {
       toast.warning(txt('page.articleSettings.noExportData'));
       return;
     }
@@ -341,7 +350,6 @@ const ThucHienPhanBienPage: React.FC = () => {
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
-          items={viewableRows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">
@@ -356,12 +364,17 @@ const ThucHienPhanBienPage: React.FC = () => {
             </div>
           ) : (
             <ThucHienPhanBienTable
-              data={sorted}
-              isLoading={isListLoading || (listQueryEnabled && isListFetching && rows.length === 0)}
+              data={rows}
+              isLoading={isListLoading}
+              isError={isListError}
+              onRetry={refetchList}
               onEdit={handleEditFromList}
               onDelete={handleDelete}
               onView={handleView}
               emptyTitle={emptyTitleResolved}
+              serverSidePagination
+              serverTotalRecords={listTotal}
+              serverHasNextPage={listHasNext}
             />
           )}
         </div>
@@ -399,6 +412,8 @@ const ThucHienPhanBienPage: React.FC = () => {
             selectedData={selectedExportData}
             fileName="PBXH_Thuc_Hien"
             visibleColumnKeys={visibleColumnKeys}
+            serverTotalRecords={listTotal}
+            fetchAllData={fetchAllForExport}
           />
         )}
       </AnimatePresence>

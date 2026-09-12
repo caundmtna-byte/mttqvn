@@ -18,6 +18,10 @@ export interface DetailSummaryCardProps {
 /**
  * Card tóm tắt đầu nội dung detail (trên DetailToolbar).
  * Bố cục chuẩn: leading | (title + badge) / subtitle / children — thống nhất với Nhân viên, Chức vụ.
+ *
+ * Tiêu đề **xuống dòng đầy đủ** (`break-words`), không cắt `...` — tên bài viết / nội dung
+ * khen thưởng / tên chương trình thường dài hơn một dòng. Vì vậy card canh `items-start`
+ * để ô icon neo theo dòng đầu thay vì trôi xuống giữa.
  */
 export const DetailSummaryCard: React.FC<DetailSummaryCardProps> = ({
   leading,
@@ -30,14 +34,14 @@ export const DetailSummaryCard: React.FC<DetailSummaryCardProps> = ({
   return (
     <div
       className={cn(
-        'bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-center gap-4',
+        'bg-card p-4 rounded-xl border border-border/50 shadow-sm flex items-start gap-4',
         className,
       )}
     >
       {leading}
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-start justify-between gap-2 min-w-0">
-          <h2 className="text-base font-bold text-foreground leading-tight truncate flex-1 min-w-0">
+          <h2 className="text-base font-bold text-foreground leading-snug break-words flex-1 min-w-0">
             {title}
           </h2>
           {badge != null ? <div className="shrink-0">{badge}</div> : null}

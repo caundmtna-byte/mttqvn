@@ -381,6 +381,38 @@ html[data-text-size="large"] { font-size: 18px; }
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  /* Văn bản hành chính MTTQ (quyết định, danh sách) — fallback Ctrl+P */
+  .mttq-van-ban-preview-backdrop,
+  .mttq-van-ban-preview-backdrop * {
+    visibility: visible;
+  }
+  .mttq-van-ban-preview-toolbar {
+    display: none !important;
+  }
+  .mttq-van-ban-preview-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+  .mttq-van-ban-preview-content {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 210mm !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .van-ban-doc__canh-bao {
+    display: none !important;
+  }
 }
 
 /* Danh sách tập huấn — biểu mẫu in hành chính (màn hình; in qua cửa sổ riêng) */
@@ -833,4 +865,255 @@ html[data-text-size="large"] { font-size: 18px; }
 .template-detail-content th {
   background: hsl(var(--muted));
   font-weight: 600;
+}
+
+/* Văn bản hành chính nhà nước (quyết định khen thưởng / nâng lương, danh sách
+   đề nghị, điểm danh, ủy viên) — bản dựng trên màn hình; khi In thì dùng CSS
+   trong `print-van-ban.ts` của từng module. */
+.van-ban-doc {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 13pt;
+  line-height: 1.45;
+  color: #000;
+  box-sizing: border-box;
+  padding: 20mm 15mm 20mm 30mm;
+  width: 100%;
+}
+
+.van-ban-doc__canh-bao {
+  margin: 0;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border-bottom: 1px solid #fcd34d;
+  color: #7c2d12;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.van-ban-doc__head {
+  display: grid;
+  grid-template-columns: 45% 55%;
+  gap: 0 8pt;
+  margin: 0 0 12pt;
+}
+
+.van-ban-doc__head-col {
+  text-align: center;
+}
+
+.van-ban-doc__co-quan-chu-quan {
+  margin: 0;
+  font-size: 12pt;
+  text-transform: uppercase;
+}
+
+.van-ban-doc__co-quan {
+  margin: 0;
+  font-size: 12pt;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.van-ban-doc__quoc-hieu {
+  margin: 0;
+  font-size: 12pt;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.van-ban-doc__tieu-ngu {
+  margin: 0;
+  font-size: 13pt;
+  font-weight: 700;
+}
+
+.van-ban-doc__rule {
+  width: 40%;
+  height: 1px;
+  margin: 2pt auto 4pt;
+  border: 0;
+  background: #000;
+}
+
+.van-ban-doc__rule--wide {
+  width: 60%;
+}
+
+.van-ban-doc__so {
+  margin: 0;
+  font-size: 12pt;
+}
+
+.van-ban-doc__dia-danh {
+  margin: 0;
+  font-size: 12pt;
+  font-style: italic;
+}
+
+.van-ban-doc__ten-loai {
+  margin: 14pt 0 4pt;
+  font-size: 14pt;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.van-ban-doc__trich-yeu {
+  margin: 0 0 10pt;
+  font-size: 13pt;
+  font-weight: 700;
+  text-align: center;
+}
+
+.van-ban-doc__tham-quyen {
+  margin: 8pt 0 10pt;
+  font-size: 13pt;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.van-ban-doc__can-cu {
+  margin: 0 0 6pt;
+  text-indent: 1cm;
+  font-style: italic;
+}
+
+.van-ban-doc__quyet-dinh-label {
+  margin: 10pt 0;
+  font-weight: 700;
+  text-align: center;
+}
+
+.van-ban-doc__meta {
+  margin: 0 0 10pt;
+}
+
+.van-ban-doc__meta-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2pt 12pt;
+  margin-bottom: 3pt;
+}
+
+.van-ban-doc__meta-item {
+  margin: 0;
+}
+
+.van-ban-doc__meta-label {
+  font-weight: 700;
+}
+
+.van-ban-doc__doan {
+  margin: 0 0 8pt;
+  text-align: justify;
+}
+
+.van-ban-doc__doan--indent {
+  text-indent: 1cm;
+}
+
+.van-ban-doc__doan--center {
+  text-align: center;
+}
+
+.van-ban-doc__doan--italic {
+  font-style: italic;
+}
+
+.van-ban-doc__doan--bold {
+  font-weight: 700;
+}
+
+.van-ban-doc__empty {
+  margin: 8pt 0;
+  text-align: center;
+  font-style: italic;
+}
+
+.van-ban-doc__table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11pt;
+  margin: 0 0 10pt;
+}
+
+.van-ban-doc__th,
+.van-ban-doc__td {
+  border: 0.5px solid #000;
+  padding: 3pt 4pt;
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+.van-ban-doc__th {
+  background: #f2f2f2;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Cột STT hẹp — cấm ngắt chữ để html2canvas không xuống dòng thành « ST T ». */
+.van-ban-doc__table th:first-child {
+  white-space: nowrap;
+}
+
+.van-ban-doc__td--center {
+  text-align: center;
+}
+
+.van-ban-doc__td--right {
+  text-align: right;
+}
+
+.van-ban-doc__td--nowrap {
+  white-space: nowrap;
+}
+
+.van-ban-doc thead {
+  display: table-header-group;
+}
+
+.van-ban-doc tr {
+  page-break-inside: avoid;
+}
+
+.van-ban-doc__sign {
+  display: grid;
+  grid-template-columns: 55% 45%;
+  gap: 0 8pt;
+  margin-top: 14pt;
+  page-break-inside: avoid;
+}
+
+.van-ban-doc__noi-nhan-label {
+  margin: 0 0 2pt;
+  font-size: 12pt;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.van-ban-doc__noi-nhan-item {
+  margin: 0;
+  font-size: 11pt;
+}
+
+.van-ban-doc__sign-col {
+  text-align: center;
+}
+
+.van-ban-doc__sign-role {
+  margin: 0;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.van-ban-doc__sign-space {
+  height: 64pt;
+}
+
+.van-ban-doc__sign-name {
+  margin: 0;
+  font-weight: 700;
 }

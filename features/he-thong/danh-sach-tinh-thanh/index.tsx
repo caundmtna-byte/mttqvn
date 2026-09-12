@@ -24,6 +24,7 @@ import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog, { type ImportTemplateSheet } from '@/components/shared/ImportDialog';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import {
@@ -37,7 +38,7 @@ import {
 import { useTinhThanhStore, type TinhThanhListFilters } from './store/useTinhThanhStore';
 import { useXaPhuongStore, type XaPhuongListFilters } from './store/useXaPhuongStore';
 import { TINH_THANH_SEARCHABLE_KEYS, XA_PHUONG_SEARCHABLE_KEYS } from './utils/search-keys';
-import { tinhMatchesColumnSearch, xaMatchesColumnSearch } from './utils/column-search';
+import { countColumnSearchActive, tinhMatchesColumnSearch, xaMatchesColumnSearch } from './utils/column-search';
 import type { TinhThanh } from './core/types';
 import type { XaPhuong } from './core/types';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
@@ -70,14 +71,17 @@ const DanhSachTinhThanhPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'provinces');
   const navigate = useNavigate();
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('diaBan.noViewPermission'));
     navigate('/he-thong', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const confirm = useConfirmStore((s) => s.confirm);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -91,7 +95,12 @@ const DanhSachTinhThanhPage: React.FC = () => {
   const { resetState: resetTinhStore, clearSelection: clearTinhSelection } = tinhStore;
   const { resetState: resetXaStore, clearSelection: clearXaSelection } = xaStore;
 
-  const { data: tinhList = [], isLoading: loadingTinh } = useTinhThanhList({ enabled: canView });
+  const {
+    data: tinhList = [],
+    isLoading: loadingTinh,
+    isError: tinhIsError,
+    refetch: refetchTinh,
+  } = useTinhThanhList({ enabled: canView });
 
   const [selectedTinhId, setSelectedTinhId] = useState(tinhIdFromUrl);
 
@@ -110,7 +119,12 @@ const DanhSachTinhThanhPage: React.FC = () => {
     setSelectedTinhId(tinhIdFromUrl);
   }, [tinhIdFromUrl]);
 
-  const { data: xaList = [], isLoading: loadingXa } = useXaPhuongForTab(tab === TAB_XA, selectedTinhId, {
+  const {
+    data: xaList = [],
+    isLoading: loadingXa,
+    isError: xaIsError,
+    refetch: refetchXa,
+  } = useXaPhuongForTab(tab === TAB_XA, selectedTinhId, {
     enabled: canView,
   });
 
@@ -318,6 +332,34 @@ const DanhSachTinhThanhPage: React.FC = () => {
     return list;
   }, [filteredXa, xaStore.sort]);
 
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ khi danh sách gốc
+   * có bản ghi mà lọc ra rỗng thì mới nói là không khớp bộ lọc.
+   */
+  const hasTinhFilters = useMemo(
+    () =>
+      Boolean(tinhStore.searchTerm?.trim()) ||
+      countColumnSearchActive(tinhStore.filters.columnSearch) > 0 ||
+      tinhStore.filters.so_xa_bucket === 'has' ||
+      tinhStore.filters.so_xa_bucket === 'none',
+    [tinhStore.searchTerm, tinhStore.filters.columnSearch, tinhStore.filters.so_xa_bucket],
+  );
+
+  const hasXaFilters = useMemo(
+    () =>
+      Boolean(xaStore.searchTerm?.trim()) ||
+      countColumnSearchActive(xaStore.filters.columnSearch) > 0,
+    [xaStore.searchTerm, xaStore.filters.columnSearch],
+  );
+
+  const tinhFilteredEmpty = sortedTinh.length === 0 && tinhList.length > 0 && hasTinhFilters;
+  const xaFilteredEmpty = sortedXa.length === 0 && xaList.length > 0 && hasXaFilters;
+
+  const tinhEmptyTitle = tinhFilteredEmpty ? txt('common.noResults') : txt('diaBan.emptyTinh');
+  const tinhEmptyDescription = tinhFilteredEmpty ? txt('shared.empty.filteredHint') : '';
+  const xaEmptyTitle = xaFilteredEmpty ? txt('common.noResults') : txt('diaBan.emptyXa');
+  const xaEmptyDescription = xaFilteredEmpty ? txt('shared.empty.filteredHint') : '';
+
   const EXPORT_TINH_COLUMNS = useMemo(
     () => [
       { key: 'ten', label: txt('diaBan.colTen'), required: true },
@@ -440,7 +482,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteTinhMutation.mutate([id], {
+        await deleteTinhMutation.mutateAsync([id], {
           onSuccess: () => {
             setViewingTinh((v) => (v?.id === id ? null : v));
             setNestedViewingXa((n) => (n?.id_tinh_thanh === id ? null : n));
@@ -457,7 +499,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteTinhMutation.mutate(ids, {
+        await deleteTinhMutation.mutateAsync(ids, {
           onSuccess: () => {
             tinhStore.clearSelection();
             setViewingTinh((v) => (v && ids.includes(v.id) ? null : v));
@@ -476,7 +518,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteXaMutation.mutate(
+        await deleteXaMutation.mutateAsync(
           { ids: [id] },
           {
             onSuccess: () => {
@@ -497,7 +539,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteXaMutation.mutate(
+        await deleteXaMutation.mutateAsync(
           { ids },
           {
             onSuccess: () => {
@@ -600,6 +642,10 @@ const DanhSachTinhThanhPage: React.FC = () => {
               <TinhThanhTable
                 data={sortedTinh}
                 isLoading={loadingTinh}
+                isError={tinhIsError}
+                onRetry={() => void refetchTinh()}
+                emptyTitle={tinhEmptyTitle}
+                emptyDescription={tinhEmptyDescription}
                 onEdit={openEditTinh}
                 onDelete={handleDeleteTinh}
                 onView={(t) => {
@@ -625,6 +671,10 @@ const DanhSachTinhThanhPage: React.FC = () => {
               <XaPhuongTable
                 data={sortedXa}
                 isLoading={loadingXa}
+                isError={xaIsError}
+                onRetry={() => void refetchXa()}
+                emptyTitle={xaEmptyTitle}
+                emptyDescription={xaEmptyDescription}
                 onEdit={openEditXa}
                 onDelete={handleDeleteXa}
                 onView={(x) => {

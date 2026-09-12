@@ -44,13 +44,17 @@ import { cn, getLanguage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
+import ErrorState from '@/components/shared/ErrorState';
 import Tooltip from '@/components/ui/Tooltip';
-import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
-  buildStandardDateRangePresets,
-  isStandardDateRangeNonDefault,
-} from '@/lib/date-range-presets';
-import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+  ReportSkeleton,
+  StatsKpiGrid,
+  StatsCard,
+  StatsTableCard,
+  ColoredBar,
+  useStatsPageFilters,
+} from '@/components/shared/stats';
 import { chartFillForCategoricalBar } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
@@ -117,12 +121,6 @@ const ThucHienPhanBienDetail = lazy(
 
 const CUSTOM_PRESET = 'custom';
 
-const initialDateRange: DateRangeValue = {
-  preset: 'all',
-  customStart: '',
-  customEnd: '',
-};
-
 const initialDims: PbxhThongKeDimensionFilters = {
   cap_thuc_hien: [],
   loai_hinh: [],
@@ -177,6 +175,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
   const canOpenDetail = useCan('view', 'phanBienThucHien');
   const { canExport } = useResourcePermissions('phanBienThongKe');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
@@ -188,8 +187,10 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -202,6 +203,8 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     data: rows = [],
     isLoading,
     isFetching,
+    isError,
+    refetch,
   } = useThucHienPhanBienList({ enabled: listQueryEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
   const viewer = usePbxhThucHienViewer('phanBienThongKe');
@@ -211,8 +214,15 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     [rows, viewer],
   );
 
-  const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
-  const [dims, setDims] = useState<PbxhThongKeDimensionFilters>(initialDims);
+  const {
+    dateRange,
+    setDateRange,
+    dims,
+    setDims,
+    presets,
+    activeFilterCount,
+    clearFilters,
+  } = useStatsPageFilters(initialDims);
   const [sortKey, setSortKey] = useState<PbxhLookupSortKey>('noi_dung');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [viewing, setViewing] = useState<ThucHienPhanBien | null>(null);
@@ -226,8 +236,6 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     }
   }, [viewing, viewer]);
 
-  const presets = useMemo(() => buildStandardDateRangePresets(), []);
-
   const resolvedRange = useMemo(
     () => resolvePbxhThongKeDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
     [dateRange.preset, dateRange.customStart, dateRange.customEnd],
@@ -237,6 +245,13 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
     () => filterRowsForPbxhThongKe(rowsInScope, resolvedRange, dims),
     [rowsInScope, resolvedRange, dims],
   );
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * dữ liệu trong phạm vi xem có bản ghi mà bộ lọc đang bật lọc hết sạch.
+   */
+  const reportFilteredEmpty =
+    filtered.length === 0 && rowsInScope.length > 0 && activeFilterCount > 0;
 
   const kpis = useMemo(() => computePbxhThongKeKpis(filtered), [filtered]);
   const chartRange = useMemo(
@@ -383,29 +398,8 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, tien_do: v })),
       },
     ],
-    [capOptions, loaiHinhOptions, tinhTrangOptions, donViThucHienOptions, tienDoOptions, dims],
+    [setDims, capOptions, loaiHinhOptions, tinhTrangOptions, donViThucHienOptions, tienDoOptions, dims],
   );
-
-  const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'all'),
-    [dateRange],
-  );
-
-  const activeFilterCount = useMemo(() => {
-    let n = 0;
-    if (isNonDefaultDateRange) n += 1;
-    if (dims.cap_thuc_hien.length) n += 1;
-    if (dims.loai_hinh.length) n += 1;
-    if (dims.tinh_trang.length) n += 1;
-    if (dims.don_vi_thuc_hien_id.length) n += 1;
-    if (dims.tien_do.length) n += 1;
-    return n;
-  }, [dims, isNonDefaultDateRange]);
-
-  const clearFilters = useCallback(() => {
-    setDims(initialDims);
-    setDateRange(initialDateRange);
-  }, []);
 
   const handleExportReport = useCallback(async () => {
     if (filtered.length === 0) {
@@ -658,12 +652,20 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
       />
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-        {isListLoading || (listQueryEnabled && isFetching && rowsInScope.length === 0) ? (
-          <p className="text-sm text-muted-foreground">{txt('pbxhThongKe.loading')}</p>
+        {listQueryEnabled && isError ? (
+          <div className="py-12 flex items-center justify-center">
+            <ErrorState className="w-full max-w-md" onRetry={() => void refetch()} primaryButtons />
+          </div>
+        ) : isListLoading || (listQueryEnabled && isFetching && rowsInScope.length === 0) ? (
+          <ReportSkeleton chartCount={3} />
         ) : filtered.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">
-            <p className="text-sm font-medium text-foreground">{txt('pbxhThongKe.noData')}</p>
-            <p className="text-sm text-muted-foreground mt-1">{txt('pbxhThongKe.noDataHint')}</p>
+            <p className="text-sm font-medium text-foreground">
+              {reportFilteredEmpty ? txt('common.noResults') : txt('pbxhThongKe.noData')}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {reportFilteredEmpty ? txt('shared.empty.filteredHint') : txt('pbxhThongKe.noDataHint')}
+            </p>
             {activeFilterCount > 0 && (
               <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
                 {txt('pbxhThongKe.stats.clearFilters')}

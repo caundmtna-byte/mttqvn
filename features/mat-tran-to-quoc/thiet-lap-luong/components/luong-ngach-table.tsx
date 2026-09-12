@@ -12,6 +12,9 @@ import { LuongNgachTableRowActions } from './luong-ngach-table-row-actions';
 interface Props {
   data: LuongThietLapNgachListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: LuongThietLapNgachListRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: LuongThietLapNgachListRow) => void;
@@ -22,6 +25,8 @@ interface Props {
 const LuongNgachTable = memo(function LuongNgachTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -200,6 +205,8 @@ const LuongNgachTable = memo(function LuongNgachTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranThietLapLuong.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('matTranThietLapLuong.emptyHint')}

@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { LuongThietLapBacFormValues } from '../core/schema';
 import type { LuongThietLapBacRow } from '../core/types';
 import {
@@ -69,7 +68,6 @@ export function useCreateLuongThietLapBac(onSuccess?: () => void) {
       toast.success(txt('matTranThietLapLuong.toast.bacCreate'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -96,7 +94,6 @@ export function useUpdateLuongThietLapBac(onSuccess?: () => void) {
       toast.success(txt('matTranThietLapLuong.toast.bacUpdate'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -114,6 +111,5 @@ export function useDeleteLuongThietLapBac() {
       patchLuongThietLapBacAllQueries(queryClient, nextRows);
       toast.success(txt('matTranThietLapLuong.toast.bacDelete'));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }

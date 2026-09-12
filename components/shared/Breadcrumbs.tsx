@@ -11,7 +11,6 @@ interface RouteConfig {
 
 const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/': { label: t('breadcrumb.home') },
-  '/thong-tin-ban-quyen': { label: t('breadcrumb.licenseInfo'), parentPath: '/' },
   '/mat-tran-to-quoc': { label: t('breadcrumb.matTranToQuoc'), parentPath: '/' },
   '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-tap-huan': { label: t('breadcrumb.matTranTrainingList'), parentPath: '/mat-tran-to-quoc' },
   '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong': { label: t('breadcrumb.matTranRewardList'), parentPath: '/mat-tran-to-quoc' },

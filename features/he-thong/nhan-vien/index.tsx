@@ -9,6 +9,7 @@ import React, {
   startTransition,
 } from 'react';
 import { txt } from '../../../lib/text';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -21,11 +22,17 @@ import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { getDepartments } from '../phong-ban/services/phong-ban-service';
 import { getPositions } from '../chuc-vu/services/chuc-vu-service';
 import { usePositions } from '../chuc-vu/hooks/use-chuc-vu';
+import { useDepartments } from '../phong-ban/hooks/use-phong-ban';
+import { useQuery } from '@tanstack/react-query';
+import { getXaPhuongAll } from '../danh-sach-tinh-thanh/services/dia-ban-service';
+import { geoDataQueryOptions } from '@/lib/supabase/query-config';
+import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
+import ImportDialog, { type ImportColumn, type ImportTemplateSheet } from '@/components/shared/ImportDialog';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import EmployeeToolbar from './components/nhan-vien-toolbar';
 import EmployeeTable from './components/nhan-vien-table';
 
-import { useEmployees, useDeleteWithUndo, useUpdateStatusEmployee } from './hooks/use-nhan-vien';
+import { useEmployees, useDeleteWithUndo, useUpdateStatusEmployee, useImportEmployees } from './hooks/use-nhan-vien';
 import { getEmployeeById } from './services/nhan-vien-service';
 import { useEmployeeStore } from './store/useEmployeeStore';
 import { Employee } from './core/types';
@@ -103,16 +110,20 @@ const EmployeePage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'employees');
   const navigate = useNavigate();
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('employee.noViewPermission'));
     navigate('/he-thong', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
   const [viewingEmp, setViewingEmp] = useState<Employee | null>(null);
   const [statusChangeTarget, setStatusChangeTarget] = useState<Employee | null>(null);
@@ -129,8 +140,20 @@ const EmployeePage: React.FC = () => {
   } = useEmployeeStore();
 
   const queryClient = useQueryClient();
-  const { data: employees = [], isLoading } = useEmployees({ enabled: canView });
+  const { data: employees = [], isLoading, isError, refetch } = useEmployees({ enabled: canView });
   const { data: positions = [] } = usePositions({ enabled: canView });
+  // Bảng tra cứu cho file mẫu — chỉ tải khi cán bộ thật sự mở hộp thoại Nhập
+  // (quy tắc egress: không kéo danh mục về cho mọi lượt xem trang).
+  const importQueriesEnabled = canView && showImport;
+  const { data: departmentsForImport = [] } = useDepartments({ enabled: importQueriesEnabled });
+  const { data: thietLapAll = [] } = useMttqThietLapAll({ enabled: importQueriesEnabled });
+  const { data: xaListForImport = [] } = useQuery({
+    queryKey: queryKeys.xaPhuong.listAll,
+    queryFn: getXaPhuongAll,
+    enabled: importQueriesEnabled,
+    ...geoDataQueryOptions,
+  });
+  const importMutation = useImportEmployees();
 
   const employeesDisplay = useMemo(
     () => employees.map((e) => mergeEmployeeChucVuFromPositions(e, positions)),
@@ -370,6 +393,83 @@ const EmployeePage: React.FC = () => {
     });
   };
 
+  // ---------------------------------------------------------------------
+  // Nhập từ Excel
+  //
+  // Hình dạng file: MỘT SHEET PHẲNG, một dòng = một nhân viên. Các sheet sau
+  // trong file mẫu chỉ để TRA CỨU tên phòng ban / chức vụ / tổ chức / xã phường,
+  // vì FK nhận cả tên lẫn id và cán bộ chỉ nhớ tên.
+  // Không có cột mật khẩu: mật khẩu do Edge Function sinh, không đi qua Excel.
+  // ---------------------------------------------------------------------
+  const IMPORT_COLUMNS = useMemo<ImportColumn[]>(
+    () => [
+      { key: 'ten_tai_khoan', label: txt('employee.import.colTenTaiKhoan'), required: true },
+      { key: 'ho_va_ten', label: txt('employee.import.colHoVaTen'), required: true },
+      { key: 'id_phong_ban', label: txt('employee.import.colPhongBan'), required: true },
+      { key: 'id_chuc_vu', label: txt('employee.import.colChucVu'), required: true },
+      { key: 'id_bo_phan', label: txt('employee.import.colBoPhan') },
+      { key: 'cap_quan_ly', label: txt('employee.import.colCapQuanLy') },
+      { key: 'to_chuc_ids', label: txt('employee.import.colToChuc') },
+      { key: 'don_vi_id', label: txt('employee.import.colDonVi') },
+      { key: 'trang_thai', label: txt('employee.import.colTrangThai') },
+    ],
+    [],
+  );
+
+  const importTemplateSheets = useMemo<ImportTemplateSheet[]>(() => {
+    if (!showImport) return [];
+    const lang = getLanguage();
+    const byName = (a: string, b: string) => a.localeCompare(b, lang);
+    return [
+      {
+        name: txt('employee.import.sheetHuongDan'),
+        headers: [txt('employee.import.huongDanColKey'), txt('employee.import.huongDanColVal')],
+        rows: [
+          [txt('employee.import.hd1k'), txt('employee.import.hd1v')],
+          [txt('employee.import.hd2k'), txt('employee.import.hd2v')],
+          [txt('employee.import.hd3k'), txt('employee.import.hd3v')],
+          [txt('employee.import.hd4k'), txt('employee.import.hd4v')],
+          [txt('employee.import.hd5k'), txt('employee.import.hd5v')],
+          [txt('employee.import.hd6k'), txt('employee.import.hd6v')],
+          [txt('employee.import.hd7k'), txt('employee.import.hd7v')],
+          [txt('employee.import.hd8k'), txt('employee.import.hd8v')],
+        ],
+      },
+      {
+        name: txt('employee.import.sheetPhongBan'),
+        headers: [txt('employee.import.refColId'), txt('employee.import.refColTen')],
+        rows: [...departmentsForImport]
+          .sort((a, b) => byName(a.ten_phong_ban, b.ten_phong_ban))
+          .map((d) => [d.id, d.ten_phong_ban]),
+      },
+      {
+        name: txt('employee.import.sheetChucVu'),
+        headers: [txt('employee.import.refColId'), txt('employee.import.refColTen')],
+        rows: [...positions]
+          .sort((a, b) => byName(a.ten_chuc_vu, b.ten_chuc_vu))
+          .map((p) => [p.id, p.ten_chuc_vu]),
+      },
+      {
+        name: txt('employee.import.sheetToChuc'),
+        headers: [txt('employee.import.refColId'), txt('employee.import.refColTen')],
+        rows: thietLapAll
+          .filter((x) => x.loai === 'to_chuc')
+          .sort((a, b) => byName(a.ten, b.ten))
+          .map((x) => [x.id, x.ten]),
+      },
+      {
+        name: txt('employee.import.sheetXaPhuong'),
+        headers: [txt('employee.import.refColId'), txt('employee.import.refColTen')],
+        rows: [...xaListForImport].sort((a, b) => byName(a.ten, b.ten)).map((x) => [x.id, x.ten]),
+      },
+    ];
+  }, [showImport, departmentsForImport, positions, thietLapAll, xaListForImport]);
+
+  const handleImportData = useCallback(
+    (data: Record<string, unknown>[]) => importMutation.mutateAsync(data),
+    [importMutation],
+  );
+
   if (!canView) {
     return (
       <div
@@ -393,6 +493,7 @@ const EmployeePage: React.FC = () => {
               setShowForm(true);
             });
           }}
+          onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
           onStatusChangeMany={handleStatusChangeMany}
         />
@@ -401,6 +502,8 @@ const EmployeePage: React.FC = () => {
           <EmployeeTable
             data={sortedEmployees}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
             employeesForFilterCounts={employeesDisplay}
             onEdit={handleEdit}
             onView={handleView}
@@ -441,6 +544,19 @@ const EmployeePage: React.FC = () => {
               onSave={handleStatusSave}
             />
           </Suspense>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImport && (
+          <ImportDialog
+            open={showImport}
+            onClose={() => setShowImport(false)}
+            columns={IMPORT_COLUMNS}
+            onImport={handleImportData}
+            templateFileName={txt('employee.import.templateFileName')}
+            templateSheets={importTemplateSheets}
+          />
         )}
       </AnimatePresence>
     </div>

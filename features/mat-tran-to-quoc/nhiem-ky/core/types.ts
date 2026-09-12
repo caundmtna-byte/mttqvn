@@ -18,6 +18,12 @@ export interface MttqNhiemKy {
   sl_can_bo_sung: number;
   sl_thieu: number;
   ghi_chu: string | null;
+  /** Đã khoá sổ: chặn ghi vào uỷ viên, kỳ họp và điểm danh của nhiệm kỳ. */
+  da_khoa: boolean;
+  /** Vết khoá — máy chủ gán, chỉ có trong SELECT_FULL (detail). */
+  tg_khoa?: string | null;
+  nguoi_khoa_id?: string | null;
+  ho_va_ten_nguoi_khoa?: string | null;
   id_nguoi_tao: string;
   tg_tao: string;
   tg_cap_nhat: string;

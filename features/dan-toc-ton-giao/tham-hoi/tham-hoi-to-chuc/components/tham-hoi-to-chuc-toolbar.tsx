@@ -9,15 +9,12 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { useDipThamHoiOptions } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/hooks/use-dip-tham-hoi';
+import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
+import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import { useThongTinToChucQuanTrongList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/hooks/use-thong-tin-to-chuc-quan-trong';
 import { useThamHoiToChucStore } from '../store/useThamHoiToChucStore';
 import { countThamHoiToChucColumnSearchActive } from '../utils/column-search';
 import { TIEN_DO_VALUES, DON_VI_THAM_HOI_TINH_VALUE, DON_VI_THAM_HOI_TINH_LABEL } from '../core/constants';
-import type { ThamHoiToChuc } from '../core/types';
-import {
-  buildDipThamHoiFilterOptions,
-  buildDonViThamHoiFilterOptions,
-  buildPhongBanFilterOptions,
-} from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
 
 interface Props {
   onPageBack: () => void;
@@ -25,7 +22,6 @@ interface Props {
   onExport: () => void;
   onImport: () => void;
   onDeleteMany: (ids: string[]) => void;
-  items?: ThamHoiToChuc[] | null;
 }
 
 const ThamHoiToChucToolbar: React.FC<Props> = ({
@@ -34,11 +30,18 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
   onExport,
   onImport,
   onDeleteMany,
-  items,
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('danTocThamHoiToChuc');
-  const itemRows = Array.isArray(items) ? items : [];
+
+  // Tuỳ chọn lọc lấy từ HẰNG SỐ nghiệp vụ và BẢNG DANH MỤC, không phải từ các
+  // dòng đang tải: danh sách nay phân trang phía máy chủ nên suy từ dòng chỉ ra
+  // được giá trị có mặt trên đúng trang đang xem. Bỏ luôn con số đếm kèm mỗi
+  // lựa chọn vì dưới phân trang server nó chỉ đếm được một trang — số sai còn
+  // tệ hơn không có số.
   const { data: dipList = [] } = useDipThamHoiOptions();
+  const { data: toChucList = [] } = useThongTinToChucQuanTrongList();
+  const { data: phongBanList = [] } = useDepartments();
+  const { data: xaPhuongList = [] } = useXaPhuongForTab(true, '');
 
   const {
     searchTerm,
@@ -56,55 +59,44 @@ const ThamHoiToChucToolbar: React.FC<Props> = ({
 
   const selectedCount = selectedIds.size;
 
-  const tienDoOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of itemRows) {
-      const key = r.tien_do?.trim();
-      if (!key) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    for (const v of TIEN_DO_VALUES) {
-      if (!map.has(v)) map.set(v, 0);
-    }
-    return [...map.entries()]
-      .map(([value, count]) => ({ value, label: value, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [itemRows]);
-
-  const toChucOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    for (const r of itemRows) {
-      if (!r.to_chuc_id) continue;
-      const label = r.ten_co_so?.trim() || r.to_chuc_id;
-      const cur = map.get(r.to_chuc_id);
-      if (cur) cur.count += 1;
-      else map.set(r.to_chuc_id, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [itemRows]);
-
-  const dipOptions = useMemo(
-    () => buildDipThamHoiFilterOptions(itemRows, dipList, filters.dip_tham_hoi_filter),
-    [itemRows, dipList, filters.dip_tham_hoi_filter],
+  const tienDoOptions = useMemo(
+    () => TIEN_DO_VALUES.map((value) => ({ value, label: value })),
+    [],
   );
 
-  const donViThamHoiOptions = useMemo(
+  const toChucOptions = useMemo(
     () =>
-      buildDonViThamHoiFilterOptions(
-        itemRows,
-        'don_vi_tham_hoi_id',
-        'ten_don_vi_tham_hoi',
-        DON_VI_THAM_HOI_TINH_VALUE,
-        DON_VI_THAM_HOI_TINH_LABEL,
-      ),
-    [itemRows],
+      toChucList
+        .map((t) => ({ value: t.id, label: t.ten_co_so?.trim() || t.id }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [toChucList],
+  );
+
+  const dipOptions = useMemo(
+    () =>
+      dipList
+        .map((d) => ({ value: d.id, label: d.ten_dip }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [dipList],
   );
 
   const phongBanOptions = useMemo(
-    () => buildPhongBanFilterOptions(itemRows, 'phong_ban_tham_muu_id', 'ten_phong_ban'),
-    [itemRows],
+    () =>
+      phongBanList
+        .map((p) => ({ value: p.id, label: p.ten_phong_ban?.trim() || p.id }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [phongBanList],
+  );
+
+  // Đơn vị thăm hỏi = xã/phường, cộng chip "MTTQ Tỉnh" cho dòng để trống.
+  const donViThamHoiOptions = useMemo(
+    () => [
+      { value: DON_VI_THAM_HOI_TINH_VALUE, label: DON_VI_THAM_HOI_TINH_LABEL },
+      ...xaPhuongList
+        .map((x) => ({ value: x.id, label: x.ten?.trim() || x.id }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    ],
+    [xaPhuongList],
   );
 
   const activeFilterCount = useMemo(() => {

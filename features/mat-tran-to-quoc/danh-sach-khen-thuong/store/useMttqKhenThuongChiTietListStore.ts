@@ -10,9 +10,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     id: 'so_qd',
     label: txt('matTranKhenThuong.store.soQdCol'),
     visible: true,
-    ...P.titleShort,
-    minWidth: 160,
-    maxWidth: 280,
+    minWidth: 110,
+    maxWidth: 150,
     order: 0,
   },
   {

@@ -12,7 +12,9 @@ import {
 } from 'lucide-react';
 import { NotificationBell } from '../notification';
 import { NOTIFICATIONS_SURFACE_ENABLED } from '@/lib/feature-flags';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore, useUIStore } from '../../store/useStore';
+import { signOutCompletely } from '@/lib/auth/sign-out';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
 import { cn } from '../../lib/utils';
@@ -39,8 +41,11 @@ const SIDEBAR_WIDTH_EXPANDED = 240;
 const SIDEBAR_WIDTH_COLLAPSED = 64;
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  /** Quyền chưa về thì giữ nguyên danh sách cũ, đừng lọc rỗng rồi nhảy lại (xem Home.tsx). */
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
   const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
   const { sidebarOpen, toggleSidebar, companyInfo, primaryColor, setTheme } = useUIStore();
@@ -127,10 +132,11 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     }
   }, [location.pathname, isMobile, sidebarOpen, toggleSidebar]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     setShowLogoutDialog(false);
     setIsUserMenuOpen(false);
+    // Thu hồi session Supabase + xoá cache đã persist, không chỉ xoá state zustand.
+    await signOutCompletely(queryClient);
     navigate('/dang-nhap');
   };
 
@@ -162,14 +168,19 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     }
   };
 
+  const waitingPermissions = user != null && user.role !== 'admin' && permissionsLoading;
+
   const navItems = useMemo(
     () =>
-      SIDEBAR_MENU.filter((m) => isSidebarPathVisibleForUser(user, m.path)).map(({ path, nameKey, icon }) => ({
-        name: txt(nameKey),
-        icon,
-        path,
-      })),
-    [user, matrixActive, grantsByModule, chucVuCapBac],
+      // Trong lúc chờ quyền: chỉ hiện mục luôn-hiện (Trang chủ), không hiện danh sách
+      // lọc dở dang rồi nhảy thêm mục khi quyền về.
+      (waitingPermissions ? SIDEBAR_MENU.filter((m) => m.path === '/') : SIDEBAR_MENU.filter((m) => isSidebarPathVisibleForUser(user, m.path)))
+        .map(({ path, nameKey, icon }) => ({
+          name: txt(nameKey),
+          icon,
+          path,
+        })),
+    [user, waitingPermissions, matrixActive, grantsByModule, chucVuCapBac],
   );
 
   const sidebarTransition = { duration: 0.15, ease: 'circOut' as const };
@@ -481,7 +492,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{txt('nav.logoutConfirmMessage')}</p>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 rounded-lg h-9 text-sm font-medium" onClick={() => setShowLogoutDialog(false)}>{txt('nav.logoutCancel')}</Button>
-                <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg h-9 text-sm font-medium shadow-sm" onClick={handleLogout}>{txt('nav.logout')}</Button>
+                <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg h-9 text-sm font-medium shadow-sm" onClick={() => void handleLogout()}>{txt('nav.logout')}</Button>
               </div>
             </motion.div>
           </div>

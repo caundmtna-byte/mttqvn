@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { LuongThietLapNgachFormValues } from '../core/schema';
 import type { LuongThietLapNgachListRow } from '../core/types';
 import {
@@ -52,7 +51,6 @@ export function useCreateLuongThietLapNgach(onSuccess?: () => void) {
       toast.success(txt('matTranThietLapLuong.toast.create'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -75,7 +73,6 @@ export function useUpdateLuongThietLapNgach(onSuccess?: () => void) {
       toast.success(txt('matTranThietLapLuong.toast.update'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -99,6 +96,5 @@ export function useDeleteLuongThietLapNgachMany() {
       }
       toast.success(txt('matTranThietLapLuong.toast.delete', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }

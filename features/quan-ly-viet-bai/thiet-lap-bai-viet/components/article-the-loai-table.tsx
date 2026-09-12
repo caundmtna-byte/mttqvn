@@ -16,6 +16,9 @@ function formatVnd(n: number): string {
 interface Props {
   data: BaiVietTheLoai[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onRowClick: (item: BaiVietTheLoai) => void;
   onEdit: (item: BaiVietTheLoai) => void;
   onDelete: (id: string) => void;
@@ -26,6 +29,8 @@ interface Props {
 const ArticleTheLoaiTable = memo(function ArticleTheLoaiTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onRowClick,
   onEdit,
   onDelete,
@@ -190,6 +195,8 @@ const ArticleTheLoaiTable = memo(function ArticleTheLoaiTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}

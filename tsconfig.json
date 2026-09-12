@@ -1,6 +1,7 @@
 {
   "exclude": ["node_modules", "dist", "supabase/functions", "ton-kho-phan-thuoc"],
   "compilerOptions": {
+    "incremental": true,
     "strict": true,
     "target": "ES2022",
     "experimentalDecorators": true,

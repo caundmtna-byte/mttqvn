@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { KhoDotCuuTroFormValues } from '../core/schema';
 import type { KhoDotCuuTroDetail, KhoDotCuuTroListRow } from '../core/types';
 import {
@@ -55,7 +54,6 @@ export function useCreateKhoDotCuuTro(onSuccess?: () => void) {
       toast.success(txt('matTranDotCuuTro.toast.create'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -82,7 +80,6 @@ export function useUpdateKhoDotCuuTro(onSuccess?: () => void) {
       toast.success(txt('matTranDotCuuTro.toast.update'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -102,6 +99,5 @@ export function useDeleteKhoDotCuuTroMany() {
       }
       toast.success(txt('matTranDotCuuTro.toast.delete', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }

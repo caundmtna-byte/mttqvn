@@ -1,3 +1,4 @@
+import { resolveStatsTrendChartRange } from '@/components/shared/stats/resolve-trend-chart-range';
 import dayjs from 'dayjs';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import { TRANG_THAI_HOAT_DONG } from '@/lib/constants/trang-thai';
@@ -53,27 +54,12 @@ export function getDttgThongTinStatsDateFromRow(row: DttgThongTinThongKeRow): st
   return '';
 }
 
+/** Uỷ quyền cho helper dùng chung — xem `resolveStatsTrendChartRange`. */
 export function resolveDttgThongTinTrendChartRange(
   range: ResolvedDateRange,
   items: DttgThongTinThongKeRow[],
 ): ResolvedDateRange {
-  if (!range.allTime) {
-    return { start: range.start, end: range.end };
-  }
-  let min = '';
-  let max = '';
-  for (const item of items) {
-    const d = getDttgThongTinStatsDateFromRow(item);
-    if (!d) continue;
-    const day = d.slice(0, 10);
-    if (!min || day < min) min = day;
-    if (!max || day > max) max = day;
-  }
-  const today = dayjs().format('YYYY-MM-DD');
-  if (!min || !max) {
-    return { start: today, end: today };
-  }
-  return { start: min, end: max };
+  return resolveStatsTrendChartRange(range, items, getDttgThongTinStatsDateFromRow);
 }
 
 export function formatDonViLabel(row: Pick<DttgThongTinThongKeRow, 'ten_don_vi' | 'ten_tinh'>): string {
@@ -291,6 +277,8 @@ export function buildTrendSeries(
 ): DttgTrendPoint[] {
   const start = dayjs(range.start.slice(0, 10));
   const end = dayjs(range.end.slice(0, 10));
+  // Chặn vòng lặp vô tận khi range rỗng/không hợp lệ (dayjs('') = Invalid Date).
+  if (!start.isValid() || !end.isValid()) return [];
   const keys: string[] = [];
 
   if (bucket === 'day') {

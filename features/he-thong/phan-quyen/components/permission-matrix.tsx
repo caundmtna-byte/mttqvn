@@ -64,7 +64,7 @@ const TriCheck: React.FC<{
 );
 
 const MATRIX_ACTIONS: ActionType[] = [...PERMISSION_ACTIONS];
-const INDIVIDUAL_ACTIONS: ActionType[] = ['view', 'create', 'update', 'delete', 'admin'];
+const INDIVIDUAL_ACTIONS: ActionType[] = ['view', 'create', 'update', 'delete', 'approve', 'admin'];
 
 const getModuleSlug = (id: string) => id.split('/').pop() ?? id;
 
@@ -172,6 +172,7 @@ const MobileModuleDetail: React.FC<{
   const actionLabels: Record<string, string> = {
     view: txt('permission.form.view'), create: txt('permission.form.add'),
     update: txt('permission.form.edit'), delete: txt('permission.form.delete'),
+    approve: txt('permission.form.approve'),
     admin: txt('permission.matrix.admin'), all: txt('permission.form.all'),
   };
 
@@ -523,6 +524,7 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
   const actionLabels: Record<string, string> = {
     view: txt('permission.form.view'), create: txt('permission.form.add'),
     update: txt('permission.form.edit'), delete: txt('permission.form.delete'),
+    approve: txt('permission.form.approve'),
     admin: txt('permission.matrix.admin'), all: txt('permission.form.all'),
   };
 

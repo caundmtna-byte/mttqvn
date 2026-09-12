@@ -1,6 +1,7 @@
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import type {
   MttqDiemDanhTrangThai,
   MttqDiemDanhUyVien,
@@ -26,14 +27,22 @@ export async function getDiemDanhForKyHop(kyHopId: string): Promise<MttqDiemDanh
   const supabase = getSupabase();
   if (!supabase) return [];
 
-  const { data, error } = await supabase
-    .from('mttq_diem_danh_uy_vien')
-    .select('id, ky_hop_id, uy_vien_id, trang_thai, ghi_chu')
-    .eq('ky_hop_id', id)
-    .limit(2000);
-
-  if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) => rowFromDb(row as unknown as Record<string, unknown>));
+  // Đọc ĐỦ: bảng điểm danh = số kỳ họp × số uỷ viên, tích luỹ qua các nhiệm kỳ.
+  // Cắt cứng ở 2.000 dòng sẽ làm mất phiếu điểm danh mà không có dấu hiệu gì.
+  const rows = await fetchAllPages<Record<string, unknown>>(
+    async (from, to) => {
+      const { data, error } = await supabase
+        .from('mttq_diem_danh_uy_vien')
+        .select('id, ky_hop_id, uy_vien_id, trang_thai, ghi_chu')
+        .eq('ky_hop_id', id)
+        .order('id', { ascending: true })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as unknown as Record<string, unknown>[];
+    },
+    { label: 'mttq_diem_danh_uy_vien' },
+  );
+  return rows.map((row) => rowFromDb(row));
 }
 
 /**

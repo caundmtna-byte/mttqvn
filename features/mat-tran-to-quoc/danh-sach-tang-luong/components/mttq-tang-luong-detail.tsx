@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Banknote,
   Calendar,
   Edit,
   FileText,
   Layers,
+  Printer,
   StickyNote,
   Trash2,
   TrendingUp,
@@ -22,6 +24,8 @@ import { BTN_CLOSE, BTN_DELETE, BTN_EDIT, CONFIRM_DELETE } from '@/lib/button-la
 import Button from '@/components/ui/Button';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { useCan } from '@/hooks/use-can';
+import { TANG_LUONG_LIST_PATH } from '../core/constants';
 
 interface Props {
   data: MttqTangLuongListRow;
@@ -34,6 +38,11 @@ const loaiKyBadge = getTangLuongLoaiKyBadgeConfig();
 
 const MttqTangLuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('matTranSalaryIncreaseList');
+  // Nút in chỉ hiện khi có quyền xem module; bản ghi đang mở đã nằm trong phạm
+  // vi dòng của người xem (danh sách đã lọc qua `canViewTangLuongRow`), và trang
+  // in kiểm tra lại lần nữa trước khi dựng văn bản.
+  const canViewModule = useCan('view', 'matTranSalaryIncreaseList');
+  const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
 
   const handleDelete = () => {
@@ -62,8 +71,19 @@ const MttqTangLuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete 
       >
         {BTN_CLOSE()}
       </Button>
-      {canEdit || canDelete ? (
+      {canViewModule || canEdit || canDelete ? (
         <div className="flex items-center gap-2">
+          {canViewModule && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${TANG_LUONG_LIST_PATH}/${data.id}/in-quyet-dinh`)}
+              className="h-8 px-3 text-xs text-sky-600 hover:bg-sky-50 hover:text-sky-700 dark:hover:bg-sky-950/50 dark:text-sky-400 border border-sky-200 hover:border-sky-300 dark:border-sky-800 dark:hover:border-sky-700"
+            >
+              <Printer className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+              {txt('matTranTangLuong.printPreview.print')}
+            </Button>
+          )}
           {canEdit && (
             <Button
               size="sm"

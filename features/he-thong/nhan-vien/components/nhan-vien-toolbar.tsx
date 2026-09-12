@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { txt } from '../../../../lib/text';
-import { Plus, Building2, Briefcase, Tag, Check, Power } from 'lucide-react';
+import { Plus, Building2, Briefcase, Tag, Check, Power, Upload } from 'lucide-react';
 import Button from '../../../../components/ui/Button';
+import Tooltip from '../../../../components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import GenericToolbar from '../../../../components/shared/GenericToolbar';
@@ -18,12 +19,16 @@ interface Props {
   /** Danh sách nhân viên người dùng được phép xem (sau phân quyền). */
   employees: Employee[];
   onAdd: () => void;
+  onImport?: () => void;
   onDeleteMany: (ids: string[]) => void;
   onStatusChangeMany: (ids: string[], status: TrangThaiNhanVien) => void;
 }
 
-const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onDeleteMany, onStatusChangeMany }) => {
-  const { canCreate, canEdit, canDelete } = useResourcePermissions('employees');
+const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onImport, onDeleteMany, onStatusChangeMany }) => {
+  const { canCreate, canEdit, canDelete, canImport } = useResourcePermissions('employees');
+  // Nhập = ghi thêm bản ghi ⇒ phải có quyền `them`. Chỉ dựa vào `canImport` là hở:
+  // `can()` cho token `view` đi qua cả export lẫn import.
+  const showImportButton = canCreate && canImport && Boolean(onImport);
 
   const {
     searchTerm, setSearchTerm,
@@ -138,6 +143,19 @@ const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onDeleteMany, onSt
 
   const renderActions = (
     <>
+      {showImportButton && onImport ? (
+        <Tooltip content={txt('common.import')} placement="bottom">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onImport}
+            aria-label={txt('common.import')}
+            className="inline-flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 h-8 w-8 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+          >
+            <Upload className="w-4 h-4" aria-hidden />
+          </Button>
+        </Tooltip>
+      ) : null}
       {canCreate && (
         <Button
           onClick={onAdd}

@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import type { ThongTinCaNhanTieuBieuFormValues } from '../core/schema';
 import type { ThongTinCaNhanTieuBieu } from '../core/types';
@@ -52,7 +51,6 @@ export function useCreateThongTinCaNhanTieuBieu(onSuccess?: () => void) {
       toast.success(txt('danTocCaNhanTieuBieu.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -69,7 +67,6 @@ export function useUpdateThongTinCaNhanTieuBieu(onSuccess?: () => void) {
       toast.success(txt('danTocCaNhanTieuBieu.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -85,7 +82,6 @@ export function useUpdateThongTinCaNhanTieuBieuStatus() {
       queryClient.setQueryData(queryKeys.danTocCaNhanTieuBieu.detail(updated.id), updated);
       toast.success(txt('danTocCaNhanTieuBieu.toast.update'));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -102,7 +98,6 @@ export function useDeleteThongTinCaNhanTieuBieuMany() {
       }
       toast.success(txt('danTocCaNhanTieuBieu.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -121,6 +116,5 @@ export function useImportThongTinCaNhanTieuBieu(onSuccess?: () => void) {
       }
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }

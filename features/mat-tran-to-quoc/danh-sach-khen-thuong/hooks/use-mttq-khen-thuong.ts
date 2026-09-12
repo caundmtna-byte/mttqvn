@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import type { MttqKhenThuong, MttqKhenThuongChiTietFlatRow, MttqKhenThuongLineForCanBo, MttqKhenThuongListRow } from '../core/types';
 import type { MttqKhenThuongFormValues } from '../core/schema';
@@ -70,7 +69,6 @@ export const useCreateMttqKhenThuong = (onSuccess?: () => void) => {
       toast.success(txt('matTranKhenThuong.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -92,7 +90,6 @@ export const useUpdateMttqKhenThuong = (onSuccess?: () => void) => {
       toast.success(txt('matTranKhenThuong.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -112,6 +109,5 @@ export const useDeleteMttqKhenThuongMany = () => {
       }
       toast.success(txt('matTranKhenThuong.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

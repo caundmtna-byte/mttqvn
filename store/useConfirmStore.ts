@@ -11,6 +11,15 @@ interface ConfirmOptions {
   cancelText?: string;
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
+  /**
+   * Mặc định `false`: hộp thoại KHÔNG tự báo lỗi, chỉ giữ nguyên màn hình để thử lại.
+   *
+   * Lý do: mọi thao tác trong `onConfirm` đều đi qua React Query, mà `index.tsx` đã
+   * gắn sẵn `queryCache.onError` và `defaultOptions.mutations.onError` để hiện thông báo
+   * lỗi. Nếu hộp thoại báo thêm một lần nữa thì người dùng thấy **hai thông báo trùng nhau**.
+   * Chỉ bật `true` khi `onConfirm` làm việc gì đó ngoài React Query.
+   */
+  showErrorToast?: boolean;
 }
 
 interface ConfirmState {

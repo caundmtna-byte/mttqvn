@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import type { ChuongTrinhNam, ChuongTrinhNamListRow } from '../core/types';
 import type { ChuongTrinhNamFormValues } from '../core/schema';
@@ -48,7 +47,6 @@ export const useCreateChuongTrinhNam = (onSuccess?: () => void) => {
       toast.success(txt('chuongTrinhNam.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -65,7 +63,6 @@ export const useUpdateChuongTrinhNam = (onSuccess?: () => void) => {
       toast.success(txt('chuongTrinhNam.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -82,6 +79,5 @@ export const useDeleteChuongTrinhNamMany = () => {
       }
       toast.success(txt('chuongTrinhNam.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

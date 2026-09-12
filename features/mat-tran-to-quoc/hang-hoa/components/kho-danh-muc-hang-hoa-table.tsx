@@ -14,6 +14,12 @@ import { KhoDanhMucHangHoaTableRowActions } from './kho-danh-muc-hang-hoa-table-
 interface Props {
   data: KhoDanhMucHangHoaListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
+  /** Tiêu đề khi bảng rỗng — trang truyền vào để phân biệt "chưa có dữ liệu" với "không khớp bộ lọc". */
+  emptyTitle?: string;
+  emptyDescription?: string;
   onEdit: (item: KhoDanhMucHangHoaListRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: KhoDanhMucHangHoaListRow) => void;
@@ -22,6 +28,10 @@ interface Props {
 const KhoDanhMucHangHoaTable = memo(function KhoDanhMucHangHoaTable({
   data,
   isLoading,
+  isError,
+  onRetry,
+  emptyTitle,
+  emptyDescription,
   onEdit,
   onDelete,
   onView,
@@ -201,9 +211,11 @@ const KhoDanhMucHangHoaTable = memo(function KhoDanhMucHangHoaTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
-      emptyTitle={txt('matTranHangHoa.emptyDanhMuc')}
-      emptyDescription={txt('matTranKhoDanhSach.emptyHint')}
+      emptyTitle={emptyTitle ?? txt('matTranHangHoa.emptyDanhMuc')}
+      emptyDescription={emptyDescription ?? txt('matTranKhoDanhSach.emptyHint')}
       selectedIds={selectedIds}
       onToggleSelection={toggleSelection}
       onToggleAll={toggleAllSelection}

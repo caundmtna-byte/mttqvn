@@ -17,6 +17,7 @@ const TonKhoPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefInventory');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
@@ -29,11 +30,10 @@ const TonKhoPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null &&
-    user.role !== 'admin' &&
-    chucVuKey.trim() !== '' &&
-    !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   const [activeTab, setActiveTab] = useTabSearchParam(TON_KHO_TABS, 'byProduct');
 

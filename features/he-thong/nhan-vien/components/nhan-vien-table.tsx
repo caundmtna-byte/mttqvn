@@ -24,6 +24,9 @@ import { EmployeeTableRowActions } from './employee-table-row-actions';
 interface Props {
   data: Employee[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   /** Danh sách gốc (sau phân quyền) để đếm filter — giống toolbar. */
   employeesForFilterCounts: Employee[];
   onEdit: (item: Employee) => void;
@@ -35,6 +38,8 @@ interface Props {
 const EmployeeTable = memo(function EmployeeTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   employeesForFilterCounts,
   onEdit,
   onDelete,
@@ -344,6 +349,8 @@ const EmployeeTable = memo(function EmployeeTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       selectedIds={selectedIds}
       onToggleSelection={toggleSelection}

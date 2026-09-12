@@ -4,7 +4,16 @@ import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import type { Json, PublicTableName } from '@/lib/supabase/database.types';
 import type { IRepository, RepositoryMutationOptions, RepositoryQueryOptions } from './repository';
 
-/** Giới hạn mặc định mỗi lần getAll — tránh tải bảng lớn một lượt (PostgREST/Supabase). Tăng limit trong RepositoryQueryOptions nếu cần. */
+/**
+ * @deprecated Không còn dùng làm trần cắt dữ liệu.
+ *
+ * `getAll()` nay luôn đọc ĐỦ số dòng: cắt ngầm làm danh sách hiển thị thiếu và
+ * báo cáo ra số sai mà không có dấu hiệu gì. Việc chặn truy vấn quên bộ lọc do
+ * `FETCH_ALL_PAGES_SAFETY_LIMIT` lo, và nó **ném lỗi** chứ không cắt.
+ *
+ * Bảng lớn thì cách trị đúng là RPC phân trang phía máy chủ
+ * (xem mục "Chọn kiểu phân trang" trong CLAUDE.md), không phải giới hạn số dòng.
+ */
 export const SUPABASE_DEFAULT_MAX_ROWS = 5_000;
 
 function ensureClient() {
@@ -50,11 +59,17 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
       return (data ?? []) as unknown as T[];
     }
 
-    const rows = await fetchAllPages<unknown>(async (from, to) => {
-      const { data, error } = await buildQuery().range(from, to);
-      if (error) handleSupabaseError(error);
-      return (data ?? []) as unknown[];
-    });
+    // Không có `limit` ⇒ đọc ĐỦ cả bảng (lặp 1000 dòng mỗi request).
+    // (Nhánh này bỏ qua `offset` — giữ nguyên hành vi cũ; dùng `limit` nếu cần phân trang.)
+    // fetchAllPages cảnh báo khi bảng đã lớn và NÉM LỖI nếu vượt ngưỡng an toàn.
+    const rows = await fetchAllPages<unknown>(
+      async (from, to) => {
+        const { data, error } = await buildQuery().range(from, to);
+        if (error) handleSupabaseError(error);
+        return (data ?? []) as unknown[];
+      },
+      { label: this.tableName },
+    );
     return rows as T[];
   }
 
@@ -86,14 +101,34 @@ export class SupabaseRepository<T extends { id: string }> implements IRepository
     const supabase = ensureClient();
     const payload = { ...partial } as Record<string, Json>;
     delete payload.id;
-    const { data, error } = await supabase
-      .from(this.tableName)
-      .update(payload)
-      .eq('id', id)
-      .select(this.mutationSelect(opts))
-      .single();
+
+    const expected = opts?.expectedTgCapNhat;
+    let query = supabase.from(this.tableName).update(payload).eq('id', id);
+    // Chống ghi đè đồng thời: chỉ ghi khi bản ghi vẫn đúng mốc lúc người dùng mở form.
+    if (expected) query = query.eq('tg_cap_nhat', expected);
+
+    const { data, error } = await query.select(this.mutationSelect(opts)).maybeSingle();
     if (error) handleSupabaseError(error);
+
+    if (!data) {
+      if (expected) throw new Error(await this.moTaXungDotGhi(id));
+      throw new Error(
+        'Không tìm thấy bản ghi để cập nhật. Có thể bản ghi đã bị người khác xoá — hãy tải lại trang.',
+      );
+    }
     return data as unknown as T;
+  }
+
+  /**
+   * Phân biệt "người khác vừa sửa" với "bản ghi đã bị xoá" — hai việc cần hai
+   * cách xử lý khác nhau, nói chung chung thì cán bộ không biết phải làm gì.
+   */
+  private async moTaXungDotGhi(id: string): Promise<string> {
+    const supabase = ensureClient();
+    const { data } = await supabase.from(this.tableName).select('id').eq('id', id).maybeSingle();
+    return data
+      ? 'Bản ghi vừa được người khác sửa. Hãy tải lại để xem nội dung mới nhất rồi nhập lại thay đổi của bạn.'
+      : 'Bản ghi đã bị người khác xoá. Hãy tải lại trang.';
   }
 
   async remove(ids: string[]): Promise<void> {

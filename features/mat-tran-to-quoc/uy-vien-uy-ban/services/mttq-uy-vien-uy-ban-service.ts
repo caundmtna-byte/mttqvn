@@ -2,6 +2,7 @@ import { createRepository } from '@/lib/data/create-repository';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import { flattenMttqCanBoRow } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/services/mttq-can-bo-service';
 import type { MttqUyVienUyBan, MttqUyVienUyBanListRow } from '../core/types';
@@ -181,16 +182,26 @@ export async function findUyVienConflict(params: {
   }
 
   if (maUvNorm) {
-    let q = supabase
-      .from('mttq_uy_vien_uy_ban')
-      .select('id, ma_uv')
-      .eq('nhiem_ky_id', nhiemKyId)
-      .not('ma_uv', 'is', null)
-      .limit(200);
-    if (exclude) q = q.neq('id', exclude);
-    const { data, error } = await q;
-    if (error) handleSupabaseError(error);
-    const hit = (data ?? []).find((row) => normalizeMaUvForCompare(row.ma_uv as string | null) === maUvNorm);
+    // PHẢI quét đủ mọi mã uỷ viên của nhiệm kỳ: so khớp có chuẩn hoá nên không
+    // đẩy được xuống `.eq()`, mà cắt ở 200 dòng thì nhiệm kỳ đông người sẽ LỌT
+    // mã trùng — sai dữ liệu, không chỉ là thiếu dữ liệu.
+    const rows = await fetchAllPages<{ id: number | string; ma_uv: string | null }>(
+      async (from, to) => {
+        let q = supabase
+          .from('mttq_uy_vien_uy_ban')
+          .select('id, ma_uv')
+          .eq('nhiem_ky_id', nhiemKyId)
+          .not('ma_uv', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, to);
+        if (exclude) q = q.neq('id', exclude);
+        const { data, error } = await q;
+        if (error) handleSupabaseError(error);
+        return (data ?? []) as unknown as { id: number | string; ma_uv: string | null }[];
+      },
+      { label: 'mttq_uy_vien_uy_ban (kiem trung ma_uv)' },
+    );
+    const hit = rows.find((row) => normalizeMaUvForCompare(row.ma_uv) === maUvNorm);
     if (hit?.id != null) {
       return { kind: 'ma_uv', existingId: String(hit.id) };
     }
@@ -262,14 +273,22 @@ export async function getMttqUyVienUyBanListForNhiemKyId(nhiemKyId: string): Pro
   if (!id) return [];
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('mttq_uy_vien_uy_ban')
-    .select(MTTQ_UY_VIEN_UY_BAN_SELECT_LIST)
-    .eq('nhiem_ky_id', id)
-    .order('tg_cap_nhat', { ascending: false })
-    .limit(500);
-  if (error) handleSupabaseError(error);
-  const flat = (data ?? []).map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  // Đọc ĐỦ số uỷ viên của nhiệm kỳ — uỷ ban cấp tỉnh có thể vượt 500 người.
+  const data = await fetchAllPages<Record<string, unknown>>(
+    async (from, to) => {
+      const { data: rows, error } = await supabase
+        .from('mttq_uy_vien_uy_ban')
+        .select(MTTQ_UY_VIEN_UY_BAN_SELECT_LIST)
+        .eq('nhiem_ky_id', id)
+        .order('tg_cap_nhat', { ascending: false })
+        .order('id', { ascending: false })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (rows ?? []) as unknown as Record<string, unknown>[];
+    },
+    { label: 'mttq_uy_vien_uy_ban' },
+  );
+  const flat = data.map((row) => flattenRow(row));
   return withUyVienDiemDanhSummaries(flat);
 }
 

@@ -9,6 +9,7 @@ import React, {
   startTransition,
 } from 'react';
 import { txt } from '../../../lib/text';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -65,14 +66,17 @@ const PositionPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'positions');
   const navigate = useNavigate();
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('position.noViewPermission'));
     navigate('/he-thong', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const confirm = useConfirmStore((s) => s.confirm);
 
@@ -94,7 +98,7 @@ const PositionPage: React.FC = () => {
     columns,
   } = usePositionStore();
 
-  const { data: positions = [], isLoading } = usePositions({ enabled: canView });
+  const { data: positions = [], isLoading, isError, refetch } = usePositions({ enabled: canView });
   const deleteMutation = useDeletePosition();
   const statusMutation = useUpdateStatusPosition();
   const importMutation = useImportPositions(() => setShowImport(false));
@@ -215,7 +219,7 @@ const PositionPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewingPos && viewingPos.id === id) setViewingPos(null);
           },
@@ -232,7 +236,7 @@ const PositionPage: React.FC = () => {
       variant: 'warning',
       confirmText: CONFIRM_YES(),
       onConfirm: async () => {
-        statusMutation.mutate(
+        await statusMutation.mutateAsync(
           { ids: [item.id], status: newStatus },
           {
             onSuccess: (updated) => {
@@ -251,7 +255,7 @@ const PositionPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewingPos && ids.includes(viewingPos.id)) setViewingPos(null);
@@ -268,7 +272,7 @@ const PositionPage: React.FC = () => {
       variant: 'warning',
       confirmText: CONFIRM_YES(),
       onConfirm: async () => {
-        statusMutation.mutate({ ids, status }, { onSuccess: () => clearSelection() });
+        await statusMutation.mutateAsync({ ids, status }, { onSuccess: () => clearSelection() });
       },
     });
   };
@@ -328,6 +332,8 @@ const PositionPage: React.FC = () => {
           <PositionTable
             data={filteredPositions}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
             deptCounts={deptCounts}
             statusCounts={statusCounts}
             onEdit={handleEdit}

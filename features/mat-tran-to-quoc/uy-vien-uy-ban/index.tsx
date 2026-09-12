@@ -13,6 +13,7 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
@@ -67,14 +68,17 @@ const UyVienUyBanPage: React.FC = () => {
   const canView = useCan('view', 'matTranCommitteeMembers');
   const { canCreate } = useResourcePermissions('matTranCommitteeMembers');
   const tinhCapLabel = txt('matTranUyVienUyBan.tinhCap');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranUyVienUyBan.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqUyVienUyBan | null>(null);
@@ -101,7 +105,7 @@ const UyVienUyBanPage: React.FC = () => {
   const scopeDonViId =
     !viewer.canViewAll && viewer.chucVuCapQuanLy === 'Xã phường' ? viewer.viewerDonViId : null;
 
-  const { data: rows = [], isLoading } = useMttqUyVienUyBanList({
+  const { data: rows = [], isLoading, isError, refetch } = useMttqUyVienUyBanList({
     enabled: canView,
     donViId: scopeDonViId,
   });
@@ -205,6 +209,27 @@ const UyVienUyBanPage: React.FC = () => {
       .map(([value, { label, count }]) => ({ value, label, count }))
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
   }, [viewableRows]);
+
+  /**
+   * In danh sách ủy viên: biểu mẫu lập theo MỘT nhiệm kỳ, nên phải xác định được
+   * đúng một nhiệm kỳ — lấy từ bộ lọc, hoặc từ dữ liệu khi chỉ có một nhiệm kỳ.
+   */
+  const handlePrintDanhSach = useCallback(() => {
+    const daChon = filters.nhiem_ky_filter;
+    const nhiemKyId =
+      daChon.length === 1
+        ? daChon[0]
+        : nhiemKyChipOptions.length === 1
+          ? nhiemKyChipOptions[0].value
+          : null;
+    if (!nhiemKyId) {
+      toast.warning(txt('matTranUyVienUyBan.printPreview.chonNhiemKy'));
+      return;
+    }
+    navigate(
+      `/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien/nhiem-ky/${encodeURIComponent(nhiemKyId)}/in-danh-sach`,
+    );
+  }, [filters.nhiem_ky_filter, nhiemKyChipOptions, navigate]);
 
   const donViChipOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
@@ -329,7 +354,7 @@ const UyVienUyBanPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewingId === id) setViewingId(null);
           },
@@ -345,7 +370,7 @@ const UyVienUyBanPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewingId && ids.includes(viewingId)) setViewingId(null);
@@ -431,6 +456,7 @@ const UyVienUyBanPage: React.FC = () => {
           onExport={handleExport}
           onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
+          onPrintDanhSach={canView ? handlePrintDanhSach : undefined}
           nhiemKyOptions={nhiemKyChipOptions}
           donViOptions={donViChipOptions}
           trangThaiOptions={trangThaiChipOptions}
@@ -440,6 +466,8 @@ const UyVienUyBanPage: React.FC = () => {
           <MttqUyVienUyBanTable
             data={sorted}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
             nhiemKyHeaderOptions={nhiemKyChipOptions}
             donViHeaderOptions={donViChipOptions}
             onEdit={handleEditFromList}

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { isConstraintFieldError } from '@/lib/supabase/constraint-field-error';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import {
   getPositions,
@@ -38,7 +39,11 @@ export const useCreatePosition = (onSuccess?: () => void) => {
       toast.success(txt('position.toast.createSuccess'));
       if (onSuccess) onSuccess();
     },
-    onError: (err: unknown) => toast.error(`Lỗi: ${getErrorMessage(err)}`)
+    onError: (err: unknown) => {
+      // Lỗi trùng có ô nhập tương ứng ⇒ form gắn chữ đỏ dưới ô, không toast.
+      if (isConstraintFieldError(err)) return;
+      toast.error(getErrorMessage(err));
+    }
   });
 };
 
@@ -53,7 +58,11 @@ export const useUpdatePosition = (onSuccess?: () => void) => {
       toast.success(txt('position.toast.updateSuccess'));
       if (onSuccess) onSuccess();
     },
-    onError: (err: unknown) => toast.error(`Lỗi: ${getErrorMessage(err)}`)
+    onError: (err: unknown) => {
+      // Lỗi trùng có ô nhập tương ứng ⇒ form gắn chữ đỏ dưới ô, không toast.
+      if (isConstraintFieldError(err)) return;
+      toast.error(getErrorMessage(err));
+    }
   });
 };
 
@@ -69,7 +78,11 @@ export const useUpdateStatusPosition = () => {
         );
         toast.success(txt('position.toast.statusUpdate', { count: variables.ids.length }));
       },
-      onError: (err: unknown) => toast.error(`Lỗi: ${getErrorMessage(err)}`)
+      onError: (err: unknown) => {
+      // Lỗi trùng có ô nhập tương ứng ⇒ form gắn chữ đỏ dưới ô, không toast.
+      if (isConstraintFieldError(err)) return;
+      toast.error(getErrorMessage(err));
+    }
     });
 };
 
@@ -83,7 +96,11 @@ export const useDeletePosition = () => {
       );
       toast.success(txt('position.toast.deleteSuccess', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err))
+    onError: (err: unknown) => {
+      // Lỗi trùng có ô nhập tương ứng ⇒ form gắn chữ đỏ dưới ô, không toast.
+      if (isConstraintFieldError(err)) return;
+      toast.error(getErrorMessage(err));
+    }
   });
 };
 
@@ -101,6 +118,5 @@ export const useImportPositions = (onSuccess?: () => void) => {
       }
       if (onSuccess) onSuccess();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 };

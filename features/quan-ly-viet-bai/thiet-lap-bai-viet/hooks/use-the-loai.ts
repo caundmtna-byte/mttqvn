@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import {
   getTheLoais,
@@ -34,7 +33,6 @@ export const useCreateTheLoai = (onSuccess?: () => void) => {
       toast.success(txt('articleSettings.toast.theLoaiCreate'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -47,7 +45,6 @@ export const useUpdateTheLoai = (onSuccess?: () => void) => {
       toast.success(txt('articleSettings.toast.theLoaiUpdate'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -59,6 +56,5 @@ export const useDeleteTheLoais = () => {
       queryClient.setQueryData<BaiVietTheLoai[]>(qk, (old) => old?.filter((r) => !ids.includes(r.id)));
       toast.success(txt('articleSettings.toast.theLoaiDelete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

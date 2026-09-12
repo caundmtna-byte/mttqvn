@@ -1,14 +1,20 @@
 import { createRepository } from '@/lib/data/create-repository';
+import {
+  buildRpcSortParam,
+  fetchAllServerPages,
+  readRpcTotalCount,
+  type ServerSortState,
+} from '@/lib/data/server-paging';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import type { CongViecDanhSach } from '../core/types';
 import type { CongViecDanhSachFormValues } from '../core/schema';
 import { CHIP_CHUONG_TRINH_NULL } from '../core/constants';
 import {
   CONG_VIEC_BY_CHUONG_TRINH_SELECT,
   CONG_VIEC_DANH_SACH_RETURNING,
-  CONG_VIEC_DANH_SACH_SELECT_FULL,
   CONG_VIEC_DANH_SACH_SELECT_LIST,
 } from '../core/supabase-select';
 const repo = createRepository<CongViecDanhSach>({
@@ -115,15 +121,12 @@ function formToPayload(data: CongViecDanhSachFormValues, idNguoiTao?: string) {
   return base;
 }
 
-/** Giới hạn số dòng công việc embed trong drawer chi tiết chương trình. */
-export const CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT = 200;
-
-export async function getCongViecDanhSachList(): Promise<CongViecDanhSach[]> {
-  const list = await repo.getAll({ orderBy: 'thoi_han', ascending: false });
-  return list.map((row) => normalize(flattenCongViecDanhSachRow(row as unknown as Record<string, unknown>)));
-}
-
-/** Công việc gắn một chương trình năm (drawer chi tiết CTN). */
+/**
+ * Công việc gắn một chương trình năm (drawer chi tiết CTN).
+ *
+ * Đọc ĐỦ: trước đây cắt ở 200 dòng kèm một dòng chữ "xem đầy đủ ở module khác",
+ * nhưng đây chính là chỗ cán bộ nhìn vào để biết chương trình có bao nhiêu việc.
+ */
 export async function getCongViecByChuongTrinhNamId(chuongTrinhId: string): Promise<CongViecDanhSach[]> {
   const id = String(chuongTrinhId ?? '').trim();
   if (!id) return [];
@@ -131,16 +134,21 @@ export async function getCongViecByChuongTrinhNamId(chuongTrinhId: string): Prom
   const supabase = getSupabase();
   if (!supabase) return [];
 
-  const { data, error } = await supabase
-    .from('cong_viec_danh_sach')
-    .select(CONG_VIEC_BY_CHUONG_TRINH_SELECT)
-    .eq('id_chuong_trinh', id)
-    .order('thoi_han', { ascending: false, nullsFirst: false })
-    .limit(CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT);
-  if (error) handleSupabaseError(error);
-  return (data ?? []).map((row) =>
-    normalize(flattenCongViecDanhSachRow(row as unknown as Record<string, unknown>)),
+  const rows = await fetchAllPages<Record<string, unknown>>(
+    async (from, to) => {
+      const { data, error } = await supabase
+        .from('cong_viec_danh_sach')
+        .select(CONG_VIEC_BY_CHUONG_TRINH_SELECT)
+        .eq('id_chuong_trinh', id)
+        .order('thoi_han', { ascending: false, nullsFirst: false })
+        .order('id', { ascending: false })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as unknown as Record<string, unknown>[];
+    },
+    { label: 'cong_viec_danh_sach (theo chuong trinh)' },
   );
+  return rows.map((row) => normalize(flattenCongViecDanhSachRow(row)));
 }
 
 export async function getCongViecDanhSachById(id: string): Promise<CongViecDanhSach | null> {
@@ -188,6 +196,20 @@ export async function deleteCongViecDanhSachMany(ids: string[]): Promise<void> {
 
 export type CongViecListScopeRpc = 'mine_do' | 'mine_related' | 'mine_assign';
 
+/** Cột được RPC get_cong_viec_page sắp xếp. Phải khớp khối ORDER BY trong migration. */
+export const CONG_VIEC_SERVER_SORT_COLUMNS = [
+  'ten_cong_viec',
+  'ten_chuong_trinh',
+  'muc_do',
+  'thoi_han',
+  'tien_do',
+  'trang_thai',
+  'ho_va_ten_trach_nhiem',
+  'ho_tro_display',
+  'ho_va_ten_nguoi_tao',
+  'tg_cap_nhat',
+] as const;
+
 export type CongViecPageQuery = {
   page: number;
   pageSize: number;
@@ -197,12 +219,14 @@ export type CongViecPageQuery = {
   trangThai: readonly string[];
   mucDo: readonly string[];
   idChuongTrinh: readonly string[];
+  sort?: ServerSortState | null;
 };
 
 export type CongViecPageResult = {
   rows: CongViecDanhSach[];
   hasNextPage: boolean;
-  totalRecords: number | null;
+  /** Tổng số bản ghi khớp bộ lọc — RPC trả về qua COUNT(*) OVER (). */
+  totalRecords: number;
 };
 
 function toRpcBigint(id: string | null | undefined): number | null {
@@ -211,29 +235,37 @@ function toRpcBigint(id: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-async function enrichCongViecRowsByIds(ids: string[]): Promise<Map<string, CongViecDanhSach>> {
-  const map = new Map<string, CongViecDanhSach>();
-  if (ids.length === 0) return map;
-  const supabase = getSupabase();
-  if (!supabase) return map;
-  const { data, error } = await supabase
-    .from('cong_viec_danh_sach')
-    .select(CONG_VIEC_DANH_SACH_SELECT_FULL)
-    .in('id', ids);
-  if (error) handleSupabaseError(error);
-  for (const raw of data ?? []) {
-    const row = raw as unknown as Record<string, unknown>;
-    const id = String(row.id);
-    map.set(id, normalize(flattenCongViecDanhSachRow(row)));
-  }
-  return map;
+/**
+ * RPC trả dòng phẳng (đã LEFT JOIN sẵn tên trách nhiệm / người tạo / chương
+ * trình). Dựng lại hình dạng embed của PostgREST để dùng chung flatten +
+ * normalize, nhờ đó bỏ được request thứ hai cho mỗi lần đổi trang.
+ */
+function rpcRowToCongViec(raw: Record<string, unknown>): CongViecDanhSach {
+  const {
+    ho_va_ten_trach_nhiem,
+    ten_tai_khoan_trach_nhiem,
+    ho_va_ten_nguoi_tao,
+    ten_tai_khoan_nguoi_tao,
+    ten_chuong_trinh,
+    ho_tro_display: _hoTroDisplay,
+    total_count: _totalCount,
+    ...base
+  } = raw;
+  return normalize(
+    flattenCongViecDanhSachRow({
+      ...base,
+      trach_nhiem: { ho_va_ten: ho_va_ten_trach_nhiem, ten_tai_khoan: ten_tai_khoan_trach_nhiem },
+      nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+      chuong_trinh: { ten_chuong_trinh },
+    }),
+  );
 }
 
 export async function getCongViecDanhSachPage(q: CongViecPageQuery): Promise<CongViecPageResult> {
   const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
   const page = Math.max(1, Math.floor(q.page));
   const offset = (page - 1) * pageSize;
-  const fetchLimit = pageSize + 1;
+  const fetchLimit = pageSize;
   const searchTrim = q.search?.trim() ?? '';
   const pSearch = searchTrim.length > 0 ? searchTrim : null;
   const viewer = toRpcBigint(q.viewerNhanVienId);
@@ -260,15 +292,23 @@ export async function getCongViecDanhSachPage(q: CongViecPageQuery): Promise<Con
     p_muc_do: mucDo,
     p_id_chuong_trinh: pChuongTrinh,
     p_chuong_trinh_include_null: chuongTrinhIncludeNull,
+    p_sort: buildRpcSortParam(q.sort, CONG_VIEC_SERVER_SORT_COLUMNS),
   } as never);
   if (error) handleSupabaseError(error);
 
   const rawRows = (data ?? []) as unknown as Record<string, unknown>[];
-  const hasNextPage = rawRows.length > pageSize;
-  const pageRaw = hasNextPage ? rawRows.slice(0, pageSize) : rawRows;
-  const ids = pageRaw.map((r) => String(r.id));
-  const byId = await enrichCongViecRowsByIds(ids);
-  const rows = ids.map((id) => byId.get(id)).filter((x): x is CongViecDanhSach => Boolean(x));
-  const totalRecords = hasNextPage ? null : offset + rows.length;
-  return { rows, hasNextPage, totalRecords };
+  const rows = rawRows.map(rpcRowToCongViec);
+  const totalFromPage = readRpcTotalCount(rawRows);
+  // Trang rỗng ngoài trang 1 không mang được tổng ⇒ hỏi lại trang đầu.
+  const totalRecords =
+    totalFromPage ??
+    (offset > 0 ? (await getCongViecDanhSachPage({ ...q, page: 1, pageSize: 1 })).totalRecords : 0);
+  return { rows, hasNextPage: offset + rows.length < totalRecords, totalRecords };
+}
+
+/** Kéo TOÀN BỘ công việc khớp bộ lọc để xuất file — xem fetchAllServerPages. */
+export function getCongViecDanhSachAllForExport(
+  q: Omit<CongViecPageQuery, 'page' | 'pageSize'>,
+): Promise<CongViecDanhSach[]> {
+  return fetchAllServerPages(q, getCongViecDanhSachPage);
 }

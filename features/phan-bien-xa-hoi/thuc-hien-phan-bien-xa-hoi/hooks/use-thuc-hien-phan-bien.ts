@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { ThucHienPhanBienFormValues } from '../core/schema';
 import type { ThucHienPhanBien } from '../core/types';
 import {
@@ -35,6 +34,17 @@ export function useThucHienPhanBienDetail(id: string | null, options?: { enabled
   });
 }
 
+/**
+ * Làm mới các trang đang phân trang phía máy chủ.
+ *
+ * Các mutation dưới đây chỉ `setQueryData` vào mảng phẳng `listKey`, mà trang
+ * danh sách nay đọc key `['pbxh-thuc-hien','page',…]` — không invalidate thì
+ * thêm/sửa/xoá xong bảng không đổi cho tới khi tải lại trang.
+ */
+function invalidatePbxhPages(queryClient: ReturnType<typeof useQueryClient>): void {
+  void queryClient.invalidateQueries({ queryKey: [...queryKeys.pbxhThucHien.all, 'page'] });
+}
+
 export function useCreateThucHienPhanBien(onSuccess?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -46,10 +56,10 @@ export function useCreateThucHienPhanBien(onSuccess?: () => void) {
         return [created, ...old.filter((r) => r.id !== created.id)];
       });
       queryClient.setQueryData(queryKeys.pbxhThucHien.detail(created.id), created);
+      invalidatePbxhPages(queryClient);
       toast.success(txt('pbxhThucHien.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -63,10 +73,10 @@ export function useUpdateThucHienPhanBien(onSuccess?: () => void) {
         old?.map((r) => (r.id === updated.id ? updated : r)),
       );
       queryClient.setQueryData(queryKeys.pbxhThucHien.detail(updated.id), updated);
+      invalidatePbxhPages(queryClient);
       toast.success(txt('pbxhThucHien.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -81,8 +91,8 @@ export function useDeleteThucHienPhanBienMany() {
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.pbxhThucHien.detail(id) });
       }
+      invalidatePbxhPages(queryClient);
       toast.success(txt('pbxhThucHien.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }

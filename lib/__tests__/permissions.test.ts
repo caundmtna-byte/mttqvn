@@ -38,24 +38,51 @@ describe('can', () => {
     expect(can(noChucVu, 'edit', 'profile')).toBe(false);
   });
 
-  it('member can view but not delete employees before matrix hydrate', () => {
-    expect(can(member, 'view', 'employees')).toBe(true);
+  it('deny-by-default: chưa hydrate ma trận thì KHÔNG xem được module nghiệp vụ', () => {
+    // Trước đây trả `true` cho mọi `view` — nghĩa là sau mỗi lần F5, và suốt phiên
+    // nếu truy vấn quyền lỗi, mọi module đều mở. UI phải đọc `matrixLoading` để
+    // phân biệt "đang chờ" với "không có quyền", xem `hooks/use-module-access.ts`.
+    expect(can(member, 'view', 'employees')).toBe(false);
     expect(can(member, 'delete', 'employees')).toBe(false);
+  });
+
+  it('ngoại lệ hợp lệ: hồ sơ cá nhân và thông báo vẫn xem được khi chưa hydrate', () => {
+    expect(can(member, 'view', 'profile')).toBe(true);
+    expect(can(member, 'edit', 'profile')).toBe(true);
+    expect(can(member, 'view', 'notifications')).toBe(true);
   });
 
   it('member can edit profile', () => {
     expect(can(member, 'edit', 'profile')).toBe(true);
   });
 
-  it('matrix: member with only view on nhan-vien cannot delete', () => {
+  it('matrix: chỉ có quyền xem thì không sửa, không xoá, và KHÔNG NHẬP được', () => {
     usePermissionGrantStore.getState().setMatrixGrants({
       'he-thong/nhan-vien': ['view'],
     });
     expect(can(member, 'view', 'employees')).toBe(true);
+    // Xem được thì xuất được — dữ liệu đó vốn đã hiện trên màn hình.
     expect(can(member, 'export', 'employees')).toBe(true);
-    expect(can(member, 'import', 'employees')).toBe(true);
+    // Nhưng NHẬP là ghi hàng loạt vào cơ sở dữ liệu, phải có quyền thêm mới.
+    expect(can(member, 'import', 'employees')).toBe(false);
     expect(can(member, 'edit', 'employees')).toBe(false);
     expect(can(member, 'delete', 'employees')).toBe(false);
+  });
+
+  it('matrix: có quyền thêm mới thì nhập được', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'he-thong/nhan-vien': ['view', 'create'],
+    });
+    expect(can(member, 'import', 'employees')).toBe(true);
+  });
+
+  // `departments` đi qua nhánh riêng `canDepartmentsWithCapBac`, phải cùng luật.
+  it('matrix: phòng ban — chỉ xem thì cũng không nhập được', () => {
+    usePermissionGrantStore.getState().setMatrixGrants({
+      'he-thong/phong-ban': ['view'],
+    });
+    expect(can(member, 'export', 'departments')).toBe(true);
+    expect(can(member, 'import', 'departments')).toBe(false);
   });
 
   it('matrix: member with update on nhan-vien can edit', () => {
@@ -94,7 +121,8 @@ describe('can', () => {
     });
     expect(can(member, 'view', 'articleStats')).toBe(true);
     expect(can(member, 'export', 'articleStats')).toBe(true);
-    expect(can(member, 'import', 'articleStats')).toBe(true);
+    // Trang thống kê chỉ để xem — không có luồng nhập, và chỉ xem thì cũng không nhập được.
+    expect(can(member, 'import', 'articleStats')).toBe(false);
     expect(can(member, 'edit', 'articleStats')).toBe(false);
   });
 

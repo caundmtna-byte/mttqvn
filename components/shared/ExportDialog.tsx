@@ -1,3 +1,5 @@
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/utils';
 import React, { useState } from 'react';
 import { txt } from '../../lib/text';
 import { motion } from 'framer-motion';
@@ -23,10 +25,21 @@ interface ExportDialogProps {
   paginatedData?: Record<string, unknown>[];
   fileName: string;
   visibleColumnKeys?: string[];
+  /**
+   * Tổng số bản ghi thật trên máy chủ (trang danh sách phân trang server-side).
+   * Khi có, nhãn phạm vi "Tất cả" hiện số này thay vì số dòng của trang đang xem.
+   */
+  serverTotalRecords?: number | null;
+  /**
+   * Kéo toàn bộ bản ghi khớp bộ lọc. Chỉ được gọi khi người dùng thực sự bấm
+   * xuất với phạm vi "Tất cả" — không tải sẵn lúc mở hộp thoại.
+   */
+  fetchAllData?: () => Promise<Record<string, unknown>[]>;
 }
 
 const ExportDialog: React.FC<ExportDialogProps> = ({
-  open, onClose, columns = [], data = [], selectedData = [], paginatedData = [], fileName, visibleColumnKeys
+  open, onClose, columns = [], data = [], selectedData = [], paginatedData = [], fileName, visibleColumnKeys,
+  serverTotalRecords = null, fetchAllData,
 }) => {
   const [format, setFormat] = useState<ExportFormat>('xlsx');
   const [scope, setScope] = useState<ExportScope>('all');
@@ -65,9 +78,43 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 
   const exportCols = (columns || []).filter(c => selectedCols.has(c.key));
 
+  /**
+   * Số dòng sẽ thực sự được ghi ra file. Ở chế độ phân trang server-side,
+   * phạm vi "Tất cả" là tổng trên máy chủ chứ không phải số dòng đang giữ
+   * trong bộ nhớ — nhãn nút phải nói đúng con số đó.
+   */
+  const scopeRowCount = (s: ExportScope): number => {
+    if (s === 'selected') return selectedData.length;
+    if (s === 'page') return paginatedData.length;
+    return serverTotalRecords != null && Number.isFinite(serverTotalRecords)
+      ? Math.max(0, Math.floor(serverTotalRecords))
+      : data.length;
+  };
+
   const handleExport = async () => {
     setExporting(true);
-    const rows = getExportData();
+    let rows: Record<string, unknown>[];
+    if (scope === 'all' && fetchAllData) {
+      // Danh sách phân trang server-side: trang hiện tại chỉ có vài chục dòng,
+      // phải kéo đủ trước khi ghi file. Có thể mất vài giây nên báo tiến trình.
+      const loadingId = toast.loading(txt('shared.export.preparing'));
+      try {
+        rows = await fetchAllData();
+      } catch (e) {
+        toast.dismiss(loadingId);
+        if (import.meta.env.DEV) console.error('Export fetch-all error:', e);
+        toast.error(txt('shared.export.failed'), {
+          description: getErrorMessage(e),
+          duration: Infinity,
+          closeButton: true,
+        });
+        setExporting(false);
+        return;
+      }
+      toast.dismiss(loadingId);
+    } else {
+      rows = getExportData();
+    }
     const dateStr = getTodayISODate();
     const fullName = `${fileName}_${dateStr}`;
 
@@ -122,7 +169,16 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
         doc.save(`${fullName}.pdf`);
       }
     } catch (e) {
+      // Trước đây chỉ log ở DEV rồi đóng hộp thoại — người dùng tưởng đã tải được
+      // file trong khi không có gì. Phải báo và GIỮ hộp thoại để họ thử lại.
       if (import.meta.env.DEV) console.error('Export error:', e);
+      toast.error(txt('shared.export.failed'), {
+        description: getErrorMessage(e),
+        duration: Infinity,
+        closeButton: true,
+      });
+      setExporting(false);
+      return;
     }
     setExporting(false);
     onClose();
@@ -137,7 +193,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
   ];
 
   const scopes: { id: ExportScope; label: string; count: number }[] = [
-    { id: 'all', label: txt('shared.export.scopeAll'), count: data.length },
+    { id: 'all', label: txt('shared.export.scopeAll'), count: scopeRowCount('all') },
     { id: 'page', label: txt('shared.export.scopeCurrentPage'), count: paginatedData.length },
     { id: 'selected', label: txt('shared.export.scopeSelected'), count: selectedData.length },
   ];
@@ -254,11 +310,11 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
             <Button variant="outline" onClick={onClose} className="text-xs h-8">{txt('common.cancel')}</Button>
             <Button
               onClick={handleExport}
-              disabled={exporting || getExportData().length === 0}
+              disabled={exporting || scopeRowCount(scope) === 0}
               className="bg-primary text-white text-xs h-8 px-4"
             >
               <Download size={13} className="mr-1.5" />
-              {exporting ? txt('shared.export.exporting') : txt('shared.export.exportRows', { count: getExportData().length })}
+              {exporting ? txt('shared.export.exporting') : txt('shared.export.exportRows', { count: scopeRowCount(scope) })}
             </Button>
           </div>
         </motion.div>

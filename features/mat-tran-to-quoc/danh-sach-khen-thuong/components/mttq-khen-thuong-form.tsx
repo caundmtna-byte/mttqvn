@@ -57,7 +57,8 @@ import {
 } from '../utils/display-format';
 
 const DEFAULT_VALUES: MttqKhenThuongFormValues = {
-  so_qd: '',
+  so_qd: undefined,
+  noi_dung_khen: '',
   ngay_khen_thuong: '',
   don_vi_de_xuat: undefined,
   ghi_chu: undefined,
@@ -165,7 +166,8 @@ const MttqKhenThuongForm: React.FC<Props> = ({ initialData, onClose }) => {
   useEffect(() => {
     if (initialData) {
       reset({
-        so_qd: initialData.so_qd,
+        so_qd: initialData.so_qd || undefined,
+        noi_dung_khen: initialData.noi_dung_khen ?? '',
         ngay_khen_thuong: initialData.ngay_khen_thuong,
         don_vi_de_xuat: initialData.don_vi_de_xuat ?? undefined,
         ghi_chu: initialData.ghi_chu ?? undefined,
@@ -281,9 +283,9 @@ const MttqKhenThuongForm: React.FC<Props> = ({ initialData, onClose }) => {
               <Input
                 label={txt('matTranKhenThuong.form.soQd')}
                 icon={<FileText size={12} />}
+                placeholder={txt('matTranKhenThuong.form.soQdPlaceholder')}
                 {...register('so_qd')}
                 error={errors.so_qd?.message}
-                required
               />
               <Input
                 label={txt('matTranKhenThuong.form.ngayKhenThuong')}
@@ -293,6 +295,16 @@ const MttqKhenThuongForm: React.FC<Props> = ({ initialData, onClose }) => {
                 error={errors.ngay_khen_thuong?.message}
                 required
               />
+              <div className={FORM_GRID_SPAN_FULL}>
+                <Textarea
+                  label={txt('matTranKhenThuong.form.noiDungKhen')}
+                  icon={<Award size={12} />}
+                  rows={2}
+                  {...register('noi_dung_khen')}
+                  error={errors.noi_dung_khen?.message}
+                  required
+                />
+              </div>
               <div className={FORM_GRID_SPAN_FULL}>
                 <Input
                   label={txt('matTranKhenThuong.form.donViDeXuat')}

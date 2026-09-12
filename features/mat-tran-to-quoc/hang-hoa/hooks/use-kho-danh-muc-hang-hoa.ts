@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { KhoDanhMucHangHoaFormValues } from '../core/schema';
 import type { KhoDanhMucHangHoaListRow } from '../core/types';
 import {
@@ -13,6 +12,7 @@ import {
   getKhoDanhMucHangHoaList,
   updateKhoDanhMucHangHoa,
 } from '../services/kho-danh-muc-hang-hoa-service';
+import { importKhoDanhMucHangHoaRows } from '../services/kho-hang-hoa-import';
 
 const listKey = queryKeys.khoDanhMucHangHoa.all;
 const hangListPrefix = queryKeys.khoDanhSachHangHoa.all;
@@ -51,7 +51,6 @@ export function useCreateKhoDanhMucHangHoa(onSuccess?: () => void) {
       toast.success(txt('matTranHangHoa.toast.createDanhMuc'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -74,7 +73,6 @@ export function useUpdateKhoDanhMucHangHoa(onSuccess?: () => void) {
       toast.success(txt('matTranHangHoa.toast.updateDanhMuc'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -98,6 +96,20 @@ export function useDeleteKhoDanhMucHangHoaMany() {
       void queryClient.invalidateQueries({ queryKey: hangListPrefix, refetchType: 'none' });
       toast.success(txt('matTranHangHoa.toast.deleteDanhMuc', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
+  });
+}
+
+export function useImportKhoDanhMucHangHoa(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: Record<string, unknown>[]) => importKhoDanhMucHangHoaRows(rows),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: hangListPrefix, refetchType: 'none' });
+      if (result.created > 0) {
+        toast.success(txt('matTranHangHoa.import.toastSuccessDanhMuc', { count: result.created }));
+      }
+      onSuccess?.();
+    },
   });
 }

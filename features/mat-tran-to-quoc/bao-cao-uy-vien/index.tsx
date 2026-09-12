@@ -35,19 +35,24 @@ import { cn, getLanguage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
+import ErrorState from '@/components/shared/ErrorState';
 import Tooltip from '@/components/ui/Tooltip';
-import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
-  buildStandardDateRangePresets,
-  isStandardDateRangeNonDefault,
-} from '@/lib/date-range-presets';
-import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+  ReportSkeleton,
+  StatsKpiGrid,
+  StatsCard,
+  StatsTableCard,
+  ColoredBar,
+  useStatsPageFilters,
+} from '@/components/shared/stats';
 import { CHART_FILL_FALLBACK, GIOI_TINH_CHART_COLORS } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { AnimatePresence } from 'framer-motion';
 import { useCan } from '@/hooks/use-can';
@@ -80,12 +85,6 @@ import {
 const MttqUyVienUyBanDetail = lazy(() => import('../uy-vien-uy-ban/components/mttq-uy-vien-uy-ban-detail'));
 
 const CUSTOM_PRESET = 'custom';
-
-const initialDateRange: DateRangeValue = {
-  preset: 'all',
-  customStart: '',
-  customEnd: '',
-};
 
 const initialDims: UyVienStatsDimensionFilters = {
   nhiem_ky_id: [],
@@ -134,16 +133,24 @@ const BaoCaoUyVienPage: React.FC = () => {
   const { canExport } = useResourcePermissions('matTranCommitteeMemberStats');
   /** Drawer chi tiết ủy viên thuộc quyền danh sách ủy viên. */
   const canOpenDetail = useCan('view', 'matTranCommitteeMembers');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranCommitteeMemberStats.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
-  const { data: rows = [], isLoading } = useMttqUyVienUyBanStatsList({ enabled: canView });
+  const {
+    data: rows = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useMttqUyVienUyBanStatsList({ enabled: canView });
   const uyVienViewer = useMttqBaoCaoUyVienViewer();
   const rowsInScope = useMemo(
     () => rows.filter((r) => canViewUyVienUyBanRow(uyVienViewer, r)),
@@ -159,8 +166,15 @@ const BaoCaoUyVienPage: React.FC = () => {
     [rowsInScope],
   );
 
-  const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
-  const [dims, setDims] = useState<UyVienStatsDimensionFilters>(initialDims);
+  const {
+    dateRange,
+    setDateRange,
+    dims,
+    setDims,
+    presets,
+    activeFilterCount,
+    clearFilters,
+  } = useStatsPageFilters(initialDims);
   const [sortKey, setSortKey] = useState<UyVienLookupSortKey>('ho_va_ten');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [viewing, setViewing] = useState<MttqUyVienUyBan | null>(null);
@@ -177,8 +191,6 @@ const BaoCaoUyVienPage: React.FC = () => {
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [rowsEnriched, viewing, uyVienViewer]);
 
-  const presets = useMemo(() => buildStandardDateRangePresets(), []);
-
   const resolvedRange = useMemo(
     () => resolveUyVienStatsDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
     [dateRange.preset, dateRange.customStart, dateRange.customEnd],
@@ -188,6 +200,12 @@ const BaoCaoUyVienPage: React.FC = () => {
     () => filterRowsForUyVienStats(rowsEnriched, resolvedRange, dims),
     [rowsEnriched, resolvedRange, dims],
   );
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * dữ liệu gốc có bản ghi mà bộ lọc đang bật lọc hết sạch.
+   */
+  const reportFilteredEmpty = filtered.length === 0 && rowsEnriched.length > 0 && activeFilterCount > 0;
 
   const kpis = useMemo(() => computeUyVienStatsKpis(filtered), [filtered]);
 
@@ -314,29 +332,8 @@ const BaoCaoUyVienPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, dang_vien: v })),
       },
     ],
-    [nhiemKyOptions, donViOptions, gioiTinhOptions, trangThamGiaOptions, dangVienOptions, dims],
+    [setDims, nhiemKyOptions, donViOptions, gioiTinhOptions, trangThamGiaOptions, dangVienOptions, dims],
   );
-
-  const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'all'),
-    [dateRange],
-  );
-
-  const activeFilterCount = useMemo(() => {
-    let n = 0;
-    if (isNonDefaultDateRange) n += 1;
-    if (dims.nhiem_ky_id.length) n += 1;
-    if (dims.don_vi_id.length) n += 1;
-    if (dims.gioi_tinh.length) n += 1;
-    if (dims.trang_thai_tham_gia.length) n += 1;
-    if (dims.dang_vien.length) n += 1;
-    return n;
-  }, [dims, isNonDefaultDateRange]);
-
-  const clearFilters = useCallback(() => {
-    setDims(initialDims);
-    setDateRange(initialDateRange);
-  }, []);
 
   const exportColumns = useMemo(
     () => [
@@ -543,12 +540,25 @@ const BaoCaoUyVienPage: React.FC = () => {
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">{txt('matTranCommitteeMemberStats.loading')}</p>
+        {isError ? (
+          <div className="py-12 flex items-center justify-center">
+            <ErrorState className="w-full max-w-md" onRetry={() => void refetch()} primaryButtons />
+          </div>
+        ) : isLoading ? (
+          <ReportSkeleton />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center space-y-2">
-            <p className="text-sm font-medium text-foreground">{txt('matTranCommitteeMemberStats.noData')}</p>
-            <p className="text-xs text-muted-foreground">{txt('matTranCommitteeMemberStats.noDataHint')}</p>
+            <p className="text-sm font-medium text-foreground">
+              {reportFilteredEmpty ? txt('common.noResults') : txt('matTranCommitteeMemberStats.noData')}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {reportFilteredEmpty ? txt('shared.empty.filteredHint') : txt('matTranCommitteeMemberStats.noDataHint')}
+            </p>
+            {reportFilteredEmpty && (
+              <Button type="button" variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
+                {txt('common.clearFilter')}
+              </Button>
+            )}
           </div>
         ) : (
           <>

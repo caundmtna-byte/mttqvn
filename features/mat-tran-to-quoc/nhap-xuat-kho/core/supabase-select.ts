@@ -25,11 +25,13 @@ const BASE_COLS_LIST = [
   'tg_cap_nhat',
 ].join(',');
 
-/** List: count lines + embed tên các tham chiếu. KHÔNG select `ghi_chu` (long-text). */
-export const NHAP_XUAT_KHO_SELECT_LIST = `${BASE_COLS_LIST},${KHO_XUAT},${KHO_NHAP},${DON_VI},${DOT},kho_nhap_xuat_kho_ct(count)`;
-
-/** Returning sau insert/update master: đủ field cho list + count = 0/cap_nhat. */
-export const NHAP_XUAT_KHO_RETURNING_LIST = NHAP_XUAT_KHO_SELECT_LIST;
+/**
+ * Returning sau insert/update master: đủ field cho list + count dòng chi tiết.
+ *
+ * Tab "Danh sách" nay đọc qua RPC `get_kho_nhap_xuat_kho_page` (phân trang phía
+ * máy chủ), nên chuỗi select này chỉ còn dùng cho RETURNING.
+ */
+export const NHAP_XUAT_KHO_RETURNING_LIST = `${BASE_COLS_LIST},${KHO_XUAT},${KHO_NHAP},${DON_VI},${DOT},kho_nhap_xuat_kho_ct(count)`;
 
 const HANG_HOA_FOR_CT =
   'hang_hoa:kho_danh_sach_hang_hoa!kho_nhap_xuat_kho_ct_hang_hoa_fkey(id,ten_hang_hoa)';

@@ -15,6 +15,8 @@ interface AdminResponse {
   exists?: boolean;
   user_id?: string;
   deleted?: boolean;
+  /** Mật khẩu do Edge Function sinh khi không truyền sẵn — chỉ trả về đúng một lần. */
+  password?: string;
   error?: string;
 }
 
@@ -57,12 +59,16 @@ export async function checkAuthUserExists(username: string): Promise<{ exists: b
   return { exists: !!res.exists, user_id: res.user_id };
 }
 
-export async function createAuthUser(username: string): Promise<void> {
-  await callAdminUser('create', username);
+/** Tạo tài khoản Auth. Trả về mật khẩu hệ thống sinh (chỉ có đúng một lần) để admin đưa cho người dùng. */
+export async function createAuthUser(username: string): Promise<{ password?: string }> {
+  const res = await callAdminUser('create', username);
+  return { password: res.password };
 }
 
-export async function resetAuthUserPassword(username: string): Promise<void> {
-  await callAdminUser('reset_password', username);
+/** Đặt lại mật khẩu. Trả về mật khẩu mới hệ thống sinh (chỉ có đúng một lần). */
+export async function resetAuthUserPassword(username: string): Promise<{ password?: string }> {
+  const res = await callAdminUser('reset_password', username);
+  return { password: res.password };
 }
 
 export async function deleteAuthUser(username: string): Promise<void> {

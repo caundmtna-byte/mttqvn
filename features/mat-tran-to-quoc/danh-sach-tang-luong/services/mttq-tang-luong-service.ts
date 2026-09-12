@@ -215,7 +215,7 @@ async function buildChucVuTenByIdMap(): Promise<Map<string, string>> {
       .range(from, to);
     if (error) handleSupabaseError(error);
     return (data ?? []) as { id: number | string; ten_chuc_vu?: string | null }[];
-  });
+  }, { label: 'var_chuc_vu' });
   const entries: [string, string][] = [];
   for (const r of rows) {
     const ten = String(r.ten_chuc_vu ?? '').trim();

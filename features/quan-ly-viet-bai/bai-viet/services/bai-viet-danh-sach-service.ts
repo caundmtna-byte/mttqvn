@@ -1,4 +1,10 @@
 import { createRepository } from '@/lib/data/create-repository';
+import {
+  buildRpcSortParam,
+  fetchAllServerPages,
+  readRpcTotalCount,
+  type ServerSortState,
+} from '@/lib/data/server-paging';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -6,7 +12,6 @@ import type { BaiVietDanhSach } from '../core/types';
 import type { BaiVietDanhSachFormValues } from '../core/schema';
 import {
   BAI_VIET_DANH_SACH_RETURNING,
-  BAI_VIET_DANH_SACH_SELECT_FULL,
   BAI_VIET_DANH_SACH_SELECT_LIST,
 } from '../core/supabase-select';
 import {
@@ -236,6 +241,19 @@ export async function deleteBaiVietDanhSachMany(ids: string[]): Promise<void> {
 
 export type BaiVietRpcScope = 'all' | 'mine' | 'all_don_vi';
 
+/** Cột được RPC get_bai_viet_page sắp xếp. Phải khớp khối ORDER BY trong migration. */
+export const BAI_VIET_SERVER_SORT_COLUMNS = [
+  'ten_bai',
+  'ten_the_loai',
+  'don_gia',
+  'ngay_dang',
+  'ten_nguon_dang',
+  'ten_trang_dang',
+  'link',
+  'ho_va_ten_nguoi_tao',
+  'tg_cap_nhat',
+] as const;
+
 export type BaiVietPageQuery = {
   page: number;
   pageSize: number;
@@ -247,6 +265,7 @@ export type BaiVietPageQuery = {
   nguonDangIds: readonly string[];
   trangDangIds: readonly string[];
   nguoiTaoIds: readonly string[];
+  sort?: ServerSortState | null;
 };
 
 export type BaiVietNguoiTaoFilterOption = {
@@ -263,8 +282,8 @@ export type BaiVietNguoiTaoFilterOptionsQuery = {
 export type BaiVietPageResult = {
   rows: BaiVietDanhSach[];
   hasNextPage: boolean;
-  /** null khi còn trang sau (chưa biết tổng chính xác). */
-  totalRecords: number | null;
+  /** Tổng số bản ghi khớp bộ lọc — RPC trả về qua COUNT(*) OVER (). */
+  totalRecords: number;
 };
 
 function toRpcBigint(id: string | null | undefined): number | null {
@@ -273,29 +292,44 @@ function toRpcBigint(id: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-async function enrichBaiVietRowsByIds(ids: string[]): Promise<Map<string, BaiVietDanhSach>> {
-  const map = new Map<string, BaiVietDanhSach>();
-  if (ids.length === 0) return map;
-  const supabase = getSupabase();
-  if (!supabase) return map;
-  const { data, error } = await supabase
-    .from('bai_viet_danh_sach')
-    .select(BAI_VIET_DANH_SACH_SELECT_FULL)
-    .in('id', ids);
-  if (error) handleSupabaseError(error);
-  for (const raw of data ?? []) {
-    const row = raw as unknown as Record<string, unknown>;
-    const id = String(row.id);
-    map.set(id, normalize(flattenBaiVietDanhSachRow(row)));
-  }
-  return map;
+/**
+ * RPC trả dòng phẳng (đã LEFT JOIN sẵn tên thể loại / nguồn / trang / người tạo).
+ * Dựng lại đúng hình dạng embed của PostgREST để dùng chung flatten + normalize,
+ * nhờ đó bỏ được request thứ hai cho mỗi lần đổi trang.
+ */
+function rpcRowToBaiViet(raw: Record<string, unknown>): BaiVietDanhSach {
+  const {
+    ten_the_loai,
+    ten_nguon_dang,
+    ten_trang_dang,
+    ho_va_ten_nguoi_tao,
+    ten_tai_khoan_nguoi_tao,
+    id_phong_ban_nguoi_tao,
+    don_vi_id_nguoi_tao,
+    total_count: _totalCount,
+    ...base
+  } = raw;
+  return normalize(
+    flattenBaiVietDanhSachRow({
+      ...base,
+      the_loai: { ten_the_loai },
+      nguon_dang: { ten: ten_nguon_dang },
+      trang_dang: { ten: ten_trang_dang },
+      nguoi_tao: {
+        ho_va_ten: ho_va_ten_nguoi_tao,
+        ten_tai_khoan: ten_tai_khoan_nguoi_tao,
+        id_phong_ban: id_phong_ban_nguoi_tao,
+        don_vi_id: don_vi_id_nguoi_tao,
+      },
+    }),
+  );
 }
 
 export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVietPageResult> {
   const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
   const page = Math.max(1, Math.floor(q.page));
   const offset = (page - 1) * pageSize;
-  const fetchLimit = pageSize + 1;
+  const fetchLimit = pageSize;
   const searchTrim = q.search?.trim() ?? '';
   const pSearch = searchTrim.length > 0 ? searchTrim : null;
   const theLoaiNums = q.theLoaiIds
@@ -325,17 +359,32 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
     p_nguon_dang_ids: nguonNums.length ? nguonNums : null,
     p_trang_dang_ids: trangNums.length ? trangNums : null,
     p_id_nguoi_tao: nguoiTaoNums.length ? nguoiTaoNums : null,
+    p_sort: buildRpcSortParam(q.sort, BAI_VIET_SERVER_SORT_COLUMNS),
   } as never);
   if (error) handleSupabaseError(error);
 
   const rawRows = (data ?? []) as unknown as Record<string, unknown>[];
-  const hasNextPage = rawRows.length > pageSize;
-  const pageRaw = hasNextPage ? rawRows.slice(0, pageSize) : rawRows;
-  const ids = pageRaw.map((r) => String(r.id));
-  const byId = await enrichBaiVietRowsByIds(ids);
-  const rows = ids.map((id) => byId.get(id)).filter((x): x is BaiVietDanhSach => Boolean(x));
-  const totalRecords = hasNextPage ? null : offset + rows.length;
-  return { rows, hasNextPage, totalRecords };
+  const rows = rawRows.map(rpcRowToBaiViet);
+  const totalFromPage = readRpcTotalCount(rawRows);
+  // Trang rỗng ngoài trang 1 (bộ lọc vừa thu hẹp kết quả, hoặc số trang cũ còn
+  // trong store) không mang được tổng ⇒ hỏi lại trang đầu để không hiện "0".
+  const totalRecords =
+    totalFromPage ??
+    (offset > 0 ? await countBaiVietPage({ ...q, page: 1, pageSize: 1 }) : 0);
+  return { rows, hasNextPage: offset + rows.length < totalRecords, totalRecords };
+}
+
+/** Kéo TOÀN BỘ bài viết khớp bộ lọc để xuất file — xem fetchAllServerPages. */
+export function getBaiVietDanhSachAllForExport(
+  q: Omit<BaiVietPageQuery, 'page' | 'pageSize'>,
+): Promise<BaiVietDanhSach[]> {
+  return fetchAllServerPages(q, getBaiVietDanhSachPage);
+}
+
+/** Chỉ lấy tổng: một dòng duy nhất, dùng cho trường hợp trang rỗng ở trên. */
+async function countBaiVietPage(q: BaiVietPageQuery): Promise<number> {
+  const { totalRecords } = await getBaiVietDanhSachPage(q);
+  return totalRecords;
 }
 
 export async function getBaiVietNguoiTaoFilterOptions(

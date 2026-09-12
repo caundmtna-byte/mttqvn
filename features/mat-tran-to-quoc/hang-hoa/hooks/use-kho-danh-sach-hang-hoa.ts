@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { KhoDanhSachHangHoaFormValues } from '../core/schema';
 import type { KhoDanhSachHangHoaListRow } from '../core/types';
 import {
@@ -13,6 +12,7 @@ import {
   getKhoDanhSachHangHoaList,
   updateKhoDanhSachHangHoa,
 } from '../services/kho-danh-sach-hang-hoa-service';
+import { importKhoDanhSachHangHoaRows } from '../services/kho-hang-hoa-import';
 
 const listKey = queryKeys.khoDanhSachHangHoa.all;
 
@@ -49,7 +49,6 @@ export function useCreateKhoDanhSachHangHoa(onSuccess?: () => void) {
       toast.success(txt('matTranHangHoa.toast.createHang'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -71,7 +70,6 @@ export function useUpdateKhoDanhSachHangHoa(onSuccess?: () => void) {
       toast.success(txt('matTranHangHoa.toast.updateHang'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -94,6 +92,19 @@ export function useDeleteKhoDanhSachHangHoaMany() {
       }
       toast.success(txt('matTranHangHoa.toast.deleteHang', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
+  });
+}
+
+export function useImportKhoDanhSachHangHoa(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: Record<string, unknown>[]) => importKhoDanhSachHangHoaRows(rows),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: listKey });
+      if (result.created > 0) {
+        toast.success(txt('matTranHangHoa.import.toastSuccessHangHoa', { count: result.created }));
+      }
+      onSuccess?.();
+    },
   });
 }

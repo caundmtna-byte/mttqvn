@@ -15,6 +15,14 @@ export interface RepositoryQueryOptions {
 export interface RepositoryMutationOptions {
   /** Chuỗi `.select()` sau insert/update; mock repository bỏ qua. */
   returningSelect?: string;
+  /**
+   * Chống ghi đè đồng thời: `tg_cap_nhat` mà người dùng đã ĐỌC ĐƯỢC lúc mở form.
+   *
+   * Có giá trị này thì `update` chỉ ghi khi bản ghi dưới DB vẫn đúng mốc đó;
+   * nếu người khác vừa lưu trước thì báo lỗi thay vì lặng lẽ đè mất công sức
+   * của họ. Bỏ trống ⇒ giữ hành vi cũ (ai lưu sau thắng).
+   */
+  expectedTgCapNhat?: string | null;
 }
 
 export interface IRepository<

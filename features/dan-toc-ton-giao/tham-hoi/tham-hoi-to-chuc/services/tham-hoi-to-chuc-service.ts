@@ -1,4 +1,11 @@
 import { createRepository } from '@/lib/data/create-repository';
+import {
+  buildRpcSortParam,
+  fetchAllServerPages,
+  readRpcTotalCount,
+  type ServerSortState,
+} from '@/lib/data/server-paging';
+import { DON_VI_THAM_HOI_TINH_LABEL, DON_VI_THAM_HOI_TINH_VALUE } from '../core/constants';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -144,6 +151,144 @@ function isMttqTinhLabel(raw: string): boolean {
 export async function getThamHoiToChucList(): Promise<ThamHoiToChuc[]> {
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   return list.map((row) => flattenThamHoiToChucRow(row as unknown as Record<string, unknown>));
+}
+
+// ---------------------------------------------------------------------------
+// Phân trang phía máy chủ (RPC) — xem CLAUDE.md "Chọn kiểu phân trang"
+// ---------------------------------------------------------------------------
+
+/** Cột được RPC sắp xếp; phải khớp khối ORDER BY trong migration. */
+export const THAM_HOI_TO_CHUC_SERVER_SORT_COLUMNS = [
+  'ten_co_so',
+  'dip_tham_hoi',
+  'thoi_gian_du_kien',
+  'don_vi_tham_hoi',
+  'tien_do',
+  'ket_qua_thuc_hien',
+  'tg_cap_nhat',
+] as const;
+
+/** Nhãn "đơn vị thăm hỏi để trống" — xem ghi chú ở module thăm hỏi cá nhân. */
+export function buildThamHoiToChucDisplayLabels(): Record<string, string> {
+  return { don_vi_cqmttq: DON_VI_THAM_HOI_TINH_LABEL };
+}
+
+export type ThamHoiToChucPageQuery = {
+  page: number;
+  pageSize: number;
+  search: string;
+  sort?: ServerSortState | null;
+  viewAll: boolean;
+  viewerDonViId: string | null;
+  tienDo: readonly string[];
+  toChucIds: readonly string[];
+  dipIds: readonly string[];
+  /** Đơn vị thăm hỏi; chip "MTTQ Tỉnh" mang giá trị DON_VI_THAM_HOI_TINH_VALUE. */
+  donViIds: readonly string[];
+  phongBanIds: readonly string[];
+  columnSearch: Record<string, string> | null;
+};
+
+export type ThamHoiToChucPageResult = {
+  rows: ThamHoiToChuc[];
+  hasNextPage: boolean;
+  totalRecords: number;
+};
+
+function toNullableRpcId(v: string | null | undefined): number | null {
+  if (v == null) return null;
+  const t = String(v).trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+function toRpcIdArray(list: readonly string[]): number[] | null {
+  const out = list.map((x) => Number(String(x).trim())).filter((n) => Number.isFinite(n));
+  return out.length > 0 ? out : null;
+}
+
+function toRpcTextArray(list: readonly string[]): string[] | null {
+  return list.length > 0 ? [...list] : null;
+}
+
+function cleanRpcColumnSearch(
+  cs: Record<string, string> | null | undefined,
+): Record<string, string> | null {
+  if (!cs) return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(cs)) {
+    const t = v?.trim();
+    if (t) out[k] = t;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+/** RPC trả dòng phẳng — dựng lại hình dạng embed để dùng chung flatten. */
+function rpcRowToThamHoiToChuc(raw: Record<string, unknown>): ThamHoiToChuc {
+  const {
+    ten_co_so,
+    loai_hinh,
+    ten_dip_tham_hoi,
+    ten_don_vi_tham_hoi,
+    ten_phong_ban,
+    ho_va_ten_nguoi_tao,
+    ten_tai_khoan_nguoi_tao,
+    total_count: _totalCount,
+    ...base
+  } = raw;
+  return flattenThamHoiToChucRow({
+    ...base,
+    to_chuc: { ten_co_so, loai_hinh },
+    dip: { ten_dip: ten_dip_tham_hoi },
+    don_vi_tham_hoi: { ten: ten_don_vi_tham_hoi },
+    phong_ban: { ten_phong_ban },
+    nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+  });
+}
+
+export async function getThamHoiToChucPage(
+  q: ThamHoiToChucPageQuery,
+): Promise<ThamHoiToChucPageResult> {
+  const supabase = getSupabase();
+  if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
+  const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
+  const page = Math.max(1, Math.floor(q.page));
+  const offset = (page - 1) * pageSize;
+  const search = q.search?.trim() ?? '';
+
+  const { data, error } = await supabase.rpc('get_dttg_tham_hoi_to_chuc_page', {
+    p_search: search.length > 0 ? search : null,
+    p_limit: pageSize,
+    p_offset: offset,
+    p_sort: buildRpcSortParam(q.sort, THAM_HOI_TO_CHUC_SERVER_SORT_COLUMNS),
+    p_view_all: q.viewAll,
+    p_viewer_don_vi_id: toNullableRpcId(q.viewerDonViId),
+    p_tien_do: toRpcTextArray(q.tienDo),
+    p_to_chuc_ids: toRpcIdArray(q.toChucIds),
+    p_dip_ids: toRpcIdArray(q.dipIds),
+    p_don_vi_ids: toRpcIdArray(q.donViIds.filter((x) => x !== DON_VI_THAM_HOI_TINH_VALUE)),
+    p_don_vi_include_null: q.donViIds.includes(DON_VI_THAM_HOI_TINH_VALUE),
+    p_phong_ban_ids: toRpcIdArray(q.phongBanIds),
+    p_column_search: cleanRpcColumnSearch(q.columnSearch),
+    p_labels: buildThamHoiToChucDisplayLabels(),
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  const raw = (data ?? []) as unknown as Record<string, unknown>[];
+  const rows = raw.map(rpcRowToThamHoiToChuc);
+  const totalFromPage = readRpcTotalCount(raw);
+  const totalRecords =
+    totalFromPage ??
+    (offset > 0 ? (await getThamHoiToChucPage({ ...q, page: 1, pageSize: 1 })).totalRecords : 0);
+  return { rows, hasNextPage: offset + rows.length < totalRecords, totalRecords };
+}
+
+/** Kéo toàn bộ bản ghi khớp bộ lọc để xuất file. */
+export function getThamHoiToChucAllForExport(
+  q: Omit<ThamHoiToChucPageQuery, 'page' | 'pageSize'>,
+): Promise<ThamHoiToChuc[]> {
+  return fetchAllServerPages(q, getThamHoiToChucPage);
 }
 
 export async function getThamHoiToChucById(id: string): Promise<ThamHoiToChuc | null> {

@@ -25,22 +25,30 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import ExportDialog from '@/components/shared/ExportDialog';
+import ImportDialog, { type ImportColumn, type ImportTemplateSheet } from '@/components/shared/ImportDialog';
 import TabGroup from '@/components/ui/TabGroup';
 import {
   useKhoDanhMucHangHoaList,
   useKhoDanhMucHangHoaDetail,
   useDeleteKhoDanhMucHangHoaMany,
+  useImportKhoDanhMucHangHoa,
 } from './hooks/use-kho-danh-muc-hang-hoa';
 import {
   useKhoDanhSachHangHoaList,
   useKhoDanhSachHangHoaDetail,
   useDeleteKhoDanhSachHangHoaMany,
+  useImportKhoDanhSachHangHoa,
 } from './hooks/use-kho-danh-sach-hang-hoa';
 import { useKhoDanhMucHangHoaStore } from './store/useKhoDanhMucHangHoaStore';
 import { useKhoDanhSachHangHoaStore } from './store/useKhoDanhSachHangHoaStore';
 import type { KhoDanhMucHangHoaListRow, KhoDanhSachHangHoaListRow } from './core/types';
 import { KHO_DANH_MUC_HANG_HOA_SEARCHABLE_KEYS, KHO_DANH_SACH_HANG_HOA_SEARCHABLE_KEYS } from './utils/search-keys';
-import { danhMucMatchesColumnSearch, hangHoaMatchesColumnSearch } from './utils/column-search';
+import {
+  countDanhMucColumnSearchActive,
+  countHangHoaColumnSearchActive,
+  danhMucMatchesColumnSearch,
+  hangHoaMatchesColumnSearch,
+} from './utils/column-search';
 import { sortDanhMucHangHoaList, sortHangHoaList } from './utils/sort';
 import KhoDanhMucHangHoaToolbar from './components/kho-danh-muc-hang-hoa-toolbar';
 import KhoDanhMucHangHoaTable from './components/kho-danh-muc-hang-hoa-table';
@@ -78,6 +86,7 @@ const HangHoaPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefGoods');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
@@ -90,11 +99,10 @@ const HangHoaPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null &&
-    user.role !== 'admin' &&
-    chucVuKey.trim() !== '' &&
-    !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   const [activeTab, setActiveTab] = useTabSearchParam(HANG_HOA_MAIN_TABS, TAB_DM);
 
@@ -118,12 +126,14 @@ const HangHoaPage: React.FC = () => {
   const [dmViewingId, setDmViewingId] = useState<string | null>(null);
   const [dmFormOrigin, setDmFormOrigin] = useState<FormOrigin>('list');
   const [dmShowExport, setDmShowExport] = useState(false);
+  const [dmShowImport, setDmShowImport] = useState(false);
 
   const [hhShowForm, setHhShowForm] = useState(false);
   const [hhEditing, setHhEditing] = useState<KhoDanhSachHangHoaListRow | null>(null);
   const [hhViewingId, setHhViewingId] = useState<string | null>(null);
   const [hhFormOrigin, setHhFormOrigin] = useState<FormOrigin>('list');
   const [hhShowExport, setHhShowExport] = useState(false);
+  const [hhShowImport, setHhShowImport] = useState(false);
   /** Gán `id_danh_muc` khi thêm hàng từ chi tiết danh mục */
   const [hhCreatePresetDanhMucId, setHhCreatePresetDanhMucId] = useState<string | null>(null);
 
@@ -149,13 +159,23 @@ const HangHoaPage: React.FC = () => {
     columns: hhCols,
   } = hhStore;
 
-  const { data: dmRows = [], isLoading: dmLoading } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });
+  const {
+    data: dmRows = [],
+    isLoading: dmLoading,
+    isError: dmIsError,
+    refetch: dmRefetch,
+  } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });
   const dmDetailEnabled = listQueryEnabled && Boolean(dmViewingId?.trim()) && activeTab === TAB_DM;
   const { data: dmViewing } = useKhoDanhMucHangHoaDetail(dmViewingId, {
     enabled: dmDetailEnabled,
   });
 
-  const { data: hhRows = [], isLoading: hhLoading } = useKhoDanhSachHangHoaList({ enabled: listQueryEnabled });
+  const {
+    data: hhRows = [],
+    isLoading: hhLoading,
+    isError: hhIsError,
+    refetch: hhRefetch,
+  } = useKhoDanhSachHangHoaList({ enabled: listQueryEnabled });
   const hhDetailEnabled = listQueryEnabled && Boolean(hhViewingId?.trim()) && activeTab === TAB_HH;
   const { data: hhViewing } = useKhoDanhSachHangHoaDetail(hhViewingId, { enabled: hhDetailEnabled });
   const dmListLoading = dmLoading || waitingMatrixHydrate;
@@ -163,6 +183,8 @@ const HangHoaPage: React.FC = () => {
 
   const deleteDm = useDeleteKhoDanhMucHangHoaMany();
   const deleteHh = useDeleteKhoDanhSachHangHoaMany();
+  const importDm = useImportKhoDanhMucHangHoa();
+  const importHh = useImportKhoDanhSachHangHoa();
 
   useEffect(() => {
     return () => {
@@ -226,6 +248,42 @@ const HangHoaPage: React.FC = () => {
       return a.ten_hang_hoa.localeCompare(b.ten_hang_hoa, 'vi');
     });
   }, [hhFiltered, hhSort]);
+
+  /** Có bộ lọc/tìm kiếm nào đang bật không — để phân biệt "chưa có dữ liệu" với "không khớp bộ lọc" */
+  const hasDmFilters = useMemo(
+    () =>
+      Boolean(dmSearch?.trim()) ||
+      countDanhMucColumnSearchActive(dmFilters.columnSearch, dmFilters.mo_ta_bucket) > 0 ||
+      dmFilters.mo_ta_bucket === 'has' ||
+      dmFilters.mo_ta_bucket === 'empty' ||
+      Boolean(dmFilters.trang_thai),
+    [dmSearch, dmFilters.columnSearch, dmFilters.mo_ta_bucket, dmFilters.trang_thai],
+  );
+
+  const hasHhFilters = useMemo(
+    () =>
+      Boolean(hhSearch?.trim()) ||
+      countHangHoaColumnSearchActive(hhFilters.columnSearch, hhFilters.mo_ta_bucket) > 0 ||
+      hhFilters.mo_ta_bucket === 'has' ||
+      hhFilters.mo_ta_bucket === 'empty' ||
+      Boolean(hhFilters.trang_thai) ||
+      Boolean(hhFilters.id_danh_muc),
+    [
+      hhSearch,
+      hhFilters.columnSearch,
+      hhFilters.mo_ta_bucket,
+      hhFilters.trang_thai,
+      hhFilters.id_danh_muc,
+    ],
+  );
+
+  const dmFilteredEmpty = dmSorted.length === 0 && dmRows.length > 0 && hasDmFilters;
+  const hhFilteredEmpty = hhSorted.length === 0 && hhRows.length > 0 && hasHhFilters;
+
+  const dmEmptyTitle = dmFilteredEmpty ? txt('common.noResults') : txt('matTranHangHoa.emptyDanhMuc');
+  const dmEmptyDescription = dmFilteredEmpty ? txt('shared.empty.filteredHint') : undefined;
+  const hhEmptyTitle = hhFilteredEmpty ? txt('common.noResults') : txt('matTranHangHoa.emptyHang');
+  const hhEmptyDescription = hhFilteredEmpty ? txt('shared.empty.filteredHint') : undefined;
 
   const dmExportCols = useMemo(
     () => [
@@ -300,6 +358,90 @@ const HangHoaPage: React.FC = () => {
   const dmVisibleKeys = useMemo(() => dmCols.filter((c) => c.visible).map((c) => c.id), [dmCols]);
   const hhVisibleKeys = useMemo(() => hhCols.filter((c) => c.visible).map((c) => c.id), [hhCols]);
 
+  // ---------------------------------------------------------------------
+  // Nhập từ Excel
+  //
+  // Hình dạng file: MỘT SHEET PHẲNG cho mỗi tab (danh mục và hàng hóa nhập
+  // riêng). Cả hai đều là bảng DANH MỤC không có bảng con, nên một dòng Excel
+  // = một bản ghi là hình dạng tự nhiên nhất và cũng là hình dạng duy nhất
+  // engine đọc được (`ImportDialog` chỉ lấy sheet đầu tiên của workbook).
+  // Các sheet còn lại trong file mẫu chỉ để TRA CỨU (hướng dẫn, bảng danh mục).
+  // ---------------------------------------------------------------------
+  const DM_IMPORT_COLUMNS = useMemo<ImportColumn[]>(
+    () => [
+      { key: 'ten_danh_muc', label: txt('matTranHangHoa.import.colTenDanhMuc'), required: true },
+      { key: 'mo_ta', label: txt('matTranHangHoa.import.colMoTa') },
+      { key: 'thu_tu', label: txt('matTranHangHoa.import.colThuTu') },
+      { key: 'trang_thai', label: txt('matTranHangHoa.import.colTrangThai') },
+    ],
+    [],
+  );
+
+  const HH_IMPORT_COLUMNS = useMemo<ImportColumn[]>(
+    () => [
+      { key: 'id_danh_muc', label: txt('matTranHangHoa.import.colDanhMuc'), required: true },
+      { key: 'ten_hang_hoa', label: txt('matTranHangHoa.import.colTenHangHoa'), required: true },
+      { key: 'don_vi_tinh', label: txt('matTranHangHoa.import.colDonViTinh'), required: true },
+      { key: 'quy_cach', label: txt('matTranHangHoa.import.colQuyCach') },
+      { key: 'mo_ta', label: txt('matTranHangHoa.import.colMoTa') },
+      { key: 'thu_tu', label: txt('matTranHangHoa.import.colThuTu') },
+      { key: 'trang_thai', label: txt('matTranHangHoa.import.colTrangThai') },
+    ],
+    [],
+  );
+
+  const dmTemplateSheets = useMemo<ImportTemplateSheet[]>(
+    () => [
+      {
+        name: txt('matTranHangHoa.import.sheetHuongDan'),
+        headers: [txt('matTranHangHoa.import.huongDanColKey'), txt('matTranHangHoa.import.huongDanColVal')],
+        rows: [
+          [txt('matTranHangHoa.import.hdDanhMuc1k'), txt('matTranHangHoa.import.hdDanhMuc1v')],
+          [txt('matTranHangHoa.import.hdDanhMuc2k'), txt('matTranHangHoa.import.hdDanhMuc2v')],
+          [txt('matTranHangHoa.import.hdDanhMuc3k'), txt('matTranHangHoa.import.hdDanhMuc3v')],
+          [txt('matTranHangHoa.import.hdDanhMuc4k'), txt('matTranHangHoa.import.hdDanhMuc4v')],
+        ],
+      },
+    ],
+    [],
+  );
+
+  const hhTemplateSheets = useMemo<ImportTemplateSheet[]>(
+    () => [
+      {
+        name: txt('matTranHangHoa.import.sheetHuongDan'),
+        headers: [txt('matTranHangHoa.import.huongDanColKey'), txt('matTranHangHoa.import.huongDanColVal')],
+        rows: [
+          [txt('matTranHangHoa.import.hdHang1k'), txt('matTranHangHoa.import.hdHang1v')],
+          [txt('matTranHangHoa.import.hdHang2k'), txt('matTranHangHoa.import.hdHang2v')],
+          [txt('matTranHangHoa.import.hdHang3k'), txt('matTranHangHoa.import.hdHang3v')],
+          [txt('matTranHangHoa.import.hdHang4k'), txt('matTranHangHoa.import.hdHang4v')],
+          [txt('matTranHangHoa.import.hdHang5k'), txt('matTranHangHoa.import.hdHang5v')],
+          [txt('matTranHangHoa.import.hdHang6k'), txt('matTranHangHoa.import.hdHang6v')],
+        ],
+      },
+      {
+        // Bảng tra cứu để cán bộ chép đúng tên danh mục — sai tên là dòng bị loại.
+        name: txt('matTranHangHoa.import.sheetDanhMuc'),
+        headers: [txt('matTranHangHoa.import.refColId'), txt('matTranHangHoa.import.refColTen')],
+        rows: [...dmRows]
+          .sort((a, b) => a.ten_danh_muc.localeCompare(b.ten_danh_muc, 'vi'))
+          .map((d) => [d.id, d.ten_danh_muc]),
+      },
+    ],
+    [dmRows],
+  );
+
+  const handleImportDm = useCallback(
+    (data: Record<string, unknown>[]) => importDm.mutateAsync(data),
+    [importDm],
+  );
+
+  const handleImportHh = useCallback(
+    (data: Record<string, unknown>[]) => importHh.mutateAsync(data),
+    [importHh],
+  );
+
   const tabs = useMemo(
     () => [
       { id: TAB_DM, label: txt('matTranHangHoa.tabDanhMuc') },
@@ -322,7 +464,7 @@ const HangHoaPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteDm.mutate([id], {
+        await deleteDm.mutateAsync([id], {
           onSuccess: () => {
             if (dmViewingId === id) setDmViewingId(null);
           },
@@ -338,7 +480,7 @@ const HangHoaPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteDm.mutate(ids, {
+        await deleteDm.mutateAsync(ids, {
           onSuccess: () => {
             dmClearSel();
             if (dmViewingId && ids.includes(dmViewingId)) setDmViewingId(null);
@@ -355,7 +497,7 @@ const HangHoaPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteHh.mutate([id], {
+        await deleteHh.mutateAsync([id], {
           onSuccess: () => {
             if (hhViewingId === id) setHhViewingId(null);
           },
@@ -371,7 +513,7 @@ const HangHoaPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteHh.mutate(ids, {
+        await deleteHh.mutateAsync(ids, {
           onSuccess: () => {
             hhClearSel();
             if (hhViewingId && ids.includes(hhViewingId)) setHhViewingId(null);
@@ -440,6 +582,7 @@ const HangHoaPage: React.FC = () => {
                 }
                 setDmShowExport(true);
               }}
+              onImport={() => setDmShowImport(true)}
               onDeleteMany={handleDeleteDmMany}
               items={dmRows}
             />
@@ -447,6 +590,10 @@ const HangHoaPage: React.FC = () => {
               <KhoDanhMucHangHoaTable
                 data={dmSorted}
                 isLoading={dmListLoading}
+                isError={dmIsError}
+                onRetry={() => void dmRefetch()}
+                emptyTitle={dmEmptyTitle}
+                emptyDescription={dmEmptyDescription}
                 onEdit={(item) => {
                   startTransition(() => {
                     setDmFormOrigin('list');
@@ -487,6 +634,7 @@ const HangHoaPage: React.FC = () => {
                 }
                 setHhShowExport(true);
               }}
+              onImport={() => setHhShowImport(true)}
               onDeleteMany={handleDeleteHhMany}
               danhMucList={dmRows}
               items={hhRows}
@@ -495,6 +643,10 @@ const HangHoaPage: React.FC = () => {
               <KhoDanhSachHangHoaTable
                 data={hhSorted}
                 isLoading={hhListLoading}
+                isError={hhIsError}
+                onRetry={() => void hhRefetch()}
+                emptyTitle={hhEmptyTitle}
+                emptyDescription={hhEmptyDescription}
                 onEdit={(item) => {
                   setHhCreatePresetDanhMucId(null);
                   setDmViewingId(null);
@@ -621,6 +773,31 @@ const HangHoaPage: React.FC = () => {
             selectedData={hhExport.selectedData}
             fileName={txt('matTranHangHoa.exportFileNameHangHoa')}
             visibleColumnKeys={hhVisibleKeys}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {dmShowImport && (
+          <ImportDialog
+            open={dmShowImport}
+            onClose={() => setDmShowImport(false)}
+            columns={DM_IMPORT_COLUMNS}
+            onImport={handleImportDm}
+            templateFileName={txt('matTranHangHoa.import.templateFileNameDanhMuc')}
+            templateSheets={dmTemplateSheets}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {hhShowImport && (
+          <ImportDialog
+            open={hhShowImport}
+            onClose={() => setHhShowImport(false)}
+            columns={HH_IMPORT_COLUMNS}
+            onImport={handleImportHh}
+            templateFileName={txt('matTranHangHoa.import.templateFileNameHangHoa')}
+            templateSheets={hhTemplateSheets}
           />
         )}
       </AnimatePresence>

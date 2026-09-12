@@ -1,5 +1,5 @@
 import React, { useMemo, type ReactNode } from 'react';
-import { Plus, Download, Filter, Warehouse, Building2, CalendarDays } from 'lucide-react';
+import { Plus, Download, Upload, Filter, Warehouse, Building2, CalendarDays } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -8,9 +8,11 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipSingleSelect from '@/components/shared/FilterChipSingleSelect';
 import type { Option } from '@/components/ui/MultiSelect';
+import { useKhoDanhSachKhoList } from '@/features/mat-tran-to-quoc/danh-sach-kho/hooks/use-kho-danh-sach-kho';
+import { useKhoDonViCuuTroList } from '@/features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro';
+import { useKhoDotCuuTroList } from '@/features/mat-tran-to-quoc/dot-cuu-tro/hooks/use-kho-dot-cuu-tro';
 import { useNhapXuatKhoStore } from '../store/useNhapXuatKhoStore';
 import { countColumnSearchActive } from '../utils/column-search';
-import type { NhapXuatKhoListRow } from '../core/types';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 
 interface Props {
@@ -18,8 +20,8 @@ interface Props {
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
+  onImport?: () => void;
   onDeleteMany: (ids: string[]) => void;
-  items?: NhapXuatKhoListRow[] | null;
 }
 
 const NhapXuatKhoToolbar: React.FC<Props> = ({
@@ -27,11 +29,13 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
   onPageBack,
   onAdd,
   onExport,
+  onImport,
   onDeleteMany,
-  items,
 }) => {
-  const { canCreate, canExport, canDelete } = useResourcePermissions('matTranReliefStockTransactions');
-  const itemRows = Array.isArray(items) ? items : [];
+  const { canCreate, canExport, canDelete, canImport } = useResourcePermissions('matTranReliefStockTransactions');
+  // Nhập = lập phiếu hàng loạt ⇒ phải có quyền `them`. Không dựa mình `canImport`
+  // vì `can()` cho token `view` đi qua cả export lẫn import.
+  const showImportButton = canCreate && canImport && Boolean(onImport);
 
   const {
     searchTerm,
@@ -47,56 +51,45 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
     setSort,
   } = useNhapXuatKhoStore();
 
-  const loaiCounts = useMemo(() => {
-    const counts: Record<NhapXuatKhoLoaiPhieu, number> = {
-      nhap_ngoai: 0,
-      xuat_ngoai: 0,
-      chuyen_kho: 0,
-    };
-    for (const r of itemRows) counts[r.loai_phieu] = (counts[r.loai_phieu] ?? 0) + 1;
-    return counts;
-  }, [itemRows]);
+  // Tuỳ chọn lọc lấy từ BẢNG DANH MỤC, không phải từ các dòng đang tải: danh
+  // sách phiếu nay phân trang phía máy chủ, nên suy từ dòng chỉ ra được những
+  // giá trị có mặt trên đúng trang đang xem.
+  const { data: khoList = [] } = useKhoDanhSachKhoList();
+  const { data: donViList = [] } = useKhoDonViCuuTroList();
+  const { data: dotList = [] } = useKhoDotCuuTroList();
 
-  const loaiOptions = useMemo(
+  const loaiOptions = useMemo<Option[]>(
     () =>
       NHAP_XUAT_KHO_LOAI_PHIEU.map((v) => ({
         label: txt(`matTranNhapXuatKho.loaiPhieu.${v}`),
         value: v,
-        count: loaiCounts[v] ?? 0,
       })),
-    [loaiCounts],
+    [],
   );
 
-  const khoOptions = useMemo<Option[]>(() => {
-    const map = new Map<string, string>();
-    for (const r of itemRows) {
-      if (r.kho_xuat_id && r.ten_kho_xuat) map.set(r.kho_xuat_id, r.ten_kho_xuat);
-      if (r.kho_nhap_id && r.ten_kho_nhap) map.set(r.kho_nhap_id, r.ten_kho_nhap);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
-      .map(([value, label]) => ({ label, value }));
-  }, [itemRows]);
+  const khoOptions = useMemo<Option[]>(
+    () =>
+      khoList
+        .map((k) => ({ label: k.ten_kho, value: String(k.id) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
+    [khoList],
+  );
 
-  const donViOptions = useMemo<Option[]>(() => {
-    const map = new Map<string, string>();
-    for (const r of itemRows) {
-      if (r.don_vi_cuu_tro_id && r.ten_don_vi_cuu_tro) map.set(r.don_vi_cuu_tro_id, r.ten_don_vi_cuu_tro);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
-      .map(([value, label]) => ({ label, value }));
-  }, [itemRows]);
+  const donViOptions = useMemo<Option[]>(
+    () =>
+      donViList
+        .map((d) => ({ label: d.ten, value: String(d.id) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
+    [donViList],
+  );
 
-  const dotOptions = useMemo<Option[]>(() => {
-    const map = new Map<string, string>();
-    for (const r of itemRows) {
-      if (r.dot_cuu_tro_id && r.ten_dot_cuu_tro) map.set(r.dot_cuu_tro_id, r.ten_dot_cuu_tro);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
-      .map(([value, label]) => ({ label, value }));
-  }, [itemRows]);
+  const dotOptions = useMemo<Option[]>(
+    () =>
+      dotList
+        .map((d) => ({ label: d.ten, value: String(d.id) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
+    [dotList],
+  );
 
   const activeFilterCount = useMemo(() => {
     return (
@@ -235,27 +228,46 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
   );
 
   const mobileActions = useMemo<ActionItem[]>(
-    () =>
-      canExport
+    () => [
+      ...(showImportButton && onImport
+        ? [{ key: 'import', label: txt('common.import'), icon: Upload, onClick: onImport, description: '' }]
+        : []),
+      ...(canExport
         ? [{ key: 'export', label: txt('common.export'), icon: Download, onClick: onExport, description: '' }]
-        : [],
-    [canExport, onExport],
+        : []),
+    ],
+    [showImportButton, onImport, canExport, onExport],
   );
 
   const renderActions = (
     <>
-      {canExport ? (
+      {showImportButton || canExport ? (
         <div className="hidden sm:flex items-center gap-2">
-          <Tooltip content={txt('common.export')} placement="bottom">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExport}
-              className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-          </Tooltip>
+          {showImportButton && onImport ? (
+            <Tooltip content={txt('common.import')} placement="bottom">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onImport}
+            aria-label={txt('common.import')}
+                className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+              >
+                <Upload className="w-4 h-4" aria-hidden />
+              </Button>
+            </Tooltip>
+          ) : null}
+          {canExport ? (
+            <Tooltip content={txt('common.export')} placement="bottom">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExport}
+                className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </Tooltip>
+          ) : null}
         </div>
       ) : null}
       {canCreate && (

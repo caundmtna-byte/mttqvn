@@ -14,6 +14,9 @@ import { ThongTinToChucQuanTrongTableRowActions } from './thong-tin-to-chuc-quan
 interface Props {
   data: ThongTinToChucQuanTrong[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: ThongTinToChucQuanTrong) => void;
   onDelete: (id: string) => void;
   onView?: (item: ThongTinToChucQuanTrong) => void;
@@ -24,6 +27,8 @@ interface Props {
 const ThongTinToChucQuanTrongTable = memo(function ThongTinToChucQuanTrongTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -112,7 +117,7 @@ const ThongTinToChucQuanTrongTable = memo(function ThongTinToChucQuanTrongTable(
           );
         case 'chu_tri':
           return (
-            <span className="text-body-sm text-muted-foreground truncate" title={item.chu_tri ?? undefined}>
+            <span className="text-body-sm text-muted-foreground whitespace-normal break-words" title={item.chu_tri ?? undefined}>
               {item.chu_tri ?? txt('common.emptyCell')}
             </span>
           );
@@ -172,7 +177,7 @@ const ThongTinToChucQuanTrongTable = memo(function ThongTinToChucQuanTrongTable(
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-semibold text-sm truncate">{item.ten_co_so}</p>
-            <p className="text-xs text-muted-foreground truncate">{item.chu_tri ?? '—'}</p>
+            <p className="text-xs text-muted-foreground break-words">{item.chu_tri ?? '—'}</p>
           </div>
           {item.trang_thai?.trim() ? (
             <EnumBadge value={item.trang_thai.trim()} config={trangThaiBadge} shape="pill" truncate />
@@ -204,6 +209,8 @@ const ThongTinToChucQuanTrongTable = memo(function ThongTinToChucQuanTrongTable(
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('danTocToChucQuanTrong.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('danTocToChucQuanTrong.emptyHint')}

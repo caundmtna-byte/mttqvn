@@ -30,6 +30,9 @@ export interface MttqKhenThuongChiTietHeaderOption {
 interface Props {
   data: MttqKhenThuongChiTietFlatRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   trangThaiHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
   namKhenThuongHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
   donViDeXuatHeaderOptions: MttqKhenThuongChiTietHeaderOption[];
@@ -43,6 +46,8 @@ interface Props {
 const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   trangThaiHeaderOptions,
   namKhenThuongHeaderOptions,
   donViDeXuatHeaderOptions,
@@ -383,6 +388,8 @@ const MttqKhenThuongChiTietTable = memo(function MttqKhenThuongChiTietTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('matTranKhenThuong.chiTietList.emptyTitle')}
       emptyDescription={txt('matTranKhenThuong.chiTietList.emptyHint')}

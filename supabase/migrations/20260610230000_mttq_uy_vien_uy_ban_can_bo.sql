@@ -7,44 +7,65 @@ ALTER TABLE public.mttq_uy_vien_uy_ban
   REFERENCES public.mttq_can_bo (id)
   ON UPDATE CASCADE ON DELETE RESTRICT;
 
--- Gán can_bo theo họ tên + ngày sinh (khi khớp duy nhất — lấy id nhỏ nhất)
-WITH ranked AS (
-  SELECT
-    u.id AS uy_id,
-    c.id AS cb_id,
-    ROW_NUMBER() OVER (
-      PARTITION BY u.id
-      ORDER BY c.id
-    ) AS rn
-  FROM public.mttq_uy_vien_uy_ban u
-  INNER JOIN public.mttq_can_bo c
-    ON lower(trim(u.ho_va_ten)) = lower(trim(c.ho_ten))
-   AND (
-      (u.ngay_sinh IS NULL AND c.ngay_sinh IS NULL)
-      OR (u.ngay_sinh IS NOT NULL AND c.ngay_sinh IS NOT NULL AND u.ngay_sinh = c.ngay_sinh)
-    )
-)
-UPDATE public.mttq_uy_vien_uy_ban u
-SET can_bo_id = r.cb_id
-FROM ranked r
-WHERE u.id = r.uy_id
-  AND r.rn = 1
-  AND u.can_bo_id IS NULL;
+-- Backfill can_bo_id — chỉ chạy khi cột nguồn ho_va_ten CÒN tồn tại.
+-- Cuối file này drop luôn ho_va_ten/ngay_sinh, nên lần chạy thứ hai hai câu
+-- UPDATE dưới đây tham chiếu cột đã mất ⇒ lỗi "column u.ho_va_ten does not exist".
+-- Lần chạy ĐẦU không đổi: cột còn ⇒ backfill chạy y hệt.
+-- (Cùng khuôn với 20260611080000 — bản "if_legacy" của chính migration này.)
+DO $backfill_can_bo_id$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'mttq_uy_vien_uy_ban'
+      AND column_name = 'ho_va_ten'
+  ) THEN
+    RETURN;
+  END IF;
 
--- Bước 2: họ tên trùng duy nhất trên mttq_can_bo (không cần khớp ngày sinh)
-WITH uniq_name AS (
-  SELECT
-    lower(trim(c.ho_ten)) AS hn,
-    min(c.id) AS cb_id
-  FROM public.mttq_can_bo c
-  GROUP BY lower(trim(c.ho_ten))
-  HAVING count(*) = 1
-)
-UPDATE public.mttq_uy_vien_uy_ban u
-SET can_bo_id = n.cb_id
-FROM uniq_name n
-WHERE u.can_bo_id IS NULL
-  AND lower(trim(u.ho_va_ten)) = n.hn;
+  -- Gán can_bo theo họ tên + ngày sinh (khi khớp duy nhất — lấy id nhỏ nhất)
+  EXECUTE $q$
+    WITH ranked AS (
+      SELECT
+        u.id AS uy_id,
+        c.id AS cb_id,
+        ROW_NUMBER() OVER (
+          PARTITION BY u.id
+          ORDER BY c.id
+        ) AS rn
+      FROM public.mttq_uy_vien_uy_ban u
+      INNER JOIN public.mttq_can_bo c
+        ON lower(trim(u.ho_va_ten)) = lower(trim(c.ho_ten))
+       AND (
+          (u.ngay_sinh IS NULL AND c.ngay_sinh IS NULL)
+          OR (u.ngay_sinh IS NOT NULL AND c.ngay_sinh IS NOT NULL AND u.ngay_sinh = c.ngay_sinh)
+        )
+    )
+    UPDATE public.mttq_uy_vien_uy_ban u
+    SET can_bo_id = r.cb_id
+    FROM ranked r
+    WHERE u.id = r.uy_id
+      AND r.rn = 1
+      AND u.can_bo_id IS NULL
+  $q$;
+
+  -- Bước 2: họ tên trùng duy nhất trên mttq_can_bo (không cần khớp ngày sinh)
+  EXECUTE $q$
+    WITH uniq_name AS (
+      SELECT
+        lower(trim(c.ho_ten)) AS hn,
+        min(c.id) AS cb_id
+      FROM public.mttq_can_bo c
+      GROUP BY lower(trim(c.ho_ten))
+      HAVING count(*) = 1
+    )
+    UPDATE public.mttq_uy_vien_uy_ban u
+    SET can_bo_id = n.cb_id
+    FROM uniq_name n
+    WHERE u.can_bo_id IS NULL
+      AND lower(trim(u.ho_va_ten)) = n.hn
+  $q$;
+END $backfill_can_bo_id$;
 
 DO $$
 DECLARE

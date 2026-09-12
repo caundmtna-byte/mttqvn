@@ -1,6 +1,7 @@
 /** Các key dùng cho ô tìm kiếm tổng trên module khen thưởng. */
 export const MTTQ_KHEN_THUONG_SEARCHABLE_KEYS: string[] = [
   'so_qd',
+  'noi_dung_khen',
   'don_vi_de_xuat',
   'ghi_chu',
   'trang_thai',

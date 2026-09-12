@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import type { MttqCanBo } from '../core/types';
 import type { MttqCanBoFormValues } from '../core/schema';
@@ -54,7 +53,6 @@ export const useCreateMttqCanBo = (onSuccess?: (created: MttqCanBo) => void) => 
       toast.success(txt('matTranCanBo.toast.create'));
       onSuccess?.(created);
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -69,7 +67,6 @@ export const useUpdateMttqCanBo = (onSuccess?: () => void) => {
       toast.success(txt('matTranCanBo.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -85,7 +82,6 @@ export const useDeleteMttqCanBoMany = () => {
       }
       toast.success(txt('matTranCanBo.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -102,6 +98,5 @@ export const useImportMttqCanBo = (onSuccess?: () => void) => {
       }
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

@@ -72,6 +72,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'danTocCaNhanTieuBieu');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
@@ -83,8 +84,10 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -303,7 +306,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewingId === id) setViewingId(null);
           },
@@ -330,7 +333,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(allowedIds, {
+        await deleteMutation.mutateAsync(allowedIds, {
           onSuccess: () => {
             clearSelection();
             if (viewingId && allowedIds.includes(viewingId)) setViewingId(null);
@@ -349,7 +352,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
       variant: 'warning',
       confirmText: CONFIRM_YES(),
       onConfirm: async () => {
-        statusMutation.mutate({ id: item.id, status: newStatus });
+        await statusMutation.mutateAsync({ id: item.id, status: newStatus });
       },
     });
   };

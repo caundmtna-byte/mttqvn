@@ -1,9 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-  BookOpen,
-  Tags,
-  Wallet,
-  BarChart3,
   Home,
   Hammer,
   Package,
@@ -27,73 +23,13 @@ export interface PlaceholderGroupDef {
   modules: PlaceholderModuleDef[];
 }
 
+/**
+ * Hai nhóm Quỹ (Vì người nghèo, Cứu trợ) ĐÃ RA KHỎI danh sách này: tám trang đó
+ * nay là module thật (`features/quy/**`), có route riêng trong `App.tsx` và thẻ
+ * riêng trong `pages/dashboards/AnSinhXaHoiDashboard.tsx`. Giữ chúng ở đây nữa
+ * sẽ sinh `<Route>` placeholder đè lên route thật.
+ */
 export const AN_SINH_PLACEHOLDER_GROUPS: PlaceholderGroupDef[] = [
-  {
-    groupTitleKey: 'page.anSinhXaHoiDashboard.groupQuyViNguoiNgheo',
-    modules: [
-      {
-        path: '/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/so-thu-chi',
-        titleKey: 'page.anSinhXaHoiDashboard.soThuChi',
-        descKey: 'page.anSinhXaHoiDashboard.soThuChiDesc',
-        icon: BookOpen,
-        color: 'bg-pink-500',
-      },
-      {
-        path: '/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/danh-muc-chi-phi',
-        titleKey: 'page.anSinhXaHoiDashboard.danhMucChiPhi',
-        descKey: 'page.anSinhXaHoiDashboard.danhMucChiPhiDesc',
-        icon: Tags,
-        color: 'bg-fuchsia-500',
-      },
-      {
-        path: '/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/danh-muc-tai-khoan',
-        titleKey: 'page.anSinhXaHoiDashboard.danhMucTaiKhoan',
-        descKey: 'page.anSinhXaHoiDashboard.danhMucTaiKhoanDesc',
-        icon: Wallet,
-        color: 'bg-violet-500',
-      },
-      {
-        path: '/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/bao-cao-thong-ke',
-        titleKey: 'page.anSinhXaHoiDashboard.baoCaoThongKe',
-        descKey: 'page.anSinhXaHoiDashboard.baoCaoThongKeDesc',
-        icon: BarChart3,
-        color: 'bg-purple-500',
-      },
-    ],
-  },
-  {
-    groupTitleKey: 'page.anSinhXaHoiDashboard.groupQuyCuuTro',
-    modules: [
-      {
-        path: '/an-sinh-xa-hoi/quy-cuu-tro/so-thu-chi',
-        titleKey: 'page.anSinhXaHoiDashboard.soThuChi',
-        descKey: 'page.anSinhXaHoiDashboard.soThuChiDesc',
-        icon: BookOpen,
-        color: 'bg-rose-500',
-      },
-      {
-        path: '/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-chi-phi',
-        titleKey: 'page.anSinhXaHoiDashboard.danhMucChiPhi',
-        descKey: 'page.anSinhXaHoiDashboard.danhMucChiPhiDesc',
-        icon: Tags,
-        color: 'bg-orange-500',
-      },
-      {
-        path: '/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-tai-khoan',
-        titleKey: 'page.anSinhXaHoiDashboard.danhMucTaiKhoan',
-        descKey: 'page.anSinhXaHoiDashboard.danhMucTaiKhoanDesc',
-        icon: Wallet,
-        color: 'bg-amber-500',
-      },
-      {
-        path: '/an-sinh-xa-hoi/quy-cuu-tro/bao-cao-thong-ke',
-        titleKey: 'page.anSinhXaHoiDashboard.baoCaoThongKe',
-        descKey: 'page.anSinhXaHoiDashboard.baoCaoThongKeDesc',
-        icon: BarChart3,
-        color: 'bg-yellow-600',
-      },
-    ],
-  },
   {
     groupTitleKey: 'page.anSinhXaHoiDashboard.groupNhaDaiDoanKet',
     modules: [

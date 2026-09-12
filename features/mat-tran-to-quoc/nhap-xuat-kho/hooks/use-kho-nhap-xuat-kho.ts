@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { NhapXuatKhoFormValues } from '../core/schema';
 import type { NhapXuatKhoCtFlatRow, NhapXuatKhoDetail, NhapXuatKhoListRow } from '../core/types';
 import {
@@ -13,22 +12,15 @@ import {
   getLastDonGiaMap,
   getNhapXuatKhoById,
   getNhapXuatKhoCtFlatList,
-  getNhapXuatKhoList,
   updateNhapXuatKho,
 } from '../services/kho-nhap-xuat-kho-service';
+import { importNhapXuatKhoRows } from '../services/kho-nhap-xuat-kho-import';
+import type { NhapXuatKhoImportViewer } from '../utils/nhap-xuat-kho-import-rows';
 
 const listKey = queryKeys.khoNhapXuatKho.all;
 const ctFlatKey = queryKeys.khoNhapXuatKho.chiTietFlatList;
 const lastDonGiaKey = queryKeys.khoNhapXuatKho.lastDonGia;
 
-export function useNhapXuatKhoList(options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: listKey,
-    queryFn: getNhapXuatKhoList,
-    enabled: options?.enabled !== false,
-    ...transactionalCrudListQueryOptions,
-  });
-}
 
 export function useNhapXuatKhoDetail(id: string | null, options?: { enabled?: boolean }) {
   const enabled = Boolean(id?.trim()) && options?.enabled !== false;
@@ -78,6 +70,8 @@ function listRowFromDetail(d: NhapXuatKhoDetail): NhapXuatKhoListRow {
     ngay_phieu: d.ngay_phieu,
     kho_xuat_id: d.kho_xuat_id,
     ten_kho_xuat: d.ten_kho_xuat,
+    id_nguoi_tao: d.id_nguoi_tao,
+    ho_va_ten_nguoi_tao: d.ho_va_ten_nguoi_tao,
     kho_xuat_don_vi_id: d.kho_xuat_don_vi_id,
     kho_nhap_id: d.kho_nhap_id,
     ten_kho_nhap: d.ten_kho_nhap,
@@ -112,6 +106,21 @@ function patchListAfterMutation(
   });
   void queryClient.invalidateQueries({ queryKey: queryKeys.khoTonKho.all, refetchType: 'active' });
   void queryClient.invalidateQueries({ queryKey: queryKeys.khoBaoCaoHoTro.all, refetchType: 'none' });
+  invalidateKhoPages(queryClient);
+}
+
+/**
+ * Làm mới hai danh sách phân trang phía máy chủ của module.
+ *
+ * Các mutation dưới đây vá mảng phẳng `listKey` / `ctFlatKey`, nhưng hai tab
+ * danh sách nay đọc key `[... ,'page']` và `[... ,'chi-tiet-flat-page']` —
+ * không invalidate thì lập/sửa/xoá phiếu xong bảng không đổi cho tới khi F5.
+ */
+function invalidateKhoPages(queryClient: ReturnType<typeof useQueryClient>): void {
+  void queryClient.invalidateQueries({ queryKey: [...queryKeys.khoNhapXuatKho.all, 'page'] });
+  void queryClient.invalidateQueries({
+    queryKey: [...queryKeys.khoNhapXuatKho.all, 'chi-tiet-flat-page'],
+  });
 }
 
 export function useCreateNhapXuatKho(onSuccess?: () => void) {
@@ -123,7 +132,6 @@ export function useCreateNhapXuatKho(onSuccess?: () => void) {
       toast.success(txt('matTranNhapXuatKho.toast.create'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -136,7 +144,6 @@ export function useUpdateNhapXuatKho(onSuccess?: () => void) {
       toast.success(txt('matTranNhapXuatKho.toast.update'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -171,8 +178,36 @@ export function useDeleteNhapXuatKhoMany() {
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.khoTonKho.all, refetchType: 'active' });
       void queryClient.invalidateQueries({ queryKey: queryKeys.khoBaoCaoHoTro.all, refetchType: 'none' });
+      invalidateKhoPages(queryClient);
       toast.success(txt('matTranNhapXuatKho.toast.delete', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
+  });
+}
+
+/**
+ * Nhập phiếu từ Excel. Làm mới đúng những gì một loạt phiếu mới đụng tới:
+ * danh sách, dòng chi tiết, tồn kho, đơn giá gần nhất, báo cáo hỗ trợ.
+ */
+export function useImportNhapXuatKho(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ rows, viewer }: { rows: Record<string, unknown>[]; viewer: NhapXuatKhoImportViewer }) =>
+      importNhapXuatKhoRows(rows, viewer),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: ctFlatKey });
+      void queryClient.invalidateQueries({ queryKey: lastDonGiaKey, refetchType: 'none' });
+      void queryClient.invalidateQueries({
+        queryKey: ['kho-nhap-xuat-kho', 'ton-kho-by-kho'],
+        refetchType: 'active',
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.khoTonKho.all, refetchType: 'active' });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.khoBaoCaoHoTro.all, refetchType: 'none' });
+      invalidateKhoPages(queryClient);
+      if (result.created > 0) {
+        toast.success(txt('matTranNhapXuatKho.import.toastSuccess', { count: result.created }));
+      }
+      onSuccess?.();
+    },
   });
 }

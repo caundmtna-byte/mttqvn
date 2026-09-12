@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { isConstraintFieldError } from '@/lib/supabase/constraint-field-error';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
@@ -71,7 +72,12 @@ export const useCreateMttqUyVienUyBan = (onSuccess?: () => void) => {
       toast.success(txt('matTranUyVienUyBan.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(uyVienMutationErrorMessage(e)),
+    onError: (e: unknown) => {
+      // Lỗi trùng có ô nhập tương ứng ⇒ form gắn chữ đỏ dưới ô, không toast
+      // (cùng cách với `use-bai-viet-danh-sach.ts`).
+      if (isConstraintFieldError(e)) return;
+      toast.error(uyVienMutationErrorMessage(e));
+    },
   });
 };
 
@@ -91,7 +97,12 @@ export const useUpdateMttqUyVienUyBan = (onSuccess?: () => void) => {
       toast.success(txt('matTranUyVienUyBan.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(uyVienMutationErrorMessage(e)),
+    onError: (e: unknown) => {
+      // Lỗi trùng có ô nhập tương ứng ⇒ form gắn chữ đỏ dưới ô, không toast
+      // (cùng cách với `use-bai-viet-danh-sach.ts`).
+      if (isConstraintFieldError(e)) return;
+      toast.error(uyVienMutationErrorMessage(e));
+    },
   });
 };
 
@@ -107,7 +118,6 @@ export const useDeleteMttqUyVienUyBanMany = () => {
       }
       toast.success(txt('matTranUyVienUyBan.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -127,6 +137,5 @@ export const useImportMttqUyVienUyBan = (onSuccess?: () => void) => {
       }
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

@@ -13,6 +13,7 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
@@ -59,14 +60,17 @@ const NhiemKyPage: React.FC = () => {
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranTerm');
   const { canCreate } = useResourcePermissions('matTranTerm');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranNhiemKy.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqNhiemKy | null>(null);
@@ -89,7 +93,7 @@ const NhiemKyPage: React.FC = () => {
     columns,
   } = useMttqNhiemKyStore();
 
-  const { data: rows = [], isLoading } = useMttqNhiemKyList({ enabled: canView });
+  const { data: rows = [], isLoading, isError, refetch } = useMttqNhiemKyList({ enabled: canView });
   const { data: viewingData } = useMttqNhiemKyDetail(viewingId);
   const deleteMutation = useDeleteMttqNhiemKyMany();
   const importMutation = useImportMttqNhiemKy(() => setShowImport(false));
@@ -285,7 +289,7 @@ const NhiemKyPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewingId === id) setViewingId(null);
           },
@@ -301,7 +305,7 @@ const NhiemKyPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewingId && ids.includes(viewingId)) setViewingId(null);
@@ -395,6 +399,8 @@ const NhiemKyPage: React.FC = () => {
           <MttqNhiemKyTable
             data={sorted}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
             tuNamHeaderOptions={tuNamChipOptions}
             denNamHeaderOptions={denNamChipOptions}
             onEdit={handleEditFromList}

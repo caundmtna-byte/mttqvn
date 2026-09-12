@@ -64,7 +64,10 @@ const MttqKyHopDetailDiemDanhTab: React.FC<Props> = ({ kyHopId, nhiemKyId }) => 
         setPendingUyVienId(null);
       }
     },
-    [idNguoiTao, kyHopId, upsertMutation],
+    // `nhiemKyId` phải nằm trong danh sách phụ thuộc: thiếu nó thì sau khi chuyển
+    // sang nhiệm kỳ khác, hàm vẫn giữ giá trị cũ và ma trận điểm danh của nhiệm kỳ
+    // mới không được cập nhật.
+    [idNguoiTao, kyHopId, nhiemKyId, upsertMutation],
   );
 
   if (!canViewSession) {

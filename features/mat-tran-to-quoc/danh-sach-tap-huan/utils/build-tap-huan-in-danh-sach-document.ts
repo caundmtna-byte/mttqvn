@@ -1,5 +1,5 @@
 import { txt } from '@/lib/text';
-import { formatDateShort, getTodayISODate } from '@/lib/utils';
+import { formatDate, getTodayISODate } from '@/lib/utils';
 import type { CompanyInfo } from '@/store/useStore';
 import type { MttqCanBo } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/core/types';
 import type { MttqLopTapHuan } from '../core/types';
@@ -46,7 +46,9 @@ export function buildTapHuanInDanhSachDocumentModel(
   const metaRecord = buildTapHuanInDanhSachMeta(lop);
   const metaItems = Object.entries(metaRecord).map(([label, value]) => ({ label, value }));
   const signedDateLabel = txt('matTranTapHuan.printPreview.signedDate');
-  const signedDateValue = formatDateShort(getTodayISODate());
+  // `formatDateShort` là DD/MM — KHÔNG có năm. Trên văn bản hành chính in ra
+  // giấy thì "Ngày in: 11/09" là thiếu, nên dùng `formatDate` (DD/MM/YYYY).
+  const signedDateValue = formatDate(getTodayISODate());
   const rows = buildTapHuanInDanhSachRows(lop, viewer, canBoMap);
   const sttColumnKey = txt('matTranTapHuan.printPreview.colStt');
   const nameColumnKey = txt('matTranTapHuan.form.hoVaTen');

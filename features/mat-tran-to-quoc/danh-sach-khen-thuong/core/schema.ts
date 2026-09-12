@@ -37,7 +37,15 @@ export const mttqKhenThuongChiTietLineSchema = z.object({
 export type MttqKhenThuongChiTietLineFormValues = z.infer<typeof mttqKhenThuongChiTietLineSchema>;
 
 export const mttqKhenThuongSchema = z.object({
-  so_qd: z.string().trim().min(1, txt('matTranKhenThuong.validation.soQdRequired')),
+  // Số quyết định KHÔNG bắt buộc: quyết định đang soạn thì chưa có số, và phần
+  // lớn bản ghi cũ không có số nào (trước đây ô này bị dán nhãn "Nội dung khen"
+  // nên cán bộ gõ văn xuôi vào). Bắt buộc ở đây là khoá người dùng khỏi sửa
+  // chính những bản ghi đó.
+  so_qd: optionalText,
+  noi_dung_khen: z
+    .string()
+    .trim()
+    .min(1, txt('matTranKhenThuong.validation.noiDungKhenRequired')),
   ngay_khen_thuong: z
     .string()
     .trim()

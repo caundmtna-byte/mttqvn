@@ -23,21 +23,32 @@ import { ThucHienPhanBienTableRowActions } from './thuc-hien-phan-bien-table-row
 interface Props {
   data: ThucHienPhanBien[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: ThucHienPhanBien) => void;
   onDelete: (id: string) => void;
   onView?: (item: ThucHienPhanBien) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  serverSidePagination?: boolean;
+  serverTotalRecords?: number | null;
+  serverHasNextPage?: boolean;
 }
 
 const ThucHienPhanBienTable = memo(function ThucHienPhanBienTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
   emptyTitle,
   emptyDescription,
+  serverSidePagination,
+  serverTotalRecords,
+  serverHasNextPage,
 }: Props) {
   const {
     columns,
@@ -321,9 +332,14 @@ const ThucHienPhanBienTable = memo(function ThucHienPhanBienTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
+      serverSidePagination={serverSidePagination}
+      serverTotalRecords={serverTotalRecords ?? undefined}
+      serverHasNextPage={serverHasNextPage}
       selectedIds={selectedIds}
       onToggleSelection={toggleSelection}
       onToggleAll={toggleAllSelection}

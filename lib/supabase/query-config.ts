@@ -3,6 +3,10 @@
  * - staleTime: giảm refetch không cần thiết
  * - gcTime: giữ cache trong RAM sau khi unmount (V5 dùng gcTime thay cho cacheTime)
  */
+/** Key localStorage của cache TanStack Query đã persist (xem `index.tsx`).
+ *  Phải xoá khi đăng xuất — nếu không dữ liệu người dùng trước còn lại trên máy dùng chung. */
+export const RQ_PERSIST_STORAGE_KEY = 'mttq-rq-cache';
+
 export const SERVER_STALE_TIME_MS = 1000 * 60 * 5; // 5 phút
 export const SERVER_GC_TIME_MS = 1000 * 60 * 30; // 30 phút
 
@@ -29,11 +33,19 @@ export const listQueryOptions = {
 } as const;
 
 /**
- * Danh sách/chi tiết CRUD trên Supabase (kho cứu trợ, …): có thể đổi ngoài phiên hoặc SQL;
- * `staleTime` ngắn hơn default + `refetchOnMount: true` (giống hướng dẫn `useEmployees`).
+ * Danh sách/chi tiết CRUD trên Supabase (kho cứu trợ, dân tộc tôn giáo, PBXH, lương…):
+ * có thể đổi ngoài phiên hoặc bằng SQL nên vẫn giữ `refetchOnMount: true`.
+ *
+ * `staleTime` là **3 phút**, không phải 30 giây. Lý do: 17 hook dùng preset này đều là
+ * list kéo nguyên bảng (`repo.getAll()` không limit), nên với 30 giây thì chỉ cần rời
+ * trang rồi quay lại là tải lại toàn bộ bảng — tốn egress nhất trong app (free-tier 5GB/tháng).
+ * `refetchOnMount: true` chỉ refetch khi dữ liệu ĐÃ stale, nên nâng `staleTime` là cắt
+ * thẳng số lần refetch mà vẫn giữ nguyên hành vi "mở lại sau một lúc thì làm mới".
+ * Mutation trong phiên vẫn invalidate ngay, không phụ thuộc mốc này.
+ *
  * Không persist các query `kho-*` — xem `index.tsx` `shouldDehydrateQuery`.
  */
-export const TRANSACTIONAL_CRUD_LIST_STALE_TIME_MS = 30 * 1000;
+export const TRANSACTIONAL_CRUD_LIST_STALE_TIME_MS = 3 * 60 * 1000;
 
 export const transactionalCrudListQueryOptions = {
   staleTime: TRANSACTIONAL_CRUD_LIST_STALE_TIME_MS,

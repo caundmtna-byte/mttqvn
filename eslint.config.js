@@ -96,7 +96,9 @@ export default [
       'no-useless-assignment': 'warn',
       'prefer-const': 'warn',
       'no-case-declarations': 'warn',
-      'react-hooks/rules-of-hooks': 'warn',
+      // 'error', không phải 'warn': vi phạm rules-of-hooks là bug thật, không phải góp ý.
+      // Đã bắt được 2 ca thật (`useCan(x) || useCan(y)` short-circuit) — để 'warn' thì ca sau lại lọt.
+      'react-hooks/rules-of-hooks': 'error',
       'react-hooks/refs': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/exhaustive-deps': 'warn',

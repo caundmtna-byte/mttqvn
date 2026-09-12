@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense, startTransition } from 'react';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { txt } from '../../../lib/text';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -9,7 +10,14 @@ import PhongBanToolbar from './components/phong-ban-toolbar';
 import DepartmentList from './components/phong-ban-list';
 import ExportDialog from '../../../components/shared/ExportDialog';
 import ImportDialog from '../../../components/shared/ImportDialog';
-import { useDepartments, useDeleteDepartment, useUpdateStatusDepartment, useImportDepartments } from './hooks/use-phong-ban';
+import {
+  useDepartments,
+  useDeleteDepartment,
+  useDeleteDepartmentMany,
+  useUpdateStatusDepartment,
+  useUpdateStatusDepartmentMany,
+  useImportDepartments,
+} from './hooks/use-phong-ban';
 import { useDepartmentStore } from './store/useDepartmentStore';
 import { useConfirmStore } from '../../../store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL, CONFIRM_YES } from '../../../lib/button-labels';
@@ -43,14 +51,17 @@ const DepartmentPage = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'departments');
   const navigate = useNavigate();
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('department.noViewPermission'));
     navigate('/he-thong', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const confirm = useConfirmStore((s) => s.confirm);
   const {
@@ -76,9 +87,11 @@ const DepartmentPage = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
-  const { data: departments = [], isLoading } = useDepartments({ enabled: canView });
+  const { data: departments = [], isLoading, isError, refetch } = useDepartments({ enabled: canView });
   const deleteMutation = useDeleteDepartment();
+  const deleteManyMutation = useDeleteDepartmentMany();
   const statusMutation = useUpdateStatusDepartment();
+  const statusManyMutation = useUpdateStatusDepartmentMany();
   const importMutation = useImportDepartments(() => setShowImport(false));
 
   const IMPORT_COLUMNS = useMemo(
@@ -227,7 +240,7 @@ const DepartmentPage = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate(id, {
+        await deleteMutation.mutateAsync(id, {
           onSuccess: () => {
             setDetailStack((s) => {
               const idx = s.findIndex((d) => d.id === id);
@@ -249,7 +262,7 @@ const DepartmentPage = () => {
       variant: 'warning',
       confirmText: CONFIRM_YES(),
       onConfirm: async () => {
-        statusMutation.mutate(
+        await statusMutation.mutateAsync(
           { id: item.id, status: newStatus },
           {
             onSuccess: (updated) => {
@@ -269,11 +282,11 @@ const DepartmentPage = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        for (const id of ids) {
-          await deleteMutation.mutateAsync(id).catch(() => {});
-        }
+        // Gửi cùng lúc thay vì chờ từng phòng ban một: nhanh hơn nhiều khi chọn
+        // nhiều dòng, và một phòng ban hỏng không làm dừng những phòng ban còn lại.
+        const ketQua = await deleteManyMutation.mutateAsync(ids);
         clearSelection();
-        setDetailStack((s) => s.filter((d) => !ids.includes(d.id)));
+        setDetailStack((s) => s.filter((d) => !ketQua.thanhCong.includes(d.id)));
       },
     });
   };
@@ -287,10 +300,11 @@ const DepartmentPage = () => {
       variant: 'warning',
       confirmText: CONFIRM_YES(),
       onConfirm: async () => {
-        for (const id of ids) {
-          await statusMutation.mutateAsync({ id, status });
-        }
+        const ketQua = await statusManyMutation.mutateAsync({ ids, status });
         clearSelection();
+        setDetailStack((s) =>
+          s.map((d) => (ketQua.thanhCong.includes(d.id) ? { ...d, trang_thai: status } : d)),
+        );
       },
     });
   };
@@ -375,6 +389,8 @@ const DepartmentPage = () => {
             onToggleSelection={toggleSelection}
             onToggleAllSelection={toggleAllSelection}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
             page={page}
             pageSize={pageSize}
             onPageChange={setPage}

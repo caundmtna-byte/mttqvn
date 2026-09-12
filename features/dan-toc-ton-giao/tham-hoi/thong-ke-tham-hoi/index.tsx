@@ -33,18 +33,23 @@ import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
-import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
-  buildStandardDateRangePresets,
-  isStandardDateRangeNonDefault,
-} from '@/lib/date-range-presets';
-import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+  ReportSkeleton,
+  StatsKpiGrid,
+  StatsCard,
+  StatsTableCard,
+  ColoredBar,
+  useStatsPageFilters,
+  resolveStatsTrendChartRange,
+} from '@/components/shared/stats';
 import { chartFillForCategoricalBar } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import EnumBadge from '@/components/ui/EnumBadge';
@@ -66,7 +71,7 @@ import {
   type ThamHoiLookupSortKey,
   combineAndNormalize,
   resolveThamHoiThongKeDateRange,
-  resolveThamHoiThongKeTrendChartRange,
+  getThamHoiStatsDateFromRow,
   filterRowsForThamHoiThongKe,
   computeThamHoiThongKeKpis,
   pickThamHoiTrendBucket,
@@ -81,12 +86,6 @@ import {
 } from './utils/aggregate-tham-hoi-stats';
 
 const CUSTOM_PRESET = 'custom';
-
-const initialDateRange: DateRangeValue = {
-  preset: 'all',
-  customStart: '',
-  customEnd: '',
-};
 
 const initialDims: ThamHoiThongKeDimensionFilters = {
   loai: [],
@@ -121,14 +120,17 @@ const ThongKeThamHoiPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'danTocThamHoiThongKe');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('dttgThongKeThamHoi.noViewPermission'));
     navigate('/dan-toc-ton-giao', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const { data: toChucRows = [], isLoading: loadingToChuc } = useThamHoiToChucList({ enabled: canView });
   const { data: caNhanRows = [], isLoading: loadingCaNhan } = useThamHoiCaNhanList({ enabled: canView });
@@ -153,13 +155,19 @@ const ThongKeThamHoiPage: React.FC = () => {
     [viewableToChucRows, viewableCaNhanRows],
   );
 
-  const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
-  const [dims, setDims] = useState<ThamHoiThongKeDimensionFilters>(initialDims);
+  const {
+    dateRange,
+    setDateRange,
+    dims,
+    setDims,
+    presets,
+    activeFilterCount,
+    clearFilters,
+  } = useStatsPageFilters(initialDims);
   const [sortKey, setSortKey] = useState<ThamHoiLookupSortKey>('ten_doi_tuong');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [showExport, setShowExport] = useState(false);
 
-  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const resolvedRange = useMemo(
     () => resolveThamHoiThongKeDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
@@ -174,7 +182,7 @@ const ThongKeThamHoiPage: React.FC = () => {
   const kpis = useMemo(() => computeThamHoiThongKeKpis(filtered), [filtered]);
 
   const chartRange = useMemo(
-    () => resolveThamHoiThongKeTrendChartRange(resolvedRange, allRows),
+    () => resolveStatsTrendChartRange(resolvedRange, allRows, getThamHoiStatsDateFromRow),
     [resolvedRange, allRows],
   );
   const bucket = useMemo(() => pickThamHoiTrendBucket(chartRange.start, chartRange.end), [chartRange]);
@@ -265,27 +273,9 @@ const ThongKeThamHoiPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, dip_tham_hoi: v })),
       },
     ],
-    [loaiOptions, tinhTrangOptions, dipOptions, dims],
+    // `setDims` từ `useStatsPageFilters` ổn định như setter useState, linter không suy ra được.
+    [setDims, loaiOptions, tinhTrangOptions, dipOptions, dims],
   );
-
-  const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'all'),
-    [dateRange],
-  );
-
-  const activeFilterCount = useMemo(() => {
-    let n = 0;
-    if (isNonDefaultDateRange) n += 1;
-    if (dims.loai.length) n += 1;
-    if (dims.tinh_trang.length) n += 1;
-    if (dims.dip_tham_hoi.length) n += 1;
-    return n;
-  }, [dims, isNonDefaultDateRange]);
-
-  const clearFilters = useCallback(() => {
-    setDims(initialDims);
-    setDateRange(initialDateRange);
-  }, []);
 
   const exportColumns = useMemo(
     () => [
@@ -491,7 +481,7 @@ const ThongKeThamHoiPage: React.FC = () => {
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">{txt('dttgThongKeThamHoi.loading')}</p>
+          <ReportSkeleton />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center space-y-2">
             <p className="text-sm font-medium text-foreground">{txt('dttgThongKeThamHoi.noData')}</p>

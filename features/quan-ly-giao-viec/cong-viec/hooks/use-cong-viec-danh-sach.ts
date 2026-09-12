@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import type { CongViecDanhSach } from '../core/types';
 import type { CongViecDanhSachFormValues } from '../core/schema';
@@ -11,10 +10,7 @@ import {
   deleteCongViecDanhSachMany,
   getCongViecByChuongTrinhNamId,
   getCongViecDanhSachById,
-  getCongViecDanhSachList,
-  getCongViecDanhSachPage,
   updateCongViecDanhSach,
-  type CongViecPageQuery,
   type CongViecPageResult,
 } from '../services/cong-viec-danh-sach-service';
 
@@ -30,23 +26,6 @@ function invalidateReportCache(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: reportKey, refetchType: 'none' });
 }
 
-export const useCongViecDanhSachList = (options?: { enabled?: boolean }) =>
-  useQuery({
-    queryKey: listKey,
-    queryFn: getCongViecDanhSachList,
-    enabled: options?.enabled !== false,
-    ...listQueryOptions,
-  });
-
-export const useCongViecDanhSachPage = (args: CongViecPageQuery & { enabled?: boolean }) => {
-  const { enabled = true, ...q } = args;
-  return useQuery({
-    queryKey: queryKeys.congViecDanhSach.page(q),
-    queryFn: () => getCongViecDanhSachPage(q),
-    enabled,
-    ...listQueryOptions,
-  });
-};
 
 export const useCongViecDanhSachDetail = (id: string | null) =>
   useQuery({
@@ -119,7 +98,6 @@ export const useCreateCongViecDanhSach = (onSuccess?: () => void) => {
       toast.success(txt('taskList.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -136,7 +114,6 @@ export const useUpdateCongViecDanhSach = (onSuccess?: () => void) => {
       toast.success(txt('taskList.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -153,6 +130,5 @@ export const useDeleteCongViecDanhSachMany = () => {
       invalidateReportCache(queryClient);
       toast.success(txt('taskList.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

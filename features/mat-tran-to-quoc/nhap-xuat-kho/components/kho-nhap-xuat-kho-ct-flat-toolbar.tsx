@@ -8,21 +8,20 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipSingleSelect from '@/components/shared/FilterChipSingleSelect';
 import type { Option } from '@/components/ui/MultiSelect';
+import { useKhoDanhSachKhoList } from '@/features/mat-tran-to-quoc/danh-sach-kho/hooks/use-kho-danh-sach-kho';
+import { useKhoDanhSachHangHoaList } from '@/features/mat-tran-to-quoc/hang-hoa/hooks/use-kho-danh-sach-hang-hoa';
 import { useNhapXuatKhoCtFlatStore } from '../store/useNhapXuatKhoCtFlatStore';
 import { countColumnSearchActive } from '../utils/column-search';
-import type { NhapXuatKhoCtFlatRow } from '../core/types';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 
 interface Props {
   tabSlot: ReactNode;
   onPageBack: () => void;
   onExport: () => void;
-  items?: NhapXuatKhoCtFlatRow[] | null;
 }
 
-const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ tabSlot, onPageBack, onExport, items }) => {
+const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ tabSlot, onPageBack, onExport }) => {
   const { canExport } = useResourcePermissions('matTranReliefStockTransactions');
-  const itemRows = Array.isArray(items) ? items : [];
 
   const {
     searchTerm,
@@ -36,49 +35,34 @@ const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ tabSlot, onPageBack, onExpo
     setSort,
   } = useNhapXuatKhoCtFlatStore();
 
-  const loaiCounts = useMemo(() => {
-    const counts: Record<NhapXuatKhoLoaiPhieu, number> = {
-      nhap_ngoai: 0,
-      xuat_ngoai: 0,
-      chuyen_kho: 0,
-    };
-    for (const r of itemRows) counts[r.loai_phieu] = (counts[r.loai_phieu] ?? 0) + 1;
-    return counts;
-  }, [itemRows]);
+  // Tuỳ chọn lọc lấy từ BẢNG DANH MỤC — xem ghi chú ở toolbar tab Danh sách.
+  const { data: khoList = [] } = useKhoDanhSachKhoList();
+  const { data: hangHoaList = [] } = useKhoDanhSachHangHoaList();
 
   const loaiOptions = useMemo<Option[]>(
     () =>
       NHAP_XUAT_KHO_LOAI_PHIEU.map((v) => ({
         label: txt(`matTranNhapXuatKho.loaiPhieu.${v}`),
         value: v,
-        count: loaiCounts[v] ?? 0,
       })),
-    [loaiCounts],
+    [],
   );
 
-  /** Tập kho duy nhất xuất hiện trong rows (kho_xuat hoặc kho_nhap). */
-  const khoOptions = useMemo<Option[]>(() => {
-    const map = new Map<string, string>();
-    for (const r of itemRows) {
-      if (r.kho_xuat_id && r.ten_kho_xuat) map.set(r.kho_xuat_id, r.ten_kho_xuat);
-      if (r.kho_nhap_id && r.ten_kho_nhap) map.set(r.kho_nhap_id, r.ten_kho_nhap);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
-      .map(([value, label]) => ({ label, value }));
-  }, [itemRows]);
+  const khoOptions = useMemo<Option[]>(
+    () =>
+      khoList
+        .map((k) => ({ label: k.ten_kho, value: String(k.id) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
+    [khoList],
+  );
 
-  const hangHoaOptions = useMemo<Option[]>(() => {
-    const map = new Map<string, string>();
-    for (const r of itemRows) {
-      const id = r.hang_hoa_id;
-      const lbl = r.ten_hang_hoa ?? `#${id}`;
-      if (!map.has(id)) map.set(id, lbl);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
-      .map(([id, label]) => ({ label, value: id }));
-  }, [itemRows]);
+  const hangHoaOptions = useMemo<Option[]>(
+    () =>
+      hangHoaList
+        .map((h) => ({ label: h.ten_hang_hoa, value: String(h.id) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
+    [hangHoaList],
+  );
 
   const activeFilterCount = useMemo(() => {
     return (

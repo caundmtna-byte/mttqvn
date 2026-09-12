@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import {
   getPbxhThietLapAll,
@@ -32,7 +31,6 @@ export const useCreatePbxhThietLap = (onSuccess?: () => void) => {
       toast.success(txt('page.pbxhThietLap.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -48,7 +46,6 @@ export const useUpdatePbxhThietLap = (onSuccess?: () => void) => {
       toast.success(txt('page.pbxhThietLap.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -60,6 +57,5 @@ export const useDeletePbxhThietLap = () => {
       void queryClient.invalidateQueries({ queryKey: qk });
       toast.success(txt('page.pbxhThietLap.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

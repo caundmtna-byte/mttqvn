@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import {
   getThietLapKhacAll,
@@ -32,7 +31,6 @@ export const useCreateThietLapKhac = (onSuccess?: () => void) => {
       toast.success(txt('articleSettings.toast.khacCreate'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -48,7 +46,6 @@ export const useUpdateThietLapKhac = (onSuccess?: () => void) => {
       toast.success(txt('articleSettings.toast.khacUpdate'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -60,6 +57,5 @@ export const useDeleteThietLapKhac = () => {
       void queryClient.invalidateQueries({ queryKey: qk });
       toast.success(txt('articleSettings.toast.khacDelete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

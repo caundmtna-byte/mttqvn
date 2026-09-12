@@ -8,6 +8,7 @@ import { usePbxhThietLapAll } from './hooks/use-pbxh-thiet-lap';
 import { PBXH_THIET_LAP_LOAI, PBXH_LOAI_TAB_LABEL_KEY, type PbxhThietLapLoai } from './core/types';
 import { usePbxhThietLapStore } from './store/usePbxhThietLapStore';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 
@@ -15,17 +16,20 @@ const ThietLapDanhMucPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'phanBienThietLapDanhMuc');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('pbxhThietLap.noViewPermission'));
     navigate('/phan-bien-xa-hoi', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [activeLoai, setActiveLoai] = useTabSearchParam(PBXH_THIET_LAP_LOAI, 'doi_tuong');
-  const { data: allRowsRaw, isLoading } = usePbxhThietLapAll({ enabled: canView });
+  const { data: allRowsRaw, isLoading, isError, refetch } = usePbxhThietLapAll({ enabled: canView });
   const store = usePbxhThietLapStore();
 
   const allRows = Array.isArray(allRowsRaw) ? allRowsRaw : [];
@@ -76,6 +80,8 @@ const ThietLapDanhMucPage: React.FC = () => {
           loai={activeLoai}
           items={items}
           isLoading={isLoading}
+          isError={isError}
+          onRetry={() => void refetch()}
           store={store}
           tabGroup={tabsSlot}
           onPageBack={goBack}

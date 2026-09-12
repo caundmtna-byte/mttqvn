@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from './components/layout/Layout';
 import ConfirmDialog from './components/shared/ConfirmDialog';
@@ -10,7 +10,6 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Home = lazy(() => import('./pages/Home'));
 const MatTranToQuocDashboard = lazy(() => import('./pages/dashboards/MatTranToQuocDashboard'));
 const QuanLyGiaoViecDashboard = lazy(() => import('./pages/dashboards/QuanLyGiaoViecDashboard'));
-const LicenseInfo = lazy(() => import('./pages/LicenseInfo'));
 const NotificationPage = lazy(() => import('./pages/NotificationPage'));
 const SystemDashboard = lazy(() => import('./pages/dashboards/SystemDashboard'));
 const QuanLyVietBaiDashboard = lazy(() => import('./pages/dashboards/QuanLyVietBaiDashboard'));
@@ -43,6 +42,21 @@ const DanhSachTapHuanPage = lazy(() => import('./features/mat-tran-to-quoc/danh-
 const MttqLopTapHuanInDanhSachPage = lazy(
   () => import('./features/mat-tran-to-quoc/danh-sach-tap-huan/pages/mttq-lop-tap-huan-in-danh-sach-page'),
 );
+const MttqKhenThuongInQuyetDinhPage = lazy(
+  () => import('./features/mat-tran-to-quoc/danh-sach-khen-thuong/pages/mttq-khen-thuong-in-quyet-dinh-page'),
+);
+const MttqKhenThuongInDeNghiPage = lazy(
+  () => import('./features/mat-tran-to-quoc/danh-sach-khen-thuong/pages/mttq-khen-thuong-in-de-nghi-page'),
+);
+const MttqKyHopInDiemDanhPage = lazy(
+  () => import('./features/mat-tran-to-quoc/ky-hop/pages/mttq-ky-hop-in-diem-danh-page'),
+);
+const MttqUyVienInDanhSachPage = lazy(
+  () => import('./features/mat-tran-to-quoc/uy-vien-uy-ban/pages/mttq-uy-vien-in-danh-sach-page'),
+);
+const MttqTangLuongInQuyetDinhPage = lazy(
+  () => import('./features/mat-tran-to-quoc/danh-sach-tang-luong/pages/mttq-tang-luong-in-quyet-dinh-page'),
+);
 const KhoDanhSachKhoPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-kho/index'));
 const KhoDonViCuuTroPage = lazy(() => import('./features/mat-tran-to-quoc/don-vi-cuu-tro/index'));
 const KhoDotCuuTroPage = lazy(() => import('./features/mat-tran-to-quoc/dot-cuu-tro/index'));
@@ -62,8 +76,14 @@ const DtTgThongKeThamHoiPage = lazy(() => import('./features/dan-toc-ton-giao/th
 const DtTgThongTinToChucQuanTrongPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/index'));
 const DtTgThongTinCaNhanTieuBieuPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/index'));
 const DtTgThongKeToChucCaNhanPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan/index'));
+// Quỹ tiền — MỘT bộ màn hình dùng chung cho hai quỹ, phân biệt bằng prop `quy`.
+const QuySoThuChiPage = lazy(() => import('./features/quy/so-thu-chi/index'));
+const QuyDanhMucKhoanPage = lazy(() => import('./features/quy/danh-muc-khoan/index'));
+const QuyDanhMucTaiKhoanPage = lazy(() => import('./features/quy/danh-muc-tai-khoan/index'));
+const QuyBaoCaoThongKePage = lazy(() => import('./features/quy/bao-cao-thong-ke/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 import {
   ThemeSynchronizer,
   MetadataSynchronizer,
@@ -89,15 +109,22 @@ const PageFallback = () => (
 );
 
 /** Layout + bảo vệ đăng nhập — dùng Outlet thay vì Routes lồng trong `path="/*"` để các path tuyệt đối khớp đúng (RR 6/7). */
-const AppShell = () => (
-  <ProtectedRoute>
-    <Layout>
-      <Suspense fallback={<PageFallback />}>
-        <Outlet />
-      </Suspense>
-    </Layout>
-  </ProtectedRoute>
-);
+const AppShell = () => {
+  const location = useLocation();
+  return (
+    <ProtectedRoute>
+      <Layout>
+        <Suspense fallback={<PageFallback />}>
+          {/* Boundary theo từng route: lỗi render một trang không làm trắng cả app;
+              đổi route là tự reset nhờ `resetKey`. */}
+          <ErrorBoundary resetKey={location.key}>
+            <Outlet />
+          </ErrorBoundary>
+        </Suspense>
+      </Layout>
+    </ProtectedRoute>
+  );
+};
 
 const App = () => {
   const resolvedTheme = useResolvedTheme();
@@ -111,7 +138,19 @@ const App = () => {
       <AuthSessionSynchronizer />
       <ConfirmDialog />
       <PwaRegister />
-      <Toaster position="top-right" richColors theme={resolvedTheme} />
+      {/*
+        Mặc định sonner là 4 giây, không nút đóng, tối đa 3 toast — quá ngắn để đọc
+        hết một câu lỗi tiếng Việt đầy đủ, và không có cách xem lại.
+        Lỗi quan trọng đặt `duration: Infinity` tại chỗ gọi (xem `queryErrorToast`).
+      */}
+      <Toaster
+        position="top-right"
+        richColors
+        theme={resolvedTheme}
+        closeButton
+        duration={5000}
+        visibleToasts={5}
+      />
       <Routes>
         <Route path="/dang-nhap" element={<Login />} />
         <Route path="/login" element={<Navigate to="/dang-nhap" replace />} />
@@ -126,10 +165,26 @@ const App = () => {
             element={<MttqLopTapHuanInDanhSachPage />}
           />
           <Route path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong" element={<DanhSachKhenThuongPage />} />
+          <Route
+            path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong/:khenThuongId/in-quyet-dinh"
+            element={<MttqKhenThuongInQuyetDinhPage />}
+          />
+          <Route
+            path="/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong/:khenThuongId/in-de-nghi"
+            element={<MttqKhenThuongInDeNghiPage />}
+          />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky" element={<NhiemKyPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/nhiem-ky/diem-danh/:nhiemKyId" element={<NhiemKyDiemDanhMatrixPage />} />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop" element={<KyHopPage />} />
+          <Route
+            path="/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop/:kyHopId/in-diem-danh"
+            element={<MttqKyHopInDiemDanhPage />}
+          />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien" element={<UyVienUyBanPage />} />
+          <Route
+            path="/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien/nhiem-ky/:nhiemKyId/in-danh-sach"
+            element={<MttqUyVienInDanhSachPage />}
+          />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien" element={<BaoCaoUyVienPage />} />
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro" replace />} />
           <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa" replace />} />
@@ -150,6 +205,10 @@ const App = () => {
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo" element={<BaoCaoCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
           <Route path="/mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong" element={<DanhSachTangLuongPage />} />
+          <Route
+            path="/mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong/:tangLuongId/in-quyet-dinh"
+            element={<MttqTangLuongInQuyetDinhPage />}
+          />
           <Route path="/mat-tran-to-quoc/quan-ly-luong/thiet-lap-luong" element={<ThietLapLuongPage />} />
           <Route path="/quan-ly-viet-bai" element={<QuanLyVietBaiDashboard />} />
           <Route path="/quan-ly-viet-bai/bai-viet" element={<BaiVietDanhSachPage />} />
@@ -192,12 +251,51 @@ const App = () => {
           />
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" element={<KhoBaoCaoHoTroPage />} />
+
+          {/*
+            Quỹ vì người nghèo và Quỹ cứu trợ dùng CHUNG bốn trang, khác nhau ở
+            prop `quy`. `key` bắt React gắn lại trang khi đổi quỹ — không có nó
+            thì bộ lọc, trang hiện tại và dòng đang mở của quỹ này còn nguyên khi
+            người dùng chuyển sang quỹ kia.
+          */}
+          <Route
+            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/so-thu-chi"
+            element={<QuySoThuChiPage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/danh-muc-chi-phi"
+            element={<QuyDanhMucKhoanPage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/danh-muc-tai-khoan"
+            element={<QuyDanhMucTaiKhoanPage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/bao-cao-thong-ke"
+            element={<QuyBaoCaoThongKePage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/quy-cuu-tro/so-thu-chi"
+            element={<QuySoThuChiPage key="cuu_tro" quy="cuu_tro" />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-chi-phi"
+            element={<QuyDanhMucKhoanPage key="cuu_tro" quy="cuu_tro" />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-tai-khoan"
+            element={<QuyDanhMucTaiKhoanPage key="cuu_tro" quy="cuu_tro" />}
+          />
+          <Route
+            path="/an-sinh-xa-hoi/quy-cuu-tro/bao-cao-thong-ke"
+            element={<QuyBaoCaoThongKePage key="cuu_tro" quy="cuu_tro" />}
+          />
+
           {PLACEHOLDER_MODULE_PATHS.map((path) => (
             <Route key={path} path={path} element={<DashboardModulePlaceholder />} />
           ))}
           <Route path="/hanh-chinh" element={<HanhChinhDashboard />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
-          <Route path="/thong-tin-ban-quyen" element={<LicenseInfo />} />
 
           <Route path="/he-thong" element={<SystemDashboard />} />
           <Route path="/he-thong/nhan-vien" element={<EmployeePage />} />

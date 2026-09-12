@@ -23,11 +23,17 @@ import { NhapXuatKhoTableRowActions } from './kho-nhap-xuat-kho-table-row-action
 interface Props {
   data: NhapXuatKhoListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: NhapXuatKhoListRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: NhapXuatKhoListRow) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  serverSidePagination?: boolean;
+  serverTotalRecords?: number | null;
+  serverHasNextPage?: boolean;
 }
 
 function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
@@ -44,11 +50,16 @@ function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
 const NhapXuatKhoTable = memo(function NhapXuatKhoTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
   emptyTitle,
   emptyDescription,
+  serverSidePagination,
+  serverTotalRecords,
+  serverHasNextPage,
 }: Props) {
   const {
     columns,
@@ -169,6 +180,12 @@ const NhapXuatKhoTable = memo(function NhapXuatKhoTable({
           return (
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">{item.so_dong}</span>
           );
+        case 'ho_va_ten_nguoi_tao':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate">
+              {item.ho_va_ten_nguoi_tao ?? txt('common.emptyCell')}
+            </span>
+          );
         case 'tg_cap_nhat':
           return (
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
@@ -286,9 +303,14 @@ const NhapXuatKhoTable = memo(function NhapXuatKhoTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranNhapXuatKho.emptyTitleList')}
       emptyDescription={emptyDescription ?? txt('matTranNhapXuatKho.emptyHintList')}
+      serverSidePagination={serverSidePagination}
+      serverTotalRecords={serverTotalRecords ?? undefined}
+      serverHasNextPage={serverHasNextPage}
       selectedIds={selectedIds}
       onToggleSelection={toggleSelection}
       onToggleAll={toggleAllSelection}

@@ -24,7 +24,7 @@ import type { GenericState } from '@/store/createGenericStore';
 import { useDeleteThietLapKhac } from '../hooks/use-thiet-lap-khac';
 import type { BaiVietThietLapKhac, BaiVietThietLapKhacLoai } from '../core/types';
 import type { ArticleKhacFilters } from '../core/types';
-import { khacMatchesColumnSearch } from '../utils/column-search-khac';
+import { countKhacColumnSearchActive, khacMatchesColumnSearch } from '../utils/column-search-khac';
 import { ARTICLE_KHAC_SEARCH_KEYS } from '../utils/search-keys';
 
 const KhacForm = lazy(() => import('./khac-form'));
@@ -47,6 +47,9 @@ export interface ArticleKhacListPanelInnerProps {
   loai: BaiVietThietLapKhacLoai;
   items: BaiVietThietLapKhac[];
   isLoading: boolean;
+  /** Query danh sách lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   store: GenericState<ArticleKhacFilters>;
   exportFileName: string;
 }
@@ -57,6 +60,8 @@ export function ArticleKhacListPanelInner({
   loai,
   items,
   isLoading,
+  isError,
+  onRetry,
   store,
   exportFileName,
 }: ArticleKhacListPanelInnerProps) {
@@ -115,6 +120,18 @@ export function ArticleKhacListPanelInner({
     }
     return sorted;
   }, [filteredRows, sort.column, sort.direction]);
+
+  /** Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc". */
+  const hasListFilters = useMemo(
+    () =>
+      Boolean(searchTerm?.trim()) ||
+      countKhacColumnSearchActive(filters.columnSearch, filters.mo_ta_bucket) > 0 ||
+      filters.mo_ta_bucket === 'has' ||
+      filters.mo_ta_bucket === 'empty',
+    [searchTerm, filters.columnSearch, filters.mo_ta_bucket],
+  );
+
+  const listFilteredEmpty = sortedRows.length === 0 && items.length > 0 && hasListFilters;
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -231,10 +248,13 @@ export function ArticleKhacListPanelInner({
             store={store}
             data={sortedRows}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={onRetry}
             onRowClick={setViewing}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            emptyTitle={txt('page.articleSettings.emptyKhac')}
+            emptyTitle={listFilteredEmpty ? txt('common.noResults') : txt('page.articleSettings.emptyKhac')}
+            emptyDescription={listFilteredEmpty ? txt('shared.empty.filteredHint') : undefined}
           />
         </div>
       </div>

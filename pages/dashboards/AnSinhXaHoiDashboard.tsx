@@ -9,15 +9,64 @@ import {
   PackageCheck,
   Building2,
   BarChart3,
+  BookOpen,
+  Tags,
+  Wallet,
 } from 'lucide-react';
 import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleItem } from '../../components/dashboard/SubModuleCard';
 import { useAuthStore } from '../../store/useStore';
 import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
-import { can } from '../../lib/permissions';
+import { can, type AppResource } from '../../lib/permissions';
 import { appResourceForDashboardNavigatePath } from '../../lib/nav-module-visibility';
 import { AN_SINH_PLACEHOLDER_GROUPS } from '../../lib/an-sinh-hanh-chinh-module-config';
+
+/**
+ * Bốn trang của MỖI quỹ. Hai quỹ dùng chung một bộ màn hình nên cũng dùng chung
+ * `AppResource` — `appResourceForDashboardNavigatePath()` không suy ra được từ
+ * đường dẫn (đường dẫn có tên quỹ, `module_id` thì không), nên gắn thẳng ở đây.
+ */
+function buildQuyItems(
+  segment: 'quy-vi-nguoi-ngheo' | 'quy-cuu-tro',
+  colors: { soThuChi: string; danhMucChiPhi: string; danhMucTaiKhoan: string; baoCao: string },
+) {
+  const base = `/an-sinh-xa-hoi/${segment}`;
+  return [
+    {
+      path: `${base}/so-thu-chi`,
+      resource: 'quySoThuChi' as const,
+      title: txt('page.anSinhXaHoiDashboard.soThuChi'),
+      description: txt('page.anSinhXaHoiDashboard.soThuChiDesc'),
+      icon: BookOpen,
+      color: colors.soThuChi,
+    },
+    {
+      path: `${base}/danh-muc-chi-phi`,
+      resource: 'quyDanhMucKhoan' as const,
+      title: txt('page.anSinhXaHoiDashboard.danhMucChiPhi'),
+      description: txt('page.anSinhXaHoiDashboard.danhMucChiPhiDesc'),
+      icon: Tags,
+      color: colors.danhMucChiPhi,
+    },
+    {
+      path: `${base}/danh-muc-tai-khoan`,
+      resource: 'quyDanhMucTaiKhoan' as const,
+      title: txt('page.anSinhXaHoiDashboard.danhMucTaiKhoan'),
+      description: txt('page.anSinhXaHoiDashboard.danhMucTaiKhoanDesc'),
+      icon: Wallet,
+      color: colors.danhMucTaiKhoan,
+    },
+    {
+      path: `${base}/bao-cao-thong-ke`,
+      resource: 'quyBaoCaoThongKe' as const,
+      title: txt('page.anSinhXaHoiDashboard.baoCaoThongKe'),
+      description: txt('page.anSinhXaHoiDashboard.baoCaoThongKeDesc'),
+      icon: BarChart3,
+      color: colors.baoCao,
+    },
+  ];
+}
 
 const AnSinhXaHoiDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +76,12 @@ const AnSinhXaHoiDashboard: React.FC = () => {
   const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
 
   const groups = useMemo((): ModuleGroup[] => {
-    type Draft = Omit<ModuleItem, 'action'> & { path: string; placeholder?: boolean };
+    type Draft = Omit<ModuleItem, 'action'> & {
+      path: string;
+      placeholder?: boolean;
+      /** Ghi đè resource khi không suy được từ đường dẫn (các trang quỹ). */
+      resource?: AppResource;
+    };
     const raw: { groupTitle: string; items: Draft[] }[] = [
       {
         groupTitle: txt('page.matTranDashboard.groupReliefWarehouse'),
@@ -83,6 +137,24 @@ const AnSinhXaHoiDashboard: React.FC = () => {
           },
         ],
       },
+      {
+        groupTitle: txt('page.anSinhXaHoiDashboard.groupQuyViNguoiNgheo'),
+        items: buildQuyItems('quy-vi-nguoi-ngheo', {
+          soThuChi: 'bg-pink-500',
+          danhMucChiPhi: 'bg-fuchsia-500',
+          danhMucTaiKhoan: 'bg-violet-500',
+          baoCao: 'bg-purple-500',
+        }),
+      },
+      {
+        groupTitle: txt('page.anSinhXaHoiDashboard.groupQuyCuuTro'),
+        items: buildQuyItems('quy-cuu-tro', {
+          soThuChi: 'bg-rose-500',
+          danhMucChiPhi: 'bg-orange-500',
+          danhMucTaiKhoan: 'bg-amber-500',
+          baoCao: 'bg-yellow-600',
+        }),
+      },
       ...AN_SINH_PLACEHOLDER_GROUPS.map((g) => ({
         groupTitle: txt(g.groupTitleKey),
         items: g.modules.map((item) => ({
@@ -102,7 +174,7 @@ const AnSinhXaHoiDashboard: React.FC = () => {
         items: g.items
           .filter((item) => {
             if (item.placeholder) return true;
-            const res = appResourceForDashboardNavigatePath(item.path);
+            const res = item.resource ?? appResourceForDashboardNavigatePath(item.path);
             if (!user || res == null) return true;
             return can(user, 'view', res);
           })

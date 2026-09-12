@@ -50,7 +50,7 @@ GRANT SELECT ON public.v_cong_viec_bao_cao TO authenticated;
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_kpi(
   date, date, bigint[], bigint[], text[], text[], boolean
 );
-CREATE FUNCTION public.cong_viec_bao_cao_kpi(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_kpi(
   p_start            date,
   p_end              date,
   p_id_trach_nhiem   bigint[] DEFAULT NULL,
@@ -119,7 +119,7 @@ GRANT EXECUTE ON FUNCTION public.cong_viec_bao_cao_kpi(
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_trend(
   date, date, text, bigint[], bigint[], text[], text[], boolean
 );
-CREATE FUNCTION public.cong_viec_bao_cao_trend(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_trend(
   p_start            date,
   p_end              date,
   p_bucket           text     DEFAULT 'auto',
@@ -237,7 +237,7 @@ GRANT EXECUTE ON FUNCTION public.cong_viec_bao_cao_trend(
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_phan_bo_trang_thai(
   date, date, bigint[], bigint[], text[], text[], boolean
 );
-CREATE FUNCTION public.cong_viec_bao_cao_phan_bo_trang_thai(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_phan_bo_trang_thai(
   p_start            date,
   p_end              date,
   p_id_trach_nhiem   bigint[] DEFAULT NULL,
@@ -275,7 +275,7 @@ GRANT EXECUTE ON FUNCTION public.cong_viec_bao_cao_phan_bo_trang_thai(
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_phan_bo_muc_do(
   date, date, bigint[], bigint[], text[], text[], boolean
 );
-CREATE FUNCTION public.cong_viec_bao_cao_phan_bo_muc_do(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_phan_bo_muc_do(
   p_start            date,
   p_end              date,
   p_id_trach_nhiem   bigint[] DEFAULT NULL,
@@ -321,7 +321,7 @@ GRANT EXECUTE ON FUNCTION public.cong_viec_bao_cao_phan_bo_muc_do(
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_top_trach_nhiem(
   date, date, integer, bigint[], bigint[], text[], text[], boolean
 );
-CREATE FUNCTION public.cong_viec_bao_cao_top_trach_nhiem(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_top_trach_nhiem(
   p_start            date,
   p_end              date,
   p_top              integer  DEFAULT 10,
@@ -383,7 +383,7 @@ GRANT EXECUTE ON FUNCTION public.cong_viec_bao_cao_top_trach_nhiem(
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_top_nguoi_tao(
   date, date, integer, bigint[], bigint[], text[], text[], boolean
 );
-CREATE FUNCTION public.cong_viec_bao_cao_top_nguoi_tao(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_top_nguoi_tao(
   p_start            date,
   p_end              date,
   p_top              integer  DEFAULT 10,
@@ -447,7 +447,7 @@ GRANT EXECUTE ON FUNCTION public.cong_viec_bao_cao_top_nguoi_tao(
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_lookup(
   date, date, integer, integer, text, bigint[], bigint[], text[], text[], boolean
 );
-CREATE FUNCTION public.cong_viec_bao_cao_lookup(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_lookup(
   p_start            date,
   p_end              date,
   p_limit            integer  DEFAULT 50,
@@ -541,7 +541,7 @@ GRANT EXECUTE ON FUNCTION public.cong_viec_bao_cao_lookup(
 --    tránh fetch toàn bộ var_nhan_vien (chỉ ai có việc trong kỳ).
 -- ----------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.cong_viec_bao_cao_filter_options(date, date);
-CREATE FUNCTION public.cong_viec_bao_cao_filter_options(
+CREATE OR REPLACE FUNCTION public.cong_viec_bao_cao_filter_options(
   p_start date,
   p_end   date
 ) RETURNS TABLE (

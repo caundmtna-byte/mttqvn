@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { KhoDonViCuuTroFormValues } from '../core/schema';
 import type { KhoDonViCuuTroListRow } from '../core/types';
 import {
@@ -52,7 +51,6 @@ export function useCreateKhoDonViCuuTro(onSuccess?: () => void) {
       toast.success(txt('matTranDonViCuuTro.toast.create'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -74,7 +72,6 @@ export function useUpdateKhoDonViCuuTro(onSuccess?: () => void) {
       toast.success(txt('matTranDonViCuuTro.toast.update'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -97,7 +94,6 @@ export function useDeleteKhoDonViCuuTroMany() {
       }
       toast.success(txt('matTranDonViCuuTro.toast.delete', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -115,6 +111,5 @@ export function useImportKhoDonViCuuTro(onSuccess?: () => void) {
       }
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }

@@ -12,6 +12,9 @@ import { KhoDanhSachKhoTableRowActions } from './kho-danh-sach-kho-table-row-act
 interface Props {
   data: KhoDanhSachKhoListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: KhoDanhSachKhoListRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: KhoDanhSachKhoListRow) => void;
@@ -22,6 +25,8 @@ interface Props {
 const KhoDanhSachKhoTable = memo(function KhoDanhSachKhoTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -211,6 +216,8 @@ const KhoDanhSachKhoTable = memo(function KhoDanhSachKhoTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranKhoDanhSach.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('matTranKhoDanhSach.emptyHint')}

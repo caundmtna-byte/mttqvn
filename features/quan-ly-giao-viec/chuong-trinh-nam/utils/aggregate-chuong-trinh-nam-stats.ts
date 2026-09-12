@@ -1,3 +1,4 @@
+import { resolveStatsTrendChartRange } from '@/components/shared/stats/resolve-trend-chart-range';
 import dayjs from 'dayjs';
 import type { ChuongTrinhNamListRow } from '../core/types';
 import {
@@ -111,13 +112,26 @@ export function computeChuongTrinhNamTienDoKpis(filtered: ChuongTrinhNamListRow[
   return { quaHan, sapDenHan, conHan, ketThuc };
 }
 
+/**
+ * Khoảng ngày vẽ biểu đồ xu hướng. Preset «Tất cả» trả `start`/`end` rỗng —
+ * quy đổi thành min–max `tg_tao` trên tập đã lọc để builder không nhận Invalid Date.
+ */
+/** Uỷ quyền cho helper dùng chung — xem `resolveStatsTrendChartRange`. */
+export function resolveChuongTrinhNamStatsTrendChartRange(
+  range: ResolvedDateRange,
+  filtered: ChuongTrinhNamListRow[],
+): ResolvedDateRange {
+  return resolveStatsTrendChartRange(range, filtered, getChuongTrinhNamStatsDateFromTgTao);
+}
+
 export type ChuongTrinhTrendBucket = 'day' | 'month';
 
 export function pickChuongTrinhTrendBucket(start: string, end: string): ChuongTrinhTrendBucket {
   const a = dayjs(start.slice(0, 10));
   const b = dayjs(end.slice(0, 10));
+  if (!a.isValid() || !b.isValid()) return 'month';
   const days = b.diff(a, 'day');
-  return days > 62 ? 'month' : 'day';
+  return Number.isFinite(days) && days > 62 ? 'month' : 'day';
 }
 
 export interface ChuongTrinhTrendPoint {
@@ -133,6 +147,11 @@ export function buildChuongTrinhTrendSeries(
 ): ChuongTrinhTrendPoint[] {
   const start = dayjs(range.start.slice(0, 10));
   const end = dayjs(range.end.slice(0, 10));
+  // Chặn vòng lặp vô tận: dayjs('') là Invalid Date, `Invalid.isAfter(Invalid)`
+  // luôn false nên điều kiện dừng không bao giờ đúng. Xảy ra với preset "Tất cả"
+  // (`resolveStandardDateRange('all')` trả start/end rỗng) nếu không đi qua
+  // `resolveChuongTrinhNamStatsTrendChartRange` bên dưới.
+  if (!start.isValid() || !end.isValid()) return [];
   const keys: string[] = [];
   if (bucket === 'day') {
     for (let cur = start; !cur.isAfter(end, 'day'); cur = cur.add(1, 'day')) {

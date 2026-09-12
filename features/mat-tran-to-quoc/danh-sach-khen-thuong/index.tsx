@@ -23,6 +23,7 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
@@ -61,7 +62,8 @@ const KHEN_THUONG_MAIN_TABS = ['danh_sach', 'chi_tiet', 'thong_ke'] as const sat
 
 function khenThuongToFormValues(d: MttqKhenThuong): MttqKhenThuongFormValues {
   return {
-    so_qd: d.so_qd,
+    so_qd: d.so_qd ?? undefined,
+    noi_dung_khen: d.noi_dung_khen ?? '',
     ngay_khen_thuong: d.ngay_khen_thuong,
     don_vi_de_xuat: d.don_vi_de_xuat ?? undefined,
     ghi_chu: d.ghi_chu ?? undefined,
@@ -101,15 +103,18 @@ const DanhSachKhenThuongPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranRewardList');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
   const { data: departments = [] } = useDepartments({ enabled: canView });
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranKhenThuong.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [mainTab, setMainTab] = useTabSearchParam(KHEN_THUONG_MAIN_TABS, 'danh_sach');
   const [showForm, setShowForm] = useState(false);
@@ -140,7 +145,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
     resetState: resetChiTietListState,
   } = useMttqKhenThuongChiTietListStore();
 
-  const { data: rows = [], isLoading } = useMttqKhenThuongList({ enabled: canView });
+  const { data: rows = [], isLoading, isError, refetch } = useMttqKhenThuongList({ enabled: canView });
   const { data: viewingData } = useMttqKhenThuongDetail(viewingId);
   const deleteMutation = useDeleteMttqKhenThuongMany();
   const updateMutation = useUpdateMttqKhenThuong();
@@ -508,6 +513,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
   const EXPORT_COLUMNS = useMemo(
     () => [
       { key: 'so_qd', label: txt('matTranKhenThuong.store.soQdCol') },
+      { key: 'noi_dung_khen', label: txt('matTranKhenThuong.store.noiDungKhenCol') },
       { key: 'ngay_khen_thuong', label: txt('matTranKhenThuong.store.ngayCol') },
       { key: 'don_vi_de_xuat', label: txt('matTranKhenThuong.store.donViCol') },
       { key: 'trang_thai', label: txt('matTranKhenThuong.store.trangThaiCol') },
@@ -520,6 +526,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
   const exportMapFn = useCallback(
     (item: MttqKhenThuongListRow) => ({
       so_qd: item.so_qd,
+      noi_dung_khen: item.noi_dung_khen ?? '',
       ngay_khen_thuong: item.ngay_khen_thuong ?? '',
       don_vi_de_xuat: item.don_vi_de_xuat ?? '',
       trang_thai: item.trang_thai,
@@ -605,8 +612,9 @@ const DanhSachKhenThuongPage: React.FC = () => {
             id: row.id_khen_thuong,
             data: khenThuongToFormValues({ ...full, chi_tiet: nextChi }),
           });
-        } catch (e: unknown) {
-          toast.error(getErrorMessage(e));
+        } catch {
+          // Không toast ở đây: mutation đã có handler lỗi toàn cục, bắt thêm ở đây
+          // làm hiện HAI toast nội dung giống hệt chồng lên nhau.
         }
       },
     });
@@ -619,7 +627,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewingId === id) setViewingId(null);
           },
@@ -635,7 +643,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewingId && ids.includes(viewingId)) setViewingId(null);
@@ -723,6 +731,8 @@ const DanhSachKhenThuongPage: React.FC = () => {
               <MttqKhenThuongTable
                 data={sorted}
                 isLoading={isLoading}
+                isError={isError}
+                onRetry={() => void refetch()}
                 trangThaiHeaderOptions={trangThaiChipOptions}
                 onEdit={handleEditFromList}
                 onDelete={handleDelete}

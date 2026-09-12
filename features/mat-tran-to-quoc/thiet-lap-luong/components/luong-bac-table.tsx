@@ -13,6 +13,9 @@ import { LuongBacTableRowActions } from './luong-bac-table-row-actions';
 interface Props {
   data: LuongBacTableRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onView: (item: LuongThietLapBacRow) => void;
   onEdit: (item: LuongThietLapBacRow) => void;
   onDelete: (item: LuongThietLapBacRow) => void;
@@ -23,6 +26,8 @@ interface Props {
 const LuongBacTable = memo(function LuongBacTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onView,
   onEdit,
   onDelete,
@@ -208,6 +213,8 @@ const LuongBacTable = memo(function LuongBacTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranThietLapLuong.bac.emptyBac')}
       emptyDescription={emptyDescription ?? txt('matTranThietLapLuong.bac.pickNgachHint')}

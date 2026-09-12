@@ -9,30 +9,74 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { toast } from 'sonner';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import { QueryDevtoolsPanel } from './components/dev/QueryDevtoolsPanel';
-import { SERVER_GC_TIME_MS, SERVER_STALE_TIME_MS } from './lib/supabase/query-config';
+import { getErrorMessage } from './lib/utils';
+import { SupabaseAppError } from './lib/supabase/errors';
+import { RQ_PERSIST_STORAGE_KEY, SERVER_GC_TIME_MS, SERVER_STALE_TIME_MS } from './lib/supabase/query-config';
+import { captureAppError, initSentry } from './lib/observability/sentry';
 
-const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-if (sentryDsn && typeof sentryDsn === 'string' && sentryDsn.trim() !== '') {
-  void import('@sentry/react').then((Sentry) => {
-    Sentry.init({
-      dsn: sentryDsn,
-      environment: import.meta.env.MODE || 'production',
-      enabled: true,
-    });
-  });
-}
+initSentry();
 
 // PWA: đăng ký SW + toast cập nhật/offline trong App (PwaRegister)
 
+/**
+ * Lỗi phiên hết hạn / JWT không hợp lệ — PostgREST trả `PGRST301`, GoTrue trả 401.
+ * Không có nhánh này thì người dùng chỉ thấy một chuỗi tiếng Anh khó hiểu và ngồi
+ * lại trên màn hình chết, vì `ProtectedRoute` chỉ đọc cờ trong localStorage.
+ */
+function isAuthExpiredError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  const code = e?.code ?? '';
+  if (code === 'PGRST301' || code === '401') return true;
+  const msg = (e?.message ?? String(error)).toLowerCase();
+  return (
+    msg.includes('jwt expired') ||
+    msg.includes('invalid jwt') ||
+    msg.includes('jwt is expired') ||
+    msg.includes('refresh_token_not_found') ||
+    msg.includes('invalid refresh token')
+  );
+}
+
 function queryErrorToast(error: unknown) {
-  const msg =
-    error instanceof Error ? error.message : typeof error === 'string' ? error : 'Đã xảy ra lỗi';
-  toast.error(msg);
+  if (isAuthExpiredError(error)) {
+    // Đăng xuất do `AuthSessionSynchronizer` đảm nhiệm (nó có router + queryClient).
+    // Ở đây chỉ báo một lần, không đổ chồng toast cho từng query đang lỗi.
+    toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', {
+      id: 'auth-expired',
+      duration: Infinity,
+      closeButton: true,
+    });
+    return;
+  }
+  // Trước đây lỗi truy vấn / ghi dữ liệu chỉ hiện toast rồi biến mất — tức là
+  // phần lớn sự cố thật không để lại dấu vết nào để dò sau.
+  captureAppError(error, { nguon: 'tanstack-query' });
+
+  // `getErrorMessage` dịch mã lỗi Postgres / tên ràng buộc sang tiếng Việt.
+  const message = getErrorMessage(error);
+  const retryable = error instanceof SupabaseAppError && error.retryable;
+
+  toast.error(message, {
+    // Gộp theo nội dung: bấm Lưu 3 lần lúc mất mạng thì thay thế, không chất đống.
+    id: `query-error:${message}`,
+    duration: Infinity,
+    closeButton: true,
+    // Lỗi mạng/tạm thời thì cho thử lại ngay trên toast, khỏi phải thao tác lại.
+    action: retryable
+      ? {
+          label: 'Thử lại',
+          onClick: () => void queryClient.refetchQueries({ type: 'active' }),
+        }
+      : undefined,
+  });
 }
 
 function isRetryableError(error: unknown): boolean {
+  // `SupabaseAppError` đã tính sẵn `retryable` từ mã lỗi Postgres — chính xác hơn
+  // nhiều so với dò chuỗi (trước đây regex `/fetch/` khớp cả lỗi nghiệp vụ có chữ "fetch").
+  if (error instanceof SupabaseAppError) return error.retryable;
   const msg = error instanceof Error ? error.message : String(error);
-  return /network|timeout|ECONNREFUSED|ETIMEDOUT|Failed to fetch|fetch/i.test(msg);
+  return /network|timeout|ECONNREFUSED|ETIMEDOUT|Failed to fetch/i.test(msg);
 }
 
 const queryClient = new QueryClient({
@@ -75,7 +119,7 @@ const queryClient = new QueryClient({
  */
 const localStoragePersister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: 'mttq-rq-cache',
+  key: RQ_PERSIST_STORAGE_KEY,
 });
 
 const rootElement = document.getElementById('root');

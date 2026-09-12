@@ -1,5 +1,6 @@
 {
-  "name": "quan-ly-thiet-bi",
+  "name": "mttqvn",
+  "description": "Hệ thống quản trị nội bộ Uỷ ban MTTQ Việt Nam tỉnh Nghệ An",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,6 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:changed": "vitest related --run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\"",
@@ -18,11 +20,10 @@
     "typecheck": "tsc --noEmit",
     "typecheck:mttq": "tsc --noEmit -p tsconfig.typecheck-mttq.json",
     "types:supabase": "supabase gen types typescript --linked > lib/supabase/database.types.ts",
-    "storage:create-avatars": "npx tsx scripts/create-avatars-bucket.ts"
+    "storage:create-avatars": "npx tsx scripts/create-avatars-bucket.ts",
+    "db:backup": "bash scripts/backup-db.sh"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
     "@sentry/react": "^10.40.0",
     "@supabase/supabase-js": "^2.98.0",

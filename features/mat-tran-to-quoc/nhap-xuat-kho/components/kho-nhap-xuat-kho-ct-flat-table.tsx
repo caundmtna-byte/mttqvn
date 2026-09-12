@@ -20,9 +20,15 @@ import { useNhapXuatKhoCtFlatStore } from '../store/useNhapXuatKhoCtFlatStore';
 interface Props {
   data: NhapXuatKhoCtFlatRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onView?: (item: NhapXuatKhoCtFlatRow) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  serverSidePagination?: boolean;
+  serverTotalRecords?: number | null;
+  serverHasNextPage?: boolean;
 }
 
 function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
@@ -39,9 +45,14 @@ function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
 const NhapXuatKhoCtFlatTable = memo(function NhapXuatKhoCtFlatTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onView,
   emptyTitle,
   emptyDescription,
+  serverSidePagination,
+  serverTotalRecords,
+  serverHasNextPage,
 }: Props) {
   const {
     columns,
@@ -247,9 +258,14 @@ const NhapXuatKhoCtFlatTable = memo(function NhapXuatKhoCtFlatTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranNhapXuatKho.emptyTitleCt')}
       emptyDescription={emptyDescription ?? txt('matTranNhapXuatKho.emptyHintCt')}
+      serverSidePagination={serverSidePagination}
+      serverTotalRecords={serverTotalRecords ?? undefined}
+      serverHasNextPage={serverHasNextPage}
       selectedIds={noopSelectedIds}
       onToggleSelection={() => undefined}
       onToggleAll={() => undefined}

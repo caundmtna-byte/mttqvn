@@ -2,6 +2,7 @@ import React from 'react';
 import { Save, ArrowRight, UserPlus } from 'lucide-react';
 import Button from '../ui/Button';
 import { BTN_CANCEL, BTN_SAVE, BTN_CREATE } from '../../lib/button-labels';
+import { closeWithDirtyGuard } from './GenericDrawer';
 
 export interface FormDrawerFooterProps {
   /** Id của form để submit từ ngoài (nút Lưu/Tạo gửi submit cho form này) */
@@ -19,6 +20,12 @@ export interface FormDrawerFooterProps {
   cancelLabel?: string;
   /** Icon bên trái nút gửi khi **tạo mới** (mặc định UserPlus); nhãn nút lấy `BTN_CREATE` → **Thêm** */
   createIcon?: React.ReactNode;
+  /**
+   * Biểu mẫu đang sửa dở (React Hook Form: `formState.isDirty`).
+   * Khi true, nút Hủy hỏi xác nhận trước khi gọi `onCancel`.
+   * Không truyền = hành vi cũ (hủy ngay).
+   */
+  isDirty?: boolean;
 }
 
 /**
@@ -34,7 +41,9 @@ export const FormDrawerFooter: React.FC<FormDrawerFooterProps> = ({
   createLabel,
   cancelLabel,
   createIcon,
+  isDirty = false,
 }) => {
+  const handleCancel = () => closeWithDirtyGuard(isDirty, onCancel);
   const resolvedCancel = cancelLabel ?? BTN_CANCEL();
   const resolvedSave = saveLabel ?? BTN_SAVE();
   const resolvedCreate = createLabel ?? BTN_CREATE();
@@ -48,7 +57,7 @@ export const FormDrawerFooter: React.FC<FormDrawerFooterProps> = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={onCancel}
+          onClick={handleCancel}
           className="h-8 px-3 text-xs border-border text-muted-foreground"
         >
           {resolvedCancel}
@@ -78,7 +87,7 @@ export const FormDrawerFooter: React.FC<FormDrawerFooterProps> = ({
 
   return (
     <div className="flex items-center justify-between w-full gap-3">
-      <Button variant="outline" onClick={onCancel} className="border-border text-muted-foreground">
+      <Button variant="outline" onClick={handleCancel} className="border-border text-muted-foreground">
         {resolvedCancel}
       </Button>
       <Button type="submit" form={formId} isLoading={isLoading} className="bg-primary text-white shadow-lg">

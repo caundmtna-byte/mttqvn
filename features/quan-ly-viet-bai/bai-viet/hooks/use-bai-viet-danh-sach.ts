@@ -11,9 +11,7 @@ import {
   deleteBaiVietDanhSachMany,
   getBaiVietDanhSachById,
   getBaiVietDanhSachList,
-  getBaiVietDanhSachPage,
   updateBaiVietDanhSach,
-  type BaiVietPageQuery,
 } from '../services/bai-viet-danh-sach-service';
 import { BaiVietLinkConflictError } from '../utils/bai-viet-link-conflict';
 
@@ -27,15 +25,6 @@ export const useBaiVietDanhSachList = (options?: { enabled?: boolean }) =>
     ...listQueryOptions,
   });
 
-export const useBaiVietDanhSachPage = (args: BaiVietPageQuery & { enabled?: boolean }) => {
-  const { enabled = true, ...q } = args;
-  return useQuery({
-    queryKey: queryKeys.baiVietDanhSach.page(q),
-    queryFn: () => getBaiVietDanhSachPage(q),
-    enabled,
-    ...listQueryOptions,
-  });
-};
 
 export const useBaiVietDanhSachDetail = (id: string | null) =>
   useQuery({
@@ -72,6 +61,10 @@ export const useUpdateBaiVietDanhSach = (onSuccess?: () => void) => {
       queryClient.setQueryData<BaiVietDanhSach[]>(listKey, (cur) =>
         cur?.map((r) => (r.id === id ? updated : r)),
       );
+      // Trang list đọc từ query `page` (phân trang server), không đọc mảng phẳng ở trên.
+      // Thiếu invalidate thì sửa xong bảng vẫn hiện dữ liệu cũ. `listKey` là prefix
+      // nên khớp luôn mọi query `['bai-viet-danh-sach', 'page', ...]`.
+      void queryClient.invalidateQueries({ queryKey: listKey });
       queryClient.setQueryData(queryKeys.baiVietDanhSach.detail(id), updated);
       toast.success(txt('articleList.toast.update'));
       onSuccess?.();
@@ -94,6 +87,5 @@ export const useDeleteBaiVietDanhSachMany = () => {
       }
       toast.success(txt('articleList.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

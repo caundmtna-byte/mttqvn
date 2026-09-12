@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsMaxWidth, useMediaQuery } from '../../lib/use-media-query';
 import { txt } from '../../lib/text';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useConfirmStore } from '../../store/useConfirmStore';
 import {
   getDrawerWidthClass,
   DRAWER_WIDTH_FORM,
@@ -12,6 +13,28 @@ import {
 } from '../../lib/dialog-sizes';
 
 export { DRAWER_WIDTH_FORM, DRAWER_WIDTH_DETAIL };
+
+/**
+ * Đóng form có kiểm tra "đang sửa dở": `isDirty` false thì đóng ngay (hành vi cũ),
+ * true thì hỏi xác nhận qua `useConfirmStore` rồi mới đóng.
+ *
+ * Dùng chung cho `GenericDrawer` (Esc / click nền / nút X) và `FormDrawerFooter` (nút Hủy)
+ * để một biểu mẫu chỉ có đúng một cách hỏi.
+ */
+export function closeWithDirtyGuard(isDirty: boolean, onClose: () => void): void {
+  if (!isDirty) {
+    onClose();
+    return;
+  }
+  useConfirmStore.getState().confirm({
+    title: txt('common.unsavedTitle'),
+    message: txt('common.unsavedMessage'),
+    variant: 'warning',
+    confirmText: txt('common.unsavedConfirm'),
+    cancelText: txt('common.unsavedCancel'),
+    onConfirm: onClose,
+  });
+}
 
 interface GenericDrawerProps {
   title: string;
@@ -28,6 +51,12 @@ interface GenericDrawerProps {
   stackLevel?: number;
   /** Footer gọn hơn (padding dọc nhỏ) — dùng khi nút dùng size sm/h-8 */
   footerCompact?: boolean;
+  /**
+   * Biểu mẫu bên trong đang sửa dở (React Hook Form: `formState.isDirty`).
+   * Khi true, Esc / click nền / nút X sẽ hỏi xác nhận trước khi đóng.
+   * Không truyền = hành vi cũ (đóng ngay).
+   */
+  isDirty?: boolean;
 }
 
 const GenericDrawer: React.FC<GenericDrawerProps> = ({
@@ -41,6 +70,7 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
   variant = 'drawer',
   stackLevel = 0,
   footerCompact = false,
+  isDirty = false,
 }) => {
   const drawerRef = useRef<HTMLDivElement>(null);
   const [drawerPanelWillChange, setDrawerPanelWillChange] = useState(false);
@@ -49,6 +79,14 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+  const isDirtyRef = useRef(isDirty);
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
+  /** Mọi lối đóng drawer đều đi qua đây để dùng chung một lần hỏi xác nhận. */
+  const requestClose = useCallback(() => {
+    closeWithDirtyGuard(isDirtyRef.current, () => onCloseRef.current());
+  }, []);
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const isMobile = useIsMaxWidth(768);
   const isModal = variant === 'modal';
@@ -73,7 +111,9 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onCloseRef.current();
+        // Hộp xác nhận "chưa lưu" đang mở: Esc là để trả lời hộp đó, không phải mở lại.
+        if (useConfirmStore.getState().isOpen) return;
+        requestClose();
         return;
       }
       if (e.key === 'Tab' && drawerRef.current) {
@@ -95,7 +135,7 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
     document.addEventListener('keydown', handleKeyDown);
     setTimeout(() => drawerRef.current?.focus(), prefersReducedMotion ? 0 : 100);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, requestClose]);
 
   const Content = (
     <>
@@ -120,7 +160,7 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
             </h3>
             {subtitle != null && subtitle !== '' && (
               typeof subtitle === 'string' ? (
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{subtitle}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 break-words">{subtitle}</p>
               ) : (
                 <div className="mt-0.5 flex items-center min-w-0">{subtitle}</div>
               )
@@ -129,7 +169,7 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
         </div>
         <button
           type="button"
-          onClick={() => onCloseRef.current()}
+          onClick={requestClose}
           aria-label={txt('common.close')}
           className="p-2.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors active:scale-90 shrink-0"
         >
@@ -187,7 +227,7 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
       <motion.div
         {...backdropMotion}
         transition={fadeTransition}
-        onClick={() => onCloseRef.current()}
+        onClick={requestClose}
         className="fixed inset-0 bg-black/45"
         style={{ zIndex: zIndexBackdrop }}
       />

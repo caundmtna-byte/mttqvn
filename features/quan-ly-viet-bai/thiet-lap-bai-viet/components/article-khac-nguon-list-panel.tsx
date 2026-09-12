@@ -7,9 +7,14 @@ import { ArticleKhacListPanelInner } from './article-khac-list-panel';
 export function ArticleKhacNguonListPanel({
   items,
   isLoading,
+  isError,
+  onRetry,
 }: {
   items: BaiVietThietLapKhac[];
   isLoading: boolean;
+  /** Query danh sách lỗi — bảng hiện thông báo lỗi + nút Thử lại. */
+  isError?: boolean;
+  onRetry?: () => void;
 }) {
   const store = useKhacNguonStore();
   return (
@@ -19,6 +24,8 @@ export function ArticleKhacNguonListPanel({
       loai="nguon_dang"
       items={items}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       store={store}
       exportFileName="Thiet_Lap_Nguon_Dang"
     />

@@ -10,7 +10,7 @@ import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { DIALOG_SIZE } from '@/lib/dialog-sizes';
-import { MTTQ_KHEN_THUONG_TRANG_THAI } from '../core/constants';
+import { trangThaiChonDuoc } from '../utils/luat-trang-thai';
 import {
   mttqKhenThuongStatusChangeSchema,
   type MttqKhenThuongStatusChangeValues,
@@ -22,6 +22,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   initial: MttqKhenThuongStatusChangeValues;
+  /** Có quyền `phe_duyet` không — không có thì không được chọn "Đã ban hành". */
+  canApprove?: boolean;
   isSubmitting?: boolean;
   onSave: (values: MttqKhenThuongStatusChangeValues) => void | Promise<void>;
 }
@@ -34,10 +36,18 @@ const MttqKhenThuongChuyenTrangThaiDialog: React.FC<Props> = ({
   open,
   onClose,
   initial,
+  canApprove = false,
   isSubmitting = false,
   onSave,
 }) => {
-  const trangThaiOpts = MTTQ_KHEN_THUONG_TRANG_THAI.map((v) => ({ label: v, value: v }));
+  // Chỉ đổ ra những bước chuyển HỢP LỆ từ trạng thái hiện tại. Trước đây hộp
+  // thoại liệt kê cả 4 trạng thái, nên từ "Đã ban hành" nhảy ngược về "Mới"
+  // được — cơ sở dữ liệu nay từ chối, và danh sách này để người dùng không
+  // chạm vào lỗi đó ngay từ đầu.
+  const trangThaiOpts = React.useMemo(
+    () => trangThaiChonDuoc(initial.trang_thai, canApprove).map((v) => ({ label: v, value: v })),
+    [initial.trang_thai, canApprove]
+  );
 
   const {
     control,

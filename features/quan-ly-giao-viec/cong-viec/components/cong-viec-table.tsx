@@ -19,6 +19,9 @@ import { CongViecTableRowActions } from './cong-viec-table-row-actions';
 interface Props {
   data: CongViecDanhSachRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: CongViecDanhSachRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: CongViecDanhSachRow) => void;
@@ -30,6 +33,8 @@ interface Props {
 const CongViecTable = memo(function CongViecTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -234,6 +239,8 @@ const CongViecTable = memo(function CongViecTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('taskList.emptyTitle')}
       emptyDescription={txt('taskList.emptyHint')}

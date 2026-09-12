@@ -3,12 +3,13 @@ import { RoleFormValues } from '../core/schema';
 import { txt } from '../../../../lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { messageForRpcErrorCode } from '@/lib/supabase/error-messages';
 import {
   PERMISSION_FUNCTIONS,
   PERMISSION_ACTIONS,
   getAllPermissionModules,
 } from '../core/permission-modules-config';
-import { parseQuyenTextToActions, actionsToQuyenText } from '../core/var-phan-quyen-quyen-map';
+import { buildPhanQuyenUpdatesPayload, parseChucVuId } from '../utils/build-phan-quyen-updates-payload';
 import {
   getModuleStorageKey,
   moduleKeysForDbLookup,
@@ -49,12 +50,6 @@ type VarPhanQuyenRow = {
   chuc_vu_id: number | string;
   quyen?: string | null;
 };
-
-function parseChucVuId(raw: string): number | null {
-  const n = Number(String(raw).trim());
-  if (!Number.isFinite(n) || n <= 0) return null;
-  return n;
-}
 
 function mapVarChucVuToPosition(
   cv: VarChucVuRow,
@@ -97,7 +92,7 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
       .range(from, to);
     if (error) handleSupabaseError(error);
     return (data ?? []) as VarChucVuRow[];
-  });
+  }, { label: 'var_chuc_vu' });
 
   if (cvs.length === 0) return [];
 
@@ -109,7 +104,7 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
       .range(from, to);
     if (error) handleSupabaseError(error);
     return (data ?? []) as VarPhongBanRow[];
-  });
+  }, { label: 'var_phong_ban' });
 
   const pbMap = new Map<number, VarPhongBanRow>();
   for (const p of pbRows) {
@@ -124,7 +119,8 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
       .range(from, to);
     if (error) handleSupabaseError(error);
     return (data ?? []) as VarPhanQuyenRow[];
-  });
+    // Ma trận quyền PHẢI đọc trọn — thiếu một dòng là mất quyền của một chức vụ.
+  }, { label: 'var_phan_quyen' });
 
   // Egress optim: dùng RPC `get_nhan_vien_count_by_chuc_vu` (GROUP BY phía DB) thay
   // vì kéo toàn bộ `var_nhan_vien.id_chuc_vu` rồi count client. Fallback về full
@@ -140,7 +136,7 @@ async function fetchRolesFromSupabase(): Promise<PositionPermission[]> {
         .range(from, to);
       if (error) handleSupabaseError(error);
       return (data ?? []) as { id_chuc_vu?: number | string | null }[];
-    });
+    }, { label: 'var_nhan_vien (fallback dem chuc vu)' });
     for (const r of nvRows) {
       const raw = r.id_chuc_vu;
       if (raw == null) continue;
@@ -236,6 +232,11 @@ export const deleteRoles = async (_ids: string[]): Promise<void> => {
   throw new Error('Xóa chức vụ tại module Chức vụ (var_chuc_vu).');
 };
 
+/**
+ * Ghi lại quyền của một module. Xoá + chèn nằm trong MỘT transaction phía DB
+ * (`rpc_phan_quyen_cap_nhat_module`) — trước đây `delete` rồi `upsert` bằng hai
+ * request, delete xong mà upsert lỗi là chức vụ mất sạch quyền trên module đó.
+ */
 export const updateModulePermissions = async (
   moduleId: string,
   updates: { roleId: string; actions: ActionType[] }[]
@@ -246,39 +247,21 @@ export const updateModulePermissions = async (
 
   const storageKey = getModuleStorageKey(moduleId);
   const legacyKeys = moduleKeysForDbLookup(moduleId);
+  const rows = buildPhanQuyenUpdatesPayload(updates);
+  if (rows.length === 0) return;
 
-  const chucVuIds = [
-    ...new Set(
-      updates.map(({ roleId }) => parseChucVuId(roleId)).filter((n): n is number => n != null),
-    ),
-  ];
-  if (chucVuIds.length === 0) return;
-
-  const { error: delErr } = await supabase
-    .from('var_phan_quyen')
-    .delete()
-    .in('chuc_vu_id', chucVuIds)
-    .in('module_key', legacyKeys);
-  if (delErr) handleSupabaseError(delErr);
-
-  const rows = updates
-    .filter(({ actions }) => actions.length > 0)
-    .map(({ roleId, actions }) => {
-      const chucVuId = parseChucVuId(roleId);
-      if (chucVuId == null) return null;
-      return {
-        chuc_vu_id: chucVuId,
-        module_key: storageKey,
-        quyen: actionsToQuyenText(actions),
-      };
-    })
-    .filter((r): r is NonNullable<typeof r> => r != null);
-
-  if (rows.length > 0) {
-    const { error: upErr } = await supabase.from('var_phan_quyen').upsert(rows, {
-      onConflict: 'chuc_vu_id,module_key',
+  try {
+    const { error } = await supabase.rpc('rpc_phan_quyen_cap_nhat_module', {
+      p_module_key: storageKey,
+      p_legacy_keys: legacyKeys,
+      p_updates: rows,
     });
-    if (upErr) handleSupabaseError(upErr);
+    if (error) handleSupabaseError(error);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const mapped = messageForRpcErrorCode(message);
+    if (mapped) throw new Error(mapped);
+    throw err instanceof Error ? err : new Error(message);
   }
 };
 

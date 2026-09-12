@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { ThamHoiToChucFormValues } from '../core/schema';
 import type { TienDoThamHoi } from '../core/constants';
 import type { ThamHoiToChuc } from '../core/types';
@@ -20,6 +19,16 @@ import {
 } from '../services/tham-hoi-to-chuc-service';
 
 const listKey = queryKeys.danTocThamHoiToChuc.all;
+
+/**
+ * Danh sách chính chạy phân trang phía máy chủ, nên vá `listKey` KHÔNG đủ:
+ * mỗi trang là một query riêng. Mọi mutation phải cho các trang đó stale.
+ */
+const pageKeyPrefix = ['dttg-tham-hoi-to-chuc', 'page'] as const;
+
+function invalidatePages(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: pageKeyPrefix });
+}
 
 export function useThamHoiToChucList(options?: { enabled?: boolean }) {
   return useQuery({
@@ -80,10 +89,10 @@ export function useCreateThamHoiToChuc(onSuccess?: () => void) {
         });
         void queryClient.invalidateQueries({ queryKey: queryKeys.danTocDipThamHoi.all });
       }
+      invalidatePages(queryClient);
       toast.success(txt('danTocThamHoiToChuc.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -106,10 +115,10 @@ export function useUpdateThamHoiToChuc(onSuccess?: () => void) {
         });
         void queryClient.invalidateQueries({ queryKey: queryKeys.danTocDipThamHoi.all });
       }
+      invalidatePages(queryClient);
       toast.success(txt('danTocThamHoiToChuc.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -136,10 +145,10 @@ export function useUpdateThamHoiToChucTienDo(onSuccess?: () => void) {
         });
         void queryClient.invalidateQueries({ queryKey: queryKeys.danTocDipThamHoi.all });
       }
+      invalidatePages(queryClient);
       toast.success(txt('danTocThamHoiToChuc.toast.changeStatus'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -155,9 +164,9 @@ export function useDeleteThamHoiToChucMany() {
         queryClient.removeQueries({ queryKey: queryKeys.danTocThamHoiToChuc.detail(id) });
       }
       void queryClient.invalidateQueries({ queryKey: ['dttg-tham-hoi-to-chuc', 'by-to-chuc'] });
+      invalidatePages(queryClient);
       toast.success(txt('danTocThamHoiToChuc.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }
 
@@ -177,6 +186,5 @@ export function useImportThamHoiToChuc(onSuccess?: () => void) {
       }
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 }

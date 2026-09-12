@@ -27,6 +27,9 @@ import { normalizeMttqCanBoFilters } from '../utils/mttq-can-bo-filters-normaliz
 interface Props {
   data: MttqCanBoRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: MttqCanBoRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: MttqCanBoRow) => void;
@@ -37,6 +40,8 @@ interface Props {
 const MttqCanBoTable = memo(function MttqCanBoTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -469,6 +474,8 @@ const MttqCanBoTable = memo(function MttqCanBoTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('matTranCanBo.emptyTitle')}
       emptyDescription={txt('matTranCanBo.emptyHint')}

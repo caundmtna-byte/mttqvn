@@ -13,6 +13,12 @@ import { XaPhuongRowActions } from './xa-phuong-row-actions';
 interface Props {
   data: XaPhuong[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
+  /** Tiêu đề khi bảng rỗng — trang truyền vào để phân biệt "chưa có dữ liệu" với "không khớp bộ lọc". */
+  emptyTitle?: string;
+  emptyDescription?: string;
   onEdit: (item: XaPhuong) => void;
   onDelete: (id: string) => void;
   onView?: (item: XaPhuong) => void;
@@ -21,6 +27,10 @@ interface Props {
 const XaPhuongTable = memo(function XaPhuongTable({
   data,
   isLoading,
+  isError,
+  onRetry,
+  emptyTitle,
+  emptyDescription,
   onEdit,
   onDelete,
   onView,
@@ -177,6 +187,8 @@ const XaPhuongTable = memo(function XaPhuongTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       selectedIds={selectedIds}
       onToggleSelection={toggleSelection}
@@ -195,8 +207,8 @@ const XaPhuongTable = memo(function XaPhuongTable({
       stickyLeftCount={2}
       renderColumnHeaderAccessory={renderColumnHeaderAccessory}
       hideSortOnColumnLabel
-      emptyTitle={txt('diaBan.emptyXa')}
-      emptyDescription=""
+      emptyTitle={emptyTitle ?? txt('diaBan.emptyXa')}
+      emptyDescription={emptyDescription ?? ''}
     />
   );
 });

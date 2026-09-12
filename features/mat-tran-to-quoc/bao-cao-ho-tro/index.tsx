@@ -41,12 +41,15 @@ import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
-import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
-  buildStandardDateRangePresets,
-  isStandardDateRangeNonDefault,
-} from '@/lib/date-range-presets';
-import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+  ReportSkeleton,
+  StatsKpiGrid,
+  StatsCard,
+  StatsTableCard,
+  ColoredBar,
+  useStatsPageFilters,
+} from '@/components/shared/stats';
 import { CHART_FILL_FALLBACK } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
@@ -81,12 +84,6 @@ const KhoNhapXuatKhoDetailDrawer = lazy(
 
 const CUSTOM_PRESET = 'custom';
 
-const initialDateRange: DateRangeValue = {
-  preset: 'all',
-  customStart: '',
-  customEnd: '',
-};
-
 const initialDims: ReliefSupportDimensionFilters = {
   kho_id: [],
   loai_phieu: [],
@@ -120,6 +117,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefSupportReport');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const { canExport } = useResourcePermissions('matTranReliefSupportReport');
   const canOpenPhieuDetail = useCan('view', 'matTranReliefStockTransactions');
   const didRedirect = useRef(false);
@@ -134,11 +132,10 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null &&
-    user.role !== 'admin' &&
-    chucVuKey.trim() !== '' &&
-    !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -161,8 +158,15 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
   } = useKhoBaoCaoHoTroRawData({ enabled: listQueryEnabled });
   const isReportLoading = isLoading || waitingMatrixHydrate;
 
-  const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
-  const [dims, setDims] = useState<ReliefSupportDimensionFilters>(initialDims);
+  const {
+    dateRange,
+    setDateRange,
+    dims,
+    setDims,
+    presets,
+    activeFilterCount,
+    clearFilters,
+  } = useStatsPageFilters(initialDims);
   const [sortKey, setSortKey] = useState<ReliefSupportLookupSortKey>('ngay_phieu');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [viewingPhieuId, setViewingPhieuId] = useState<string | null>(null);
@@ -190,8 +194,6 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
     () => sortReliefLookupRows(stats.filtered, sortKey, sortDir, getLanguage()),
     [stats.filtered, sortKey, sortDir],
   );
-
-  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const khoOptions = useMemo(() => {
     const m = new Map<string, { label: string; count: number }>();
@@ -323,30 +325,8 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, id_danh_muc: v })),
       },
     ],
-    [dims, khoOptions, loaiOptions, donViOptions, dotOptions, hangOptions, danhMucOptions],
+    [setDims, dims, khoOptions, loaiOptions, donViOptions, dotOptions, hangOptions, danhMucOptions],
   );
-
-  const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, initialDateRange.preset as 'all'),
-    [dateRange],
-  );
-
-  const activeFilterCount = useMemo(() => {
-    let n = 0;
-    if (isNonDefaultDateRange) n += 1;
-    if (dims.kho_id.length) n += 1;
-    if (dims.loai_phieu.length) n += 1;
-    if (dims.don_vi_cuu_tro_id.length) n += 1;
-    if (dims.dot_cuu_tro_id.length) n += 1;
-    if (dims.hang_hoa_id.length) n += 1;
-    if (dims.id_danh_muc.length) n += 1;
-    return n;
-  }, [dims, isNonDefaultDateRange]);
-
-  const clearFilters = useCallback(() => {
-    setDims(initialDims);
-    setDateRange(initialDateRange);
-  }, []);
 
   const kpiItems = useMemo(
     () => [
@@ -488,6 +468,10 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
           so_phieu: listRow.so_phieu,
           loai_phieu: listRow.loai_phieu,
           ngay_phieu: listRow.ngay_phieu,
+          // Dòng phẳng của báo cáo không mang người lập phiếu; drawer sẽ tải bản
+          // đầy đủ ngay sau đó, đây chỉ là dữ liệu mồi để mở nhanh.
+          id_nguoi_tao: null,
+          ho_va_ten_nguoi_tao: null,
           kho_xuat_id: listRow.kho_xuat_id,
           ten_kho_xuat: listRow.ten_kho_xuat,
           kho_xuat_don_vi_id: listRow.kho_xuat_don_vi_id,
@@ -638,7 +622,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
             onRetry={() => void refetch()}
           />
         ) : isReportLoading ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">{txt('matTranReliefSupportReport.loading')}</p>
+          <ReportSkeleton />
         ) : stats.filtered.length === 0 ? (
           <div className="py-12 text-center space-y-2">
             <p className="text-sm font-medium text-foreground">{txt('matTranReliefSupportReport.noData')}</p>

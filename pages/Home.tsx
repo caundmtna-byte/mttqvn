@@ -3,6 +3,7 @@ import { txt } from '../lib/text';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import MainCard from '../components/dashboard/MainCard';
+import HomeMetrics from '../features/trang-chu/components/home-metrics';
 import { useAuthStore } from '../store/useStore';
 import { usePermissionGrantStore } from '../store/usePermissionGrantStore';
 import { SIDEBAR_MENU } from '../lib/sidebar-menu';
@@ -18,6 +19,13 @@ function getGreetingKey(hour: number): string {
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  /**
+   * Quyền chưa tải xong thì CHƯA được lọc danh sách module: `can()` nay là
+   * deny-by-default, lọc lúc này sẽ cho ra gần như rỗng và người dùng phải F5
+   * mới thấy đủ thẻ. Hiện khung chờ thay vì hiện thiếu.
+   */
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
+  const waitingPermissions = user != null && user.role !== 'admin' && permissionsLoading;
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
   const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
@@ -50,7 +58,7 @@ const Home: React.FC = () => {
         path: m.path,
         gradient: m.gradient,
       })),
-    [user, matrixActive, grantsByModule, chucVuCapBac],
+    [user, matrixActive, permissionsLoading, grantsByModule, chucVuCapBac],
   );
 
   return (
@@ -64,23 +72,37 @@ const Home: React.FC = () => {
 
       <div className="h-px bg-border w-full mb-6" />
 
+      {/*
+        Thẻ chỉ số: tự lo phần quyền + phạm vi xem + khung chờ bên trong, kể cả lúc
+        ma trận quyền chưa về. Không render gì khi người dùng không có quyền nào.
+      */}
+      <HomeMetrics />
+
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
         className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 h-full items-start content-start"
       >
-        {modules.map((mod) => (
-          <motion.div key={mod.path} variants={item}>
-            <MainCard
-              title={mod.title}
-              description={mod.description}
-              icon={mod.icon}
-              gradient={mod.gradient}
-              onClick={() => navigate(mod.path)}
-            />
-          </motion.div>
-        ))}
+        {waitingPermissions
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                aria-hidden
+                className="h-[132px] rounded-xl border border-border/50 bg-card animate-pulse"
+              />
+            ))
+          : modules.map((mod) => (
+              <motion.div key={mod.path} variants={item}>
+                <MainCard
+                  title={mod.title}
+                  description={mod.description}
+                  icon={mod.icon}
+                  gradient={mod.gradient}
+                  onClick={() => navigate(mod.path)}
+                />
+              </motion.div>
+            ))}
       </motion.div>
     </div>
   );

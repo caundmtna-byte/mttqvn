@@ -88,12 +88,48 @@ export async function getXaPhuongByTinhThanh(idTinhThanh: string): Promise<XaPhu
  * Trước đây import 200 ủy viên = 200 lần fetch full bảng. Sau cache: 1 lần / 24h.
  */
 const XA_PHUONG_ALL_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * Cache RAM là chưa đủ: biến module mất sạch mỗi lần reload trang, nên mỗi lần F5
+ * là lại kéo ~10k dòng. Mirror xuống localStorage để TTL 24h thật sự có hiệu lực
+ * qua các phiên. Dữ liệu địa giới là công khai, không phải dữ liệu người dùng.
+ */
+const XA_PHUONG_ALL_STORAGE_KEY = 'mttq-xa-phuong-all-v1';
+/** Quá ngưỡng này thì chỉ giữ cache RAM — tránh chiếm hết quota localStorage (~5MB). */
+const XA_PHUONG_ALL_MAX_PERSIST_BYTES = 2 * 1024 * 1024;
+
 let xaPhuongAllCache: { data: XaPhuong[]; expiresAt: number } | null = null;
 let xaPhuongAllInflight: Promise<XaPhuong[]> | null = null;
+
+function readXaPhuongAllFromStorage(): { data: XaPhuong[]; expiresAt: number } | null {
+  try {
+    const raw = window.localStorage.getItem(XA_PHUONG_ALL_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { data?: unknown; expiresAt?: unknown };
+    if (!Array.isArray(parsed.data) || typeof parsed.expiresAt !== 'number') return null;
+    return { data: parsed.data as XaPhuong[], expiresAt: parsed.expiresAt };
+  } catch {
+    return null;
+  }
+}
+
+function writeXaPhuongAllToStorage(entry: { data: XaPhuong[]; expiresAt: number }) {
+  try {
+    const serialized = JSON.stringify(entry);
+    if (serialized.length > XA_PHUONG_ALL_MAX_PERSIST_BYTES) return;
+    window.localStorage.setItem(XA_PHUONG_ALL_STORAGE_KEY, serialized);
+  } catch {
+    // Quota đầy / trình duyệt chặn storage — cache RAM vẫn hoạt động.
+  }
+}
 
 function invalidateXaPhuongAllCache() {
   xaPhuongAllCache = null;
   xaPhuongAllInflight = null;
+  try {
+    window.localStorage.removeItem(XA_PHUONG_ALL_STORAGE_KEY);
+  } catch {
+    // bỏ qua
+  }
 }
 
 /** Toàn bộ xã/phường (mọi tỉnh), dùng khi tab xã không lọc theo tỉnh + import resolver. */
@@ -101,6 +137,11 @@ export async function getXaPhuongAll(): Promise<XaPhuong[]> {
   const now = Date.now();
   if (xaPhuongAllCache && xaPhuongAllCache.expiresAt > now) {
     return xaPhuongAllCache.data;
+  }
+  const persisted = readXaPhuongAllFromStorage();
+  if (persisted && persisted.expiresAt > now) {
+    xaPhuongAllCache = persisted;
+    return persisted.data;
   }
   if (xaPhuongAllInflight) return xaPhuongAllInflight;
 
@@ -124,6 +165,7 @@ export async function getXaPhuongAll(): Promise<XaPhuong[]> {
       from += XA_COUNT_PAGE;
     }
     xaPhuongAllCache = { data: out, expiresAt: Date.now() + XA_PHUONG_ALL_TTL_MS };
+    writeXaPhuongAllToStorage(xaPhuongAllCache);
     return out;
   })();
 
@@ -153,6 +195,9 @@ export async function updateTinhThanh(id: string, values: TinhThanhFormValues): 
 export async function deleteTinhThanhMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await tinhRepo.remove(ids);
+  // DB xoá theo xã/phường của tỉnh (cascade), nên cache xã cũng phải bỏ —
+  // không thì lần đọc sau trả về các xã đã chết từ cache 24h.
+  invalidateXaPhuongAllCache();
 }
 
 export async function createXaPhuong(values: XaPhuongFormValues): Promise<XaPhuong> {

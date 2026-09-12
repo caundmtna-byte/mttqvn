@@ -20,6 +20,16 @@
  * Types: StatsKpiCardItem, StatsTableRow, StatsTableCardProps (xem types.ts).
  */
 
+export {
+  useStatsPageFilters,
+  countActiveStatsFilters,
+  STATS_INITIAL_DATE_RANGE,
+  type StatsDimensionFilters,
+  type UseStatsPageFiltersResult,
+} from './use-stats-page-filters';
+export { resolveStatsTrendChartRange } from './resolve-trend-chart-range';
+
+export { default as ReportSkeleton } from './ReportSkeleton';
 export { default as StatsKpiGrid } from './StatsKpiGrid';
 export { default as StatsCard } from './StatsCard';
 export { default as StatsTableCard } from './StatsTableCard';

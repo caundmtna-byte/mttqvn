@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { cloudinaryThumbUrl, CLOUDINARY_THUMB_WIDTH } from '@/lib/cloudinary/thumb-url';
 import { ImagePlus, X, Plus, Loader2, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactDOM from 'react-dom';
@@ -200,7 +201,8 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
                 style={{ aspectRatio }}
               >
                 <img
-                  src={img.src}
+                  /* Ô lưới nhỏ — xin bản resize; lightbox bên dưới vẫn dùng `img.src` gốc. */
+                  src={cloudinaryThumbUrl(img.src, CLOUDINARY_THUMB_WIDTH.gallery, { crop: 'fill' })}
                   alt={img.name || 'Image'}
                   className="w-full h-full object-cover"
                   loading="lazy"

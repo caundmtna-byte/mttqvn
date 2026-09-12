@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, Hash, MapPin, UserCheck } from 'lucide-react';
+import { Plus, Download, Upload, Hash, MapPin, Printer, UserCheck } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -17,6 +17,8 @@ interface Props {
   onExport: () => void;
   onImport: () => void;
   onDeleteMany: (ids: string[]) => void;
+  /** In danh sách ủy viên theo nhiệm kỳ — chỉ truyền khi người dùng có quyền xem. */
+  onPrintDanhSach?: () => void;
   nhiemKyOptions: MttqUyVienUyBanHeaderOption[];
   donViOptions: MttqUyVienUyBanHeaderOption[];
   trangThaiOptions: MttqUyVienUyBanHeaderOption[];
@@ -28,6 +30,7 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
   onExport,
   onImport,
   onDeleteMany,
+  onPrintDanhSach,
   nhiemKyOptions,
   donViOptions,
   trangThaiOptions,
@@ -134,6 +137,17 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
 
   const mobileActions = useMemo<ActionItem[]>(
     () => [
+      ...(onPrintDanhSach
+        ? [
+            {
+              key: 'print',
+              label: txt('matTranUyVienUyBan.printPreview.print'),
+              icon: Printer,
+              onClick: onPrintDanhSach,
+              description: '',
+            },
+          ]
+        : []),
       ...(canImport
         ? [{ key: 'import', label: txt('common.import'), icon: Upload, onClick: onImport, description: '' }]
         : []),
@@ -141,12 +155,24 @@ const MttqUyVienUyBanToolbar: React.FC<Props> = ({
         ? [{ key: 'export', label: txt('common.export'), icon: Download, onClick: onExport, description: '' }]
         : []),
     ],
-    [canImport, canExport, onImport, onExport],
+    [canImport, canExport, onImport, onExport, onPrintDanhSach],
   );
 
   const renderActions = (
     <>
       <div className="hidden sm:flex items-center gap-2">
+        {onPrintDanhSach ? (
+          <Tooltip content={txt('matTranUyVienUyBan.printPreview.print')} placement="bottom">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onPrintDanhSach}
+              className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+            >
+              <Printer className="w-4 h-4" />
+            </Button>
+          </Tooltip>
+        ) : null}
         {canImport ? (
           <Tooltip content={txt('common.import')} placement="bottom">
             <Button

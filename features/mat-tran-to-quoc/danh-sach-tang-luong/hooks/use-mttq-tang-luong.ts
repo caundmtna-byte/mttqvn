@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { MttqTangLuongFormValues } from '../core/schema';
 import type { MttqTangLuongListRow } from '../core/types';
 import {
@@ -70,7 +69,6 @@ export function useCreateMttqTangLuong(onSuccess?: () => void) {
       toast.success(txt('matTranTangLuong.toast.create'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -89,7 +87,6 @@ export function useUpdateMttqTangLuong(onSuccess?: () => void) {
       toast.success(txt('matTranTangLuong.toast.update'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -109,7 +106,6 @@ export function useDeleteMttqTangLuong() {
       }
       toast.success(txt('matTranTangLuong.toast.delete'));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -125,6 +121,5 @@ export function useDeleteMttqTangLuongMany() {
       }
       toast.success(txt('matTranTangLuong.toast.deleteMany', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }

@@ -61,6 +61,7 @@ const KhoDanhSachKhoPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefWarehouseList');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
@@ -73,11 +74,10 @@ const KhoDanhSachKhoPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null &&
-    user.role !== 'admin' &&
-    chucVuKey.trim() !== '' &&
-    !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -103,7 +103,7 @@ const KhoDanhSachKhoPage: React.FC = () => {
     columns,
   } = useKhoDanhSachKhoStore();
 
-  const { data: rows = [], isLoading } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
+  const { data: rows = [], isLoading, isError, refetch } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useKhoDanhSachKhoDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
@@ -238,7 +238,7 @@ const KhoDanhSachKhoPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewingId === id) setViewingId(null);
           },
@@ -254,7 +254,7 @@ const KhoDanhSachKhoPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewingId && ids.includes(viewingId)) setViewingId(null);
@@ -317,6 +317,8 @@ const KhoDanhSachKhoPage: React.FC = () => {
           <KhoDanhSachKhoTable
             data={sorted}
             isLoading={isListLoading}
+            isError={isError}
+            onRetry={() => void refetch()}
             onEdit={handleEditFromList}
             onDelete={handleDelete}
             onView={(item) => {

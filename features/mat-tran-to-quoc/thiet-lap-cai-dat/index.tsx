@@ -8,6 +8,7 @@ import { useMttqThietLapAll } from './hooks/use-mttq-thiet-lap';
 import { MTTQ_THIET_LAP_LOAI, MTTQ_LOAI_TAB_LABEL_KEY, type MttqThietLapLoai } from './core/types';
 import { useMttqThietLapListStore } from './store/useMttqThietLapListStore';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 
@@ -15,17 +16,20 @@ const ThietLapCaiDatPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranThietLapCaiDat');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('page.matTranThietLap.noViewPermission'));
     navigate('/mat-tran-to-quoc', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [activeLoai, setActiveLoai] = useTabSearchParam(MTTQ_THIET_LAP_LOAI, 'cap_quan_ly');
-  const { data: allRowsRaw, isLoading } = useMttqThietLapAll({ enabled: canView });
+  const { data: allRowsRaw, isLoading, isError, refetch } = useMttqThietLapAll({ enabled: canView });
   const store = useMttqThietLapListStore();
 
   const allRows = Array.isArray(allRowsRaw) ? allRowsRaw : [];
@@ -76,6 +80,8 @@ const ThietLapCaiDatPage: React.FC = () => {
           loai={activeLoai}
           items={items}
           isLoading={isLoading}
+          isError={isError}
+          onRetry={() => void refetch()}
           store={store}
           tabGroup={tabsSlot}
           onPageBack={goBack}

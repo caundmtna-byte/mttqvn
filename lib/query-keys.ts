@@ -2,8 +2,15 @@
  * Query keys tập trung — tránh lệch chuỗi khi invalidate / prefetch (TanStack Query + Supabase).
  */
 /** Tham số fetch danh sách nhân viên (đồng bộ với getEmployees + useEmployees). */
+/**
+ * Tham số chuẩn cho danh sách nhân viên.
+ *
+ * `limit: null` = đọc ĐỦ bảng (lặp 1000 dòng/request). Trước đây để 5.000 cứng,
+ * nghĩa là biên chế thứ 5.001 trở đi âm thầm không xuất hiện trong danh sách —
+ * đúng loại lỗi không ai phát hiện ra.
+ */
 export const EMPLOYEES_LIST_QUERY_PARAMS = {
-  limit: 5000,
+  limit: null,
   offset: 0,
   orderBy: 'ten_tai_khoan',
   ascending: true,
@@ -14,7 +21,8 @@ export const queryKeys = {
     all: ['employees'] as const,
     /** Danh sách có limit/offset/order — giảm refetch và khớp cache mutation. */
     list: (params: {
-      limit: number;
+      /** null = đọc đủ bảng. */
+      limit: number | null;
       offset: number;
       orderBy: string;
       ascending: boolean;
@@ -65,6 +73,7 @@ export const queryKeys = {
       nguonDangIds: readonly string[];
       trangDangIds: readonly string[];
       nguoiTaoIds: readonly string[];
+      sort?: { column: string | null; direction: 'asc' | 'desc' | null } | null;
     }) => ['bai-viet-danh-sach', 'page', args] as const,
     nguoiTaoFilterOptions: (args: { scope: string; viewerDonViId: string | null }) =>
       ['bai-viet-danh-sach', 'nguoi-tao-filter-options', args] as const,
@@ -88,6 +97,8 @@ export const queryKeys = {
       viewerNhanVienId: string | null;
       trangThai: readonly string[];
       mucDo: readonly string[];
+      idChuongTrinh: readonly string[];
+      sort?: { column: string | null; direction: 'asc' | 'desc' | null } | null;
     }) => ['cong-viec-danh-sach', 'page', args] as const,
   },
   congViecBaoCao: {
@@ -113,6 +124,18 @@ export const queryKeys = {
       p_viewer_don_vi_id: number | null;
       p_view_all: boolean;
     }) => ['cong-viec-bao-cao', 'filter-options', range] as const,
+  },
+  /** Thẻ chỉ số Trang chủ — số liệu tóm tắt, đã khoá phạm vi theo người đang xem. */
+  trangChu: {
+    all: ['trang-chu'] as const,
+    /** KPI công việc của chính người dùng (RPC `cong_viec_bao_cao_kpi`). */
+    congViecKpi: (args: unknown) => ['trang-chu', 'cong-viec-kpi', args] as const,
+    /** Kỳ họp sắp diễn ra — khoá gồm cả phạm vi xem để không dùng nhầm cache người khác. */
+    kyHopSapToi: (scope: unknown, today: string) =>
+      ['trang-chu', 'ky-hop-sap-toi', scope, today] as const,
+    /** Cán bộ sắp đến hạn nâng bậc lương — khoá gồm cả phạm vi xem. */
+    tangLuongSapDenHan: (scope: unknown, soNgay: number) =>
+      ['trang-chu', 'tang-luong-sap-den-han', scope, soNgay] as const,
   },
   mttqCanBo: {
     all: ['mttq-can-bo'] as const,
@@ -173,16 +196,22 @@ export const queryKeys = {
     detail: (id: string) => ['dttg-tham-hoi-to-chuc', 'detail', id] as const,
     byToChuc: (toChucId: string) => ['dttg-tham-hoi-to-chuc', 'by-to-chuc', toChucId] as const,
     byDip: (dipId: string) => ['dttg-tham-hoi-to-chuc', 'by-dip', dipId] as const,
+    /** Một trang từ RPC phân trang phía máy chủ. */
+    page: (args: unknown) => ['dttg-tham-hoi-to-chuc', 'page', args] as const,
   },
   danTocThamHoiCaNhan: {
     all: ['dttg-tham-hoi-ca-nhan'] as const,
     detail: (id: string) => ['dttg-tham-hoi-ca-nhan', 'detail', id] as const,
     byCaNhan: (caNhanId: string) => ['dttg-tham-hoi-ca-nhan', 'by-ca-nhan', caNhanId] as const,
     byDip: (dipId: string) => ['dttg-tham-hoi-ca-nhan', 'by-dip', dipId] as const,
+    /** Một trang từ RPC phân trang phía máy chủ. */
+    page: (args: unknown) => ['dttg-tham-hoi-ca-nhan', 'page', args] as const,
   },
   pbxhThucHien: {
     all: ['pbxh-thuc-hien'] as const,
     detail: (id: string) => ['pbxh-thuc-hien', 'detail', id] as const,
+    /** Một trang từ RPC get_pbxh_thuc_hien_page. */
+    page: (args: unknown) => ['pbxh-thuc-hien', 'page', args] as const,
   },
   pbxhThietLap: {
     all: ['pbxh-thiet-lap'] as const,
@@ -221,6 +250,10 @@ export const queryKeys = {
     detail: (id: string) => ['kho-nhap-xuat-kho', 'detail', id] as const,
     /** Tab "Chi tiết" — danh sách phẳng dòng `kho_nhap_xuat_kho_ct`. */
     chiTietFlatList: ['kho-nhap-xuat-kho', 'chi-tiet-flat-list'] as const,
+    /** Tab "Danh sách" — một trang phiếu từ RPC get_kho_nhap_xuat_kho_page. */
+    page: (args: unknown) => ['kho-nhap-xuat-kho', 'page', args] as const,
+    /** Tab "Chi tiết" — một trang dòng hàng từ RPC get_kho_nhap_xuat_kho_ct_page. */
+    chiTietFlatPage: (args: unknown) => ['kho-nhap-xuat-kho', 'chi-tiet-flat-page', args] as const,
     /** Tồn kho hiện tại theo kho (dùng trong form xuất / chuyển kho). */
     tonKhoByKho: (khoId: string) => ['kho-nhap-xuat-kho', 'ton-kho-by-kho', khoId] as const,
     /** Đơn giá gần nhất theo hang_hoa_id (lần nhập gần nhất). */
@@ -249,9 +282,42 @@ export const queryKeys = {
   luongThietLapCauHinh: {
     singleton: ['luong-thiet-lap-cau-hinh', 'singleton'] as const,
   },
+  /**
+   * Quỹ tiền — hai quỹ dùng chung bảng nên **mọi key phải kèm `quy`**,
+   * nếu không cache của Quỹ vì người nghèo sẽ hiện trên màn Quỹ cứu trợ.
+   */
+  quyDanhMucTaiKhoan: {
+    all: (quy: string) => ['quy-danh-muc-tai-khoan', quy] as const,
+    detail: (quy: string, id: string) => ['quy-danh-muc-tai-khoan', quy, 'detail', id] as const,
+  },
+  quyDanhMucKhoan: {
+    all: (quy: string) => ['quy-danh-muc-khoan', quy] as const,
+    detail: (quy: string, id: string) => ['quy-danh-muc-khoan', quy, 'detail', id] as const,
+  },
+  quySoThuChi: {
+    all: (quy: string) => ['quy-so-thu-chi', quy] as const,
+    /** Một trang sổ từ RPC `get_quy_so_thu_chi_page`. */
+    page: (args: unknown) => ['quy-so-thu-chi', 'page', args] as const,
+    detail: (quy: string, id: string) => ['quy-so-thu-chi', quy, 'detail', id] as const,
+    /** Số dư từng tài khoản (`quy_so_du_view`). */
+    soDu: (quy: string) => ['quy-so-thu-chi', quy, 'so-du'] as const,
+    /** Toàn bộ dòng sổ trong khoảng ngày — chỉ dùng cho màn Báo cáo thống kê. */
+    baoCao: (args: unknown) => ['quy-so-thu-chi', 'bao-cao', args] as const,
+  },
   mttqTangLuong: {
     all: ['mttq-tang-luong'] as const,
     detail: (id: string) => ['mttq-tang-luong', 'detail', id] as const,
     byCanBo: (canBoId: string) => ['mttq-tang-luong', 'by-can-bo', canBoId] as const,
+  },
+  /**
+   * Thông báo — hộp của chính người đang đăng nhập (RLS lọc ở database).
+   * Khoá gồm `nhanVienId` để đổi tài khoản trên cùng máy không đọc nhầm cache cũ.
+   */
+  thongBao: {
+    all: ['thong-bao'] as const,
+    /** Chỉ CON SỐ chưa đọc — truy vấn `head` nên không kéo dòng nào về. */
+    soChuaDoc: (nhanVienId: string) => ['thong-bao', 'so-chua-doc', nhanVienId] as const,
+    /** Danh sách trong chuông — chỉ tải khi người dùng thực sự mở chuông. */
+    list: (nhanVienId: string) => ['thong-bao', 'list', nhanVienId] as const,
   },
 } as const;

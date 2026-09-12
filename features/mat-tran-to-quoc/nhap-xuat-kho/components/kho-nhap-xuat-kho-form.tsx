@@ -380,6 +380,10 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                     required
                     clearable={false}
                     dropdownInPortal
+                    // Số phiếu (PN/PX/PC) sinh theo loại ngay lúc lập và đã in ra
+                    // giấy, nên DB chặn đổi loại phiếu (trg_kho_nxk_chan_doi_loai).
+                    // Khoá luôn ở form để người dùng không mất công nhập rồi bị từ chối.
+                    disabled={isEdit}
                   />
                 )}
               />
@@ -395,7 +399,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 <p className="text-xs text-muted-foreground">
                   <EnumBadge value={watchedLoaiPhieu} config={loaiBadge} shape="pill" />{' '}
                   {isEdit && initialData
-                    ? `· ${txt('matTranNhapXuatKho.form.soPhieu')}: ${initialData.so_phieu}`
+                    ? `· ${txt('matTranNhapXuatKho.form.soPhieu')}: ${initialData.so_phieu} · ${txt('matTranNhapXuatKho.form.loaiPhieuKhoaKhiSua')}`
                     : `· ${txt('matTranNhapXuatKho.form.soPhieuHintAuto')}`}
                 </p>
               </div>

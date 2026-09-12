@@ -16,6 +16,9 @@ interface Props {
   store: GenericState<PbxhThietLapFilters>;
   data: PbxhThietLap[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onRowClick: (item: PbxhThietLap) => void;
   onEdit: (item: PbxhThietLap) => void;
   onDelete: (id: string) => void;
@@ -27,6 +30,8 @@ const PbxhThietLapTable = memo(function PbxhThietLapTable({
   store,
   data,
   isLoading,
+  isError,
+  onRetry,
   onRowClick,
   onEdit,
   onDelete,
@@ -211,6 +216,8 @@ const PbxhThietLapTable = memo(function PbxhThietLapTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}

@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Sigma } from 'lucide-react';
-import Button from '../ui/Button';
-import Tooltip from '../ui/Tooltip';
+import { ArrowUp, ArrowDown, Sigma } from 'lucide-react';
 import EmptyState from './EmptyState';
+import ErrorState from './ErrorState';
 import LoadingSpinnerWithText from './LoadingSpinnerWithText';
-import PageSizeSelect from './PageSizeSelect';
+import TableSkeleton, { type TableSkeletonColumn } from './TableSkeleton';
+import CardListSkeleton from './CardListSkeleton';
+import TablePaginationFooter from './TablePaginationFooter';
 import { cn } from '../../lib/utils';
 import type { ColumnConfig, SortState } from '../../store/createGenericStore';
 import { getColumnCellStyle } from '../../store/createGenericStore';
@@ -62,6 +63,13 @@ interface GenericTableProps<T> {
   loadingText?: string;
 
   /** Empty state: khi data.length === 0 (không loading) */
+  /**
+   * Query lỗi. Không có prop này thì lỗi mạng hiển thị thành "Không có dữ liệu" —
+   * sai nghĩa, và người dùng chỉ còn cách F5. Trước đây 32/41 module như vậy.
+   */
+  isError?: boolean;
+  /** Gọi lại query khi bấm "Thử lại". Thường truyền thẳng `refetch` của useQuery. */
+  onRetry?: () => void;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: React.ReactNode;
@@ -97,7 +105,7 @@ interface GenericTableProps<T> {
  */
 
 function GenericTable<T>({
-  data, columns, isLoading,
+  data, columns, isLoading, isError = false, onRetry,
   selectedIds, onToggleSelection, onToggleAll,
   page, pageSize, onPageChange, onPageSizeChange,
   sort, onSort,
@@ -142,6 +150,12 @@ function GenericTable<T>({
       computeDataTableMinWidth(dataColumns, {
         defaultColumnMin: DEFAULT_DATA_COLUMN_MIN_WIDTH,
       }),
+    [dataColumns]
+  );
+
+  /** Cột cho skeleton lúc đang tải — giữ đúng bề rộng cột của bảng thật */
+  const skeletonColumns = useMemo<TableSkeletonColumn[]>(
+    () => dataColumns.map(col => ({ minWidth: col.minWidth, maxWidth: col.maxWidth })),
     [dataColumns]
   );
 
@@ -241,23 +255,6 @@ function GenericTable<T>({
     return () => { el.removeEventListener('scroll', updateScrollShadow); ro.disconnect(); };
   }, [updateScrollShadow, isLoading]);
 
-  // Go-to-page
-  const [editingPage, setEditingPage] = useState(false);
-  const [pageInput, setPageInput] = useState('');
-  const pageInputRef = useRef<HTMLInputElement>(null);
-
-  const handleGoToPage = useCallback(() => {
-    const p = parseInt(pageInput);
-    if (p >= 1 && p <= totalPages) onPageChange(p);
-    setEditingPage(false);
-  }, [pageInput, totalPages, onPageChange]);
-
-  useEffect(() => {
-    if (!editingPage) return;
-    const id = requestAnimationFrame(() => pageInputRef.current?.focus());
-    return () => cancelAnimationFrame(id);
-  }, [editingPage]);
-
   // Sort handler
   const handleHeaderClick = useCallback((colId: string) => {
     if (!onSort) return;
@@ -302,6 +299,16 @@ function GenericTable<T>({
   /** Padding header — khớp mật độ với body */
   const headerPy = density === 'compact' ? 'py-1' : density === 'comfortable' ? 'py-2' : 'py-1.5';
 
+  // Lỗi tải dữ liệu: phải nói rõ là LỖI và cho thử lại, không được rơi vào
+  // EmptyState "Không có dữ liệu" (người dùng tưởng chưa có bản ghi nào).
+  if (isError && !isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-card overflow-hidden items-center justify-center p-6">
+        <ErrorState onRetry={onRetry} />
+      </div>
+    );
+  }
+
   // Skeleton loading: strip icon xoay + chữ primary (Nhân sự, ...) rồi skeleton
   if (isLoading) {
     return (
@@ -309,48 +316,17 @@ function GenericTable<T>({
         <div className="shrink-0 py-3 px-3 sm:px-4 border-b border-border/50 bg-muted/20">
           <LoadingSpinnerWithText text={loadingText} centered />
         </div>
-        <div className={cn('flex-1 min-h-0 overflow-auto custom-scrollbar', desktopTableWrapClass)}>
-          <table
-            className="text-sm border-separate border-spacing-0"
-            style={{ minWidth: tableMinWidth, width: '100%' }}
-          >
-            <thead>
-              <tr className="bg-muted/30 border-b border-border">
-                <th className={cn('w-[44px] px-3 border-b border-border', headerPy)}><div className="w-4 h-4 bg-muted rounded animate-pulse" /></th>
-                {dataColumns.map(col => (
-                  <th key={col.id} className={cn('px-4 border-b border-border min-w-0', headerPy)} style={getColumnCellStyle(col)}>
-                    <div className="h-3 w-16 bg-muted rounded animate-pulse" />
-                  </th>
-                ))}
-                <th className={cn('w-[92px] px-3 border-b border-border', headerPy)}><div className="h-3 w-12 bg-muted rounded animate-pulse mx-auto" /></th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="[&>td]:border-b [&>td]:border-border">
-                  <td className="px-3 py-2.5"><div className="w-4 h-4 bg-muted/60 rounded animate-pulse" /></td>
-                  {dataColumns.map(col => (
-                    <td key={col.id} className="px-4 py-2.5">
-                      <div className={cn("h-3 bg-muted/60 rounded animate-pulse", i % 2 === 0 ? "w-3/4" : "w-1/2")} />
-                    </td>
-                  ))}
-                  <td className="px-3 py-2.5"><div className="flex gap-1 justify-center">{[1,2,3].map(n => <div key={n} className="w-6 h-6 bg-muted/40 rounded animate-pulse" />)}</div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className={cn('flex-1 space-y-3 px-3 pt-1 overflow-hidden', mobileCardsWrapClass)}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-card rounded-xl border border-border p-3.5 animate-pulse">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-11 h-11 rounded-lg bg-muted" />
-                <div className="flex-1 space-y-2"><div className="h-3.5 w-2/3 bg-muted rounded" /><div className="h-2.5 w-1/3 bg-muted/60 rounded" /></div>
-              </div>
-              <div className="h-12 bg-muted/30 rounded-lg" />
-            </div>
-          ))}
-        </div>
+        <TableSkeleton
+          className={desktopTableWrapClass}
+          columns={skeletonColumns}
+          tableMinWidth={tableMinWidth}
+          headerPaddingClass={headerPy}
+          rowCount={5}
+        />
+        <CardListSkeleton
+          cardCount={3}
+          className={cn('px-3 pt-1', mobileCardsWrapClass)}
+        />
         <div className="border-t border-border bg-card px-3 py-1.5 flex items-center justify-between shrink-0">
           <div className="h-3 w-24 bg-muted rounded animate-pulse" />
           <div className="h-7 w-28 bg-muted rounded animate-pulse" />
@@ -641,136 +617,23 @@ function GenericTable<T>({
         )}
       </div>
 
-      {/* 3. FOOTER */}
+      {/* 3. FOOTER — dùng chung TablePaginationFooter (bản duy nhất trong repo) */}
       {totalRecords > 0 && (
-        <div className={cn('border-t border-border px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 shrink-0', footerToneClass)}>
-
-          {/* Left: Record summary + selected count */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-            <span className="tabular-nums">
-              <span className="font-medium text-foreground">
-                {rangeStart}–{rangeEnd}
-              </span>
-              <span className="text-muted-foreground/60">/Tổng:</span>
-              <span className="font-semibold text-foreground">{totalRecordsLabel ?? totalRecords}</span>
-            </span>
-
-            {/* Selected count: badge on mobile, text on desktop */}
-            {selectedIds.size > 0 && (
-              <>
-                <span className="text-primary font-medium hidden sm:inline">
-                  · {selectedIds.size} đã chọn
-                </span>
-                <span className="sm:hidden inline-flex items-center justify-center h-5 min-w-[20px] px-1 rounded-full bg-primary/15 text-primary text-xs font-bold tabular-nums">
-                  {selectedIds.size}✓
-                </span>
-              </>
-            )}
-
-            {/* Page size select: desktop + mobile (dùng chung component) */}
-            <div className="flex items-center border-l border-border pl-2">
-              <PageSizeSelect
-                value={pageSize}
-                onChange={onPageSizeChange}
-                totalRecords={totalRecords}
-                compact={false}
-                className="hidden sm:inline-flex"
-              />
-              <PageSizeSelect
-                value={pageSize}
-                onChange={onPageSizeChange}
-                totalRecords={totalRecords}
-                perPageLabel=""
-                compact
-                className="sm:hidden"
-                aria-label="Số bản ghi mỗi trang"
-              />
-            </div>
-          </div>
-
-          {/* Right: Pagination controls */}
-          <div className="flex items-center gap-0.5">
-            <Tooltip content="Trang đầu" placement="top">
-              <Button
-                variant="outline" size="sm"
-                disabled={page === 1}
-                onClick={() => onPageChange(1)}
-                className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-colors"
-              >
-                <ChevronsLeft size={13} />
-              </Button>
-            </Tooltip>
-            <Tooltip content="Trang trước" placement="top">
-              <Button
-                variant="outline" size="sm"
-                disabled={page === 1}
-                onClick={() => onPageChange(page - 1)}
-                className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-colors"
-              >
-                <ChevronLeft size={13} />
-              </Button>
-            </Tooltip>
-
-            <Tooltip content="Nhấn đúp để nhập trang" placement="top">
-              <div className="flex items-center gap-0.5 px-1">
-                {editingPage ? (
-                  <input
-                    ref={pageInputRef}
-                    value={pageInput}
-                    onChange={(e) => setPageInput(e.target.value.replace(/\D/g, ''))}
-                    onBlur={handleGoToPage}
-                    onKeyDown={(e) => e.key === 'Enter' && handleGoToPage()}
-                    className="h-6 w-10 text-center text-xs font-bold border border-primary rounded bg-background text-foreground outline-none tabular-nums"
-                  />
-                ) : (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onDoubleClick={() => {
-                      setEditingPage(true);
-                      setPageInput(String(page));
-                      setTimeout(() => pageInputRef.current?.select(), 50);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setEditingPage(true);
-                        setPageInput(String(page));
-                        setTimeout(() => pageInputRef.current?.select(), 50);
-                      }
-                    }}
-                    className="h-6 min-w-[24px] flex items-center justify-center rounded bg-primary text-white text-xs font-bold px-1 tabular-nums cursor-default"
-                  >
-                    {page}
-                  </span>
-                )}
-                <span className="text-muted-foreground/40 text-xs">/</span>
-                <span className="text-xs font-medium text-muted-foreground tabular-nums">{totalPages || 1}</span>
-              </div>
-            </Tooltip>
-
-            <Tooltip content="Trang sau" placement="top">
-              <Button
-                variant="outline" size="sm"
-                disabled={page >= totalPages}
-                onClick={() => onPageChange(page + 1)}
-                className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-colors"
-              >
-                <ChevronRight size={13} />
-              </Button>
-            </Tooltip>
-            <Tooltip content="Trang cuối" placement="top">
-              <Button
-                variant="outline" size="sm"
-                disabled={page >= totalPages || disableServerLastPage}
-                onClick={() => onPageChange(totalPages)}
-                className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-colors"
-              >
-                <ChevronsRight size={13} />
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
+        <TablePaginationFooter
+          totalRecords={totalRecords}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          selectedCount={selectedIds.size}
+          totalPages={totalPages}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          totalRecordsLabel={totalRecordsLabel}
+          disableAllOption={serverSidePagination}
+          disableLastPage={disableServerLastPage}
+          className={footerToneClass}
+        />
       )}
     </div>
   );

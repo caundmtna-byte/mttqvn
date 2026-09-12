@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import ErrorState from '@/components/shared/ErrorState';
 import { txt } from '../../../../lib/text';
 import { Briefcase, Building2, CornerDownRight, Folder, UserCircle } from 'lucide-react';
 import type { Position } from '../core/types';
@@ -29,6 +30,9 @@ import {
 interface Props {
   data: Position[];
   isLoading: boolean;
+  /** Query lỗi — hiện thông báo lỗi + nút Thử lại thay vì danh sách rỗng. */
+  isError?: boolean;
+  onRetry?: () => void;
   /** Count phòng ban (exclude-self) — đồng bộ toolbar. */
   deptCounts: Record<string, number>;
   statusCounts: { Active: number; Inactive: number };
@@ -41,6 +45,8 @@ interface Props {
 const PositionTable = memo(function PositionTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   deptCounts,
   statusCounts,
   onEdit,
@@ -444,6 +450,13 @@ const PositionTable = memo(function PositionTable({
     [handlePositionOpen, onEdit, onDelete, onStatusChange, rowMenuOpenId, toggleSelection]
   );
 
+  if (isError) {
+
+    return <ErrorState onRetry={onRetry} className="m-4" />;
+
+  }
+
+
   if (isLoading) {
     return (
       <ListPageSkeleton
@@ -559,7 +572,6 @@ const PositionTable = memo(function PositionTable({
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           selectedCount={selectedIds.size}
-          recordsLabel={txt('position.footerRecords')}
         />
       </div>
     </div>

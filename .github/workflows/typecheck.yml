@@ -1,13 +1,16 @@
-# TypeScript: toàn repo (`typecheck`) + phạm vi MTTQ + hệ thống (`typecheck:mttq`).
-# Khi có lỗi ngoài `include` của tsconfig.typecheck-mttq.json, job scoped vẫn xanh để PR module không bị chặn.
-name: Typecheck
+# Cổng chất lượng trước khi merge. Trước đây chỉ có typecheck, nên 32 file test
+# không bao giờ chạy tự động và build gãy chỉ phát hiện lúc Vercel deploy
+# (lịch sử commit có "lỗi build", "sửa build").
+name: CI
+
 on:
   push:
     branches: [main, master]
   pull_request:
 
 jobs:
-  tsc-full:
+  kiem-tra:
+    name: Typecheck · Lint · Test · Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,9 +19,24 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
 
-  tsc-mttq-scope:
+      - name: Typecheck (toàn repo)
+        run: npm run typecheck
+
+      # Không dùng --max-warnings=0: repo còn ~222 cảnh báo tồn đọng.
+      # eslint tự trả exit code khác 0 khi có LỖI, nên job này chặn đúng thứ cần chặn.
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  # Phạm vi MTTQ + hệ thống — giữ riêng để PR module không bị chặn bởi lỗi ngoài scope.
+  typecheck-mttq:
+    name: Typecheck (phạm vi MTTQ)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -7,6 +7,7 @@ import {
 } from '@/lib/branding-defaults';
 import type { AppFontFamily } from '../lib/theme/fonts';
 import { AuthState, User } from '../types';
+import { clearSentryUser, setSentryUser } from '@/lib/observability/sentry';
 import { usePermissionGrantStore } from './usePermissionGrantStore';
 
 const AUTH_REMEMBER_KEY = 'auth-remember';
@@ -54,8 +55,14 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       _hasHydrated: false,
-      login: (user: User) => set({ user, isAuthenticated: true }),
+      login: (user: User) => {
+        // Gắn danh tính vào mọi sự kiện lỗi sau đó — có lỗi mới biết của cán bộ
+        // nào, đơn vị nào mà gọi hỗ trợ ngược.
+        setSentryUser(user);
+        set({ user, isAuthenticated: true });
+      },
       logout: () => {
+        clearSentryUser();
         usePermissionGrantStore.getState().clearMatrix();
         set({ user: null, isAuthenticated: false });
       },
@@ -68,7 +75,9 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => () => {
+      onRehydrateStorage: () => (state) => {
+        // Mở lại tab với phiên đã lưu cũng phải gắn lại danh tính.
+        if (state?.user) setSentryUser(state.user);
         useAuthStore.setState({ _hasHydrated: true });
       },
       migrate: (persisted: unknown, version: number) => {

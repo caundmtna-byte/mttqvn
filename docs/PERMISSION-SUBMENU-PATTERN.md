@@ -24,7 +24,7 @@ Module khác: nếu không cần OR với `cap_bac`, giữ nhánh `matrixCan` m�
 
 1. **Dashboard con (vd. Hệ thống):** `pages/dashboards/SystemDashboard.tsx` — lọc từng card theo `appResourceForDashboardNavigatePath(path)` + `can()`. Nhóm không còn card nào thì bỏ cả nhóm.
 2. **Sidebar + Trang chủ:** `lib/nav-module-visibility.ts` — `getSidebarPathGateResources('/he-thong')` trả về mọi `AppResource` có `APP_RESOURCE_TO_MODULE[res]` bắt đầu bằng `he-thong/`. Hiện mục menu chỉ khi `some(can('view', …))`. Path khác: trả về `null` (chưa lọc theo resource — vẫn hiện).
-3. **Ngoại lệ:** `/` và **`/thong-tin-ban-quyen`** luôn hiện (sidebar / thẻ Trang chủ).
+3. **Ngoại lệ:** `/` luôn hiện (sidebar / thẻ Trang chủ).
 
 ## Deep link
 

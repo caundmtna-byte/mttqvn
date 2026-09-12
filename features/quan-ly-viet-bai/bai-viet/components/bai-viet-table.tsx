@@ -10,6 +10,9 @@ import { BaiVietTableRowActions } from './bai-viet-table-row-actions';
 interface Props {
   data: BaiVietDanhSach[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: BaiVietDanhSach) => void;
   onDelete: (id: string) => void;
   onView?: (item: BaiVietDanhSach) => void;
@@ -21,6 +24,8 @@ interface Props {
 const BaiVietTable = memo(function BaiVietTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -172,6 +177,8 @@ const BaiVietTable = memo(function BaiVietTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('articleList.emptyTitle')}
       emptyDescription={txt('articleList.emptyHint')}

@@ -1,34 +1,46 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { txt } from '../../lib/text';
+import React, { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import Button from '../ui/Button';
 import Tooltip from '../ui/Tooltip';
 import PageSizeSelect from './PageSizeSelect';
+import { cn } from '../../lib/utils';
 
 export interface TablePaginationFooterProps {
-  /** Tổng số bản ghi */
+  /** Tổng số bản ghi khớp bộ lọc. */
   totalRecords: number;
-  /** Trang hiện tại (1-based) */
+  /** Trang hiện tại (1-based). */
   page: number;
-  /** Số bản ghi mỗi trang */
+  /** Số bản ghi mỗi trang. */
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
-  /** Số bản ghi đã chọn (hiển thị badge) */
+  /** Số bản ghi đang được chọn (hiện kèm dấu ·). */
   selectedCount?: number;
-  /** Label sau số tổng, vd: "bản ghi" / "records" */
-  recordsLabel: string;
-  /** Các lựa chọn pageSize */
+  /** Các lựa chọn số dòng mỗi trang. */
   pageSizeOptions?: number[];
-  /** Class cho container */
   className?: string;
+
+  // --- Ghi đè cho bảng phân trang phía máy chủ ---
+  /** Tổng số trang; mặc định tính từ totalRecords/pageSize. */
+  totalPages?: number;
+  /** Chỉ số dòng đầu/cuối đang hiển thị; mặc định tính từ page/pageSize. */
+  rangeStart?: number;
+  rangeEnd?: number;
+  /** Chuỗi thay cho con số tổng (ví dụ '—' khi chưa biết tổng). */
+  totalRecordsLabel?: string | null;
+  /** Ẩn lựa chọn "Tất cả" trong ô số dòng mỗi trang. */
+  disableAllOption?: boolean;
+  /** Vô hiệu nút "trang cuối" (khi chưa biết trang cuối nằm ở đâu). */
+  disableLastPage?: boolean;
 }
 
-const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
-
 /**
- * Footer phân trang dùng chung cho bảng/danh sách: tổng bản ghi, khoảng đang xem,
- * số đã chọn, chọn page size, nút first/prev/page/next/last (double-click trang để nhập số).
+ * Footer phân trang dùng chung: khoảng đang xem · tổng · số đã chọn · số dòng
+ * mỗi trang · nút đầu/trước/số trang/sau/cuối (nhấn đúp số trang để nhập).
+ *
+ * Đây là bản duy nhất trong repo — `GenericTable` và các bảng không dùng
+ * `GenericTable` (chức vụ, phòng ban, tồn kho) đều render component này, để
+ * phân trang ở mọi màn hình trông và hoạt động giống hệt nhau.
  */
 export const TablePaginationFooter: React.FC<TablePaginationFooterProps> = ({
   totalRecords,
@@ -37,74 +49,90 @@ export const TablePaginationFooter: React.FC<TablePaginationFooterProps> = ({
   onPageChange,
   onPageSizeChange,
   selectedCount = 0,
-  recordsLabel: _recordsLabel,
-  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  pageSizeOptions,
   className,
+  totalPages: totalPagesProp,
+  rangeStart: rangeStartProp,
+  rangeEnd: rangeEndProp,
+  totalRecordsLabel,
+  disableAllOption = false,
+  disableLastPage = false,
 }) => {
   const [editingPage, setEditingPage] = useState(false);
   const [pageInput, setPageInput] = useState('');
   const pageInputRef = useRef<HTMLInputElement>(null);
 
-  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
-  const start = totalRecords === 0 ? 0 : Math.min((page - 1) * pageSize + 1, totalRecords);
-  const end = Math.min(page * pageSize, totalRecords);
+  const totalPages = totalPagesProp ?? Math.max(1, Math.ceil(totalRecords / Math.max(1, pageSize)));
+  const rangeStart =
+    rangeStartProp ?? (totalRecords === 0 ? 0 : Math.min((page - 1) * pageSize + 1, totalRecords));
+  const rangeEnd = rangeEndProp ?? Math.min(page * pageSize, totalRecords);
 
   const handleGoToPage = () => {
-    const num = parseInt(pageInput, 10);
-    if (!Number.isNaN(num) && num >= 1 && num <= totalPages) {
-      onPageChange(num);
-    }
+    const num = Number.parseInt(pageInput, 10);
+    if (!Number.isNaN(num) && num >= 1 && num <= totalPages) onPageChange(num);
     setEditingPage(false);
     setPageInput('');
   };
 
-  useEffect(() => {
-    if (!editingPage) queueMicrotask(() => setPageInput(''));
-  }, [editingPage]);
-
-  useEffect(() => {
-    if (!editingPage || !pageInputRef.current) return;
-    pageInputRef.current.focus();
-    queueMicrotask(() => pageInputRef.current?.select());
-  }, [editingPage]);
+  const startEditingPage = () => {
+    setEditingPage(true);
+    setPageInput(String(page));
+    setTimeout(() => pageInputRef.current?.select(), 50);
+  };
 
   return (
     <div
-      className={
-        className ??
-        'border-t border-border bg-card md:bg-muted/10 px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 shrink-0'
-      }
+      className={cn(
+        'border-t border-border px-3 sm:px-4 py-1.5 flex items-center justify-between gap-2 shrink-0',
+        className,
+      )}
     >
+      {/* Trái: khoảng đang xem + số đã chọn + số dòng mỗi trang */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
         <span className="tabular-nums">
-          <span className="font-medium text-foreground">{start}–{end}</span>
+          <span className="font-medium text-foreground">
+            {rangeStart}–{rangeEnd}
+          </span>
           <span className="text-muted-foreground/60">/Tổng:</span>
-          <span className="font-semibold text-foreground">{totalRecords}</span>
+          <span className="font-semibold text-foreground">{totalRecordsLabel ?? totalRecords}</span>
         </span>
+
         {selectedCount > 0 && (
           <>
-            <span className="text-primary font-medium hidden sm:inline tabular-nums">
-              · {selectedCount} {txt('common.selected')}
-            </span>
+            <span className="text-primary font-medium hidden sm:inline">· {selectedCount} đã chọn</span>
             <span className="sm:hidden inline-flex items-center justify-center h-5 min-w-[20px] px-1 rounded-full bg-primary/15 text-primary text-xs font-bold tabular-nums">
               {selectedCount}✓
             </span>
           </>
         )}
-        <div className="hidden sm:flex items-center border-l border-border pl-2">
+
+        <div className="flex items-center border-l border-border pl-2">
           <PageSizeSelect
             value={pageSize}
             onChange={onPageSizeChange}
-            options={pageSizeOptions}
             totalRecords={totalRecords}
-            perPageLabel={txt('common.perPage')}
-            allLabel={txt('common.all')}
+            options={pageSizeOptions}
+            compact={false}
+            disableAllOption={disableAllOption}
+            className="hidden sm:inline-flex"
+          />
+          <PageSizeSelect
+            value={pageSize}
+            onChange={onPageSizeChange}
+            totalRecords={totalRecords}
+            options={pageSizeOptions}
+            perPageLabel=""
+            compact
+            disableAllOption={disableAllOption}
+            className="sm:hidden"
+            aria-label="Số bản ghi mỗi trang"
           />
         </div>
       </div>
 
+      {/* Phải: điều hướng trang */}
       <div className="flex items-center gap-0.5">
-        <Tooltip content={txt('common.firstPage')} placement="top">
+        <Tooltip content="Trang đầu" placement="top">
           <Button
             variant="outline"
             size="sm"
@@ -115,7 +143,7 @@ export const TablePaginationFooter: React.FC<TablePaginationFooterProps> = ({
             <ChevronsLeft size={13} />
           </Button>
         </Tooltip>
-        <Tooltip content={txt('common.prevPage')} placement="top">
+        <Tooltip content="Trang trước" placement="top">
           <Button
             variant="outline"
             size="sm"
@@ -126,7 +154,8 @@ export const TablePaginationFooter: React.FC<TablePaginationFooterProps> = ({
             <ChevronLeft size={13} />
           </Button>
         </Tooltip>
-        <Tooltip content={txt('common.doubleClickToPage')} placement="top">
+
+        <Tooltip content="Nhấn đúp để nhập trang" placement="top">
           <div className="flex items-center gap-0.5 px-1">
             {editingPage ? (
               <input
@@ -135,41 +164,48 @@ export const TablePaginationFooter: React.FC<TablePaginationFooterProps> = ({
                 onChange={(e) => setPageInput(e.target.value.replace(/\D/g, ''))}
                 onBlur={handleGoToPage}
                 onKeyDown={(e) => e.key === 'Enter' && handleGoToPage()}
+                aria-label="Nhập số trang"
                 className="h-6 w-10 text-center text-xs font-bold border border-primary rounded bg-background text-foreground outline-none tabular-nums"
               />
             ) : (
-              <button
-                type="button"
-                title={txt('common.doubleClickToPage')}
-                onDoubleClick={() => {
-                  setEditingPage(true);
-                  setPageInput(String(page));
+              <span
+                role="button"
+                tabIndex={0}
+                onDoubleClick={startEditingPage}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    startEditingPage();
+                  }
                 }}
-                className="h-6 min-w-[24px] flex items-center justify-center rounded bg-primary text-white text-xs font-bold px-1 tabular-nums cursor-default border-0"
+                className="h-6 min-w-[24px] flex items-center justify-center rounded bg-primary text-white text-xs font-bold px-1 tabular-nums cursor-default"
               >
                 {page}
-              </button>
+              </span>
             )}
             <span className="text-muted-foreground/40 text-xs">/</span>
-            <span className="text-xs font-medium text-muted-foreground tabular-nums">{totalPages}</span>
+            <span className="text-xs font-medium text-muted-foreground tabular-nums">
+              {totalPages || 1}
+            </span>
           </div>
         </Tooltip>
-        <Tooltip content={txt('common.nextPage')} placement="top">
+
+        <Tooltip content="Trang sau" placement="top">
           <Button
             variant="outline"
             size="sm"
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
-            className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-all"
+            className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-colors"
           >
             <ChevronRight size={13} />
           </Button>
         </Tooltip>
-        <Tooltip content={txt('common.lastPage')} placement="top">
+        <Tooltip content="Trang cuối" placement="top">
           <Button
             variant="outline"
             size="sm"
-            disabled={page >= totalPages}
+            disabled={page >= totalPages || disableLastPage}
             onClick={() => onPageChange(totalPages)}
             className="h-6 w-6 p-0 border-border rounded hover:bg-primary hover:text-white hover:border-primary transition-colors"
           >

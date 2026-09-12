@@ -15,21 +15,33 @@ import { ThamHoiToChucTableRowActions } from './tham-hoi-to-chuc-table-row-actio
 interface Props {
   data: ThamHoiToChuc[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: ThamHoiToChuc) => void;
   onDelete: (id: string) => void;
   onView?: (item: ThamHoiToChuc) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  /** Phân trang phía máy chủ — tổng số dòng và trang kế do RPC trả về. */
+  serverSidePagination?: boolean;
+  serverTotalRecords?: number | null;
+  serverHasNextPage?: boolean;
 }
 
 const ThamHoiToChucTable = memo(function ThamHoiToChucTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
   emptyTitle,
   emptyDescription,
+  serverSidePagination,
+  serverTotalRecords,
+  serverHasNextPage,
 }: Props) {
   const {
     columns,
@@ -206,6 +218,8 @@ const ThamHoiToChucTable = memo(function ThamHoiToChucTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('danTocThamHoiToChuc.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('danTocThamHoiToChuc.emptyHint')}
@@ -226,6 +240,9 @@ const ThamHoiToChucTable = memo(function ThamHoiToChucTable({
       stickyLeftCount={2}
       renderColumnHeaderAccessory={renderColumnHeaderAccessory}
       hideSortOnColumnLabel
+      serverSidePagination={serverSidePagination}
+      serverTotalRecords={serverTotalRecords}
+      serverHasNextPage={serverHasNextPage}
     />
   );
 });

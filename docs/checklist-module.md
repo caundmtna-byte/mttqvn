@@ -301,9 +301,15 @@ Chỉ triển khai khi spec yêu cầu; mỗi mục có thể thành phase sau.
 
 ---
 
-## 16. Trang hướng dẫn (nội dung người dùng)
+## 16. Trang hướng dẫn (nội dung người dùng) — CHƯA TRIỂN KHAI
 
-- [ ] Theo **`docs/GUIDE-CONTENT.md`**: thêm key `guide.modules.<submenu>_<moduleSlug>.*` trong `locales/guide.json` (intro, overview, permissions, workflow, quickStart, glossary, faq, contact) — tránh fallback “đang cập nhật”.
+Trang hướng dẫn theo module **không tồn tại** trong hệ thống: không có `locales/guide.json`, không có
+route `<moduleId>/huong-dan` trong `App.tsx` (link do `components/dashboard/SubModuleCard.tsx` dựng ra
+rơi vào route `*` và bị đưa về Trang chủ). Quy ước cũ ở `docs/GUIDE-CONTENT.md` đã xoá vì mô tả sai
+hiện trạng và liệt kê module không thuộc dự án.
+
+Không có việc gì phải làm ở bước này. Nếu sau này dựng trang hướng dẫn thật thì viết lại mục này theo
+code lúc đó.
 
 ---
 

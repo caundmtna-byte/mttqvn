@@ -23,6 +23,9 @@ export interface MttqNhiemKyHeaderOption {
 interface Props {
   data: MttqNhiemKyListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   tuNamHeaderOptions: MttqNhiemKyHeaderOption[];
   denNamHeaderOptions: MttqNhiemKyHeaderOption[];
   onEdit: (item: MttqNhiemKyListRow) => void;
@@ -36,6 +39,8 @@ interface Props {
 const MttqNhiemKyTable = memo(function MttqNhiemKyTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   tuNamHeaderOptions,
   denNamHeaderOptions,
   onEdit,
@@ -284,6 +289,8 @@ const MttqNhiemKyTable = memo(function MttqNhiemKyTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranNhiemKy.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('matTranNhiemKy.emptyHint')}

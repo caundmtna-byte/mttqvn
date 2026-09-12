@@ -54,7 +54,8 @@ export async function getTonKhoMatrix(): Promise<TonKhoRecord[]> {
           if (error) handleSupabaseError(error);
           return (data ?? []) as TonKhoViewRow[];
         }),
-    )
+    ),
+    { label: 'kho_ton_kho_view' },
   );
   return rows.map(rowToTonKho).filter((r) => r.ton_kho !== 0);
 }

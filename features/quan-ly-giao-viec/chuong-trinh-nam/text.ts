@@ -113,8 +113,6 @@ export const chuongTrinhNam = {
     actionChangeStatus: 'Chuyển trạng thái',
     noCongViec: 'Chưa có công việc',
     noCongViecHint: 'Thêm công việc gắn với chương trình này.',
-    congViecLimitHint:
-      'Hiển thị tối đa 200 công việc. Xem đầy đủ tại module Danh sách công việc.',
   },
   changeStatus: {
     title: 'Chuyển trạng thái chương trình',

@@ -67,11 +67,21 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 8,
   },
   {
+    // Người LẬP phiếu — do máy chủ gán từ phiên đăng nhập, khác hẳn ô
+    // "Người giao/nhận" vốn là chuỗi gõ tay để in lên phiếu.
+    id: 'ho_va_ten_nguoi_tao',
+    label: txt('matTranNhapXuatKho.store.nguoiLapCol'),
+    visible: false,
+    minWidth: 120,
+    maxWidth: 200,
+    order: 9,
+  },
+  {
     id: 'tg_cap_nhat',
     label: txt('matTranNhapXuatKho.store.tgCapNhatCol'),
     visible: false,
     ...P.datetime,
-    order: 9,
+    order: 10,
   },
   {
     id: 'actions',

@@ -12,6 +12,7 @@ import {
   AuthUserExistsError,
   type AuthConflictDecision,
 } from '../services/nhan-vien-service';
+import { importEmployeeRows } from '../services/nhan-vien-import';
 import { EmployeeFormValues } from '../core/schema';
 import { Employee } from '../core/types';
 import type { TrangThaiNhanVien } from '../core/constants';
@@ -53,6 +54,27 @@ interface CreateMutationOptions {
   onAuthConflict?: (username: string) => boolean | void;
 }
 
+/**
+ * Hiển thị mật khẩu hệ thống vừa sinh cho quản trị viên.
+ *
+ * Trước đây mọi tài khoản đều dùng mật khẩu mặc định `123456` nên không cần báo.
+ * Nay Edge Function sinh chuỗi ngẫu nhiên và **chỉ trả về đúng một lần**, nên toast
+ * phải ở lại cho tới khi admin tự đóng và phải sao chép được.
+ */
+function toastGeneratedPassword(created: Employee) {
+  const pw = created.__generatedPassword;
+  if (!pw) return;
+  toast.success(txt('employee.toast.generatedPasswordTitle'), {
+    description: `${created.ten_tai_khoan} — ${pw}`,
+    duration: Infinity,
+    closeButton: true,
+    action: {
+      label: txt('common.copy'),
+      onClick: () => void navigator.clipboard?.writeText(pw),
+    },
+  });
+}
+
 export const useCreateEmployee = (options?: (() => void) | CreateMutationOptions) => {
   const queryClient = useQueryClient();
   const opts: CreateMutationOptions = typeof options === 'function' ? { onSuccess: options } : options ?? {};
@@ -63,6 +85,7 @@ export const useCreateEmployee = (options?: (() => void) | CreateMutationOptions
         old ? [...old, created] : [created],
       );
       toast.success(txt('employee.toast.createSuccess'));
+      toastGeneratedPassword(created);
       opts.onSuccess?.();
     },
     onError: (err: unknown) => {
@@ -89,9 +112,9 @@ export const useCreateEmployeeWithAuthDecision = (onSuccess?: () => void) => {
           ? txt('employee.toast.authPasswordReset')
           : txt('employee.toast.createSuccess'),
       );
+      toastGeneratedPassword(created);
       if (onSuccess) onSuccess();
     },
-    onError: (err: unknown) => toast.error(`Lỗi: ${getErrorMessage(err)}`),
   });
 };
 
@@ -142,29 +165,59 @@ export const useUpdateEmployeeWithAuthDecision = (onSuccess?: () => void) => {
       );
       if (onSuccess) onSuccess();
     },
-    onError: (err: unknown) => toast.error(`Lỗi: ${getErrorMessage(err)}`),
   });
 };
 
+/** Đặt trạng thái cho các nhân viên được chọn, giữ nguyên phần còn lại. */
+export function datTrangThaiNhanVien(
+  danhSach: Employee[] | undefined,
+  ids: readonly string[],
+  status: TrangThaiNhanVien,
+): Employee[] | undefined {
+  if (!danhSach) return danhSach;
+  const canDoi = new Set(ids);
+  if (canDoi.size === 0) return danhSach;
+  return danhSach.map((e) => (canDoi.has(e.id) ? { ...e, trang_thai: status } : e));
+}
+
+/**
+ * Đổi trạng thái nhân viên — bảng đổi ngay khi bấm, hỏng thì trả về như cũ.
+ *
+ * Toàn bộ danh sách id đi trong MỘT lệnh gửi lên máy chủ, không lặp từng người.
+ */
 export const useUpdateStatusEmployee = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ ids, status }: { ids: string[]; status: TrangThaiNhanVien }) =>
       updateEmployeeStatus(ids, status),
-    onSuccess: (_, variables) => {
-      queryClient.setQueryData<Employee[]>(employeesListQueryKey, (old) =>
-        old?.map((e) =>
-          variables.ids.includes(e.id) ? { ...e, trang_thai: variables.status } : e,
-        ),
+    onMutate: async ({ ids, status }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.employees.all });
+      const danhSachTruoc = queryClient.getQueryData<Employee[]>(employeesListQueryKey);
+      const chiTietTruoc = ids.map(
+        (id) => [id, queryClient.getQueryData<Employee>(queryKeys.employees.detail(id))] as const,
       );
-      variables.ids.forEach((id) => {
+      queryClient.setQueryData<Employee[]>(employeesListQueryKey, (old) =>
+        datTrangThaiNhanVien(old, ids, status),
+      );
+      ids.forEach((id) => {
         queryClient.setQueryData<Employee | undefined>(queryKeys.employees.detail(id), (prev) =>
-          prev ? { ...prev, trang_thai: variables.status } : prev,
+          prev ? { ...prev, trang_thai: status } : prev,
         );
       });
+      return { danhSachTruoc, chiTietTruoc };
+    },
+    onSuccess: (_, variables) => {
       toast.success(txt('employee.toast.statusUpdateSuccess', { count: variables.ids.length }));
     },
-    onError: (err: unknown) => toast.error(`Lỗi: ${getErrorMessage(err)}`),
+    onError: (err: unknown, _vars, ctx) => {
+      if (ctx?.danhSachTruoc) {
+        queryClient.setQueryData<Employee[]>(employeesListQueryKey, ctx.danhSachTruoc);
+      }
+      ctx?.chiTietTruoc.forEach(([id, prev]) => {
+        queryClient.setQueryData(queryKeys.employees.detail(id), prev);
+      });
+      toast.error(getErrorMessage(err));
+    },
   });
 };
 
@@ -179,34 +232,101 @@ export const useDeleteEmployees = () => {
       ids.forEach((id) => queryClient.removeQueries({ queryKey: queryKeys.employees.detail(id) }));
       toast.success(txt('employee.toast.deleteSuccess', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 };
 
 /**
- * Hook xóa có thể hoàn tác (undo). Xoá trước → toast có nút "Hoàn tác" → nếu
- * nhấn thì restore lại.
+ * Bỏ các nhân viên đã xóa khỏi danh sách đang hiển thị.
+ *
+ * Hàm thuần — tách ra để test được, vì xóa nhầm dòng là mất dữ liệu trên màn hình.
+ */
+export function boNhanVienKhoiDanhSach(
+  danhSach: Employee[] | undefined,
+  ids: readonly string[],
+): Employee[] | undefined {
+  if (!danhSach) return danhSach;
+  const canXoa = new Set(ids);
+  return danhSach.filter((e) => !canXoa.has(e.id));
+}
+
+/**
+ * Đưa các nhân viên vừa xóa trở lại danh sách (khi bấm "Hoàn tác" hoặc khi xóa lỗi).
+ *
+ * Giữ đúng vị trí cũ theo thứ tự hiện có nếu còn suy ra được; dòng nào không rõ
+ * vị trí thì thêm vào cuối. Không tạo dòng trùng khi danh sách đã có sẵn.
+ */
+export function khoiPhucNhanVienVaoDanhSach(
+  danhSach: Employee[] | undefined,
+  nhanVien: readonly Employee[],
+): Employee[] | undefined {
+  if (!danhSach) return danhSach;
+  const daCo = new Set(danhSach.map((e) => e.id));
+  const themVao = nhanVien.filter((e) => !daCo.has(e.id));
+  if (themVao.length === 0) return danhSach;
+  return [...danhSach, ...themVao];
+}
+
+/**
+ * Hook xóa có thể hoàn tác (undo).
+ *
+ * Dòng biến mất khỏi bảng NGAY khi bấm xóa (optimistic), rồi mới gửi lệnh xóa lên
+ * máy chủ. Ba nhánh:
+ *  - Xóa lỗi ⇒ dòng hiện lại đúng chỗ cũ kèm thông báo lỗi.
+ *  - Bấm "Hoàn tác" ⇒ dòng hiện lại ngay, sau đó mới gọi khôi phục.
+ *  - Khôi phục lỗi ⇒ dòng biến mất trở lại kèm thông báo rõ ràng, tránh việc
+ *    người dùng tưởng đã khôi phục xong trong khi thật ra vẫn mất.
  */
 export const useDeleteWithUndo = () => {
   const queryClient = useQueryClient();
 
   const deleteMut = useMutation({
     mutationFn: (ids: string[]) => deleteEmployees(ids),
-    onSuccess: (_, ids) => {
+    onMutate: async (ids: string[]) => {
+      // Huỷ lần tải đang chạy, nếu không dữ liệu cũ về sau sẽ dựng lại dòng vừa xóa.
+      await queryClient.cancelQueries({ queryKey: queryKeys.employees.all });
+      const danhSachTruoc = queryClient.getQueryData<Employee[]>(employeesListQueryKey);
       queryClient.setQueryData<Employee[]>(employeesListQueryKey, (old) =>
-        old?.filter((e) => !ids.includes(e.id)),
+        boNhanVienKhoiDanhSach(old, ids),
       );
+      return { danhSachTruoc };
+    },
+    onSuccess: (_, ids) => {
       ids.forEach((id) => queryClient.removeQueries({ queryKey: queryKeys.employees.detail(id) }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
+    onError: (err: unknown, _ids, ctx) => {
+      if (ctx?.danhSachTruoc) {
+        queryClient.setQueryData<Employee[]>(employeesListQueryKey, ctx.danhSachTruoc);
+      }
+      toast.error(txt('employee.toast.deleteFailed', { reason: getErrorMessage(err) }));
+    },
   });
 
   const restoreMut = useMutation({
     mutationFn: (employees: Employee[]) => restoreEmployees(employees),
+    onMutate: async (employees: Employee[]) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.employees.all });
+      const danhSachTruoc = queryClient.getQueryData<Employee[]>(employeesListQueryKey);
+      queryClient.setQueryData<Employee[]>(employeesListQueryKey, (old) =>
+        khoiPhucNhanVienVaoDanhSach(old, employees),
+      );
+      return { danhSachTruoc };
+    },
     onSuccess: () => {
+      // Lấy lại từ máy chủ để có đúng id/thời điểm cập nhật sau khi khôi phục.
       queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.employees.anyDetail });
       toast.success(txt('employee.toast.undoSuccess'));
+    },
+    onError: (err: unknown, _employees, ctx) => {
+      // Trước đây nhánh này KHÔNG có gì: hoàn tác hỏng mà màn hình im lặng, người
+      // dùng đinh ninh nhân viên đã được khôi phục.
+      if (ctx?.danhSachTruoc) {
+        queryClient.setQueryData<Employee[]>(employeesListQueryKey, ctx.danhSachTruoc);
+      }
+      toast.error(txt('employee.toast.undoFailed', { reason: getErrorMessage(err) }), {
+        duration: Infinity,
+        closeButton: true,
+      });
     },
   });
 
@@ -230,4 +350,19 @@ export const useDeleteWithUndo = () => {
   };
 
   return { deleteWithUndo, isPending: deleteMut.isPending };
+};
+
+/** Nhập nhân viên từ Excel — xem `services/nhan-vien-import.ts`. */
+export const useImportEmployees = (onSuccess?: () => void) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: Record<string, unknown>[]) => importEmployeeRows(rows),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
+      if (result.created > 0) {
+        toast.success(txt('employee.import.toastSuccess', { count: result.created }));
+      }
+      onSuccess?.();
+    },
+  });
 };

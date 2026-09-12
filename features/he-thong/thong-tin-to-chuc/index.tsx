@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { txt } from '../../../lib/text';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -17,14 +18,17 @@ const ThongTinToChucPage: React.FC = () => {
   const canView = useCan('view', 'company');
   const navigate = useNavigate();
   const location = useLocation();
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('company.noViewPermission'));
     navigate('/he-thong', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const { companyInfo, setCompanyInfo } = useUIStore();
   const queryClient = useQueryClient();

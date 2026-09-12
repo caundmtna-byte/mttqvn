@@ -17,6 +17,9 @@ export const matTranNhapXuatKho = {
     chiTietRong: 'Phiếu phải có ít nhất 1 dòng chi tiết.',
     /** Mặc định khi parse lỗi PG `TON_KHO_KHONG_DU:` từ trigger. */
     tonKhoKhongDu: 'Tồn kho không đủ để xuất. Vui lòng kiểm tra lại số lượng.',
+    /** Mặc định khi parse lỗi PG `LOAI_PHIEU_KHONG_DOI_DUOC:` từ trigger. */
+    loaiPhieuKhongDoiDuoc:
+      'Phiếu đã phát hành số nên không đổi được loại phiếu. Hãy xóa phiếu lập sai rồi lập phiếu mới đúng loại.',
   },
   validation: {
     ngayPhieuRequired: 'Chọn ngày lập phiếu.',
@@ -39,6 +42,7 @@ export const matTranNhapXuatKho = {
     khoNhapCol: 'Kho nhập',
     donViCuuTroCol: 'Đơn vị cứu trợ',
     dotCuuTroCol: 'Đợt cứu trợ',
+    nguoiLapCol: 'Người lập phiếu',
     soDongCol: 'Số dòng',
     tgTaoCol: 'Ngày tạo',
     tgCapNhatCol: 'Cập nhật',
@@ -82,6 +86,8 @@ export const matTranNhapXuatKho = {
     sectionGhiChu: 'Ghi chú',
     soPhieu: 'Số phiếu',
     soPhieuHintAuto: 'Để trống — hệ thống tự sinh sau khi lưu.',
+    /** Hiện khi sửa phiếu: số phiếu đã phát hành nên loại phiếu bị khoá. */
+    loaiPhieuKhoaKhiSua: 'Số phiếu đã phát hành theo loại này nên không đổi loại được.',
     ngayPhieu: 'Ngày phiếu',
     khoXuat: 'Kho xuất',
     khoNhap: 'Kho nhập',
@@ -182,5 +188,88 @@ export const matTranNhapXuatKho = {
     footerCol2Chuyen: 'NGƯỜI LẬP PHIẾU',
     footerCol3Chuyen: 'THỦ KHO',
     footerCol4: 'THỦ TRƯỞNG ĐƠN VỊ',
+  },
+  import: {
+    templateFileName: 'mau-nhap-phieu-nhap-xuat-kho',
+    colMaPhieu: 'Mã phiếu',
+    colLoaiPhieu: 'Loại phiếu',
+    colNgayPhieu: 'Ngày phiếu',
+    colKhoXuat: 'Kho xuất',
+    colKhoNhap: 'Kho nhập',
+    colDonViCuuTro: 'Đơn vị cứu trợ',
+    colDotCuuTro: 'Đợt cứu trợ',
+    colNguoiGiaoNhan: 'Người giao / nhận hàng',
+    colBoPhan: 'Bộ phận',
+    colChungTuGoc: 'Chứng từ gốc',
+    colGhiChu: 'Ghi chú phiếu',
+    colHangHoa: 'Tên hàng hóa',
+    colDonViTinh: 'Đơn vị tính',
+    colSoLuong: 'Số lượng',
+    colDonGia: 'Đơn giá',
+    colGhiChuDong: 'Ghi chú dòng hàng',
+    rowPrefix: 'Dòng {{row}}: ',
+    errMaPhieuEmpty:
+      'chưa điền Mã phiếu. Mọi dòng hàng của cùng một phiếu phải ghi CÙNG một mã phiếu (ví dụ P1, P2) để hệ thống gom lại.',
+    errLoaiPhieu:
+      'Loại phiếu « {{gia_tri}} » không hợp lệ. Chỉ điền « Nhập từ ngoài », « Xuất ra ngoài » hoặc « Chuyển kho ».',
+    errNgayPhieu: 'Ngày phiếu « {{gia_tri}} » không đọc được. Điền dạng ngày/tháng/năm, ví dụ 15/09/2026.',
+    errKhoNotFound:
+      'không tìm thấy kho « {{ten}} » ở cột {{cot}}. Xem sheet « Kho » trong file mẫu để điền đúng tên kho.',
+    errKhoNgoaiPhamVi: 'kho « {{ten}} » không thuộc đơn vị của bạn nên bạn không lập được phiếu cho kho này.',
+    errDonViCuuTroNotFound:
+      'không tìm thấy đơn vị cứu trợ « {{ten}} ». Xem sheet « Đơn vị cứu trợ » trong file mẫu.',
+    errDotCuuTroNotFound: 'không tìm thấy đợt cứu trợ « {{ten}} ». Xem sheet « Đợt cứu trợ » trong file mẫu.',
+    errHangHoaEmpty: 'chưa điền Tên hàng hóa cho dòng hàng này.',
+    errHangHoaNotFound:
+      'không tìm thấy hàng hóa « {{ten}} ». Xem sheet « Hàng hóa » trong file mẫu, hoặc thêm hàng hóa vào danh mục trước.',
+    errSoLuong: 'Số lượng « {{gia_tri}} » không phải là số.',
+    errSoLuongDuong: 'Số lượng « {{gia_tri}} » phải lớn hơn 0.',
+    errSoLuongPhanCach:
+      'Số lượng « {{gia_tri}} » có dấu phân cách hàng nghìn nên không rõ là bao nhiêu. Hãy gõ số thuần, ví dụ 1000 hoặc 12.5.',
+    errDonGia: 'Đơn giá « {{gia_tri}} » không hợp lệ. Điền số từ 0 trở lên, hoặc để trống.',
+    errDonGiaPhanCach:
+      'Đơn giá « {{gia_tri}} » có dấu phân cách hàng nghìn nên không rõ là bao nhiêu. Hãy gõ số thuần, ví dụ 150000.',
+    errDonViTinhEmpty:
+      'chưa điền Đơn vị tính và hàng « {{ten}} » trong danh mục cũng chưa có đơn vị tính.',
+    errHeaderLech:
+      'cột {{cot}} khác với dòng {{row}} của cùng mã phiếu « {{ma_phieu}} ». Mọi dòng của một phiếu phải ghi thông tin đầu phiếu giống hệt nhau.',
+    errPhieuHongTheoDong:
+      'phiếu « {{ma_phieu}} » có lỗi ở dòng {{row}} nên CẢ PHIẾU chưa được nhập. Sửa dòng lỗi rồi nhập lại toàn bộ các dòng của phiếu này.',
+    errPhieuKhongCoDongHang: 'phiếu « {{ma_phieu}} » không có dòng hàng hợp lệ nào nên chưa được nhập.',
+    errPhieuKhongHopLe: 'phiếu « {{ma_phieu}} » chưa hợp lệ: {{message}}',
+    errPhieuGhiThatBai: 'phiếu « {{ma_phieu}} » không ghi được: {{message}}',
+    errTooManyRows:
+      'File có {{count}} dòng, vượt mức {{max}} dòng cho một lần nhập. Hãy tách file nhỏ hơn rồi nhập từng lần.',
+    errSummary: 'Tổng cộng {{count}} dòng lỗi. Bấm « Tải file dòng lỗi » bên dưới để xem đầy đủ và sửa.',
+    toastSuccess: 'Đã nhập {{count}} phiếu từ Excel.',
+    sheetHuongDan: 'Hướng dẫn',
+    sheetKho: 'Kho',
+    sheetHangHoa: 'Hàng hóa',
+    sheetDonViCuuTro: 'Đơn vị cứu trợ',
+    sheetDotCuuTro: 'Đợt cứu trợ',
+    huongDanColKey: 'Cột',
+    huongDanColVal: 'Cách điền',
+    refColId: 'ID',
+    refColTen: 'Tên',
+    refColDonViTinh: 'Đơn vị tính',
+    hd1k: 'Mã phiếu',
+    hd1v:
+      'Bắt buộc. Mã TẠM do bạn tự đặt (P1, P2…) chỉ để gom các dòng hàng của cùng một phiếu. Số phiếu thật do hệ thống tự cấp khi lưu.',
+    hd2k: 'Một dòng Excel',
+    hd2v: 'Là MỘT DÒNG HÀNG. Phiếu có 5 mặt hàng thì ghi 5 dòng, cùng một Mã phiếu.',
+    hd3k: 'Thông tin đầu phiếu',
+    hd3v:
+      'Loại phiếu, Ngày phiếu, Kho, Đơn vị cứu trợ, Đợt cứu trợ — LẶP LẠI GIỐNG HỆT ở mọi dòng của cùng mã phiếu.',
+    hd4k: 'Loại phiếu',
+    hd4v:
+      '« Nhập từ ngoài » cần Kho nhập + Đơn vị cứu trợ. « Xuất ra ngoài » cần Kho xuất + Đợt cứu trợ. « Chuyển kho » cần cả Kho xuất và Kho nhập (hai kho khác nhau).',
+    hd5k: 'Số lượng / Đơn giá',
+    hd5v: 'Gõ số thuần, KHÔNG dùng dấu phân cách hàng nghìn. Đơn giá để trống thì tính bằng 0.',
+    hd6k: 'Đơn vị tính',
+    hd6v: 'Để trống thì lấy theo đơn vị tính của hàng hóa trong danh mục.',
+    hd7k: 'Nếu một dòng sai',
+    hd7v: 'Cả phiếu đó không được nhập, để không ghi thiếu hàng. Các phiếu khác trong file vẫn nhập bình thường.',
+    hd8k: 'Người lập phiếu',
+    hd8v: 'Không có cột này. Hệ thống tự ghi người đang đăng nhập làm người lập phiếu.',
   },
 };

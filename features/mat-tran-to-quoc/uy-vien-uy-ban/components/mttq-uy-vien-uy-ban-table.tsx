@@ -30,6 +30,9 @@ export interface MttqUyVienUyBanHeaderOption {
 interface Props {
   data: MttqUyVienUyBanListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   nhiemKyHeaderOptions: MttqUyVienUyBanHeaderOption[];
   donViHeaderOptions: MttqUyVienUyBanHeaderOption[];
   onEdit: (item: MttqUyVienUyBanListRow) => void;
@@ -43,6 +46,8 @@ interface Props {
 const MttqUyVienUyBanTable = memo(function MttqUyVienUyBanTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   nhiemKyHeaderOptions,
   donViHeaderOptions,
   onEdit,
@@ -345,6 +350,8 @@ const MttqUyVienUyBanTable = memo(function MttqUyVienUyBanTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranUyVienUyBan.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('matTranUyVienUyBan.emptyHint')}

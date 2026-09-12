@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { useForm, Controller, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { txt } from '@/lib/text';
+import { applyConstraintErrorToForm } from '@/lib/supabase/constraint-field-error';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
@@ -375,16 +376,22 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
       if (!ok) return;
     }
 
-    if (!isEdit) {
-      if (!idNguoiTao) {
-        toast.error(txt('matTranUyVienUyBan.service.noEmployeeProfile'));
+    // Kiểm trước ở trên chỉ dựa dữ liệu đã tải; DB vẫn có thể chặn khi hai người
+    // cùng thêm một lúc. Bắt lỗi ràng buộc rồi gắn vào đúng ô thay vì để bay ra toast.
+    try {
+      if (!isEdit) {
+        if (!idNguoiTao) {
+          toast.error(txt('matTranUyVienUyBan.service.noEmployeeProfile'));
+          return;
+        }
+        await createMutation.mutateAsync({ data, idNguoiTao });
         return;
       }
-      createMutation.mutate({ data, idNguoiTao });
-      return;
+      if (!initialData) return;
+      await updateMutation.mutateAsync({ id: initialData.id, data });
+    } catch (e) {
+      applyConstraintErrorToForm(e, setError);
     }
-    if (!initialData) return;
-    updateMutation.mutate({ id: initialData.id, data });
   };
 
   const pending =

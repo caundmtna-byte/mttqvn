@@ -2,6 +2,8 @@ import { createRepository } from '@/lib/data/create-repository';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { messageForRpcErrorCode } from '@/lib/supabase/error-messages';
+import { buildTapHuanChiTietPayload } from '../utils/build-tap-huan-chi-tiet-payload';
 import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import { getMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/services/mttq-thiet-lap-service';
 import type {
@@ -54,11 +56,6 @@ function toInt(v: unknown): number {
     return Number.isFinite(n) ? Math.trunc(n) : 0;
   }
   return 0;
-}
-
-function isPersistedChildId(id: unknown): id is string {
-  if (id == null || typeof id !== 'string') return false;
-  return /^\d+$/.test(id.trim());
 }
 
 function hoTenFromEmbed(v: unknown): string | null {
@@ -288,7 +285,7 @@ function headerPayload(data: MttqTapHuanFormValues) {
   };
 }
 
-function headerPayloadForDb(data: MttqTapHuanFormValues): Record<string, unknown> {
+function headerPayloadForDb(data: MttqTapHuanFormValues) {
   const h = headerPayload(data);
   return {
     ...h,
@@ -297,42 +294,18 @@ function headerPayloadForDb(data: MttqTapHuanFormValues): Record<string, unknown
   };
 }
 
-async function syncChildrenSupabase(parentId: string, lines: MttqTapHuanFormValues['chi_tiet']) {
+/** `MA_LOI: chi tiết` từ RPC → câu tiếng Việt (mẫu: `kho-nhap-xuat-kho-service`). */
+function rethrowMapped(err: unknown): never {
+  const message = err instanceof Error ? err.message : String(err);
+  const mapped = messageForRpcErrorCode(message);
+  if (mapped) throw new Error(mapped);
+  throw err instanceof Error ? err : new Error(message);
+}
+
+function requireSupabase() {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
-  const q = () => supabase.from('mttq_lop_tap_huan_ct');
-
-  const { data: existing, error: e1 } = await q().select('id').eq('id_lop_tap_huan', parentId);
-  if (e1) handleSupabaseError(e1);
-
-  const keep = new Set(lines.map((l) => l.id).filter(isPersistedChildId));
-  const existingIds = (existing ?? []).map((r) => String(r.id));
-  const toDelete = existingIds.filter((id: string) => !keep.has(id));
-
-  const baseOf = (line: MttqTapHuanFormValues['chi_tiet'][number]) => ({
-    can_bo_id: Number(line.can_bo_id),
-    thuoc_dien: line.thuoc_dien,
-  });
-  const toUpsertExisting = lines
-    .filter((l) => isPersistedChildId(l.id))
-    .map((l) => ({ id: Number(l.id), id_lop_tap_huan: Number(parentId), ...baseOf(l) }));
-  const toInsertNew = lines
-    .filter((l) => !isPersistedChildId(l.id))
-    .map((l) => ({ id_lop_tap_huan: Number(parentId), ...baseOf(l) }));
-
-  if (toDelete.length > 0) {
-    const { error: e2 } = await q().delete().in('id', toDelete);
-    if (e2) handleSupabaseError(e2);
-  }
-  for (const row of toUpsertExisting) {
-    const { id, ...patch } = row;
-    const { error: e3 } = await q().update(patch).eq('id', id);
-    if (e3) handleSupabaseError(e3);
-  }
-  if (toInsertNew.length > 0) {
-    const { error: e4 } = await q().insert(toInsertNew);
-    if (e4) handleSupabaseError(e4);
-  }
+  return supabase;
 }
 
 export async function getMttqLopTapHuanList(): Promise<MttqLopTapHuanListRow[]> {
@@ -353,7 +326,7 @@ export async function getMttqLopTapHuanChiTietFlatList(): Promise<MttqTapHuanChi
         .range(from, to);
       if (error) handleSupabaseError(error);
       return (rows ?? []) as unknown as Record<string, unknown>[];
-    }),
+    }, { label: 'mttq_lop_tap_huan_ct' }),
     buildToChucTenByIdMap(),
   ]);
   return data.map((row) => flattenChiTietFlatRow(row, toChucById));
@@ -418,31 +391,54 @@ export async function createMttqLopTapHuan(
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('matTranTapHuan.service.noEmployeeProfile'));
 
-  const inserted = await repo.insert(
-    {
-      ...headerPayloadForDb(data),
-      id_nguoi_tao: trimmed,
-    } as unknown as Omit<ParentRepoRow, 'id'>,
-    { returningSelect: 'id,tg_cap_nhat' },
-  );
-  const parentId = String((inserted as { id?: unknown }).id ?? '');
-  await syncChildrenSupabase(parentId, data.chi_tiet);
-  const full = await getMttqLopTapHuanById(parentId);
-  if (!full) throw new Error(txt('matTranTapHuan.service.notFound'));
-  return full;
+  const supabase = requireSupabase();
+  const h = headerPayloadForDb(data);
+  try {
+    // Lớp + toàn bộ dòng cán bộ ghi trong MỘT transaction (RPC plpgsql).
+    const { data: rpcData, error } = await supabase.rpc('rpc_tap_huan_tao_lop', {
+      p_ten_lop_tap_huan: h.ten_lop_tap_huan,
+      p_nam_tap_huan: h.nam_tap_huan,
+      p_cap_tap_huan: h.cap_tap_huan,
+      p_don_vi_id: h.don_vi_id,
+      p_to_chuc_id: h.to_chuc_id,
+      p_ghi_chu: h.ghi_chu,
+      p_id_nguoi_tao: Number(trimmed),
+      p_chi_tiet: buildTapHuanChiTietPayload(data.chi_tiet),
+    });
+    if (error) handleSupabaseError(error);
+    const parentId = String(rpcData ?? '');
+    const full = await getMttqLopTapHuanById(parentId);
+    if (!full) throw new Error(txt('matTranTapHuan.service.notFound'));
+    return full;
+  } catch (err) {
+    rethrowMapped(err);
+  }
 }
 
 export async function updateMttqLopTapHuan(
   id: string,
   data: MttqTapHuanFormValues,
 ): Promise<MttqLopTapHuan> {
-  await repo.update(id, headerPayloadForDb(data) as unknown as Partial<ParentRepoRow>, {
-    returningSelect: 'id,tg_cap_nhat',
-  });
-  await syncChildrenSupabase(id, data.chi_tiet);
-  const full = await getMttqLopTapHuanById(id);
-  if (!full) throw new Error(txt('matTranTapHuan.service.notFound'));
-  return full;
+  const supabase = requireSupabase();
+  const h = headerPayloadForDb(data);
+  try {
+    const { error } = await supabase.rpc('rpc_tap_huan_cap_nhat_lop', {
+      p_id: Number(id),
+      p_ten_lop_tap_huan: h.ten_lop_tap_huan,
+      p_nam_tap_huan: h.nam_tap_huan,
+      p_cap_tap_huan: h.cap_tap_huan,
+      p_don_vi_id: h.don_vi_id,
+      p_to_chuc_id: h.to_chuc_id,
+      p_ghi_chu: h.ghi_chu,
+      p_chi_tiet: buildTapHuanChiTietPayload(data.chi_tiet),
+    });
+    if (error) handleSupabaseError(error);
+    const full = await getMttqLopTapHuanById(id);
+    if (!full) throw new Error(txt('matTranTapHuan.service.notFound'));
+    return full;
+  } catch (err) {
+    rethrowMapped(err);
+  }
 }
 
 export async function deleteMttqLopTapHuanMany(ids: string[]): Promise<void> {

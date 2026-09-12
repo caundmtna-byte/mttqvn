@@ -1,12 +1,33 @@
 -- ============================================================================
 -- Danh mục 2 cấp: var_ssn_tinh_thanh, var_ssn_xa_phuong (chỉ id, tên, thứ tự, timestamp).
 -- Nếu đã tạo bản cũ (có ma/loai/trang_thai): DROP và tạo lại.
+--
+-- ⚠️ Idempotent: DROP TABLE chỉ chạy khi bảng còn SCHEMA CŨ (còn cột ma/loai/
+--    trang_thai). Bản gốc DROP vô điều kiện — chạy lại lần hai là xoá sạch
+--    131 xã/phường thật cùng mọi bản ghi tham chiếu qua CASCADE.
+--    Lần chạy ĐẦU không đổi: DB trống ⇒ không có gì để drop; DB có schema cũ
+--    ⇒ vẫn drop và tạo lại đúng như trước.
 -- ============================================================================
 
-DROP TABLE IF EXISTS public.var_ssn_xa_phuong CASCADE;
-DROP TABLE IF EXISTS public.var_ssn_tinh_thanh CASCADE;
+DO $ssn_drop_legacy$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'var_ssn_tinh_thanh'
+      AND column_name IN ('ma', 'loai', 'trang_thai')
+  ) OR EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'var_ssn_xa_phuong'
+      AND column_name IN ('ma', 'loai', 'trang_thai')
+  ) THEN
+    DROP TABLE IF EXISTS public.var_ssn_xa_phuong CASCADE;
+    DROP TABLE IF EXISTS public.var_ssn_tinh_thanh CASCADE;
+  END IF;
+END $ssn_drop_legacy$;
 
-CREATE TABLE public.var_ssn_tinh_thanh (
+CREATE TABLE IF NOT EXISTS public.var_ssn_tinh_thanh (
   id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   ten             TEXT NOT NULL,
   thu_tu          INTEGER NOT NULL DEFAULT 0,
@@ -14,10 +35,10 @@ CREATE TABLE public.var_ssn_tinh_thanh (
   tg_cap_nhat     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX uq_var_ssn_tinh_thanh_ten_lower
+CREATE UNIQUE INDEX IF NOT EXISTS uq_var_ssn_tinh_thanh_ten_lower
   ON public.var_ssn_tinh_thanh (lower(trim(ten)));
 
-CREATE INDEX idx_var_ssn_tinh_thanh_thu_tu ON public.var_ssn_tinh_thanh (thu_tu);
+CREATE INDEX IF NOT EXISTS idx_var_ssn_tinh_thanh_thu_tu ON public.var_ssn_tinh_thanh (thu_tu);
 
 ALTER TABLE public.var_ssn_tinh_thanh ENABLE ROW LEVEL SECURITY;
 
@@ -35,7 +56,7 @@ CREATE TRIGGER trg_var_ssn_tinh_thanh_updated
   FOR EACH ROW EXECUTE FUNCTION public.set_tg_cap_nhat();
 
 -- --------------------------------------------------------------------------
-CREATE TABLE public.var_ssn_xa_phuong (
+CREATE TABLE IF NOT EXISTS public.var_ssn_xa_phuong (
   id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   id_tinh_thanh   BIGINT NOT NULL REFERENCES public.var_ssn_tinh_thanh (id) ON DELETE CASCADE,
   ten             TEXT NOT NULL,
@@ -44,11 +65,11 @@ CREATE TABLE public.var_ssn_xa_phuong (
   tg_cap_nhat     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX uq_var_ssn_xa_phuong_ten_lower_per_tinh
+CREATE UNIQUE INDEX IF NOT EXISTS uq_var_ssn_xa_phuong_ten_lower_per_tinh
   ON public.var_ssn_xa_phuong (id_tinh_thanh, lower(trim(ten)));
 
-CREATE INDEX idx_var_ssn_xa_phuong_id_tinh ON public.var_ssn_xa_phuong (id_tinh_thanh);
-CREATE INDEX idx_var_ssn_xa_phuong_order ON public.var_ssn_xa_phuong (id_tinh_thanh, thu_tu);
+CREATE INDEX IF NOT EXISTS idx_var_ssn_xa_phuong_id_tinh ON public.var_ssn_xa_phuong (id_tinh_thanh);
+CREATE INDEX IF NOT EXISTS idx_var_ssn_xa_phuong_order ON public.var_ssn_xa_phuong (id_tinh_thanh, thu_tu);
 
 ALTER TABLE public.var_ssn_xa_phuong ENABLE ROW LEVEL SECURITY;
 
@@ -102,7 +123,8 @@ INSERT INTO public.var_ssn_tinh_thanh (ten, thu_tu) VALUES
   ('Thanh Hóa', 31),
   ('Thành phố Hồ Chí Minh', 32),
   ('Tuyên Quang', 33),
-  ('Vĩnh Long', 34);
+  ('Vĩnh Long', 34)
+ON CONFLICT (lower(trim(ten))) DO NOTHING;
 
 INSERT INTO public.var_ssn_xa_phuong (id_tinh_thanh, ten, thu_tu)
 SELECT t.id, v.ten, v.thu_tu
@@ -112,4 +134,5 @@ CROSS JOIN (VALUES
   ('Phường Mỹ Bình', 2),
   ('Xã Mỹ Hòa Hưng', 3)
 ) AS v(ten, thu_tu)
-WHERE lower(trim(t.ten)) = lower(trim('An Giang'));
+WHERE lower(trim(t.ten)) = lower(trim('An Giang'))
+ON CONFLICT (id_tinh_thanh, lower(trim(ten))) DO NOTHING;

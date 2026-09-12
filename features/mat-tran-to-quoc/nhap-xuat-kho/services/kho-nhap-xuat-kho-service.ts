@@ -2,6 +2,12 @@ import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
+import {
+  buildRpcSortParam,
+  fetchAllServerPages,
+  readRpcTotalCount,
+  type ServerSortState,
+} from '@/lib/data/server-paging';
 import type {
   KhoTonKhoRow,
   NhapXuatKhoCtFlatRow,
@@ -14,7 +20,6 @@ import type { NhapXuatKhoFormValues } from '../core/schema';
 import {
   NHAP_XUAT_KHO_CT_SELECT_FLAT_LIST,
   NHAP_XUAT_KHO_SELECT_FULL,
-  NHAP_XUAT_KHO_SELECT_LIST,
 } from '../core/supabase-select';
 
 // ---------------------------------------------------------------------------
@@ -65,7 +70,7 @@ function countFromCtAggregate(raw: unknown): number {
   return raw.length;
 }
 
-function nameFromEmbed(v: unknown, key: 'ten_kho' | 'ten' | 'ten_hang_hoa'): string | null {
+function nameFromEmbed(v: unknown, key: 'ten_kho' | 'ten' | 'ten_hang_hoa' | 'ho_va_ten'): string | null {
   const o = pickEmbedded<Record<string, unknown>>(v);
   if (!o) return null;
   const t = o[key];
@@ -100,6 +105,8 @@ export function flattenListRow(row: Record<string, unknown>): NhapXuatKhoListRow
     dot_cuu_tro_id: nullableStr(row.dot_cuu_tro_id),
     ten_dot_cuu_tro: nameFromEmbed(row.dot, 'ten'),
     so_dong: countFromCtAggregate(row.kho_nhap_xuat_kho_ct),
+    id_nguoi_tao: nullableStr(row.id_nguoi_tao),
+    ho_va_ten_nguoi_tao: nameFromEmbed(row.nguoi_tao, 'ho_va_ten'),
     tg_tao: String(row.tg_tao ?? ''),
     tg_cap_nhat: String(row.tg_cap_nhat ?? ''),
   };
@@ -179,6 +186,10 @@ function rethrowMapped(err: unknown): never {
     const tail = message.replace(/^.*TON_KHO_KHONG_DU:\s*/i, '').trim();
     throw new Error(tail || txt('matTranNhapXuatKho.service.tonKhoKhongDu'));
   }
+  if (/LOAI_PHIEU_KHONG_DOI_DUOC/i.test(message)) {
+    const tail = message.replace(/^.*LOAI_PHIEU_KHONG_DOI_DUOC:\s*/i, '').trim();
+    throw new Error(tail || txt('matTranNhapXuatKho.service.loaiPhieuKhongDoiDuoc'));
+  }
   if (/CHI_TIET_RONG/i.test(message)) {
     throw new Error(txt('matTranNhapXuatKho.service.chiTietRong'));
   }
@@ -192,20 +203,225 @@ function rethrowMapped(err: unknown): never {
 // API
 // ---------------------------------------------------------------------------
 
-export async function getNhapXuatKhoList(): Promise<NhapXuatKhoListRow[]> {
+
+// ---------------------------------------------------------------------------
+// Phân trang phía máy chủ (RPC) — xem CLAUDE.md "Chọn kiểu phân trang"
+// ---------------------------------------------------------------------------
+
+/** Cột được RPC sắp xếp; phải khớp khối ORDER BY trong migration. */
+export const NHAP_XUAT_KHO_SERVER_SORT_COLUMNS = [
+  'tt',
+  'ho_va_ten_nguoi_tao',
+  'so_phieu',
+  'loai_phieu',
+  'ngay_phieu',
+  'ten_kho_xuat',
+  'ten_kho_nhap',
+  'ten_don_vi_cuu_tro',
+  'ten_dot_cuu_tro',
+  'so_dong',
+  'tg_tao',
+  'tg_cap_nhat',
+] as const;
+
+export const NHAP_XUAT_KHO_CT_SERVER_SORT_COLUMNS = [
+  'so_phieu',
+  'loai_phieu',
+  'ngay_phieu',
+  'ten_hang_hoa',
+  'don_vi_tinh',
+  'so_luong',
+  'don_gia',
+  'thanh_tien',
+  'ten_kho_xuat',
+  'ten_kho_nhap',
+] as const;
+
+export type NhapXuatKhoPageQuery = {
+  page: number;
+  pageSize: number;
+  search: string;
+  sort?: ServerSortState | null;
+  /** Phạm vi xem — suy từ useKhoNhapXuatKhoViewer. */
+  viewAll: boolean;
+  viewerDonViId: string | null;
+  loaiPhieu: string | null;
+  khoId: string | null;
+  donViCuuTroId: string | null;
+  dotCuuTroId: string | null;
+  /** Ô tìm theo từng cột trên header bảng — cũng lọc phía máy chủ. */
+  columnSearch: Record<string, string> | null;
+};
+
+export type NhapXuatKhoCtPageQuery = {
+  page: number;
+  pageSize: number;
+  search: string;
+  sort?: ServerSortState | null;
+  viewAll: boolean;
+  viewerDonViId: string | null;
+  loaiPhieu: string | null;
+  khoId: string | null;
+  hangHoaId: string | null;
+  columnSearch: Record<string, string> | null;
+};
+
+export type NhapXuatKhoPageResult = {
+  rows: NhapXuatKhoListRow[];
+  hasNextPage: boolean;
+  totalRecords: number;
+};
+
+export type NhapXuatKhoCtPageResult = {
+  rows: NhapXuatKhoCtFlatRow[];
+  hasNextPage: boolean;
+  totalRecords: number;
+};
+
+/** RPC trả dòng phẳng — không cần dựng lại hình dạng embed như PostgREST. */
+function rpcRowToListRow(r: Record<string, unknown>): NhapXuatKhoListRow {
+  return {
+    id: String(r.id ?? ''),
+    tt: toNumber(r.tt),
+    so_phieu: String(r.so_phieu ?? ''),
+    loai_phieu: String(r.loai_phieu ?? 'nhap_ngoai') as NhapXuatKhoLoaiPhieu,
+    ngay_phieu: dateOnly(r.ngay_phieu),
+    kho_xuat_id: nullableStr(r.kho_xuat_id),
+    ten_kho_xuat: nullableStr(r.ten_kho_xuat),
+    kho_xuat_don_vi_id: nullableStr(r.kho_xuat_don_vi_id),
+    kho_nhap_id: nullableStr(r.kho_nhap_id),
+    ten_kho_nhap: nullableStr(r.ten_kho_nhap),
+    kho_nhap_don_vi_id: nullableStr(r.kho_nhap_don_vi_id),
+    don_vi_cuu_tro_id: nullableStr(r.don_vi_cuu_tro_id),
+    ten_don_vi_cuu_tro: nullableStr(r.ten_don_vi_cuu_tro),
+    dot_cuu_tro_id: nullableStr(r.dot_cuu_tro_id),
+    ten_dot_cuu_tro: nullableStr(r.ten_dot_cuu_tro),
+    so_dong: toNumber(r.so_dong),
+    id_nguoi_tao: nullableStr(r.id_nguoi_tao),
+    ho_va_ten_nguoi_tao: nullableStr(r.ho_va_ten_nguoi_tao),
+    tg_tao: String(r.tg_tao ?? ''),
+    tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
+  };
+}
+
+function rpcRowToCtFlatRow(r: Record<string, unknown>): NhapXuatKhoCtFlatRow {
+  return {
+    id: String(r.id ?? ''),
+    phieu_id: String(r.phieu_id ?? ''),
+    so_phieu: String(r.so_phieu ?? ''),
+    loai_phieu: String(r.loai_phieu ?? 'nhap_ngoai') as NhapXuatKhoLoaiPhieu,
+    ngay_phieu: dateOnly(r.ngay_phieu),
+    kho_xuat_id: nullableStr(r.kho_xuat_id),
+    ten_kho_xuat: nullableStr(r.ten_kho_xuat),
+    kho_xuat_don_vi_id: nullableStr(r.kho_xuat_don_vi_id),
+    kho_nhap_id: nullableStr(r.kho_nhap_id),
+    ten_kho_nhap: nullableStr(r.ten_kho_nhap),
+    kho_nhap_don_vi_id: nullableStr(r.kho_nhap_don_vi_id),
+    don_vi_cuu_tro_id: nullableStr(r.don_vi_cuu_tro_id),
+    ten_don_vi_cuu_tro: nullableStr(r.ten_don_vi_cuu_tro),
+    dot_cuu_tro_id: nullableStr(r.dot_cuu_tro_id),
+    ten_dot_cuu_tro: nullableStr(r.ten_dot_cuu_tro),
+    hang_hoa_id: String(r.hang_hoa_id ?? ''),
+    ten_hang_hoa: nullableStr(r.ten_hang_hoa),
+    don_vi_tinh: String(r.don_vi_tinh ?? ''),
+    so_luong: toNumber(r.so_luong),
+    don_gia: toNumber(r.don_gia),
+    thanh_tien: toNumber(r.thanh_tien),
+    ghi_chu: nullableStr(r.ghi_chu),
+  };
+}
+
+/** Bỏ ô trống để RPC không phải lọc theo chuỗi rỗng; rỗng hết ⇒ null. */
+function cleanColumnSearch(cs: Record<string, string> | null | undefined): Record<string, string> | null {
+  if (!cs) return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(cs)) {
+    const t = v?.trim();
+    if (t) out[k] = t;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+function pageBounds(page: number, pageSize: number) {
+  const size = Math.max(1, Math.min(Math.floor(pageSize), 500));
+  const p = Math.max(1, Math.floor(page));
+  return { size, offset: (p - 1) * size };
+}
+
+export async function getNhapXuatKhoPage(q: NhapXuatKhoPageQuery): Promise<NhapXuatKhoPageResult> {
   const supabase = getSupabase();
-  if (!supabase) return [];
-  const data = await fetchAllPages<Record<string, unknown>>(async (from, to) => {
-    const { data: rows, error } = await supabase
-      .from('kho_nhap_xuat_kho')
-      .select(NHAP_XUAT_KHO_SELECT_LIST)
-      .order('ngay_phieu', { ascending: false })
-      .order('id', { ascending: false })
-      .range(from, to);
-    if (error) handleSupabaseError(error);
-    return (rows ?? []) as unknown as Record<string, unknown>[];
-  });
-  return data.map((row) => flattenListRow(row));
+  if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
+  const { size, offset } = pageBounds(q.page, q.pageSize);
+  const search = q.search?.trim() ?? '';
+
+  const { data, error } = await supabase.rpc('get_kho_nhap_xuat_kho_page', {
+    p_search: search.length > 0 ? search : null,
+    p_limit: size,
+    p_offset: offset,
+    p_sort: buildRpcSortParam(q.sort, NHAP_XUAT_KHO_SERVER_SORT_COLUMNS),
+    p_view_all: q.viewAll,
+    p_viewer_don_vi_id: toNullableId(q.viewerDonViId),
+    p_loai_phieu: q.loaiPhieu?.trim() ? q.loaiPhieu : null,
+    p_kho_id: toNullableId(q.khoId),
+    p_don_vi_cuu_tro_id: toNullableId(q.donViCuuTroId),
+    p_dot_cuu_tro_id: toNullableId(q.dotCuuTroId),
+    p_column_search: cleanColumnSearch(q.columnSearch),
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  const raw = (data ?? []) as unknown as Record<string, unknown>[];
+  const rows = raw.map(rpcRowToListRow);
+  const totalFromPage = readRpcTotalCount(raw);
+  // Trang rỗng ngoài trang 1 không mang được tổng ⇒ hỏi lại trang đầu.
+  const totalRecords =
+    totalFromPage ??
+    (offset > 0 ? (await getNhapXuatKhoPage({ ...q, page: 1, pageSize: 1 })).totalRecords : 0);
+  return { rows, hasNextPage: offset + rows.length < totalRecords, totalRecords };
+}
+
+export async function getNhapXuatKhoCtFlatPage(
+  q: NhapXuatKhoCtPageQuery,
+): Promise<NhapXuatKhoCtPageResult> {
+  const supabase = getSupabase();
+  if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
+  const { size, offset } = pageBounds(q.page, q.pageSize);
+  const search = q.search?.trim() ?? '';
+
+  const { data, error } = await supabase.rpc('get_kho_nhap_xuat_kho_ct_page', {
+    p_search: search.length > 0 ? search : null,
+    p_limit: size,
+    p_offset: offset,
+    p_sort: buildRpcSortParam(q.sort, NHAP_XUAT_KHO_CT_SERVER_SORT_COLUMNS),
+    p_view_all: q.viewAll,
+    p_viewer_don_vi_id: toNullableId(q.viewerDonViId),
+    p_loai_phieu: q.loaiPhieu?.trim() ? q.loaiPhieu : null,
+    p_kho_id: toNullableId(q.khoId),
+    p_hang_hoa_id: toNullableId(q.hangHoaId),
+    p_column_search: cleanColumnSearch(q.columnSearch),
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  const raw = (data ?? []) as unknown as Record<string, unknown>[];
+  const rows = raw.map(rpcRowToCtFlatRow);
+  const totalFromPage = readRpcTotalCount(raw);
+  const totalRecords =
+    totalFromPage ??
+    (offset > 0 ? (await getNhapXuatKhoCtFlatPage({ ...q, page: 1, pageSize: 1 })).totalRecords : 0);
+  return { rows, hasNextPage: offset + rows.length < totalRecords, totalRecords };
+}
+
+/** Kéo toàn bộ phiếu khớp bộ lọc để xuất file. */
+export function getNhapXuatKhoAllForExport(
+  q: Omit<NhapXuatKhoPageQuery, 'page' | 'pageSize'>,
+): Promise<NhapXuatKhoListRow[]> {
+  return fetchAllServerPages(q, getNhapXuatKhoPage);
+}
+
+/** Kéo toàn bộ dòng hàng khớp bộ lọc để xuất file. */
+export function getNhapXuatKhoCtFlatAllForExport(
+  q: Omit<NhapXuatKhoCtPageQuery, 'page' | 'pageSize'>,
+): Promise<NhapXuatKhoCtFlatRow[]> {
+  return fetchAllServerPages(q, getNhapXuatKhoCtFlatPage);
 }
 
 export async function getNhapXuatKhoById(id: string): Promise<NhapXuatKhoDetail | null> {
@@ -232,7 +448,7 @@ export async function getNhapXuatKhoCtFlatList(): Promise<NhapXuatKhoCtFlatRow[]
       .range(from, to);
     if (error) handleSupabaseError(error);
     return (rows ?? []) as unknown as Record<string, unknown>[];
-  });
+  }, { label: 'kho_nhap_xuat_kho_ct' });
   return data.map((row) => flattenCtFlatRow(row));
 }
 
@@ -251,7 +467,7 @@ export async function getLastDonGiaMap(): Promise<Map<string, number>> {
       .range(from, to);
     if (error) handleSupabaseError(error);
     return (rows ?? []) as unknown as Record<string, unknown>[];
-  });
+  }, { label: 'kho_nhap_xuat_kho_ct (don gia)' });
 
   for (const row of data) {
     const r = row;
@@ -355,5 +571,13 @@ export async function deleteNhapXuatKhoMany(ids: string[]): Promise<void> {
   if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
   const numericIds = ids.filter((x) => isPersistedId(x)).map((x) => Number(x));
   const { error } = await supabase.from('kho_nhap_xuat_kho').delete().in('id', numericIds);
-  if (error) handleSupabaseError(error);
+  // Trigger hoãn `trg_kho_nxk_ton_am` chặn xoá khi tồn sẽ âm — phải đi qua
+  // rethrowMapped, nếu không người dùng chỉ thấy câu chung chung "lỗi không xác định".
+  if (error) {
+    try {
+      handleSupabaseError(error);
+    } catch (err) {
+      rethrowMapped(err);
+    }
+  }
 }

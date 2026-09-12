@@ -36,7 +36,6 @@ import { useEmployees } from '@/features/he-thong/nhan-vien/hooks/use-nhan-vien'
 import type { ChuongTrinhNam } from '../core/types';
 import { getChuongTrinhNamTrangThaiBadgeConfig } from '../core/constants';
 import { formatChuongTrinhNamTienDo, chuongTrinhNamTienDoChipTone } from '../utils/ngay-ket-thuc-tien-do';
-import { CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT } from '@/features/quan-ly-giao-viec/cong-viec/services/cong-viec-danh-sach-service';
 import {
   CONG_VIEC_MUC_DO_BADGE_CONFIG,
   CONG_VIEC_TRANG_THAI_BADGE_CONFIG,
@@ -314,9 +313,6 @@ const ChuongTrinhNamDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
               ) : null
             }
           >
-            {rowsEnriched.length >= CONG_VIEC_BY_CHUONG_TRINH_PAGE_LIMIT ? (
-              <p className="text-xs text-muted-foreground mb-2">{txt('chuongTrinhNam.detail.congViecLimitHint')}</p>
-            ) : null}
             {cvLoading ? (
               <div className="flex justify-center py-8 text-sm text-muted-foreground">{txt('common.loadingData')}</div>
             ) : rowsEnriched.length === 0 ? (

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ClipboardList, Edit, FileText, Hash, Info, MapPin, StickyNote, Trash2, Type, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CalendarDays, ClipboardList, Edit, FileText, Hash, Info, MapPin, Printer, StickyNote, Trash2, Type, User } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import { formatDateTimeShort } from '@/lib/utils';
@@ -10,6 +11,7 @@ import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE, CONFIRM_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { useCan } from '@/hooks/use-can';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import TabGroup, { type Tab } from '@/components/ui/TabGroup';
 import type { MttqKyHop } from '../core/types';
@@ -31,6 +33,11 @@ interface Props {
 
 const MttqKyHopDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, stackLevel = 0, maxWidthClass }) => {
   const { canEdit, canDelete } = useResourcePermissions('matTranSession');
+  // In danh sách điểm danh cần cả quyền xem kỳ họp lẫn quyền xem ủy viên — bản
+  // in liệt kê tên ủy viên, thiếu quyền ủy viên thì không được phép in.
+  const canViewSession = useCan('view', 'matTranSession');
+  const canViewUyVien = useCan('view', 'matTranCommitteeMembers');
+  const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
   const tinhCap = txt('matTranKyHop.tinhCap');
   const [detailTab, setDetailTab] = useState<string>(TAB_INFO);
@@ -67,8 +74,21 @@ const MttqKyHopDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, sta
       >
         {BTN_CLOSE()}
       </Button>
-      {canEdit || canDelete ? (
+      {canViewSession || canEdit || canDelete ? (
         <div className="flex items-center gap-2">
+          {canViewSession && canViewUyVien && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                navigate(`/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop/${data.id}/in-diem-danh`)
+              }
+              className="h-8 px-3 text-xs text-sky-600 hover:bg-sky-50 hover:text-sky-700 dark:hover:bg-sky-950/50 dark:text-sky-400 border border-sky-200 hover:border-sky-300 dark:border-sky-800 dark:hover:border-sky-700"
+            >
+              <Printer className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+              {txt('matTranKyHop.printPreview.print')}
+            </Button>
+          )}
           {canEdit && (
             <Button
               size="sm"

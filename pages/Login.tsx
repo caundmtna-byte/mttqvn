@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { txt } from '../lib/text';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,7 +37,7 @@ const Login: React.FC = () => {
     password: z.string().min(6, txt('page.login.passwordMin')),
   }), []);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<LoginValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: '',
@@ -45,13 +45,8 @@ const Login: React.FC = () => {
     }
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch()
-  const formUsername = watch('username');
 
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotAccount, setForgotAccount] = useState('');
-  const [forgotSubmitting, setForgotSubmitting] = useState(false);
-  const forgotAccountInputRef = useRef<HTMLInputElement>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => {
     const v = localStorage.getItem(AUTH_REMEMBER_KEY);
@@ -63,32 +58,6 @@ const Login: React.FC = () => {
       localStorage.setItem(AUTH_REMEMBER_KEY, 'true');
     }
   }, []);
-
-  useEffect(() => {
-    if (forgotOpen) setForgotAccount(formUsername || '');
-  }, [forgotOpen, formUsername]);
-
-  useEffect(() => {
-    if (forgotOpen) queueMicrotask(() => forgotAccountInputRef.current?.focus());
-  }, [forgotOpen]);
-
-  const handleForgotSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const account = forgotAccount.trim();
-    if (!account) {
-      toast.error(txt('page.login.usernameRequired'));
-      return;
-    }
-    if (account.length < 2) {
-      toast.error(txt('page.login.usernameMin'));
-      return;
-    }
-    setForgotSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setForgotSubmitting(false);
-    setForgotOpen(false);
-    toast.success(txt('page.login.recoverySent'), { description: txt('page.login.recoverySentTitle') });
-  };
 
   const onSubmit = async (data: LoginValues) => {
     setIsLoading(true);
@@ -198,7 +167,7 @@ const Login: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => !forgotSubmitting && setForgotOpen(false)}
+                onClick={() => setForgotOpen(false)}
                 className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-md"
               />
               <motion.div
@@ -212,31 +181,24 @@ const Login: React.FC = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 id="forgot-password-title" className="text-lg font-semibold text-foreground mb-2">{txt('page.login.forgotPasswordTitle')}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{txt('page.login.forgotPasswordDesc')}</p>
-                <form onSubmit={handleForgotSubmit} className="space-y-4">
-                  <Input
-                    ref={forgotAccountInputRef}
-                    label={txt('page.login.forgotAccountLabel')}
-                    type="text"
-                    autoComplete="username"
-                    placeholder={txt('page.login.forgotAccountPlaceholder')}
-                    value={forgotAccount}
-                    onChange={(e) => setForgotAccount(e.target.value)}
-                    required
-                    className="h-11"
-                  />
-                  <div className="flex gap-3 justify-end pt-2">
-                    <Button type="button" variant="outline" onClick={() => setForgotOpen(false)} disabled={forgotSubmitting} className="min-w-[100px]">
-                      {txt('common.cancel')}
-                    </Button>
-                    <Button type="submit" isLoading={forgotSubmitting} className="min-w-[140px]">
-                      {txt('page.login.sendRecovery')}
-                    </Button>
-                  </div>
-                </form>
+                {/*
+                  Trước đây hộp thoại này nhận tên tài khoản, chờ 800ms rồi báo
+                  "Đã gửi thông tin khôi phục về email" — nhưng KHÔNG gửi gì cả.
+                  Không thể gửi thật vì tài khoản dùng email tổng hợp
+                  `<ten_tai_khoan>@gmail.com` (xem `lib/auth-email.ts`), không phải
+                  hộp thư của cán bộ. Nay nói đúng sự thật: quản trị viên đặt lại hộ.
+                */}
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  {txt('page.login.forgotPasswordDesc')}
+                </p>
+                <div className="flex justify-end pt-2">
+                  <Button type="button" onClick={() => setForgotOpen(false)} className="min-w-[100px]">
+                    {txt('common.close')}
+                  </Button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => !forgotSubmitting && setForgotOpen(false)}
+                  onClick={() => setForgotOpen(false)}
                   aria-label="Đóng"
                   className="absolute top-4 right-4 p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
                 >

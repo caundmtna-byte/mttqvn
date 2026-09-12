@@ -12,6 +12,9 @@ import { KhoDotCuuTroTableRowActions } from './kho-dot-cuu-tro-table-row-actions
 interface Props {
   data: KhoDotCuuTroListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: KhoDotCuuTroListRow) => void;
   onDelete: (id: string) => void;
   onView?: (item: KhoDotCuuTroListRow) => void;
@@ -22,6 +25,8 @@ interface Props {
 const KhoDotCuuTroTable = memo(function KhoDotCuuTroTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -212,6 +217,8 @@ const KhoDotCuuTroTable = memo(function KhoDotCuuTroTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranDotCuuTro.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('matTranDotCuuTro.emptyHint')}

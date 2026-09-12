@@ -8,17 +8,16 @@ import Tooltip from '@/components/ui/Tooltip';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import GenericToolbar from '@/components/shared/GenericToolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
+import { usePbxhThietLapAll } from '@/features/phan-bien-xa-hoi/thiet-lap-danh-muc/hooks/use-pbxh-thiet-lap';
 import { useThucHienPhanBienStore } from '../store/useThucHienPhanBienStore';
 import { countThucHienColumnSearchActive } from '../utils/column-search';
 import { CAP_THUC_HIEN_VALUES, LOAI_HINH_VALUES, TINH_TRANG_VALUES } from '../core/constants';
-import type { ThucHienPhanBien } from '../core/types';
 
 interface Props {
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
-  items?: ThucHienPhanBien[] | null;
 }
 
 const ThucHienPhanBienToolbar: React.FC<Props> = ({
@@ -26,10 +25,8 @@ const ThucHienPhanBienToolbar: React.FC<Props> = ({
   onAdd,
   onExport,
   onDeleteMany,
-  items,
 }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('phanBienThucHien');
-  const itemRows = Array.isArray(items) ? items : [];
 
   const {
     searchTerm,
@@ -44,58 +41,36 @@ const ThucHienPhanBienToolbar: React.FC<Props> = ({
     clearSelection,
   } = useThucHienPhanBienStore();
 
-  const capOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of itemRows) {
-      const key = r.cap_thuc_hien?.trim();
-      if (!key) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    for (const v of CAP_THUC_HIEN_VALUES) {
-      if (!map.has(v)) map.set(v, 0);
-    }
-    return [...map.entries()].map(([value, count]) => ({ value, label: value, count }));
-  }, [itemRows]);
+  // Tuỳ chọn lọc lấy từ HẰNG SỐ nghiệp vụ và BẢNG DANH MỤC, không phải từ các
+  // dòng đang tải: danh sách nay phân trang phía máy chủ, suy từ dòng chỉ ra
+  // được giá trị có mặt trên đúng trang đang xem. Bỏ luôn con số đếm kèm mỗi
+  // lựa chọn vì dưới phân trang server nó chỉ đếm được một trang — số sai còn
+  // tệ hơn không có số.
+  const { data: thietLapAll = [] } = usePbxhThietLapAll();
 
-  const loaiHinhOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of itemRows) {
-      const key = r.loai_hinh?.trim();
-      if (!key) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    for (const v of LOAI_HINH_VALUES) {
-      if (!map.has(v)) map.set(v, 0);
-    }
-    return [...map.entries()].map(([value, count]) => ({ value, label: value, count }));
-  }, [itemRows]);
+  const capOptions = useMemo(
+    () => CAP_THUC_HIEN_VALUES.map((value) => ({ value, label: value })),
+    [],
+  );
 
-  const tinhTrangOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of itemRows) {
-      const key = r.tinh_trang?.trim();
-      if (!key) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    for (const v of TINH_TRANG_VALUES) {
-      if (!map.has(v)) map.set(v, 0);
-    }
-    return [...map.entries()].map(([value, count]) => ({ value, label: value, count }));
-  }, [itemRows]);
+  const loaiHinhOptions = useMemo(
+    () => LOAI_HINH_VALUES.map((value) => ({ value, label: value })),
+    [],
+  );
 
-  const donViChuTriOptions = useMemo(() => {
-    const map = new Map<string, { label: string; count: number }>();
-    for (const r of itemRows) {
-      if (!r.don_vi_chu_tri_id) continue;
-      const label = r.ten_don_vi_chu_tri?.trim() || r.don_vi_chu_tri_id;
-      const cur = map.get(r.don_vi_chu_tri_id);
-      if (cur) cur.count += 1;
-      else map.set(r.don_vi_chu_tri_id, { label, count: 1 });
-    }
-    return [...map.entries()]
-      .map(([value, { label, count }]) => ({ value, label, count }))
-      .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-  }, [itemRows]);
+  const tinhTrangOptions = useMemo(
+    () => TINH_TRANG_VALUES.map((value) => ({ value, label: value })),
+    [],
+  );
+
+  const donViChuTriOptions = useMemo(
+    () =>
+      thietLapAll
+        .filter((r) => r.loai === 'don_vi_chu_tri')
+        .map((r) => ({ value: String(r.id), label: r.ten }))
+        .sort((a, b) => a.label.localeCompare(b.label, getLanguage())),
+    [thietLapAll],
+  );
 
   const activeFilterCount = useMemo(() => {
     const colN = countThucHienColumnSearchActive(filters.columnSearch);

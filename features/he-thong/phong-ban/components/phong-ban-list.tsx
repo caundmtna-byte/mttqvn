@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
+import ErrorState from '@/components/shared/ErrorState';
 import { txt } from '../../../../lib/text';
 import { Folder, CornerDownRight, Building2 } from 'lucide-react';
 import { formatDateShort } from '../../../../lib/utils';
@@ -34,6 +35,9 @@ interface Props {
   onToggleSelection: (id: string) => void;
   onToggleAllSelection: (ids: string[]) => void;
   isLoading: boolean;
+  /** Query lỗi — hiện thông báo lỗi + nút Thử lại thay vì danh sách rỗng. */
+  isError?: boolean;
+  onRetry?: () => void;
   page: number;
   pageSize: number;
   onPageChange: (page: number) => void;
@@ -59,6 +63,8 @@ const DepartmentList: React.FC<Props> = ({
   onToggleSelection,
   onToggleAllSelection,
   isLoading,
+  isError,
+  onRetry,
   page,
   pageSize,
   onPageChange,
@@ -177,6 +183,13 @@ const DepartmentList: React.FC<Props> = ({
     const start = (page - 1) * pageSize;
     return sortedTreeData.slice(start, start + pageSize);
   }, [sortedTreeData, page, pageSize]);
+
+  if (isError) {
+
+    return <ErrorState onRetry={onRetry} className="m-4" />;
+
+  }
+
 
   if (isLoading) {
     return (
@@ -437,7 +450,6 @@ const DepartmentList: React.FC<Props> = ({
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
           selectedCount={selectedIds.size}
-          recordsLabel={txt('department.footerRecords')}
         />
       </div>
     </div>

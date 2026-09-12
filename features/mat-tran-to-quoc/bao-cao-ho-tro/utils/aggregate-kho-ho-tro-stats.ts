@@ -1,3 +1,4 @@
+import { resolveStatsTrendChartRange } from '@/components/shared/stats/resolve-trend-chart-range';
 import dayjs from 'dayjs';
 import type { NhapXuatKhoCtFlatRow } from '../../nhap-xuat-kho/core/types';
 import {
@@ -105,24 +106,12 @@ export function pickTrendBucket(start: string, end: string): TrendBucket {
   return days > 62 ? 'month' : 'day';
 }
 
+/** Uỷ quyền cho helper dùng chung — xem `resolveStatsTrendChartRange`. */
 export function resolveReliefTrendChartRange(
   range: ResolvedReliefDateRange,
   filtered: ReliefSupportLookupRow[],
 ): ResolvedReliefDateRange {
-  if (!range.allTime) {
-    return { start: range.start, end: range.end };
-  }
-  let min = '';
-  let max = '';
-  for (const item of filtered) {
-    const d = item.ngay_phieu?.slice(0, 10);
-    if (!d) continue;
-    if (!min || d < min) min = d;
-    if (!max || d > max) max = d;
-  }
-  const today = dayjs().format('YYYY-MM-DD');
-  if (!min || !max) return { start: today, end: today };
-  return { start: min, end: max };
+  return resolveStatsTrendChartRange(range, filtered, (item) => item.ngay_phieu ?? '');
 }
 
 export function buildReliefTrendSeries(
@@ -132,6 +121,8 @@ export function buildReliefTrendSeries(
 ): ReliefSupportTrendPoint[] {
   const start = dayjs(range.start.slice(0, 10));
   const end = dayjs(range.end.slice(0, 10));
+  // Chặn vòng lặp vô tận khi range rỗng/không hợp lệ (dayjs('') = Invalid Date).
+  if (!start.isValid() || !end.isValid()) return [];
   const keys: string[] = [];
   if (bucket === 'day') {
     for (let cur = start; !cur.isAfter(end, 'day'); cur = cur.add(1, 'day')) {

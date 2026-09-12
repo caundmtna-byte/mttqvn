@@ -26,13 +26,18 @@ import { cn, formatCurrency, getLanguage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
+import ErrorState from '@/components/shared/ErrorState';
 import Tooltip from '@/components/ui/Tooltip';
-import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
-  buildStandardDateRangePresets,
-  isStandardDateRangeNonDefault,
-} from '@/lib/date-range-presets';
-import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+  ReportSkeleton,
+  StatsKpiGrid,
+  StatsCard,
+  StatsTableCard,
+  ColoredBar,
+  useStatsPageFilters,
+  resolveStatsTrendChartRange,
+} from '@/components/shared/stats';
 import { chartFillByIndex } from '@/lib/constants/chart-colors';
 import type { StatsTableRow } from '@/components/shared/stats/types';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -46,6 +51,11 @@ import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { AnimatePresence } from 'framer-motion';
 import { useBaiVietDanhSachList, useDeleteBaiVietDanhSachMany } from '../bai-viet/hooks/use-bai-viet-danh-sach';
+import {
+  useArticleAllTabViewer,
+  rowVisibleOnArticleAllTab,
+  canLoadArticleAllTab,
+} from '../hooks/use-article-all-tab-viewer';
 import type { BaiVietDanhSach } from '../bai-viet/core/types';
 import {
   type ArticleStatsDimensionFilters,
@@ -57,6 +67,7 @@ import {
   aggregateTopCounts,
   sortLookupRows,
   type LookupSortKey,
+  getArticleStatsDateFromCreatedAt,
 } from './utils/aggregate-bai-viet-stats';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import { useCan } from '@/hooks/use-can';
@@ -64,12 +75,6 @@ import { useCan } from '@/hooks/use-can';
 const BaiVietDetail = lazy(() => import('../bai-viet/components/bai-viet-detail'));
 
 const CUSTOM_PRESET = 'custom';
-
-const initialDateRange: DateRangeValue = {
-  preset: 'all',
-  customStart: '',
-  customEnd: '',
-};
 
 const initialDims: ArticleStatsDimensionFilters = {
   idTheLoai: [],
@@ -113,11 +118,21 @@ const BcThongKeBaiVietPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
-  const canExport =
-    useCan('export', 'articleStats') || useCan('export', 'articles');
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
+  // Gọi tách hai dòng: `useCan(x) || useCan(y)` short-circuit nên hook thứ hai
+  // không chạy khi hook đầu trả true → sai thứ tự hook giữa các lần render.
+  const canExportArticleStats = useCan('export', 'articleStats');
+  const canExportArticles = useCan('export', 'articles');
+  const canExport = canExportArticleStats || canExportArticles;
   const canViewStats = useCan('view', 'articleStats');
   const canViewArticles = useCan('view', 'articles');
   const canOpenPage = canViewStats || canViewArticles;
+  /**
+   * Phạm vi xem dữ liệu — cùng rule với tab "Tất cả" của Danh sách bài viết:
+   * Xã phường → chỉ đơn vị mình · Tỉnh / quản trị / cap_bac=1 → toàn bộ · còn lại → bài mình tạo.
+   * `useCan` ở trên chỉ quyết định "được mở trang không", KHÔNG giới hạn dòng nào.
+   */
+  const allTabViewer = useArticleAllTabViewer();
   const didRedirect = useRef(false);
 
   const chucVuKey = user
@@ -125,11 +140,16 @@ const BcThongKeBaiVietPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   const listQueryEnabled = Boolean(
-    user && !waitingMatrixHydrate && (user.role === 'admin' || (matrixActive && canOpenPage)),
+    user &&
+      !waitingMatrixHydrate &&
+      (user.role === 'admin' || (matrixActive && canOpenPage)) &&
+      canLoadArticleAllTab(allTabViewer),
   );
 
   useEffect(() => {
@@ -139,11 +159,28 @@ const BcThongKeBaiVietPage: React.FC = () => {
     navigate('/quan-ly-viet-bai', { replace: true });
   }, [user, waitingMatrixHydrate, canOpenPage, navigate]);
 
-  const { data: rows = [], isLoading } = useBaiVietDanhSachList({ enabled: listQueryEnabled });
+  const {
+    data: allRows = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useBaiVietDanhSachList({ enabled: listQueryEnabled });
+  /** Lọc phạm vi ngay tại nguồn: KPI, biểu đồ, top, bảng tra cứu và export đều đọc từ đây. */
+  const rows = useMemo(
+    () => allRows.filter((r) => rowVisibleOnArticleAllTab(allTabViewer, r)),
+    [allRows, allTabViewer],
+  );
   const deleteMutation = useDeleteBaiVietDanhSachMany();
 
-  const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
-  const [dims, setDims] = useState<ArticleStatsDimensionFilters>(initialDims);
+  const {
+    dateRange,
+    setDateRange,
+    dims,
+    setDims,
+    presets,
+    activeFilterCount,
+    clearFilters,
+  } = useStatsPageFilters(initialDims);
   const [sortKey, setSortKey] = useState<LookupSortKey>('ngay_dang');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [viewing, setViewing] = useState<BaiVietDanhSach | null>(null);
@@ -155,8 +192,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
     if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
   }, [rows, viewing]);
 
-  const presets = useMemo(() => buildStandardDateRangePresets(), []);
-
   const resolvedRange = useMemo(
     () => resolveArticleStatsDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
     [dateRange.preset, dateRange.customStart, dateRange.customEnd],
@@ -167,12 +202,22 @@ const BcThongKeBaiVietPage: React.FC = () => {
     [rows, resolvedRange, dims],
   );
 
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * dữ liệu gốc có bản ghi mà bộ lọc đang bật lọc hết sạch.
+   */
+  const reportFilteredEmpty = filtered.length === 0 && rows.length > 0 && activeFilterCount > 0;
+
   const kpis = useMemo(() => computeArticleStatsKpis(filtered), [filtered]);
 
-  const bucket = useMemo(() => pickTrendBucket(resolvedRange.start, resolvedRange.end), [resolvedRange]);
+  const trendRange = useMemo(
+    () => resolveStatsTrendChartRange(resolvedRange, filtered, getArticleStatsDateFromCreatedAt),
+    [resolvedRange, filtered],
+  );
+  const bucket = useMemo(() => pickTrendBucket(trendRange.start, trendRange.end), [trendRange]);
   const trendSeries = useMemo(
-    () => buildTrendSeries(filtered, resolvedRange, bucket),
-    [filtered, resolvedRange, bucket],
+    () => buildTrendSeries(filtered, trendRange, bucket),
+    [filtered, trendRange, bucket],
   );
 
   const topTheLoai = useMemo(() => {
@@ -251,28 +296,9 @@ const BcThongKeBaiVietPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, idNguoiTao: v })),
       },
     ],
-    [theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, dims.idTheLoai, dims.idNguonDang, dims.idTrangDang, dims.idNguoiTao],
+    // `setDims` đến từ `useStatsPageFilters` nên linter không biết nó ổn định như setter của useState.
+    [setDims, theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, dims.idTheLoai, dims.idNguonDang, dims.idTrangDang, dims.idNguoiTao],
   );
-
-  const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'all'),
-    [dateRange],
-  );
-
-  const activeFilterCount = useMemo(() => {
-    let n = 0;
-    if (isNonDefaultDateRange) n += 1;
-    if (dims.idTheLoai.length) n += 1;
-    if (dims.idNguonDang.length) n += 1;
-    if (dims.idTrangDang.length) n += 1;
-    if (dims.idNguoiTao.length) n += 1;
-    return n;
-  }, [dims, isNonDefaultDateRange]);
-
-  const clearFilters = useCallback(() => {
-    setDims(initialDims);
-    setDateRange(initialDateRange);
-  }, []);
 
   const exportColumns = useMemo(
     () => [
@@ -372,7 +398,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewing?.id === id) setViewing(null);
           },
@@ -494,12 +520,25 @@ const BcThongKeBaiVietPage: React.FC = () => {
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">{txt('articleStats.loading')}</p>
+        {isError ? (
+          <div className="py-12 flex items-center justify-center">
+            <ErrorState className="w-full max-w-md" onRetry={() => void refetch()} primaryButtons />
+          </div>
+        ) : isLoading ? (
+          <ReportSkeleton />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center space-y-2">
-            <p className="text-sm font-medium text-foreground">{txt('articleStats.noData')}</p>
-            <p className="text-xs text-muted-foreground">{txt('articleStats.noDataHint')}</p>
+            <p className="text-sm font-medium text-foreground">
+              {reportFilteredEmpty ? txt('common.noResults') : txt('articleStats.noData')}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {reportFilteredEmpty ? txt('shared.empty.filteredHint') : txt('articleStats.noDataHint')}
+            </p>
+            {reportFilteredEmpty && (
+              <Button type="button" variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
+                {txt('common.clearFilter')}
+              </Button>
+            )}
           </div>
         ) : (
           <>

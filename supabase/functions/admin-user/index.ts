@@ -14,7 +14,11 @@
 // Bảo mật:
 // - Header `Authorization: Bearer <user_jwt>` bắt buộc; Edge Function tự xác
 //   thực JWT bằng SUPABASE_ANON_KEY và đối chiếu với bảng `var_nhan_vien`.
-// - Caller phải có dòng nhân viên trùng email + `trang_thai = 'Hoạt động'`.
+// - Caller phải có dòng nhân viên trùng email + `trang_thai = 'Hoạt động'`
+//   VÀ có quyền quản trị thật: `var_chuc_vu.cap_bac = 1` hoặc `var_phan_quyen.quyen`
+//   chứa `quan_tri`/`all` trên module `nhan-vien`.
+// - Mật khẩu không có giá trị mặc định: admin phải truyền (>= 8 ký tự), nếu không
+//   Edge Function sinh chuỗi ngẫu nhiên và trả về để admin đưa tận tay người dùng.
 
 // @ts-expect-error Deno runtime resolves remote modules
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -27,7 +31,18 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const EMAIL_SUFFIX = '@gmail.com';
-const DEFAULT_PASSWORD = '123456';
+/** Module trong `var_phan_quyen` quyết định ai được quản trị tài khoản. */
+const ADMIN_MODULE_KEY = 'nhan-vien';
+/** Token `quan_tri` / `all` trong cột `quyen` (chuỗi phân tách bằng dấu phẩy). */
+const ADMIN_QUYEN_RE = '(^|,)\\s*(quan_tri|all|admin)\\s*(,|$)';
+const MIN_PASSWORD_LENGTH = 8;
+
+/** Mật khẩu ngẫu nhiên khi admin không truyền — KHÔNG dùng hằng số đoán được. */
+function generatePassword(): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '').slice(0, 16);
+}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -124,7 +139,7 @@ Deno.serve(async (req: Request) => {
   const callerLogin = caller.email.split('@')[0]?.toLowerCase() ?? '';
   const { data: callerEmp, error: callerEmpError } = await adminClient
     .from('var_nhan_vien')
-    .select('ten_tai_khoan, trang_thai')
+    .select('id, ten_tai_khoan, trang_thai, id_chuc_vu')
     .ilike('ten_tai_khoan', callerLogin)
     .maybeSingle();
   if (callerEmpError) {
@@ -132,6 +147,46 @@ Deno.serve(async (req: Request) => {
   }
   if (!callerEmp || callerEmp.trang_thai !== 'Hoạt động') {
     return jsonResponse(403, { error: 'Tài khoản không có quyền quản trị' });
+  }
+
+  // 2b) Kiểm tra quyền QUẢN TRỊ thật — chỉ "là nhân viên đang hoạt động" là KHÔNG đủ.
+  //     Trước bản vá này, bất kỳ ai đăng nhập được đều đặt lại được mật khẩu của
+  //     người khác (kể cả lãnh đạo) và xoá được tài khoản.
+  //     Luật khớp với `can()` phía client: cap_bac = 1, hoặc quyen quan_tri/all
+  //     trên module `nhan-vien`. Xem `lib/permissions.ts` và
+  //     `supabase/migrations/20260610140000_bai_viet_don_gia_guard.sql`.
+  const chucVuId = (callerEmp as { id_chuc_vu?: number | string | null }).id_chuc_vu ?? null;
+  if (chucVuId == null) {
+    return jsonResponse(403, { error: 'Tài khoản không có quyền quản trị' });
+  }
+
+  const { data: chucVu, error: chucVuError } = await adminClient
+    .from('var_chuc_vu')
+    .select('cap_bac')
+    .eq('id', chucVuId)
+    .maybeSingle();
+  if (chucVuError) {
+    return jsonResponse(500, { error: chucVuError.message });
+  }
+  const isCapBacOne = Number((chucVu as { cap_bac?: number | string | null } | null)?.cap_bac) === 1;
+
+  let hasAdminGrant = false;
+  if (!isCapBacOne) {
+    const { data: grant, error: grantError } = await adminClient
+      .from('var_phan_quyen')
+      .select('quyen')
+      .eq('chuc_vu_id', chucVuId)
+      .eq('module_key', ADMIN_MODULE_KEY)
+      .maybeSingle();
+    if (grantError) {
+      return jsonResponse(500, { error: grantError.message });
+    }
+    const quyen = (grant as { quyen?: string | null } | null)?.quyen ?? '';
+    hasAdminGrant = new RegExp(ADMIN_QUYEN_RE, 'i').test(quyen);
+  }
+
+  if (!isCapBacOne && !hasAdminGrant) {
+    return jsonResponse(403, { error: 'Tài khoản không có quyền quản trị tài khoản người dùng' });
   }
 
   // 3) Parse + thực thi action
@@ -146,7 +201,11 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(400, { error: 'Thiếu `action` hoặc `username`' });
   }
   const email = buildEmail(username);
-  const password = body.password && body.password.length >= 6 ? body.password : DEFAULT_PASSWORD;
+  const suppliedPassword =
+    body.password && body.password.length >= MIN_PASSWORD_LENGTH ? body.password : null;
+  const password = suppliedPassword ?? generatePassword();
+  /** Chỉ trả mật khẩu về khi hệ thống tự sinh — admin cần đọc để đưa cho người dùng. */
+  const generatedPassword = suppliedPassword ? undefined : password;
 
   try {
     if (action === 'check') {
@@ -166,7 +225,7 @@ Deno.serve(async (req: Request) => {
         user_metadata: { full_name: username },
       });
       if (error) return jsonResponse(400, { error: error.message });
-      return jsonResponse(200, { user_id: data.user?.id });
+      return jsonResponse(200, { user_id: data.user?.id, password: generatedPassword });
     }
 
     if (action === 'reset_password') {
@@ -174,7 +233,7 @@ Deno.serve(async (req: Request) => {
       if (!id) return jsonResponse(404, { error: 'Không tìm thấy user Auth' });
       const { error } = await adminClient.auth.admin.updateUserById(id, { password });
       if (error) return jsonResponse(400, { error: error.message });
-      return jsonResponse(200, { user_id: id });
+      return jsonResponse(200, { user_id: id, password: generatedPassword });
     }
 
     if (action === 'delete') {

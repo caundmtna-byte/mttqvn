@@ -25,6 +25,9 @@ export interface MttqLopTapHuanHeaderOption {
 interface Props {
   data: MttqLopTapHuanListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   capHeaderOptions: MttqLopTapHuanHeaderOption[];
   namHeaderOptions: MttqLopTapHuanHeaderOption[];
   onEdit: (item: MttqLopTapHuanListRow) => void;
@@ -35,6 +38,8 @@ interface Props {
 const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   capHeaderOptions,
   namHeaderOptions,
   onEdit,
@@ -305,6 +310,8 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('matTranTapHuan.emptyTitle')}
       emptyDescription={txt('matTranTapHuan.emptyHint')}

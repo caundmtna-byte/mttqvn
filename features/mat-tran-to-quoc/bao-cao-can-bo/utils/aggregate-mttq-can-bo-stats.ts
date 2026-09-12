@@ -1,3 +1,4 @@
+import { resolveStatsTrendChartRange } from '@/components/shared/stats/resolve-trend-chart-range';
 import dayjs from 'dayjs';
 import type { MttqCanBoRow } from '../../danh-sach-can-bo/core/types';
 import {
@@ -75,27 +76,12 @@ function matchesDangVien(row: MttqCanBoRow, selected: string[]): boolean {
 }
 
 /** Khoảng ngày vẽ biểu đồ xu hướng (preset «Tất cả» → min–max `tg_tao` trên tập đã lọc). */
+/** Uỷ quyền cho helper dùng chung — xem `resolveStatsTrendChartRange`. */
 export function resolveOfficerStatsTrendChartRange(
   range: ResolvedDateRange,
   filtered: MttqCanBoRow[],
 ): ResolvedDateRange {
-  if (!range.allTime) {
-    return { start: range.start, end: range.end };
-  }
-  let min = '';
-  let max = '';
-  for (const item of filtered) {
-    const d = getOfficerStatsDateFromCreatedAt(item);
-    if (!d) continue;
-    const day = d.slice(0, 10);
-    if (!min || day < min) min = day;
-    if (!max || day > max) max = day;
-  }
-  const today = dayjs().format('YYYY-MM-DD');
-  if (!min || !max) {
-    return { start: today, end: today };
-  }
-  return { start: min, end: max };
+  return resolveStatsTrendChartRange(range, filtered, getOfficerStatsDateFromCreatedAt);
 }
 
 export function filterRowsForOfficerStats(
@@ -170,6 +156,8 @@ export function buildOfficerTrendSeries(
 ): OfficerTrendPoint[] {
   const start = dayjs(range.start.slice(0, 10));
   const end = dayjs(range.end.slice(0, 10));
+  // Chặn vòng lặp vô tận khi range rỗng/không hợp lệ (dayjs('') = Invalid Date).
+  if (!start.isValid() || !end.isValid()) return [];
   const keys: string[] = [];
   if (bucket === 'day') {
     for (let cur = start; !cur.isAfter(end, 'day'); cur = cur.add(1, 'day')) {

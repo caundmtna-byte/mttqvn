@@ -16,6 +16,9 @@ import { ChuongTrinhNamTableRowActions } from './chuong-trinh-nam-table-row-acti
 interface Props {
   data: ChuongTrinhNamListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: ChuongTrinhNamListRow) => void;
   onDelete: (id: string) => void;
   /** Mặc định: click dòng mở chi tiết (drawer đọc). */
@@ -25,6 +28,8 @@ interface Props {
 const ChuongTrinhNamTable = memo(function ChuongTrinhNamTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -233,6 +238,8 @@ const ChuongTrinhNamTable = memo(function ChuongTrinhNamTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('chuongTrinhNam.emptyTitle')}
       emptyDescription={txt('chuongTrinhNam.emptyHint')}

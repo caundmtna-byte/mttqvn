@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlignLeft,
   ArrowRightLeft,
@@ -13,6 +14,7 @@ import {
   ListChecks,
   Medal,
   Plus,
+  Printer,
   StickyNote,
   Tag,
   Trash2,
@@ -69,6 +71,8 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+const KHEN_THUONG_IN_PATH_PREFIX = '/mat-tran-to-quoc/tap-huan-khen-thuong/danh-sach-khen-thuong';
+
 type LineDrawerState = null | { mode: 'add' } | { mode: 'edit'; index: number };
 
 type ChiTietDetailRow = MttqKhenThuongCt & { rowIndex: number };
@@ -87,7 +91,8 @@ function chiTietToLineForm(c: MttqKhenThuongCt): MttqKhenThuongChiTietLineFormVa
 
 function parentToFormValues(d: MttqKhenThuong, chiLines: MttqKhenThuongChiTietLineFormValues[]): MttqKhenThuongFormValues {
   return {
-    so_qd: d.so_qd,
+    so_qd: d.so_qd || undefined,
+    noi_dung_khen: d.noi_dung_khen ?? '',
     ngay_khen_thuong: d.ngay_khen_thuong,
     don_vi_de_xuat: d.don_vi_de_xuat ?? undefined,
     ghi_chu: d.ghi_chu ?? undefined,
@@ -98,13 +103,21 @@ function parentToFormValues(d: MttqKhenThuong, chiLines: MttqKhenThuongChiTietLi
 
 const CHI_TIET_TABLE_CLASS = 'min-w-[64rem]';
 const CELL_NOWRAP = 'whitespace-nowrap align-top';
+/** Ô văn bản dài (nội dung khen thưởng): xuống dòng đầy đủ thay vì cuộn ngang. */
+const CELL_WRAP = 'whitespace-normal break-words align-top';
 
 function chiTietCellClass(extra: string) {
   return `${CELL_NOWRAP} ${extra}`;
 }
 
+function chiTietWrapCellClass(extra: string) {
+  return `${CELL_WRAP} ${extra}`;
+}
+
 const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
-  const { canEdit, canDelete } = useResourcePermissions('matTranRewardList');
+  const { canEdit, canDelete, canApprove } = useResourcePermissions('matTranRewardList');
+  const canViewModule = useCan('view', 'matTranRewardList');
+  const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
   const updateMutation = useUpdateMttqKhenThuong();
   const canViewCanBo = useCan('view', 'matTranOfficerList');
@@ -118,24 +131,6 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   const hinhThucBadgeConfig = useMemo(() => getKhenThuongHinhThucBadgeConfig(), []);
   const danhHieuBadgeConfig = useMemo(() => getKhenThuongDanhHieuBadgeConfig(), []);
   const capKhenThuongBadgeConfig = useMemo(() => getKhenThuongCapBadgeConfig(), []);
-
-  const toolbarActions: DetailToolbarAction[] = useMemo(
-    () =>
-      canEdit
-        ? [
-            {
-              label: txt('matTranKhenThuong.detail.toolbarChangeStatus'),
-              icon: <ArrowRightLeft size={16} />,
-              variant: 'info' as const,
-              onClick: () => {
-                setLineDrawer(null);
-                setStatusModalOpen(true);
-              },
-            },
-          ]
-        : [],
-    [canEdit],
-  );
 
   const lineFormRows = useMemo(() => data.chi_tiet.map(chiTietToLineForm), [data.chi_tiet]);
 
@@ -169,6 +164,48 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
         .filter((r) => canViewKhenThuongDetailChiTietLine(viewer, r)),
     [data.chi_tiet, viewer],
   );
+
+  /**
+   * Nút in chỉ hiện khi tài khoản có quyền xem module; danh sách người được khen
+   * trên bản in đã lọc theo phạm vi dòng (`gridRows` dùng chung bộ lọc viewer),
+   * nên không in ra dữ liệu ngoài phạm vi được xem.
+   */
+  const toolbarActions: DetailToolbarAction[] = useMemo(() => {
+    const actions: DetailToolbarAction[] = [];
+    if (canEdit) {
+      actions.push({
+        label: txt('matTranKhenThuong.detail.toolbarChangeStatus'),
+        icon: <ArrowRightLeft size={16} />,
+        variant: 'info' as const,
+        onClick: () => {
+          setLineDrawer(null);
+          setStatusModalOpen(true);
+        },
+      });
+    }
+    if (canViewModule) {
+      const guardEmpty = (path: string) => () => {
+        if (gridRows.length === 0) {
+          toast.warning(txt('matTranKhenThuong.printPreview.printEmpty'));
+          return;
+        }
+        navigate(`${KHEN_THUONG_IN_PATH_PREFIX}/${data.id}/${path}`);
+      };
+      actions.push({
+        label: txt('matTranKhenThuong.printPreview.printQuyetDinh'),
+        icon: <Printer size={16} />,
+        variant: 'info' as const,
+        onClick: guardEmpty('in-quyet-dinh'),
+      });
+      actions.push({
+        label: txt('matTranKhenThuong.printPreview.printDeNghi'),
+        icon: <FileText size={16} />,
+        variant: 'info' as const,
+        onClick: guardEmpty('in-de-nghi'),
+      });
+    }
+    return actions;
+  }, [canEdit, canViewModule, gridRows.length, data.id, navigate]);
 
   const openAddLine = useCallback(() => {
     setStatusModalOpen(false);
@@ -296,7 +333,7 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
         title={txt('matTranKhenThuong.detail.title')}
         maxWidthClass={DRAWER_WIDTH_DETAIL}
         icon={<Award size={18} />}
-        subtitle={`${data.so_qd} · ${data.ngay_khen_thuong ? formatDateShort(data.ngay_khen_thuong) : ''}`}
+        subtitle={`${data.so_qd || txt('matTranKhenThuong.printPreview.soQdTrong')} · ${data.ngay_khen_thuong ? formatDateShort(data.ngay_khen_thuong) : ''}`}
         footer={footer}
         footerCompact
       >
@@ -307,7 +344,7 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                 <Award size={26} className="text-white" aria-hidden />
               </DetailSummaryIconTile>
             }
-            title={data.so_qd}
+            title={data.noi_dung_khen || data.so_qd || txt('common.emptyCell')}
             badge={<EnumBadge value={data.trang_thai} config={trangThaiBadgeConfig} shape="pill" truncate />}
             subtitle={
               <p className="tabular-nums m-0">
@@ -325,8 +362,18 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
             <DetailFieldGrid>
               <DetailField
                 label={txt('matTranKhenThuong.form.soQd')}
-                value={<span className="font-semibold tracking-tight">{data.so_qd}</span>}
+                value={
+                  data.so_qd ? (
+                    <span className="font-semibold tabular-nums tracking-tight">{data.so_qd}</span>
+                  ) : undefined
+                }
                 icon={<FileText size={12} />}
+              />
+              <DetailField
+                label={txt('matTranKhenThuong.form.noiDungKhen')}
+                value={data.noi_dung_khen ?? undefined}
+                icon={<Award size={12} />}
+                className="sm:col-span-2"
               />
               <DetailField
                 label={txt('matTranKhenThuong.form.ngayKhenThuong')}
@@ -483,7 +530,7 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
                       </span>
                     ),
                     headerClassName: 'min-w-[16rem]',
-                    cellClassName: chiTietCellClass('min-w-[16rem]'),
+                    cellClassName: chiTietWrapCellClass('min-w-[16rem] max-w-[28rem]'),
                     renderCell: (r) => (r.noi_dung_khen?.trim() ? r.noi_dung_khen : txt('common.emptyCell')),
                   },
                   {
@@ -554,6 +601,7 @@ const MttqKhenThuongDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
           open
           onClose={() => setStatusModalOpen(false)}
           initial={statusChangeInitial}
+          canApprove={canApprove}
           onSave={handleStatusChangeSave}
           isSubmitting={updateMutation.isPending}
         />

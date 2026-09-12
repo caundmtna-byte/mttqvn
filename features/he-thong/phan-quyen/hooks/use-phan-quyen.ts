@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { txt } from '../../../../lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 
 const rolesQueryKey = queryKeys.roles.all;
 
@@ -37,7 +36,6 @@ export const useCreateRole = (onSuccess?: () => void) => {
       toast.success(txt('permission.toast.createSuccess'));
       if (onSuccess) onSuccess();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 };
 
@@ -69,6 +67,5 @@ export const useUpdateModulePermissions = () => {
       queryClient.invalidateQueries({ queryKey: ['permission-grants'] });
       toast.success(txt('permission.toast.updateSuccess'));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 };

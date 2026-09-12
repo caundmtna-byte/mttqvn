@@ -30,6 +30,9 @@ export interface MttqTapHuanChiTietHeaderOption {
 interface Props {
   data: MttqTapHuanChiTietFlatRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   capHeaderOptions: MttqTapHuanChiTietHeaderOption[];
   namHeaderOptions: MttqTapHuanChiTietHeaderOption[];
   /** Click dòng / thẻ mobile: mở chi tiết lớp (giống tab lớp). */
@@ -41,6 +44,8 @@ interface Props {
 const MttqTapHuanChiTietTable = memo(function MttqTapHuanChiTietTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   capHeaderOptions,
   namHeaderOptions,
   onViewLop,
@@ -332,6 +337,8 @@ const MttqTapHuanChiTietTable = memo(function MttqTapHuanChiTietTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('matTranTapHuan.chiTietList.emptyTitle')}
       emptyDescription={txt('matTranTapHuan.chiTietList.emptyHint')}

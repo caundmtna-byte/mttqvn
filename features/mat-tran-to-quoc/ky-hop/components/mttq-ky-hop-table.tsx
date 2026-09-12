@@ -24,6 +24,9 @@ export interface MttqKyHopHeaderOption {
 interface Props {
   data: MttqKyHopListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   nhiemKyHeaderOptions: MttqKyHopHeaderOption[];
   donViHeaderOptions: MttqKyHopHeaderOption[];
   namHeaderOptions: MttqKyHopHeaderOption[];
@@ -43,6 +46,8 @@ function truncateText(s: string, max: number): string {
 const MttqKyHopTable = memo(function MttqKyHopTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   nhiemKyHeaderOptions,
   donViHeaderOptions,
   namHeaderOptions,
@@ -352,6 +357,8 @@ const MttqKyHopTable = memo(function MttqKyHopTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranKyHop.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('matTranKyHop.emptyHint')}

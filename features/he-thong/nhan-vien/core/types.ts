@@ -26,6 +26,12 @@ export interface Employee {
   ten_chuc_vu?: string;
   /** Hiển thị: tên xã/phường · tỉnh (enrich từ danh mục địa bàn). */
   ten_don_vi?: string;
+  /**
+   * Mật khẩu do Edge Function sinh khi tạo tài khoản / đặt lại mật khẩu.
+   * **Chỉ tồn tại trong kết quả mutation, không bao giờ lưu DB và không có trong bản ghi đọc về.**
+   * UI hiển thị đúng một lần cho quản trị viên rồi thôi.
+   */
+  __generatedPassword?: string;
 }
 
 export interface EmployeeFilters {

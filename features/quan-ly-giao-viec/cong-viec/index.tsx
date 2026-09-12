@@ -15,27 +15,32 @@ import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { getLanguage } from '@/lib/utils';
 import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import TabGroup from '@/components/ui/TabGroup';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useEmployees } from '@/features/he-thong/nhan-vien/hooks/use-nhan-vien';
 import { useChuongTrinhNamList } from '@/features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam';
-import { useCongViecDanhSachPage, useDeleteCongViecDanhSachMany } from './hooks/use-cong-viec-danh-sach';
+import { useDeleteCongViecDanhSachMany } from './hooks/use-cong-viec-danh-sach';
 import type { CongViecListScopeRpc } from './services/cong-viec-danh-sach-service';
 import { useCongViecDanhSachStore } from './store/useCongViecDanhSachStore';
 import type { CongViecDanhSachRow, CongViecListScope } from './core/types';
 import { CONG_VIEC_MUC_DO, CONG_VIEC_TRANG_THAI, CHIP_CHUONG_TRINH_NULL } from './core/constants';
 import { congViecMatchesColumnSearch } from './utils/column-search';
-import { deadlineProgressSortKey, formatCongViecTienDoTheoHan } from './utils/deadline-progress';
+import { formatCongViecTienDoTheoHan } from './utils/deadline-progress';
 import CongViecToolbar from './components/cong-viec-toolbar';
 import CongViecTable from './components/cong-viec-table';
+import { useServerPagedList } from '@/hooks/use-server-paged-list';
+import {
+  getCongViecDanhSachAllForExport,
+  getCongViecDanhSachPage,
+} from './services/cong-viec-danh-sach-service';
 
 const CongViecForm = lazy(() => import('./components/cong-viec-form'));
 const CongViecDetail = lazy(() => import('./components/cong-viec-detail'));
@@ -65,14 +70,17 @@ const CongViecPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'tasks');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('taskList.noViewPermission'));
     navigate('/quan-ly-giao-viec', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [listScope, setListScope] = useTabSearchParam(
     [TAB_DO, TAB_RELATED, TAB_ASSIGN] as const satisfies readonly CongViecListScope[],
@@ -99,37 +107,34 @@ const CongViecPage: React.FC = () => {
   const listScopeRpc: CongViecListScopeRpc =
     listScope === TAB_DO ? 'mine_do' : listScope === TAB_RELATED ? 'mine_related' : 'mine_assign';
 
-  const pageQuery = useMemo(
+  const pageExtraParams = useMemo(
     () => ({
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      search: searchTerm,
       listScope: listScopeRpc,
       viewerNhanVienId: nhanVienId || null,
       trangThai: filters.trang_thai ?? [],
       mucDo: filters.muc_do ?? [],
       idChuongTrinh: filters.id_chuong_trinh ?? [],
     }),
-    [
-      pagination.page,
-      pagination.pageSize,
-      searchTerm,
-      listScopeRpc,
-      nhanVienId,
-      filters.trang_thai,
-      filters.muc_do,
-      filters.id_chuong_trinh,
-    ],
+    [listScopeRpc, nhanVienId, filters.trang_thai, filters.muc_do, filters.id_chuong_trinh],
   );
 
-  const { data: pageData, isLoading } = useCongViecDanhSachPage({
-    ...pageQuery,
+  const {
+    rows,
+    totalRecords: serverTotalRecords,
+    hasNextPage: serverHasNextPage,
+    isLoading,
+    isError,
+    refetch,
+    params: pageQuery,
+  } = useServerPagedList({
+    pagination,
+    searchTerm,
+    sort,
+    extraParams: pageExtraParams,
+    queryKey: queryKeys.congViecDanhSach.page,
+    fetchFn: getCongViecDanhSachPage,
     enabled: canView && Boolean(nhanVienId),
   });
-
-  const rows = pageData?.rows ?? [];
-  const serverHasNextPage = pageData?.hasNextPage ?? false;
-  const serverTotalRecords = pageData?.totalRecords ?? null;
   const { data: employees = [] } = useEmployees({ enabled: canView });
   const { data: chuongTrinhList = [] } = useChuongTrinhNamList({ enabled: canView });
   const deleteMutation = useDeleteCongViecDanhSachMany();
@@ -168,34 +173,6 @@ const CongViecPage: React.FC = () => {
   }, []);
 
   const filtered = useListWithFilter(rowsEnriched, searchTerm, filters, filterFn);
-
-  const sorted = useMemo(() => {
-    const list = [...filtered];
-    if (sort.column && sort.direction) {
-      list.sort((a, b) => {
-        if (sort.column === 'tien_do') {
-          const cmp = deadlineProgressSortKey(a) - deadlineProgressSortKey(b);
-          return sort.direction === 'desc' ? -cmp : cmp;
-        }
-        const key = sort.column as keyof CongViecDanhSachRow;
-        const aVal = a[key];
-        const bVal = b[key];
-        const cmp =
-          typeof aVal === 'number' && typeof bVal === 'number'
-            ? aVal - bVal
-            : String(aVal ?? '').localeCompare(String(bVal ?? ''), getLanguage());
-        return sort.direction === 'desc' ? -cmp : cmp;
-      });
-    } else {
-      list.sort((a, b) => {
-        const da = a.thoi_han ?? '';
-        const db = b.thoi_han ?? '';
-        const c = db.localeCompare(da) || a.ten_cong_viec.localeCompare(b.ten_cong_viec, getLanguage());
-        return c;
-      });
-    }
-    return list;
-  }, [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -236,6 +213,16 @@ const CongViecPage: React.FC = () => {
     keyExtractor: (r) => r.id,
   });
 
+  // Phạm vi "Tất cả" phải ra đủ số việc khớp bộ lọc, không phải trang đang xem.
+  const fetchAllForExport = useCallback(async () => {
+    const all = await getCongViecDanhSachAllForExport(pageQuery);
+    const enriched = all.map((r) => ({
+      ...r,
+      ho_tro_display: r.ids_ho_tro.map((id) => employeeMap.get(String(id))?.ho_va_ten ?? id).join(', '),
+    })) as CongViecDanhSachRow[];
+    return enriched.map(exportMapFn);
+  }, [pageQuery, employeeMap, exportMapFn]);
+
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
   const handleView = useCallback(
@@ -261,7 +248,7 @@ const CongViecPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewing?.id === id) setViewing(null);
           },
@@ -277,7 +264,7 @@ const CongViecPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewing && ids.includes(viewing.id)) setViewing(null);
@@ -387,8 +374,10 @@ const CongViecPage: React.FC = () => {
 
         <div className="flex-1 min-h-0">
           <CongViecTable
-            data={sorted}
+            data={filtered}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={refetch}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
@@ -431,6 +420,8 @@ const CongViecPage: React.FC = () => {
             selectedData={selectedExportData}
             fileName={txt('taskList.exportFileName')}
             visibleColumnKeys={visibleColumnKeys}
+            serverTotalRecords={serverTotalRecords}
+            fetchAllData={fetchAllForExport}
           />
         )}
       </AnimatePresence>

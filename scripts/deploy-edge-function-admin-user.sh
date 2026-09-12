@@ -22,19 +22,13 @@
 # =============================================================================
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/supabase-env.sh"
+cd "$MTTQ_ROOT"
 
-# Lấy project ref từ URL https://<REF>.supabase.co trong .env.local (nếu có), không thì mặc định bên dưới.
-DEFAULT_REF="ufnahagiixvvxyngnyqy"
-if [[ -f .env.local ]] && grep -q 'VITE_SUPABASE_URL=' .env.local; then
-  URL_LINE="$(grep '^VITE_SUPABASE_URL=' .env.local | head -1)"
-  EXTRACTED="$(echo "$URL_LINE" | sed -n 's|^VITE_SUPABASE_URL=https://\([^.]*\)\.supabase\.co.*|\1|p')"
-  if [[ -n "$EXTRACTED" ]]; then
-    DEFAULT_REF="$EXTRACTED"
-  fi
-fi
-PROJECT_REF="${SUPABASE_PROJECT_REF:-$DEFAULT_REF}"
+# Project ref: SUPABASE_PROJECT_REF → supabase/.temp/project-ref → VITE_SUPABASE_URL (.env.local).
+# Trước đây ref của production được hard-code ngay trong file này và đi vào git —
+# đã bỏ. Không tìm được ref thì dừng hẳn, KHÔNG đoán.
+PROJECT_REF="$(lay_project_ref)" || exit 1
 
 if ! command -v supabase &>/dev/null; then
   echo "Chưa có lệnh 'supabase'. Cài CLI rồi chạy lại."

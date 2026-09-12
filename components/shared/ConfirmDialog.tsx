@@ -1,16 +1,17 @@
 
+import { toast } from 'sonner';
 import React, { useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, Info, X } from 'lucide-react';
 import Button from '../ui/Button';
 import { useConfirmStore } from '../../store/useConfirmStore';
 import { DIALOG_SIZE } from '../../lib/dialog-sizes';
-import { cn } from '../../lib/utils';
+import { cn, getErrorMessage } from '../../lib/utils';
 import { Z_INDEX_APP_MODAL_CLASS } from '../../lib/dialog-sizes';
 
 const ConfirmDialog: React.FC = () => {
   const { isOpen, options, close, isLoading, setLoading } = useConfirmStore();
-  const { title, message, variant, confirmText, cancelText, onConfirm, onCancel } = options;
+  const { title, message, variant, confirmText, cancelText, onConfirm, onCancel, showErrorToast } = options;
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const handleConfirm = async () => {
@@ -19,7 +20,16 @@ const ConfirmDialog: React.FC = () => {
       await onConfirm();
       close();
     } catch (error) {
-      if (import.meta.env.DEV) console.error("Confirm action failed", error);
+      // Không nuốt lỗi: hành động xác nhận thất bại thì hộp thoại phải ở lại để
+      // người dùng thử lại, và nút xác nhận phải hết trạng thái "đang xử lý".
+      //
+      // Thông báo lỗi mặc định do tầng React Query lo (`queryCache.onError` và
+      // `defaultOptions.mutations.onError` trong `index.tsx`). Hộp thoại chỉ tự
+      // báo khi `showErrorToast` được bật, nếu không sẽ ra hai thông báo trùng.
+      if (import.meta.env.DEV) console.error('Confirm action failed', error);
+      if (showErrorToast) {
+        toast.error(getErrorMessage(error), { duration: Infinity, closeButton: true });
+      }
       setLoading(false);
     }
   };

@@ -25,6 +25,12 @@ interface TableSkeletonProps {
   showActions?: boolean;
   /** Cột nào có thêm dòng phụ (ví dụ cột tên có subtitle) - index trong columns */
   columnWithSubline?: number;
+  /** Ghi đè minWidth của `<table>` (khi bên gọi đã tự tính, vd GenericTable) */
+  tableMinWidth?: number;
+  /** MinWidth mặc định cho cột không khai báo (mặc định 100) */
+  defaultColumnMinWidth?: number;
+  /** Lớp padding dọc của hàng header — khớp mật độ bảng thật (mặc định `py-2`) */
+  headerPaddingClass?: string;
   className?: string;
 }
 
@@ -38,6 +44,9 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({
   showCheckbox = true,
   showActions = true,
   columnWithSubline,
+  tableMinWidth,
+  defaultColumnMinWidth = 100,
+  headerPaddingClass = 'py-2',
   className,
 }) => {
   const cols: TableSkeletonColumn[] =
@@ -47,33 +56,35 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({
 
   const dataColsForMin = cols.map((c) => ({
     width: undefined as number | undefined,
-    minWidth: typeof c.minWidth === 'number' ? c.minWidth : 100,
+    minWidth: typeof c.minWidth === 'number' ? c.minWidth : defaultColumnMinWidth,
   }));
-  const tableMinWidth = computeDataTableMinWidth(dataColsForMin, {
-    checkboxWidth: showCheckbox ? TABLE_CHECKBOX_WIDTH : 0,
-    actionColumnWidth: showActions ? TABLE_ACTION_COLUMN_WIDTH : 0,
-    defaultColumnMin: 100,
-  });
+  const resolvedMinWidth =
+    tableMinWidth ??
+    computeDataTableMinWidth(dataColsForMin, {
+      checkboxWidth: showCheckbox ? TABLE_CHECKBOX_WIDTH : 0,
+      actionColumnWidth: showActions ? TABLE_ACTION_COLUMN_WIDTH : 0,
+      defaultColumnMin: defaultColumnMinWidth,
+    });
 
   return (
     <div className={cn('flex-1 min-h-0 overflow-auto custom-scrollbar', className)}>
       <table
         className="text-sm border-separate border-spacing-0"
-        style={{ minWidth: tableMinWidth, width: '100%' }}
+        style={{ minWidth: resolvedMinWidth, width: '100%' }}
       >
         <thead>
           <tr className="bg-muted/30 border-b border-border">
             {showCheckbox && (
-              <th className="w-[44px] px-3 py-2 border-b border-border">
+              <th className={cn('w-[44px] px-3 border-b border-border', headerPaddingClass)}>
                 <div className="w-4 h-4 bg-muted rounded animate-pulse" />
               </th>
             )}
             {cols.map((col, i) => (
               <th
                 key={i}
-                className="px-4 py-2 border-b border-border min-w-0"
+                className={cn('px-4 border-b border-border min-w-0', headerPaddingClass)}
                 style={{
-                  minWidth: col.minWidth ?? 100,
+                  minWidth: col.minWidth ?? defaultColumnMinWidth,
                   maxWidth: col.maxWidth ?? DEFAULT_COLUMN_MAX_WIDTH,
                 }}
               >
@@ -81,7 +92,7 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({
               </th>
             ))}
             {showActions && (
-              <th className="w-[92px] min-w-[92px] px-3 py-2 border-b border-border">
+              <th className={cn('w-[92px] min-w-[92px] px-3 border-b border-border', headerPaddingClass)}>
                 <div className="h-3 w-12 bg-muted rounded animate-pulse mx-auto" />
               </th>
             )}

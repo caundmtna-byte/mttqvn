@@ -37,7 +37,11 @@ mttq_khen_thuong_ct(count)
 ```
 
 Mapper service phải đọc `lines[0]?.count` thay vì `lines.length`.
-Đã áp dụng cho: `khen-thuong`, `tap-huan`.
+Đã áp dụng cho: `tap-huan`.
+
+**Ngoại lệ có chủ đích — `khen-thuong`:** vẫn embed
+`mttq_khen_thuong_ct(id, cap_khen_thuong, hinh_thuc_khen, danh_hieu, can_bo(don_vi_id))`
+vì cần `don_vi_id` của bảng con để gate phạm vi xem cấp Xã. Không đổi sang `(count)` được.
 
 ### 3. KHÔNG `getById` trước `update`
 
@@ -126,6 +130,36 @@ Bảng con (vd `mttq_khen_thuong_ct`, `mttq_lop_tap_huan_ct`) phải:
 
 Tối đa 3 round-trip thay vì N+1.
 
+### 11. Đọc trọn bảng thì phải trọn — KHÔNG cắt ngầm
+
+Quy tắc: một hàm nói là "lấy danh sách" thì phải trả về **đủ** số dòng.
+Cắt ngầm ở một con số cứng (`.limit(500)`, `.limit(2000)`, trần 5.000…) là loại
+lỗi tệ nhất trong hệ này — danh sách thiếu người, báo cáo ra số nhỏ hơn thực tế,
+kiểm trùng bỏ sót, mà **không có dấu hiệu gì trên giao diện**.
+
+`fetchAllPages()` lặp cho tới hết dữ liệu. Nó chỉ có *ngưỡng an toàn*
+(`FETCH_ALL_PAGES_SAFETY_LIMIT` = 200.000) để chặn truy vấn quên bộ lọc, và
+**ném lỗi** khi vượt chứ không trả về một phần. Vượt `FETCH_ALL_PAGES_WARN_AT`
+(20.000) thì ghi cảnh báo — đó là tín hiệu chuyển module sang RPC phân trang
+server-side (mẫu: `get_bai_viet_page`, `get_cong_viec_page`,
+`get_kho_nhap_xuat_kho_page`), **không** phải tín hiệu để đặt trần thấp hơn.
+
+Ngoại lệ hợp lệ duy nhất: phần **xem trước** có nói rõ với người dùng và có lối
+đi tới danh sách đầy đủ (ví dụ ô "5 lần nâng lương gần nhất" trong hồ sơ cán bộ),
+hoặc truy vấn *tồn tại?* / *gợi ý tìm kiếm* (`.limit(1)`, `.limit(10)`).
+
+### 12. Ảnh Cloudinary: luôn đi qua `cloudinaryThumbUrl`
+
+`lib/cloudinary/thumb-url.ts` chèn `f_auto,q_auto,w_<n>` vào URL. Không dùng
+`<img src>` thẳng vào URL Cloudinary đã lưu — đó là ảnh gốc.
+Bề rộng chuẩn trong `CLOUDINARY_THUMB_WIDTH` (`avatarList` 96, `avatarDetail` 192,
+`gallery` 400). Lightbox / xem ảnh lớn thì vẫn dùng URL gốc.
+
+### 13. Cache lookup phải sống sót qua reload
+
+Cache bằng biến module mất sạch mỗi lần F5. `getXaPhuongAll()` (~10k dòng) mirror
+TTL 24h xuống `localStorage` — cùng cách cho mọi lookup lớn khác.
+
 ## TanStack Query default
 
 QueryClient root (`index.tsx`):
@@ -145,6 +179,11 @@ defaultOptions: {
 
 `use-hydrate-position-permissions` phải dùng `MASTER_DATA_STALE_TIME_MS`
 (30 phút), KHÔNG dùng `staleTime: 0`.
+
+`transactionalCrudListQueryOptions` (17 hook `kho-*`, `dan-toc-ton-giao/*`, PBXH,
+lương) dùng `staleTime` **3 phút** + `refetchOnMount: true`. Các list này còn kéo
+nguyên bảng, nên `staleTime` ngắn hơn đồng nghĩa với tải lại toàn bảng mỗi lần
+điều hướng qua lại. Đừng hạ mốc này xuống nếu chưa chuyển module sang RPC phân trang.
 
 ## Vercel bandwidth
 

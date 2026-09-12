@@ -15,6 +15,7 @@ import type { ColumnConfig } from '@/store/createGenericStore';
 import TonKhoToolbar from './ton-kho-toolbar';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import EmptyState from '@/components/shared/EmptyState';
+import Button from '@/components/ui/Button';
 import ErrorState from '@/components/shared/ErrorState';
 import ListPageSkeleton from '@/components/shared/ListPageSkeleton';
 import TablePaginationFooter from '@/components/shared/TablePaginationFooter';
@@ -134,6 +135,20 @@ const TonSanPhamTab: React.FC<{
     setFilter('warehouseIds', []);
     setFilter('categoryIds', []);
   }, [setFilter]);
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * dữ liệu gốc có bản ghi mà tìm kiếm / bộ lọc lọc hết sạch.
+   */
+  const listFilteredEmpty =
+    filteredList.length === 0 &&
+    aggregated.length > 0 &&
+    (Boolean(searchTerm?.trim()) || activeFilterCount > 0);
+
+  const handleClearSearchAndFilters = useCallback(() => {
+    setSearchTerm('');
+    handleClearAllFilters();
+  }, [setSearchTerm, handleClearAllFilters]);
 
   const filterGroups = useMemo(
     () => [
@@ -306,8 +321,26 @@ const TonSanPhamTab: React.FC<{
             <div className="flex-1 min-h-0 flex items-center justify-center p-4">
               <EmptyState
                 icon={<Package size={40} className="text-muted-foreground opacity-20" />}
-                title={txt('matTranTonKho.byProduct.empty')}
-                description={txt('matTranTonKho.byProduct.emptyHint')}
+                title={
+                  listFilteredEmpty ? txt('common.noResults') : txt('matTranTonKho.byProduct.empty')
+                }
+                description={
+                  listFilteredEmpty
+                    ? txt('shared.empty.filteredHint')
+                    : txt('matTranTonKho.byProduct.emptyHint')
+                }
+                action={
+                  listFilteredEmpty ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleClearSearchAndFilters}
+                    >
+                      {txt('common.clearFilter')}
+                    </Button>
+                  ) : undefined
+                }
               />
             </div>
           ) : (
@@ -359,7 +392,6 @@ const TonSanPhamTab: React.FC<{
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}
                   selectedCount={0}
-                  recordsLabel={txt('matTranTonKho.records')}
                 />
               </div>
             </>

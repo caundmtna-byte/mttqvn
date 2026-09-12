@@ -86,6 +86,7 @@ const DanhSachTangLuongPage: React.FC = () => {
   const canView = useCan('view', 'matTranSalaryIncreaseList');
   const { canCreate, canEdit, canDelete, canExport } = useResourcePermissions('matTranSalaryIncreaseList');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const chucVuKey = user
@@ -93,11 +94,10 @@ const DanhSachTangLuongPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null &&
-    user.role !== 'admin' &&
-    chucVuKey.trim() !== '' &&
-    !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   const listQueryEnabled = Boolean(
     user && (user.role === 'admin' || (matrixActive && canView)),
@@ -355,8 +355,8 @@ const DanhSachTangLuongPage: React.FC = () => {
         message: txt('matTranTangLuong.deleteMessage', { ngay: row.ngay_nang_luong }),
         variant: 'danger',
         confirmText: CONFIRM_DELETE(),
-        onConfirm: () => {
-          deleteOne.mutate(row.id, {
+        onConfirm: async () => {
+          await deleteOne.mutateAsync(row.id, {
             onSuccess: () => setViewingId((v) => (v === row.id ? null : v)),
           });
         },
@@ -377,8 +377,8 @@ const DanhSachTangLuongPage: React.FC = () => {
       message: txt('matTranTangLuong.bulkDeleteMessage', { count: ids.length }),
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
-      onConfirm: () => {
-        deleteMany.mutate(ids, { onSuccess: () => clearSelection() });
+      onConfirm: async () => {
+        await deleteMany.mutateAsync(ids, { onSuccess: () => clearSelection() });
       },
     });
   }, [canDelete, clearSelection, confirm, deleteMany, selectedIds]);

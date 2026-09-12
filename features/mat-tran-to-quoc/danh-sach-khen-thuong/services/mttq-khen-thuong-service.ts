@@ -2,6 +2,8 @@ import { createRepository } from '@/lib/data/create-repository';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { messageForRpcErrorCode } from '@/lib/supabase/error-messages';
+import { buildKhenThuongChiTietPayload } from '../utils/build-khen-thuong-chi-tiet-payload';
 import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import type {
   MttqKhenThuong,
@@ -40,11 +42,6 @@ function dateOnly(v: unknown): string {
 function nullableStr(v: unknown): string | null {
   if (v == null || v === '') return null;
   return String(v);
-}
-
-function isPersistedChildId(id: unknown): id is string {
-  if (id == null || typeof id !== 'string') return false;
-  return /^\d+$/.test(id.trim());
 }
 
 function tenCanBoFromEmbed(v: unknown): string | null {
@@ -133,6 +130,7 @@ function flattenListRow(row: Record<string, unknown>): MttqKhenThuongListRow {
   return {
     id: String(r.id),
     so_qd: String(r.so_qd ?? ''),
+    noi_dung_khen: nullableStr(r.noi_dung_khen),
     ngay_khen_thuong: dateOnly(r.ngay_khen_thuong),
     don_vi_de_xuat: nullableStr(r.don_vi_de_xuat),
     ghi_chu: nullableStr(r.ghi_chu),
@@ -164,6 +162,7 @@ export function mttqKhenThuongDetailToListRow(d: MttqKhenThuong): MttqKhenThuong
   return {
     id: d.id,
     so_qd: d.so_qd,
+    noi_dung_khen: d.noi_dung_khen ?? null,
     ngay_khen_thuong: d.ngay_khen_thuong,
     don_vi_de_xuat: d.don_vi_de_xuat,
     ghi_chu: d.ghi_chu,
@@ -227,6 +226,7 @@ export function flattenFullRow(row: Record<string, unknown>): MttqKhenThuong {
   return {
     id: String(r.id),
     so_qd: String(r.so_qd ?? ''),
+    noi_dung_khen: nullableStr(r.noi_dung_khen),
     ngay_khen_thuong: dateOnly(r.ngay_khen_thuong),
     don_vi_de_xuat: nullableStr(r.don_vi_de_xuat),
     ghi_chu: nullableStr(r.ghi_chu),
@@ -256,7 +256,8 @@ function normalizeFull(x: MttqKhenThuong): MttqKhenThuong {
 
 function headerPayload(data: MttqKhenThuongFormValues) {
   return {
-    so_qd: data.so_qd.trim(),
+    so_qd: data.so_qd?.trim() || null,
+    noi_dung_khen: data.noi_dung_khen.trim(),
     ngay_khen_thuong: data.ngay_khen_thuong,
     don_vi_de_xuat: data.don_vi_de_xuat?.trim() ?? null,
     ghi_chu: data.ghi_chu?.trim() ?? null,
@@ -264,46 +265,18 @@ function headerPayload(data: MttqKhenThuongFormValues) {
   };
 }
 
-async function syncChildrenSupabase(parentId: string, lines: MttqKhenThuongFormValues['chi_tiet']) {
+/** `MA_LOI: chi tiết` từ RPC → câu tiếng Việt (mẫu: `kho-nhap-xuat-kho-service`). */
+function rethrowMapped(err: unknown): never {
+  const message = err instanceof Error ? err.message : String(err);
+  const mapped = messageForRpcErrorCode(message);
+  if (mapped) throw new Error(mapped);
+  throw err instanceof Error ? err : new Error(message);
+}
+
+function requireSupabase() {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Supabase chưa được cấu hình. Đặt VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY trong .env.local (xem .env.example).');
-  const q = () => supabase.from('mttq_khen_thuong_ct');
-
-  const { data: existing, error: e1 } = await q().select('id').eq('id_khen_thuong', parentId);
-  if (e1) handleSupabaseError(e1);
-
-  const keep = new Set(lines.map((l) => l.id).filter(isPersistedChildId));
-  const existingIds = (existing ?? []).map((r) => String(r.id));
-  const toDelete = existingIds.filter((id: string) => !keep.has(id));
-
-  const baseOf = (line: MttqKhenThuongFormValues['chi_tiet'][number]) => ({
-    can_bo_id: Number(line.can_bo_id),
-    cap_khen_thuong: line.cap_khen_thuong,
-    hinh_thuc_khen: line.hinh_thuc_khen,
-    danh_hieu: line.danh_hieu,
-    noi_dung_khen: line.noi_dung_khen?.trim() ?? null,
-    ho_so_khen: line.ho_so_khen?.trim() ?? null,
-  });
-  const toUpdateExisting = lines
-    .filter((l) => isPersistedChildId(l.id))
-    .map((l) => ({ id: Number(l.id), id_khen_thuong: Number(parentId), ...baseOf(l) }));
-  const toInsertNew = lines
-    .filter((l) => !isPersistedChildId(l.id))
-    .map((l) => ({ id_khen_thuong: Number(parentId), ...baseOf(l) }));
-
-  if (toDelete.length > 0) {
-    const { error: e2 } = await q().delete().in('id', toDelete);
-    if (e2) handleSupabaseError(e2);
-  }
-  for (const row of toUpdateExisting) {
-    const { id, ...patch } = row;
-    const { error: e3 } = await q().update(patch).eq('id', id);
-    if (e3) handleSupabaseError(e3);
-  }
-  if (toInsertNew.length > 0) {
-    const { error: e4 } = await q().insert(toInsertNew);
-    if (e4) handleSupabaseError(e4);
-  }
+  return supabase;
 }
 
 export async function getMttqKhenThuongList(): Promise<MttqKhenThuongListRow[]> {
@@ -328,28 +301,51 @@ export async function createMttqKhenThuong(data: MttqKhenThuongFormValues, idNgu
   const trimmed = idNguoiTao.trim();
   if (!trimmed) throw new Error(txt('matTranKhenThuong.service.noEmployeeProfile'));
 
-  const inserted = await repo.insert(
-    {
-      ...headerPayload(data),
-      id_nguoi_tao: trimmed,
-    } as unknown as Omit<ParentRepoRow, 'id'>,
-    { returningSelect: 'id,tg_cap_nhat' },
-  );
-  const parentId = String((inserted as { id?: unknown }).id ?? '');
-  await syncChildrenSupabase(parentId, data.chi_tiet);
-  const full = await getMttqKhenThuongById(parentId);
-  if (!full) throw new Error(txt('matTranKhenThuong.service.notFound'));
-  return full;
+  const supabase = requireSupabase();
+  const h = headerPayload(data);
+  try {
+    // Cha + toàn bộ dòng con ghi trong MỘT transaction (RPC plpgsql).
+    const { data: rpcData, error } = await supabase.rpc('rpc_khen_thuong_tao_quyet_dinh', {
+      p_so_qd: h.so_qd,
+      p_ngay_khen_thuong: h.ngay_khen_thuong,
+      p_don_vi_de_xuat: h.don_vi_de_xuat,
+      p_ghi_chu: h.ghi_chu,
+      p_trang_thai: h.trang_thai,
+      p_id_nguoi_tao: Number(trimmed),
+      p_chi_tiet: buildKhenThuongChiTietPayload(data.chi_tiet),
+      p_noi_dung_khen: h.noi_dung_khen,
+    });
+    if (error) handleSupabaseError(error);
+    const parentId = String(rpcData ?? '');
+    const full = await getMttqKhenThuongById(parentId);
+    if (!full) throw new Error(txt('matTranKhenThuong.service.notFound'));
+    return full;
+  } catch (err) {
+    rethrowMapped(err);
+  }
 }
 
 export async function updateMttqKhenThuong(id: string, data: MttqKhenThuongFormValues): Promise<MttqKhenThuong> {
-  await repo.update(id, headerPayload(data) as unknown as Partial<ParentRepoRow>, {
-    returningSelect: 'id,tg_cap_nhat',
-  });
-  await syncChildrenSupabase(id, data.chi_tiet);
-  const full = await getMttqKhenThuongById(id);
-  if (!full) throw new Error(txt('matTranKhenThuong.service.notFound'));
-  return full;
+  const supabase = requireSupabase();
+  const h = headerPayload(data);
+  try {
+    const { error } = await supabase.rpc('rpc_khen_thuong_cap_nhat_quyet_dinh', {
+      p_id: Number(id),
+      p_so_qd: h.so_qd,
+      p_ngay_khen_thuong: h.ngay_khen_thuong,
+      p_don_vi_de_xuat: h.don_vi_de_xuat,
+      p_ghi_chu: h.ghi_chu,
+      p_trang_thai: h.trang_thai,
+      p_chi_tiet: buildKhenThuongChiTietPayload(data.chi_tiet),
+      p_noi_dung_khen: h.noi_dung_khen,
+    });
+    if (error) handleSupabaseError(error);
+    const full = await getMttqKhenThuongById(id);
+    if (!full) throw new Error(txt('matTranKhenThuong.service.notFound'));
+    return full;
+  } catch (err) {
+    rethrowMapped(err);
+  }
 }
 
 export async function deleteMttqKhenThuongMany(ids: string[]): Promise<void> {
@@ -406,6 +402,6 @@ export async function getMttqKhenThuongChiTietFlatList(): Promise<MttqKhenThuong
       .range(from, to);
     if (error) handleSupabaseError(error);
     return (rows ?? []) as unknown as Record<string, unknown>[];
-  });
+  }, { label: 'mttq_khen_thuong_ct' });
   return data.map((row) => flattenKhenThuongChiTietFlatRow(row));
 }

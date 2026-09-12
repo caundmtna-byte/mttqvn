@@ -12,6 +12,9 @@ interface Props {
   store: GenericState<MttqThietLapFilters>;
   data: MttqThietLap[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onRowClick: (item: MttqThietLap) => void;
   onEdit: (item: MttqThietLap) => void;
   onDelete: (id: string) => void;
@@ -23,6 +26,8 @@ const MttqThietLapTable = memo(function MttqThietLapTable({
   store,
   data,
   isLoading,
+  isError,
+  onRetry,
   onRowClick,
   onEdit,
   onDelete,
@@ -184,6 +189,8 @@ const MttqThietLapTable = memo(function MttqThietLapTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}

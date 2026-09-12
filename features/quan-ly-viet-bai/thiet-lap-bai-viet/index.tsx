@@ -10,6 +10,7 @@ import { ArticleKhacTrangListPanel } from './components/article-khac-trang-list-
 import { ArticleKhacNguonListPanel } from './components/article-khac-nguon-list-panel';
 import { useThietLapKhacAll } from './hooks/use-thiet-lap-khac';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 
 const TAB_THE_LOAI = 'the_loai';
@@ -19,20 +20,28 @@ const ThietLapBaiVietPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'articleSettings');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('page.articleSettings.noViewPermission'));
     navigate('/quan-ly-viet-bai', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [activeTab, setActiveTab] = useTabSearchParam(
     [TAB_THE_LOAI, TAB_KHAC] as const,
     TAB_THE_LOAI,
   );
-  const { data: khacRows = [], isLoading: khacLoading } = useThietLapKhacAll({ enabled: canView });
+  const {
+    data: khacRows = [],
+    isLoading: khacLoading,
+    isError: khacIsError,
+    refetch: refetchKhac,
+  } = useThietLapKhacAll({ enabled: canView });
 
   const trangDang = useMemo(() => khacRows.filter((r) => r.loai === 'trang_dang'), [khacRows]);
   const nguonDang = useMemo(() => khacRows.filter((r) => r.loai === 'nguon_dang'), [khacRows]);
@@ -69,8 +78,18 @@ const ThietLapBaiVietPage: React.FC = () => {
           <>
             <ArticleSettingsPageNav onBack={goBackModule} tabsSlot={tabsSlot} />
             <div className="flex-1 min-h-0 overflow-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4 md:p-6 space-y-5 sm:space-y-8 md:space-y-10">
-              <ArticleKhacTrangListPanel items={trangDang} isLoading={khacLoading} />
-              <ArticleKhacNguonListPanel items={nguonDang} isLoading={khacLoading} />
+              <ArticleKhacTrangListPanel
+                items={trangDang}
+                isLoading={khacLoading}
+                isError={khacIsError}
+                onRetry={() => void refetchKhac()}
+              />
+              <ArticleKhacNguonListPanel
+                items={nguonDang}
+                isLoading={khacLoading}
+                isError={khacIsError}
+                onRetry={() => void refetchKhac()}
+              />
             </div>
           </>
         )}

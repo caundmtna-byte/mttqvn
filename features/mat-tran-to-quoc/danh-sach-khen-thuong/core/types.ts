@@ -35,7 +35,10 @@ export interface MttqKhenThuongCt {
 /** Bản ghi cha + danh sách con (đã join). */
 export interface MttqKhenThuong {
   id: string;
+  /** Số / ký hiệu quyết định. Chuỗi rỗng = chưa có số (DB lưu NULL). */
   so_qd: string;
+  /** Nội dung / lý do khen thưởng chung của quyết định. */
+  noi_dung_khen: string | null;
   ngay_khen_thuong: string;
   don_vi_de_xuat: string | null;
   ghi_chu: string | null;

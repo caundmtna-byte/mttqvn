@@ -4,6 +4,7 @@ const NGUOI_TAO =
 const LIST_BASE_COLS = [
   'id',
   'so_qd',
+  'noi_dung_khen',
   'ngay_khen_thuong',
   'don_vi_de_xuat',
   'trang_thai',

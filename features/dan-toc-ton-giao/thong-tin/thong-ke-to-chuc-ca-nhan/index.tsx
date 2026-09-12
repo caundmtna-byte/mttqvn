@@ -38,17 +38,22 @@ import { cn, getLanguage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
+import ErrorState from '@/components/shared/ErrorState';
 import Tooltip from '@/components/ui/Tooltip';
-import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
-  buildStandardDateRangePresets,
-  isStandardDateRangeNonDefault,
-} from '@/lib/date-range-presets';
-import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+  ReportSkeleton,
+  StatsKpiGrid,
+  StatsCard,
+  StatsTableCard,
+  ColoredBar,
+  useStatsPageFilters,
+} from '@/components/shared/stats';
 import { chartFillForCategoricalBar } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import ChartTooltip from '@/components/ui/ChartTooltip';
@@ -98,12 +103,6 @@ const ThongTinCaNhanTieuBieuDetail = lazy(
 );
 
 const CUSTOM_PRESET = 'custom';
-
-const initialDateRange: DateRangeValue = {
-  preset: 'all',
-  customStart: '',
-  customEnd: '',
-};
 
 const initialDims: DttgThongTinDimensionFilters = {
   loai: [],
@@ -164,22 +163,40 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
   const canOpenToChucDetail = useCan('view', 'danTocToChucQuanTrong');
   const canOpenCaNhanDetail = useCan('view', 'danTocCaNhanTieuBieu');
   const { canExport } = useResourcePermissions('danTocThongKeToChucCaNhan');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('dttgThongKeToChucCaNhan.noViewPermission'));
     navigate('/dan-toc-ton-giao', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
-  const { data: toChucRows = [], isLoading: loadingToChuc } = useThongTinToChucQuanTrongList({
+  const {
+    data: toChucRows = [],
+    isLoading: loadingToChuc,
+    isError: errorToChuc,
+    refetch: refetchToChuc,
+  } = useThongTinToChucQuanTrongList({
     enabled: canView,
   });
-  const { data: caNhanRows = [], isLoading: loadingCaNhan } = useThongTinCaNhanTieuBieuList({
+  const {
+    data: caNhanRows = [],
+    isLoading: loadingCaNhan,
+    isError: errorCaNhan,
+    refetch: refetchCaNhan,
+  } = useThongTinCaNhanTieuBieuList({
     enabled: canView,
   });
   const isLoading = loadingToChuc || loadingCaNhan;
+  const isError = errorToChuc || errorCaNhan;
+  const retryAll = useCallback(() => {
+    void refetchToChuc();
+    void refetchCaNhan();
+  }, [refetchToChuc, refetchCaNhan]);
   const viewer = useDttgViewer('danTocThongKeToChucCaNhan');
 
   const viewableToChucRows = useMemo(
@@ -196,15 +213,20 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
     [viewableToChucRows, viewableCaNhanRows],
   );
 
-  const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
-  const [dims, setDims] = useState<DttgThongTinDimensionFilters>(initialDims);
+  const {
+    dateRange,
+    setDateRange,
+    dims,
+    setDims,
+    presets,
+    activeFilterCount,
+    clearFilters,
+  } = useStatsPageFilters(initialDims);
   const [sortKey, setSortKey] = useState<DttgLookupSortKey>('ten');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [exporting, setExporting] = useState(false);
   const [viewingToChuc, setViewingToChuc] = useState<ThongTinToChucQuanTrong | null>(null);
   const [viewingCaNhan, setViewingCaNhan] = useState<ThongTinCaNhanTieuBieu | null>(null);
-
-  const presets = useMemo(() => buildStandardDateRangePresets(), []);
 
   const resolvedRange = useMemo(
     () => resolveDttgThongTinDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
@@ -215,6 +237,13 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
     () => filterRowsForDttgThongTin(allRows, resolvedRange, dims),
     [allRows, resolvedRange, dims],
   );
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * dữ liệu gốc có bản ghi mà bộ lọc đang bật lọc hết sạch.
+   */
+  const reportFilteredEmpty =
+    filtered.length === 0 && allRows.length > 0 && activeFilterCount > 0;
 
   const kpis = useMemo(() => computeDttgThongTinKpis(filtered), [filtered]);
 
@@ -355,29 +384,8 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, don_vi_id: v })),
       },
     ],
-    [loaiOptions, trangThaiOptions, loaiHinhOptions, doiTuongOptions, donViOptions, dims],
+    [setDims, loaiOptions, trangThaiOptions, loaiHinhOptions, doiTuongOptions, donViOptions, dims],
   );
-
-  const isNonDefaultDateRange = useMemo(
-    () => isStandardDateRangeNonDefault(dateRange, 'all'),
-    [dateRange],
-  );
-
-  const activeFilterCount = useMemo(() => {
-    let n = 0;
-    if (isNonDefaultDateRange) n += 1;
-    if (dims.loai.length) n += 1;
-    if (dims.trang_thai.length) n += 1;
-    if (dims.loai_hinh.length) n += 1;
-    if (dims.doi_tuong.length) n += 1;
-    if (dims.don_vi_id.length) n += 1;
-    return n;
-  }, [dims, isNonDefaultDateRange]);
-
-  const clearFilters = useCallback(() => {
-    setDims(initialDims);
-    setDateRange(initialDateRange);
-  }, []);
 
   const handleExportReport = useCallback(async () => {
     if (filtered.length === 0) {
@@ -593,14 +601,24 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">
-            {txt('dttgThongKeToChucCaNhan.loading')}
-          </p>
+        {isError ? (
+          <div className="py-12 flex items-center justify-center">
+            <ErrorState className="w-full max-w-md" onRetry={retryAll} primaryButtons />
+          </div>
+        ) : isLoading ? (
+          <ReportSkeleton />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center space-y-2">
-            <p className="text-sm font-medium text-foreground">{txt('dttgThongKeToChucCaNhan.noData')}</p>
-            <p className="text-xs text-muted-foreground">{txt('dttgThongKeToChucCaNhan.noDataHint')}</p>
+            <p className="text-sm font-medium text-foreground">
+              {reportFilteredEmpty
+                ? txt('common.noResults')
+                : txt('dttgThongKeToChucCaNhan.noData')}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {reportFilteredEmpty
+                ? txt('shared.empty.filteredHint')
+                : txt('dttgThongKeToChucCaNhan.noDataHint')}
+            </p>
             {activeFilterCount > 0 && (
               <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
                 {txt('dttgThongKeToChucCaNhan.stats.clearFilters')}

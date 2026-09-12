@@ -16,6 +16,19 @@ export const matTranNhiemKy = {
     update: 'Đã cập nhật nhiệm kỳ.',
     delete: 'Đã xóa {{count}} bản ghi.',
     importSuccess: 'Đã nhập {{count}} nhiệm kỳ.',
+    khoa: 'Đã khoá sổ nhiệm kỳ.',
+    moKhoa: 'Đã mở khoá nhiệm kỳ.',
+  },
+  khoaSo: {
+    nutKhoa: 'Khoá sổ',
+    nutMoKhoa: 'Mở khoá',
+    huyHieuDaKhoa: 'Đã khoá sổ',
+    xacNhanKhoaTitle: 'Khoá sổ nhiệm kỳ?',
+    xacNhanKhoaMessage:
+      'Sau khi khoá, không ai thêm/sửa/xoá được uỷ viên, kỳ họp và điểm danh của nhiệm kỳ này. Dữ liệu vẫn xem và xuất bình thường. Có thể mở khoá lại khi cần.',
+    xacNhanMoKhoaTitle: 'Mở khoá nhiệm kỳ?',
+    xacNhanMoKhoaMessage: 'Nhiệm kỳ sẽ sửa được trở lại. Mọi lần khoá/mở khoá đều được ghi nhật ký.',
+    canhBaoDaKhoa: 'Nhiệm kỳ đã khoá sổ — chỉ xem, không sửa được.',
   },
   import: {
     rowError: 'Dòng {{row}}: {{message}}',

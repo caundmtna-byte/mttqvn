@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import { applyConstraintErrorToForm } from '@/lib/supabase/constraint-field-error';
 import { txt } from '../../../../lib/text';
 import { useForm, Controller, SubmitHandler, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,7 +40,7 @@ const DepartmentForm: React.FC<Props> = ({ initialData, allDepartments, onClose,
     [],
   );
 
-  const { register, handleSubmit, formState: { errors }, reset, control } = useForm<DepartmentFormValues>({
+  const { register, handleSubmit, setError, formState: { errors }, reset, control } = useForm<DepartmentFormValues>({
     resolver: zodResolver(departmentSchema) as Resolver<DepartmentFormValues>,
     defaultValues,
   });
@@ -65,16 +66,21 @@ const DepartmentForm: React.FC<Props> = ({ initialData, allDepartments, onClose,
     }
   }, [initialData, defaultParentId, allDepartments, reset, defaultValues]);
 
-  const onSubmit: SubmitHandler<DepartmentFormValues> = (data) => {
+  const onSubmit: SubmitHandler<DepartmentFormValues> = async (data) => {
     const sanitizedData = {
       ...data,
       cha_id: data.cha_id === '' || data.cha_id === undefined ? null : data.cha_id,
       mo_ta: data.mo_ta?.trim() || undefined,
     };
-    if (isEdit && initialData) {
-      updateMutation.mutate({ id: initialData.id, data: sanitizedData });
-    } else {
-      createMutation.mutate(sanitizedData);
+    // Trùng tên/mã phòng ban ⇒ chữ đỏ dưới đúng ô, không phải toast ở góc màn hình.
+    try {
+      if (isEdit && initialData) {
+        await updateMutation.mutateAsync({ id: initialData.id, data: sanitizedData });
+      } else {
+        await createMutation.mutateAsync(sanitizedData);
+      }
+    } catch (e) {
+      applyConstraintErrorToForm(e, setError);
     }
   };
 

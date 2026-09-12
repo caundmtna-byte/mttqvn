@@ -16,21 +16,33 @@ import { ThamHoiCaNhanTableRowActions } from './tham-hoi-ca-nhan-table-row-actio
 interface Props {
   data: ThamHoiCaNhan[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: ThamHoiCaNhan) => void;
   onDelete: (id: string) => void;
   onView?: (item: ThamHoiCaNhan) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  /** Phân trang phía máy chủ — tổng số dòng và trang kế do RPC trả về. */
+  serverSidePagination?: boolean;
+  serverTotalRecords?: number | null;
+  serverHasNextPage?: boolean;
 }
 
 const ThamHoiCaNhanTable = memo(function ThamHoiCaNhanTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
   emptyTitle,
   emptyDescription,
+  serverSidePagination,
+  serverTotalRecords,
+  serverHasNextPage,
 }: Props) {
   const {
     columns,
@@ -217,6 +229,8 @@ const ThamHoiCaNhanTable = memo(function ThamHoiCaNhanTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('danTocThamHoiCaNhan.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('danTocThamHoiCaNhan.emptyHint')}
@@ -237,6 +251,9 @@ const ThamHoiCaNhanTable = memo(function ThamHoiCaNhanTable({
       stickyLeftCount={2}
       renderColumnHeaderAccessory={renderColumnHeaderAccessory}
       hideSortOnColumnLabel
+      serverSidePagination={serverSidePagination}
+      serverTotalRecords={serverTotalRecords}
+      serverHasNextPage={serverHasNextPage}
     />
   );
 });

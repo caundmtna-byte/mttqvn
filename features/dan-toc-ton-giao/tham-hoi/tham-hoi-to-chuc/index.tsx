@@ -14,8 +14,6 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { txt } from '@/lib/text';
-import { matchesSearchTerm } from '@/lib/searchUtils';
-import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
@@ -23,31 +21,29 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
+import { useServerPagedList } from '@/hooks/use-server-paged-list';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog from '@/components/shared/ImportDialog';
 import ErrorState from '@/components/shared/ErrorState';
 import {
-  useThamHoiToChucList,
   useThamHoiToChucDetail,
   useDeleteThamHoiToChucMany,
   useImportThamHoiToChuc,
 } from './hooks/use-tham-hoi-to-chuc';
+import {
+  getThamHoiToChucAllForExport,
+  getThamHoiToChucPage,
+} from './services/tham-hoi-to-chuc-service';
 import { useThamHoiToChucStore } from './store/useThamHoiToChucStore';
 import type { ThamHoiToChuc } from './core/types';
 import { formatDonViThamHoiDisplay } from './core/display-don-vi';
-import { DON_VI_THAM_HOI_TINH_VALUE } from './core/constants';
-import { donViFilterKey } from '@/features/dan-toc-ton-giao/tham-hoi/shared/build-filter-options';
 import {
   canMutateDttgRowByDonVi,
   dttgRowVisibleByDonVi,
+  isDttgViewUnrestricted,
   useDttgViewer,
 } from '@/features/dan-toc-ton-giao/shared/use-dttg-viewer';
-import { THAM_HOI_TO_CHUC_SEARCHABLE_KEYS, thamHoiToChucSearchRecord } from './utils/search-keys';
-import {
-  countThamHoiToChucColumnSearchActive,
-  thamHoiToChucMatchesColumnSearch,
-} from './utils/column-search';
-import { sortThamHoiToChucList } from './utils/sort';
+import { countThamHoiToChucColumnSearchActive } from './utils/column-search';
 import ThamHoiToChucToolbar from './components/tham-hoi-to-chuc-toolbar';
 import ThamHoiToChucTable from './components/tham-hoi-to-chuc-table';
 
@@ -78,6 +74,7 @@ const ThamHoiToChucPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'danTocThamHoiToChuc');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(
@@ -89,8 +86,10 @@ const ThamHoiToChucPage: React.FC = () => {
       ? (user.id_chuc_vu[0] ?? '')
       : String(user.id_chuc_vu ?? '')
     : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
   const waitingMatrixHydrate =
-    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && !matrixActive;
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
 
   useEffect(() => {
     if (!user || canView || didRedirect.current) return;
@@ -120,55 +119,59 @@ const ThamHoiToChucPage: React.FC = () => {
     setFilter,
   } = useThamHoiToChucStore();
 
+  const viewer = useDttgViewer('danTocThamHoiToChuc');
+
+  // Phạm vi xem đi xuống RPC: cấp Xã phường chỉ thấy dòng thuộc đơn vị mình.
+  const pageExtraParams = useMemo(
+    () => ({
+      // Chỉ cấp Xã phường bị bó theo đơn vị; người chưa được gán đơn vị thấy rỗng.
+      viewAll: isDttgViewUnrestricted(viewer) || viewer.chucVuCapQuanLy !== 'Xã phường',
+      viewerDonViId: viewer.chucVuCapQuanLy === 'Xã phường' ? viewer.viewerDonViId : null,
+      tienDo: filters.tien_do_filter,
+      toChucIds: filters.to_chuc_filter,
+      dipIds: filters.dip_tham_hoi_filter,
+      donViIds: filters.don_vi_tham_hoi_filter,
+      phongBanIds: filters.phong_ban_filter,
+      columnSearch: filters.columnSearch ?? null,
+    }),
+    [
+      viewer,
+      filters.tien_do_filter,
+      filters.to_chuc_filter,
+      filters.dip_tham_hoi_filter,
+      filters.don_vi_tham_hoi_filter,
+      filters.phong_ban_filter,
+      filters.columnSearch,
+    ],
+  );
+
   const {
-    data: rows = [],
+    rows,
+    totalRecords: listTotal,
+    hasNextPage: listHasNext,
     isLoading,
     isError: isListError,
-    isFetching: isListFetching,
     refetch: refetchList,
-  } = useThamHoiToChucList({ enabled: listQueryEnabled });
+    params: listPageQuery,
+  } = useServerPagedList({
+    pagination,
+    searchTerm,
+    sort,
+    extraParams: pageExtraParams,
+    queryKey: queryKeys.danTocThamHoiToChuc.page,
+    fetchFn: getThamHoiToChucPage,
+    enabled: listQueryEnabled,
+  });
+
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useThamHoiToChucDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteThamHoiToChucMany();
   const importMutation = useImportThamHoiToChuc(() => setShowImport(false));
-  const viewer = useDttgViewer('danTocThamHoiToChuc');
-
-  const viewableRows = useMemo(
-    () => rows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_tham_hoi_id])),
-    [rows, viewer],
-  );
 
   useEffect(() => {
     return () => resetState();
   }, [resetState]);
-
-  const filterFn = useCallback((item: ThamHoiToChuc, term: string, f: typeof filters) => {
-    const searchRecord = thamHoiToChucSearchRecord(item);
-    const matchesSearch = matchesSearchTerm(searchRecord, term, [...THAM_HOI_TO_CHUC_SEARCHABLE_KEYS]);
-    if (!thamHoiToChucMatchesColumnSearch(item, f.columnSearch)) return false;
-    if (f.tien_do_filter.length > 0 && !f.tien_do_filter.includes(item.tien_do)) return false;
-    if (f.to_chuc_filter.length > 0) {
-      const tc = item.to_chuc_id?.trim();
-      if (!tc || !f.to_chuc_filter.includes(tc)) return false;
-    }
-    if (f.dip_tham_hoi_filter.length > 0) {
-      const dipId = item.dip_tham_hoi_id?.trim();
-      if (!dipId || !f.dip_tham_hoi_filter.includes(dipId)) return false;
-    }
-    if (f.don_vi_tham_hoi_filter.length > 0) {
-      const dvKey = donViFilterKey(item.don_vi_tham_hoi_id, DON_VI_THAM_HOI_TINH_VALUE);
-      if (!f.don_vi_tham_hoi_filter.includes(dvKey)) return false;
-    }
-    if (f.phong_ban_filter.length > 0) {
-      const pb = item.phong_ban_tham_muu_id?.trim();
-      if (!pb || !f.phong_ban_filter.includes(pb)) return false;
-    }
-    return matchesSearch;
-  }, []);
-
-  const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);
-  const sorted = useMemo(() => sortThamHoiToChucList(filtered, sort), [filtered, sort]);
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -221,13 +224,19 @@ const ThamHoiToChucPage: React.FC = () => {
   );
 
   const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
-    data: sorted,
+    data: rows,
     isOpen: showExport,
     mapFn: exportMapFn,
     pagination,
     selectedIds,
     keyExtractor: (r) => r.id,
   });
+
+  // Phạm vi "Tất cả" phải ra đủ số dòng khớp bộ lọc, không phải trang đang xem.
+  const fetchAllForExport = useCallback(async () => {
+    const all = await getThamHoiToChucAllForExport(listPageQuery);
+    return all.map(exportMapFn);
+  }, [listPageQuery, exportMapFn]);
 
   const visibleColumnKeys = useMemo(
     () => columns.filter((c) => c.visible && c.id !== 'actions').map((c) => c.id),
@@ -243,40 +252,37 @@ const ThamHoiToChucPage: React.FC = () => {
       filters.to_chuc_filter.length > 0 ||
       filters.dip_tham_hoi_filter.length > 0 ||
       filters.don_vi_tham_hoi_filter.length > 0 ||
-      filters.phong_ban_filter.length > 0 ||
-      Boolean(sort.column)
+      filters.phong_ban_filter.length > 0
     );
-  }, [searchTerm, filters, sort.column]);
+  }, [searchTerm, filters]);
 
-  const emptyTitleResolved = useMemo(
-    () =>
-      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
-        ? txt('common.noResults')
-        : txt('danTocThamHoiToChuc.emptyTitle'),
-    [sorted.length, viewableRows.length, hasListFilters],
-  );
+  // Phân trang phía máy chủ: không còn biết tổng số dòng chưa lọc, nên phân
+  // biệt "rỗng thật" / "không khớp lọc" theo việc có bộ lọc đang bật hay không.
+  const isFilteredEmpty = listTotal === 0 && hasListFilters;
 
-  const emptyDescriptionResolved = useMemo(
-    () =>
-      sorted.length === 0 && viewableRows.length > 0 && hasListFilters
-        ? txt('danTocThamHoiToChuc.emptyFilteredHint')
-        : txt('danTocThamHoiToChuc.emptyHint'),
-    [sorted.length, viewableRows.length, hasListFilters],
-  );
+  const emptyTitleResolved = isFilteredEmpty
+    ? txt('common.noResults')
+    : txt('danTocThamHoiToChuc.emptyTitle');
+
+  const emptyDescriptionResolved = isFilteredEmpty
+    ? txt('danTocThamHoiToChuc.emptyFilteredHint')
+    : txt('danTocThamHoiToChuc.emptyHint');
 
   useEffect(() => {
     if (!viewingId) return;
-    const fresh = viewableRows.find((r) => r.id === viewingId);
-    if (!fresh) {
-      const row = rows.find((r) => r.id === viewingId);
-      if (row && !dttgRowVisibleByDonVi(viewer, [row.don_vi_tham_hoi_id])) {
-        toast.error(txt('danTocThamHoiToChuc.noViewRowPermission'));
-      }
+    const fresh = rows.find((r) => r.id === viewingId);
+    if (fresh) queryClient.setQueryData(queryKeys.danTocThamHoiToChuc.detail(viewingId), fresh);
+  }, [rows, viewingId, queryClient]);
+
+  // Dòng mở qua `?open=` không chắc nằm trong trang đang xem, nên phạm vi xem
+  // được kiểm ngay trên bản ghi chi tiết vừa tải về.
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!dttgRowVisibleByDonVi(viewer, [viewingData.don_vi_tham_hoi_id])) {
+      toast.error(txt('danTocThamHoiToChuc.noViewRowPermission'));
       setViewingId(null);
-      return;
     }
-    queryClient.setQueryData(queryKeys.danTocThamHoiToChuc.detail(viewingId), fresh);
-  }, [rows, viewableRows, viewingId, queryClient, viewer]);
+  }, [viewingId, viewingData, viewer]);
 
   const handleView = useCallback(
     (item: ThamHoiToChuc) => {
@@ -287,22 +293,14 @@ const ThamHoiToChucPage: React.FC = () => {
   );
 
   useEffect(() => {
-    if (!listQueryEnabled || rows.length === 0) return;
+    if (!listQueryEnabled) return;
 
     const openId = searchParams.get('open')?.trim();
     if (openId) {
-      const row = viewableRows.find((r) => r.id === openId);
-      if (row) {
-        handleView(row);
-        const next = new URLSearchParams(searchParams);
-        next.delete('open');
-        setSearchParams(next, { replace: true });
-      } else if (rows.some((r) => r.id === openId)) {
-        toast.error(txt('danTocThamHoiToChuc.noViewRowPermission'));
-        const next = new URLSearchParams(searchParams);
-        next.delete('open');
-        setSearchParams(next, { replace: true });
-      }
+      setViewingId(openId);
+      const next = new URLSearchParams(searchParams);
+      next.delete('open');
+      setSearchParams(next, { replace: true });
       return;
     }
 
@@ -327,7 +325,7 @@ const ThamHoiToChucPage: React.FC = () => {
       next.delete('dipId');
       setSearchParams(next, { replace: true });
     }
-  }, [rows, viewableRows, listQueryEnabled, searchParams, setSearchParams, handleView, setFilter]);
+  }, [listQueryEnabled, searchParams, setSearchParams, setFilter]);
 
   const handleEditFromList = (item: ThamHoiToChuc) => {
     if (!canMutateDttgRowByDonVi(viewer, [item.don_vi_tham_hoi_id])) {
@@ -352,7 +350,7 @@ const ThamHoiToChucPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    const row = rows.find((r) => r.id === id);
+    const row = rows.find((r) => r.id === id) ?? (viewingData?.id === id ? viewingData : null);
     if (!canMutateDttgRowByDonVi(viewer, [row?.don_vi_tham_hoi_id])) {
       toast.error(txt('danTocThamHoiToChuc.noDeleteOtherDonVi'));
       return;
@@ -401,7 +399,7 @@ const ThamHoiToChucPage: React.FC = () => {
   };
 
   const handleExport = () => {
-    if (sorted.length === 0) {
+    if (listTotal === 0) {
       toast.warning(txt('danTocThamHoiToChuc.noExportData'));
       return;
     }
@@ -451,7 +449,6 @@ const ThamHoiToChucPage: React.FC = () => {
           onExport={handleExport}
           onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
-          items={viewableRows}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">
@@ -466,13 +463,18 @@ const ThamHoiToChucPage: React.FC = () => {
             </div>
           ) : (
             <ThamHoiToChucTable
-              data={sorted}
-              isLoading={isListLoading || (listQueryEnabled && isListFetching && rows.length === 0)}
+              data={rows}
+              isLoading={isListLoading}
+              isError={isListError}
+              onRetry={refetchList}
               onEdit={handleEditFromList}
               onDelete={handleDelete}
               onView={handleView}
               emptyTitle={emptyTitleResolved}
               emptyDescription={emptyDescriptionResolved}
+              serverSidePagination
+              serverTotalRecords={listTotal}
+              serverHasNextPage={listHasNext}
             />
           )}
         </div>
@@ -514,6 +516,8 @@ const ThamHoiToChucPage: React.FC = () => {
             selectedData={selectedExportData}
             fileName={txt('danTocThamHoiToChuc.exportFileName')}
             visibleColumnKeys={visibleColumnKeys}
+            serverTotalRecords={listTotal}
+            fetchAllData={fetchAllForExport}
           />
         )}
       </AnimatePresence>

@@ -42,6 +42,12 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'matTranReliefWarehouseList',
       'matTranReliefSupportUnits',
       'matTranReliefSupportReport',
+      // Quỹ tiền: cán bộ chỉ được cấp quyền quỹ (không có quyền kho cứu trợ)
+      // vẫn phải thấy mục "An sinh xã hội" trên sidebar.
+      'quySoThuChi',
+      'quyDanhMucKhoan',
+      'quyDanhMucTaiKhoan',
+      'quyBaoCaoThongKe',
     ];
   }
   if (path === '/quan-ly-viet-bai') {
@@ -75,12 +81,12 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'danTocThongKeToChucCaNhan',
     ];
   }
-  return null; // `/`, `/thong-tin-ban-quyen` → luôn hiện
+  return null; // `/` → luôn hiện
 }
 
-/** `/` và bản quyền luôn hiện (yêu cầu nghiệp vụ). */
+/** Trang chủ luôn hiện (yêu cầu nghiệp vụ). */
 export function isSidebarPathAlwaysVisible(path: string): boolean {
-  return path === '/' || path === '/thong-tin-ban-quyen';
+  return path === '/';
 }
 
 export function isSidebarPathVisibleForUser(user: User | null | undefined, path: string): boolean {

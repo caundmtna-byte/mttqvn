@@ -12,6 +12,12 @@ export interface PageSizeSelectProps {
   compact?: boolean;
   className?: string;
   'aria-label'?: string;
+  /**
+   * Ẩn lựa chọn "Tất cả" khi bảng phân trang phía máy chủ.
+   * Ở chế độ đó, chọn "Tất cả" vừa kéo nguyên bảng về máy vừa dựng hàng trăm
+   * dòng vào DOM — đúng thứ phân trang server-side sinh ra để tránh.
+   */
+  disableAllOption?: boolean;
 }
 
 const DEFAULT_OPTIONS = [10, 20, 30, 50, 100];
@@ -36,11 +42,12 @@ export const PageSizeSelect: React.FC<PageSizeSelectProps> = ({
   compact = false,
   className,
   'aria-label': ariaLabel = 'Số bản ghi mỗi trang',
+  disableAllOption = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const showAllOption = totalRecords > 100 && !options.includes(totalRecords);
+  const showAllOption = !disableAllOption && totalRecords > 100 && !options.includes(totalRecords);
   const allOptions = showAllOption ? [...options, totalRecords] : options;
   const displayLabel = value === totalRecords && showAllOption ? allLabel : String(value);
 

@@ -19,6 +19,7 @@ import { useConfirmStore } from '@/store/useConfirmStore';
 import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useTheLoais } from '../thiet-lap-bai-viet/hooks/use-the-loai';
@@ -29,8 +30,14 @@ import {
   useArticleListViewer,
   rowVisibleOnArticleList,
 } from '../hooks/use-article-all-tab-viewer';
-import { useBaiVietDanhSachPage, useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
+import { useDeleteBaiVietDanhSachMany } from './hooks/use-bai-viet-danh-sach';
 import { useBaiVietNguoiTaoFilterOptions } from './hooks/use-bai-viet-nguoi-tao-filter-options';
+import { useServerPagedList } from '@/hooks/use-server-paged-list';
+import { queryKeys } from '@/lib/query-keys';
+import {
+  getBaiVietDanhSachAllForExport,
+  getBaiVietDanhSachPage,
+} from './services/bai-viet-danh-sach-service';
 import { useBaiVietDanhSachStore } from './store/useBaiVietDanhSachStore';
 import type { BaiVietDanhSach } from './core/types';
 import { baiVietMatchesColumnSearch } from './utils/column-search';
@@ -59,14 +66,17 @@ const BaiVietDanhSachPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'articles');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!user || canView || didRedirect.current) return;
+    if (!user || permissionsLoading || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('articleList.noViewPermission'));
     navigate('/quan-ly-viet-bai', { replace: true });
-  }, [user, canView, navigate]);
+  }, [user, permissionsLoading, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BaiVietDanhSach | null>(null);
@@ -93,11 +103,8 @@ const BaiVietDanhSachPage: React.FC = () => {
   const rpcScope = resolveBaiVietListRpcScope(listViewer);
   const pageQueryEnabled = canView && canLoadArticleList(listViewer);
 
-  const pageQuery = useMemo(
+  const pageExtraParams = useMemo(
     () => ({
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      search: searchTerm,
       scope: rpcScope,
       viewerNhanVienId: rpcScope === 'mine' ? listViewer.viewerNhanVienId : null,
       viewerDonViId: null,
@@ -107,9 +114,6 @@ const BaiVietDanhSachPage: React.FC = () => {
       nguoiTaoIds: filters.id_nguoi_tao,
     }),
     [
-      pagination.page,
-      pagination.pageSize,
-      searchTerm,
       rpcScope,
       listViewer.viewerNhanVienId,
       filters.id_the_loai,
@@ -119,8 +123,21 @@ const BaiVietDanhSachPage: React.FC = () => {
     ],
   );
 
-  const { data: pageData, isLoading } = useBaiVietDanhSachPage({
-    ...pageQuery,
+  const {
+    rows,
+    totalRecords: serverTotalRecords,
+    hasNextPage: serverHasNextPage,
+    isLoading,
+    isError,
+    refetch,
+    params: pageQuery,
+  } = useServerPagedList({
+    pagination,
+    searchTerm,
+    sort,
+    extraParams: pageExtraParams,
+    queryKey: queryKeys.baiVietDanhSach.page,
+    fetchFn: getBaiVietDanhSachPage,
     enabled: pageQueryEnabled,
   });
 
@@ -129,10 +146,6 @@ const BaiVietDanhSachPage: React.FC = () => {
     viewerDonViId: null,
     enabled: pageQueryEnabled && rpcScope !== 'mine',
   });
-
-  const rows = pageData?.rows ?? [];
-  const serverHasNextPage = pageData?.hasNextPage ?? false;
-  const serverTotalRecords = pageData?.totalRecords ?? null;
 
   const deleteMutation = useDeleteBaiVietDanhSachMany();
 
@@ -187,25 +200,6 @@ const BaiVietDanhSachPage: React.FC = () => {
 
   const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
 
-  const sorted = useMemo(() => {
-    const list = [...filtered];
-    if (sort.column && sort.direction) {
-      list.sort((a, b) => {
-        const key = sort.column as keyof BaiVietDanhSach;
-        const aVal = a[key];
-        const bVal = b[key];
-        const cmp =
-          typeof aVal === 'number' && typeof bVal === 'number'
-            ? aVal - bVal
-            : String(aVal ?? '').localeCompare(String(bVal ?? ''), getLanguage());
-        return sort.direction === 'desc' ? -cmp : cmp;
-      });
-    } else {
-      list.sort((a, b) => b.ngay_dang.localeCompare(a.ngay_dang) || a.ten_bai.localeCompare(b.ten_bai, getLanguage()));
-    }
-    return list;
-  }, [filtered, sort]);
-
   const EXPORT_COLUMNS = useMemo(
     () => [
       { key: 'ten_bai', label: txt('articleList.store.nameCol') },
@@ -243,6 +237,12 @@ const BaiVietDanhSachPage: React.FC = () => {
     keyExtractor: (r) => r.id,
   });
 
+  // Phạm vi "Tất cả" phải ra đủ số bài khớp bộ lọc, không phải 20 dòng đang xem.
+  const fetchAllForExport = useCallback(async () => {
+    const all = await getBaiVietDanhSachAllForExport(pageQuery);
+    return all.map(exportMapFn);
+  }, [pageQuery, exportMapFn]);
+
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
   const handleEdit = (item: BaiVietDanhSach) => {
@@ -260,7 +260,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewing?.id === id) setViewing(null);
           },
@@ -276,7 +276,7 @@ const BaiVietDanhSachPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE_ALL(),
       onConfirm: async () => {
-        deleteMutation.mutate(ids, {
+        await deleteMutation.mutateAsync(ids, {
           onSuccess: () => {
             clearSelection();
             if (viewing && ids.includes(viewing.id)) setViewing(null);
@@ -390,8 +390,10 @@ const BaiVietDanhSachPage: React.FC = () => {
 
         <div className="flex-1 min-h-0">
           <BaiVietTable
-            data={sorted}
+            data={filtered}
             isLoading={isLoading}
+            isError={isError}
+            onRetry={refetch}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
@@ -434,6 +436,8 @@ const BaiVietDanhSachPage: React.FC = () => {
             selectedData={selectedExportData}
             fileName={txt('articleList.exportFileName')}
             visibleColumnKeys={visibleColumnKeys}
+            serverTotalRecords={serverTotalRecords}
+            fetchAllData={fetchAllForExport}
           />
         )}
       </AnimatePresence>

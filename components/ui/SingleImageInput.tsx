@@ -9,6 +9,7 @@ import {
   avatarCloudinaryFilename,
 } from '@/lib/cloudinary/upload-image';
 import { resolveImageDisplaySrcSync, isLegacySupabaseAvatarPath } from '@/lib/cloudinary/resolve-image-display-src';
+import { cloudinaryThumbUrl, CLOUDINARY_THUMB_WIDTH } from '@/lib/cloudinary/thumb-url';
 
 export interface SingleImageInputProps {
   label?: string;
@@ -288,7 +289,8 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
               className="absolute inset-0"
             >
               <img
-                src={previewImgSrc}
+                /* Khung preview trong form chỉ vài trăm px — không cần ảnh gốc. */
+                src={cloudinaryThumbUrl(previewImgSrc, CLOUDINARY_THUMB_WIDTH.gallery, { crop: 'fill' })}
                 alt="Preview"
                 className={cn('w-full h-full object-cover', shapeClass)}
                 loading="lazy"

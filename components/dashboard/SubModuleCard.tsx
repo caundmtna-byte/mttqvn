@@ -1,8 +1,6 @@
 import React from 'react';
-import { txt } from '../../lib/text';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, HelpCircle, Star } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import { usePrimaryColor } from '../../lib/theme-utils';
 import { useFavoriteModules } from '../../lib/use-favorite-modules';
 
@@ -53,15 +51,10 @@ const SubModuleCard: React.FC<ModuleItem> = ({ title, description, icon: Icon, c
   const { icon: iconColor, bg: bgColor } = getColors(color, primaryHex);
   const { isFavorite, toggleFavorite } = useFavoriteModules();
   const isPinned = moduleId ? isFavorite(moduleId) : false;
-  const guidePath = moduleId ? `${moduleId}/huong-dan` : undefined;
 
   const handleStarClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (moduleId) toggleFavorite(moduleId);
-  };
-
-  const handleGuideClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
   };
 
   return (
@@ -102,17 +95,9 @@ const SubModuleCard: React.FC<ModuleItem> = ({ title, description, icon: Icon, c
         <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm mb-0.5 md:mb-1 truncate">{title}</h3>
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{description}</p>
       </div>
-      {guidePath && (
-        <Link
-          to={guidePath}
-          onClick={handleGuideClick}
-          className="absolute bottom-3 right-3 z-10 p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30"
-          aria-label={txt('guide.buttonTitle')}
-          title={txt('guide.buttonTitle')}
-        >
-          <HelpCircle size={16} strokeWidth={2} aria-hidden />
-        </Link>
-      )}
+      {/* Trước đây có nút "Hướng dẫn" trỏ tới `<module>/huong-dan` — route đó
+          KHÔNG tồn tại trong App.tsx, nên bấm vào là bị đá về Trang chủ, mất luôn
+          chỗ đang đứng. Gỡ nút cho tới khi thực sự có trang hướng dẫn. */}
       <ChevronRight size={16} className="text-muted-foreground group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all self-center hidden sm:block" />
     </motion.div>
   );

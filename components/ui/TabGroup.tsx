@@ -17,6 +17,7 @@ interface TabGroupProps {
 const TabGroup: React.FC<TabGroupProps> = ({ tabs, activeTab, onChange, className }) => {
   return (
     <div
+      role="tablist"
       className={cn(
         'flex gap-0.5 p-0.5 bg-muted rounded-lg border border-border shadow-sm w-fit',
         className,
@@ -28,6 +29,17 @@ const TabGroup: React.FC<TabGroupProps> = ({ tabs, activeTab, onChange, classNam
         return (
           <button
             key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
+            onKeyDown={(e) => {
+              if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+              e.preventDefault();
+              const i = tabs.findIndex((t) => t.id === tab.id);
+              const next = e.key === 'ArrowRight' ? (i + 1) % tabs.length : (i - 1 + tabs.length) % tabs.length;
+              onChange(tabs[next]!.id);
+            }}
             onClick={() => onChange(tab.id)}
             className={cn(
               'flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all select-none',

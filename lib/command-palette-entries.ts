@@ -65,7 +65,6 @@ export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi', nameKey: 'page.phanBienXaHoiDashboard.thongKe', groupKey: 'nav.commandPalette.groupPhanBienXaHoi' },
   { path: '/dan-toc-ton-giao', nameKey: 'nav.danTocTonGiao', groupKey: 'nav.commandPalette.groupGeneral' },
   { path: '/trang-thong-tin-khac', nameKey: 'nav.trangThongTinKhac', groupKey: 'nav.commandPalette.groupGeneral' },
-  { path: '/thong-tin-ban-quyen', nameKey: 'nav.licenseInfo', groupKey: 'nav.commandPalette.groupGeneral' },
   { path: '/he-thong', nameKey: 'nav.system', groupKey: 'nav.commandPalette.groupSystem' },
   { path: '/he-thong/nhan-vien', nameKey: 'page.systemDashboard.employee', groupKey: 'nav.commandPalette.groupSystem' },
   { path: '/he-thong/phong-ban', nameKey: 'page.systemDashboard.department', groupKey: 'nav.commandPalette.groupSystem' },

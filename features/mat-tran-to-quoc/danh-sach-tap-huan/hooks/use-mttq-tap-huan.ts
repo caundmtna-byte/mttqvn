@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import type { MttqLopTapHuan, MttqLopTapHuanListRow } from '../core/types';
 import type { MttqTapHuanFormValues } from '../core/schema';
@@ -69,7 +68,6 @@ export const useCreateMttqLopTapHuan = (onSuccess?: () => void) => {
       toast.success(txt('matTranTapHuan.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -92,7 +90,6 @@ export const useUpdateMttqLopTapHuan = (onSuccess?: () => void) => {
       toast.success(txt('matTranTapHuan.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -112,6 +109,5 @@ export const useDeleteMttqLopTapHuanMany = () => {
       }
       toast.success(txt('matTranTapHuan.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

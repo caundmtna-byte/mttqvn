@@ -22,6 +22,9 @@ interface Props {
   /** Dòng nguồn cho filter header cột (trước client filter); mặc định = `data`. */
   optionRows?: MttqTangLuongListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onView: (item: MttqTangLuongListRow) => void;
   onEdit: (item: MttqTangLuongListRow) => void;
   onDelete: (item: MttqTangLuongListRow) => void;
@@ -36,6 +39,8 @@ const MttqTangLuongTable = memo(function MttqTangLuongTable({
   data,
   optionRows,
   isLoading,
+  isError,
+  onRetry,
   onView,
   onEdit,
   onDelete,
@@ -272,6 +277,8 @@ const MttqTangLuongTable = memo(function MttqTangLuongTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('matTranTangLuong.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('matTranTangLuong.emptyHint')}

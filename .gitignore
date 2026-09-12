@@ -14,6 +14,14 @@ node_modules/.vite/
 .env.local
 .env*.local
 
+# Bản sao lưu database — CHỨA DỮ LIỆU THẬT của cán bộ.
+# Chỗ đúng là NGOÀI repo (~/Desktop/mttqvn-db-backups, xem scripts/backup-db.sh).
+# Các mẫu dưới đây chỉ là lưới an toàn phòng khi ai đó lỡ dump vào thư mục dự án.
+mttqvn-db-backups/
+/mttqvn-*.sql
+*.sql.dang-ghi
+*.dump
+
 # Logs
 *.log
 npm-debug.log*
@@ -29,3 +37,11 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Supabase CLI cache — project ref, pooler URL, phiên bản dịch vụ.
+# Không phải bí mật, nhưng đổi theo từng máy và lộ topo hạ tầng, không nên
+# nằm trong lịch sử git.
+supabase/.temp/

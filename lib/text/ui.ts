@@ -1,5 +1,12 @@
+import { quy } from '../../features/quy/text';
+
 /** Chữ giao diện dùng chung (nav, trang, lỗi, …) */
 export const ui = {
+  /**
+   * Bốn màn hình quỹ tiền (`features/quy/text.ts`) — gộp ở đây thay vì
+   * `lib/text/index.ts` để `txt('quy.…')` tra được mà không đụng file khác.
+   */
+  quy,
   "nav": {
     "changePassword": {
       "title": "Đổi mật khẩu",
@@ -22,7 +29,6 @@ export const ui = {
     },
     "home": "Trang chủ",
     "back": "Quay lại",
-    "licenseInfo": "Thông tin bản quyền",
     "matTranToQuoc": "Mặt trận tổ quốc",
     "quanLyVietBai": "Quản lý viết bài",
     "quanLyGiaoViec": "Quản lý giao việc",
@@ -80,7 +86,9 @@ export const ui = {
       "selectAll": "Chọn tất cả",
       "pdfHeader": "Xuất ngày: {{date}} | {{count}} bản ghi",
       "exporting": "Đang xuất...",
-      "exportRows": "Xuất {{count}} dòng"
+      "exportRows": "Xuất {{count}} dòng",
+      "preparing": "Đang chuẩn bị dữ liệu để xuất...",
+      "failed": "Không xuất được file"
     },
     "import": {
       "title": "Import dữ liệu",
@@ -107,7 +115,8 @@ export const ui = {
     },
     "empty": {
       "title": "Không có dữ liệu",
-      "description": "Chưa có dữ liệu. Thử thêm bản ghi hoặc điều chỉnh bộ lọc."
+      "description": "Chưa có dữ liệu. Thử thêm bản ghi hoặc điều chỉnh bộ lọc.",
+      "filteredHint": "Không có bản ghi nào khớp với bộ lọc và từ khóa đang dùng. Hãy xóa bớt bộ lọc hoặc đổi từ khóa rồi tìm lại."
     },
     "error": {
       "title": "Đã xảy ra lỗi",
@@ -122,9 +131,9 @@ export const ui = {
       "server": "Lỗi máy chủ. Vui lòng thử lại sau.",
       "timeout": "Hết thời gian chờ. Vui lòng thử lại.",
       "unknown": "Đã xảy ra lỗi không xác định. Vui lòng thử lại.",
-      "beforeInitialization": "Lỗi khởi tạo: không thể truy cập trước khi khởi tạo. Vui lòng tải lại trang.",
-      "notDefined": "Tham chiếu lỗi: thành phần chưa được định nghĩa. Vui lòng tải lại trang.",
-      "notFunction": "Lỗi gọi hàm: giá trị không phải là hàm. Vui lòng tải lại trang.",
+      "beforeInitialization": "Ứng dụng gặp sự cố. Vui lòng tải lại trang (nhấn F5).",
+      "notDefined": "Ứng dụng gặp sự cố. Vui lòng tải lại trang (nhấn F5).",
+      "notFunction": "Ứng dụng gặp sự cố. Vui lòng tải lại trang (nhấn F5).",
       "chunkLoad": "Không tải được phần mềm. Vui lòng tải lại trang.",
       "devDetail": "Chi tiết kỹ thuật (chế độ phát triển):"
     },
@@ -147,7 +156,6 @@ export const ui = {
       "greetingEvening": "Chào buổi tối",
       "adminFallback": "Quản trị viên",
       "systemModuleDesc": "Cấu hình, phân quyền và nhân sự.",
-      "licenseInfoDesc": "Quản lý sở hữu trí tuệ và thông tin nhà phát triển.",
       "placeholderModuleDesc": "Nội dung đang được cập nhật.",
       "vietBaiModuleDesc": "Bài viết, hoa hồng và thống kê xuất bản.",
       "phanBienModuleDesc": "Thực hiện phản biện, thiết lập danh mục và thống kê.",
@@ -156,38 +164,31 @@ export const ui = {
       "hanhChinhModuleDesc": "Quy trình hành chính và thủ tục nội bộ.",
       "trangThongTinKhacModuleDesc": "Trang thông tin và nội dung bổ sung.",
       "taskMgmtModuleDesc": "Công việc, giao việc và báo cáo tiến độ.",
-      "matTranModuleDesc": "Tập huấn, khen thưởng, ủy viên ủy ban và thiết lập cán bộ."
-    },
-    "license": {
-      "title": "Thông tin Bản quyền",
-      "subtitle": "Quản lý sở hữu trí tuệ và thông tin nhà phát triển",
-      "unitTitle": "Đơn vị xây dựng & Phát triển",
-      "companyName": "Tên công ty / Tổ chức",
-      "representative": "Người đại diện",
-      "taxCode": "Mã số thuế",
-      "address": "Địa chỉ trụ sở",
-      "rightsTitle": "Quyền hạn & Bảo mật",
-      "rightsIntro": "Phần mềm này cùng toàn bộ mã nguồn, giao diện và cơ sở dữ liệu thuộc quyền sở hữu trí tuệ duy nhất của Công ty ABC. Mọi hành vi sao chép, chỉnh sửa hoặc phân phối lại mà không có sự đồng ý bằng văn bản đều là vi phạm pháp luật.",
-      "version": "Phiên bản hiện tại",
-      "licenseDate": "Ngày cấp phép",
-      "status": "Trạng thái",
-      "statusRegistered": "Đã đăng ký bản quyền tại Cục Sở hữu trí tuệ.",
-      "communityLinks": "Liên kết cộng đồng",
-      "website": "Website chính thức",
-      "fanpage": "Fanpage Facebook",
-      "communityGroup": "Group Cộng đồng",
-      "zaloGroup": "Cộng đồng Zalo",
-      "tiktok": "Kênh TikTok",
-      "supportTitle": "Hỗ trợ kỹ thuật?",
-      "supportDesc": "Gặp sự cố hoặc cần tư vấn thêm về giải pháp?",
-      "contactHotline": "Liên hệ Hotline",
-      "footer": "© 2024 - 2026 Bản quyền thuộc về Công ty ABC. Được bảo vệ bởi hệ thống bảo vệ bản quyền số quốc tế.",
-      "technicalContact": "Liên hệ Kỹ thuật",
-      "businessContact": "Liên hệ Kinh doanh",
-      "contactName": "Tên",
-      "contactPosition": "Chức vụ",
-      "contactPhone": "Số điện thoại",
-      "contactEmail": "Email"
+      "matTranModuleDesc": "Tập huấn, khen thưởng, ủy viên ủy ban và thiết lập cán bộ.",
+      "metrics": {
+        "sectionTitle": "Việc cần bạn để mắt",
+        "sectionHint": "Số liệu trong phạm vi bạn được xem. Bấm vào từng ô để mở danh sách.",
+        "openHint": "Bấm để mở danh sách",
+        "unitViec": "việc",
+        "unitKyHop": "kỳ họp",
+        "unitCanBo": "cán bộ",
+        "quaHanLabel": "Việc quá hạn của tôi",
+        "quaHanHint": "Đã qua thời hạn, cần xử lý ngay",
+        "sapHetHanLabel": "Việc của tôi sắp đến hạn",
+        "sapHetHanHint": "Còn từ 3 ngày trở xuống là đến hạn",
+        "toiGiaoLabel": "Việc tôi giao chưa xong",
+        "toiGiaoHint": "Đã giao cho người khác, chưa hoàn thành",
+        "kyHopLabel": "Kỳ họp sắp tới",
+        "kyHopHint": "Tính từ hôm nay trở đi",
+        "tangLuongLabel": "Sắp đến hạn nâng lương",
+        "tangLuongHint": "Trong 90 ngày tới",
+        "tangLuongNext": "Gần nhất: {{ngay}}",
+        "kyHopNext": "Gần nhất: {{ngay}}",
+        "kyHopNextWithKy": "Gần nhất: kỳ {{ky}} ngày {{ngay}}",
+        "allClear": "Bạn không có việc nào quá hạn hay sắp đến hạn. Cứ yên tâm làm việc nhé.",
+        "errorTitle": "Chưa lấy được số liệu",
+        "errorMessage": "Đường truyền hoặc máy chủ đang bận. Bạn bấm Thử lại giúp nhé."
+      }
     },
     "placeholder": {
       "backToHome": "Quay lại trang chủ",
@@ -237,16 +238,12 @@ export const ui = {
       "rememberMe": "Ghi nhớ đăng nhập",
       "loginButton": "Đăng nhập",
       "orLoginWith": "Hoặc đăng nhập bằng",
-      "forgotAccountLabel": "Tên tài khoản",
-      "forgotAccountPlaceholder": "Nhập tên tài khoản đã đăng ký",
+
       "copyright": "© 2024",
       "companyFallback": "MTTQVN",
       "legal": "Bảo mật • Điều khoản sử dụng",
       "forgotPasswordTitle": "Quên mật khẩu",
-      "forgotPasswordDesc": "Nhập tên tài khoản đã đăng ký, chúng tôi sẽ gửi hướng dẫn khôi phục mật khẩu.",
-      "sendRecovery": "Gửi link khôi phục",
-      "recoverySent": "Đã gửi thông tin khôi phục về email của bạn. Vui lòng kiểm tra hộp thư.",
-      "recoverySentTitle": "Đã gửi"
+      "forgotPasswordDesc": "Hệ thống không gửi email khôi phục mật khẩu. Vui lòng liên hệ quản trị viên của cơ quan để được đặt lại mật khẩu, sau đó đăng nhập và đổi lại mật khẩu mới trong mục Hồ sơ."
     },
     "profile": {
       "nameMin": "Tên phải có ít nhất 2 ký tự",
@@ -365,6 +362,12 @@ export const ui = {
     "anSinhXaHoiDashboard": {
       "groupQuyViNguoiNgheo": "Quỹ vì người nghèo",
       "groupQuyCuuTro": "Quỹ cứu trợ",
+      /**
+       * Nhóm dùng cho màn Phân quyền: hai quỹ chia nhau CÙNG một bộ `module_key`
+       * (`so-thu-chi`, `danh-muc-chi-phi`, `danh-muc-tai-khoan`) trong RLS, nên
+       * một dòng phân quyền áp cho cả hai quỹ.
+       */
+      "groupQuyChung": "Quỹ tiền (áp dụng cho cả hai quỹ)",
       "groupNhaDaiDoanKet": "Nhà đại đoàn kết",
       "soThuChi": "Sổ thu chi",
       "soThuChiDesc": "Theo dõi thu – chi và số dư quỹ.",
@@ -427,9 +430,9 @@ export const ui = {
       "filterMoTaHas": "Có mô tả",
       "filterMoTaEmpty": "Không mô tả",
       "toast": {
-        "create": "Đã thêm mục",
-        "update": "Đã cập nhật mục",
-        "delete": "Đã xóa {{count}} mục"
+        "create": "Đã thêm mục thiết lập",
+        "update": "Đã cập nhật mục thiết lập",
+        "delete": "Đã xóa {{count}} mục thiết lập"
       },
       "validation": {
         "tenRequired": "Nhập tên"
@@ -472,9 +475,9 @@ export const ui = {
       "bulkDeleteTitle": "Xóa nhiều mục",
       "bulkDeleteMessage": "Bạn có chắc muốn xóa {{count}} mục đã chọn? Hành động không hoàn tác.",
       "toast": {
-        "create": "Đã thêm mục",
-        "update": "Đã cập nhật mục",
-        "delete": "Đã xóa {{count}} mục"
+        "create": "Đã thêm mục thiết lập",
+        "update": "Đã cập nhật mục thiết lập",
+        "delete": "Đã xóa {{count}} mục thiết lập"
       },
       "service": {
         "notFound": "Không tìm thấy bản ghi thiết lập"
@@ -595,12 +598,22 @@ export const ui = {
     "collapse": "Thu gọn",
     "demoTooltip": "Thông báo · Tính năng đang phát triển",
     "demoBannerTitle": "Tính năng đang phát triển",
-    "demoBannerDesc": "Hệ thống thông báo thời gian thực đang được hoàn thiện. Vui lòng quay lại sau."
+    "demoBannerDesc": "Hệ thống thông báo thời gian thực đang được hoàn thiện. Vui lòng quay lại sau.",
+    "tooltip": "Thông báo",
+    "tooltipUnread": "Thông báo · {{count}} mục chưa đọc",
+    "unreadBadgeLabel": "{{count}} thông báo chưa đọc",
+    "loading": "Đang tải thông báo…",
+    "errorTitle": "Không tải được thông báo",
+    "errorDesc": "Đường truyền hoặc máy chủ đang trục trặc. Vui lòng thử lại.",
+    "retry": "Thử lại",
+    "markRead": "Đánh dấu đã đọc",
+    "markAllReadDone": "Đã đánh dấu tất cả là đã đọc.",
+    "markReadFailed": "Chưa đánh dấu được. Vui lòng thử lại.",
+    "unreadDot": "Chưa đọc"
   },
   "breadcrumb": {
     "label": "Đường dẫn",
     "home": "Trang chủ",
-    "licenseInfo": "Thông tin bản quyền",
     "goHome": "Về trang chủ",
     "matTranToQuoc": "Mặt trận tổ quốc",
     "quanLyVietBai": "Quản lý viết bài",
@@ -656,12 +669,17 @@ export const ui = {
   },
   "common": {
     "save": "Lưu",
+    "copy": "Sao chép",
     "permissionPickerTitle": "Phân quyền theo chức vụ",
     "permissionPickerMessage": "Chọn các chức vụ được phép truy cập tài nguyên này.",
     "required": "Trường bắt buộc",
     "saving": "Đang lưu...",
     "cancel": "Hủy",
     "close": "Đóng",
+    "unsavedTitle": "Thoát khi chưa lưu?",
+    "unsavedMessage": "Biểu mẫu đang có nội dung chưa lưu. Đóng lại sẽ mất toàn bộ phần vừa nhập.",
+    "unsavedConfirm": "Thoát, không lưu",
+    "unsavedCancel": "Tiếp tục nhập",
     "create": "Thêm",
     "view": "Xem",
     "edit": "Sửa",

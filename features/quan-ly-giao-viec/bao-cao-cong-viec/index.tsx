@@ -32,14 +32,20 @@ import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
+import ErrorState from '@/components/shared/ErrorState';
 import Tooltip from '@/components/ui/Tooltip';
 import EnumBadge from '@/components/ui/EnumBadge';
-import { StatsCard, StatsKpiGrid } from '@/components/shared/stats';
+import {
+  ReportSkeleton,
+  StatsCard,
+  StatsKpiGrid,
+} from '@/components/shared/stats';
 import type { StatsKpiCardItem } from '@/components/shared/stats';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useCan } from '@/hooks/use-can';
@@ -75,7 +81,7 @@ import {
   useTaskReportTopTrachNhiem,
   useTaskReportTrend,
 } from './hooks/use-cong-viec-bao-cao';
-import { useTaskReportViewer } from './hooks/use-task-report-viewer';
+import { useTaskReportViewer, canLoadTaskReport } from './hooks/use-task-report-viewer';
 import {
   MucDoBarChart,
   TopTrachNhiemChart,
@@ -157,17 +163,33 @@ const BaoCaoCongViecPage: React.FC = () => {
   const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
+  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const canViewReport = useCan('view', 'taskReports');
   const canViewTasks = useCan('view', 'tasks');
   const canOpenPage = canViewReport || canViewTasks;
   const didRedirect = useRef(false);
 
+  /**
+   * Chưa hydrate ma trận quyền thì `viewAll` tạm bằng true (luật legacy) — gọi RPC
+   * lúc này sẽ gửi `p_view_all = true` và trả về dữ liệu toàn hệ thống. Phải chờ.
+   */
+  const chucVuKey = user
+    ? Array.isArray(user.id_chuc_vu)
+      ? (user.id_chuc_vu[0] ?? '')
+      : String(user.id_chuc_vu ?? '')
+    : '';
+  // Dùng `matrixLoading` thay cho `!matrixActive`: nếu truy vấn quyền THẤT BẠI thì
+  // `matrixActive` ở lại false vĩnh viễn và trang sẽ quay vòng chờ mãi.
+  const waitingMatrixHydrate =
+    user != null && user.role !== 'admin' && chucVuKey.trim() !== '' && matrixLoading;
+
   useEffect(() => {
-    if (!user || canOpenPage || didRedirect.current) return;
+    if (!user || waitingMatrixHydrate || canOpenPage || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('taskReport.noViewPermission'));
     navigate('/quan-ly-giao-viec', { replace: true });
-  }, [user, canOpenPage, navigate]);
+  }, [user, waitingMatrixHydrate, canOpenPage, navigate]);
 
   const taskReportPerm = useResourcePermissions('taskReports');
   const tasksPerm = useResourcePermissions('tasks');
@@ -197,6 +219,7 @@ const BaoCaoCongViecPage: React.FC = () => {
   );
 
   const viewer = useTaskReportViewer();
+  const queriesEnabled = canOpenPage && !waitingMatrixHydrate && canLoadTaskReport(viewer);
 
   const rpcArgs = useMemo(
     () =>
@@ -232,16 +255,16 @@ const BaoCaoCongViecPage: React.FC = () => {
   }, [rpcArgs, sort, pageSize]);
 
   /* ----- queries ----- */
-  const kpiQuery = useTaskReportKpi(rpcArgs, { enabled: canOpenPage });
-  const trendQuery = useTaskReportTrend(rpcArgs, 'auto', { enabled: canOpenPage });
-  const trangThaiQuery = useTaskReportPhanBoTrangThai(rpcArgs, { enabled: canOpenPage });
-  const mucDoQuery = useTaskReportPhanBoMucDo(rpcArgs, { enabled: canOpenPage });
-  const topTrachNhiemQuery = useTaskReportTopTrachNhiem(rpcArgs, 10, { enabled: canOpenPage });
-  const topNguoiTaoQuery = useTaskReportTopNguoiTao(rpcArgs, 10, { enabled: canOpenPage });
+  const kpiQuery = useTaskReportKpi(rpcArgs, { enabled: queriesEnabled });
+  const trendQuery = useTaskReportTrend(rpcArgs, 'auto', { enabled: queriesEnabled });
+  const trangThaiQuery = useTaskReportPhanBoTrangThai(rpcArgs, { enabled: queriesEnabled });
+  const mucDoQuery = useTaskReportPhanBoMucDo(rpcArgs, { enabled: queriesEnabled });
+  const topTrachNhiemQuery = useTaskReportTopTrachNhiem(rpcArgs, 10, { enabled: queriesEnabled });
+  const topNguoiTaoQuery = useTaskReportTopNguoiTao(rpcArgs, 10, { enabled: queriesEnabled });
   const lookupQuery = useTaskReportLookup(
     rpcArgs,
     { limit: pageSize, offset: (page - 1) * pageSize, sort },
-    { enabled: canOpenPage },
+    { enabled: queriesEnabled },
   );
   const filterOptionsQuery = useTaskReportFilterOptions(
     {
@@ -252,7 +275,7 @@ const BaoCaoCongViecPage: React.FC = () => {
       p_viewer_phong_ban_id: rpcArgs.p_viewer_phong_ban_id,
       p_view_all: rpcArgs.p_view_all,
     },
-    { enabled: canOpenPage },
+    { enabled: queriesEnabled },
   );
 
   /* ----- derived ----- */
@@ -509,7 +532,7 @@ const BaoCaoCongViecPage: React.FC = () => {
       variant: 'danger',
       confirmText: CONFIRM_DELETE(),
       onConfirm: async () => {
-        deleteMutation.mutate([id], {
+        await deleteMutation.mutateAsync([id], {
           onSuccess: () => {
             if (viewing?.id === id) setViewing(null);
           },
@@ -617,6 +640,20 @@ const BaoCaoCongViecPage: React.FC = () => {
   const isLoadingHeavy =
     kpiQuery.isLoading || trendQuery.isLoading || trangThaiQuery.isLoading || mucDoQuery.isLoading;
 
+  /** Bất kỳ truy vấn chính nào lỗi thì cả trang báo lỗi + cho tải lại, không hiện "Không có dữ liệu". */
+  const hasReportError =
+    kpiQuery.isError || trendQuery.isError || trangThaiQuery.isError || mucDoQuery.isError;
+
+  const retryReport = () => {
+    void kpiQuery.refetch();
+    void trendQuery.refetch();
+    void trangThaiQuery.refetch();
+    void mucDoQuery.refetch();
+    void topTrachNhiemQuery.refetch();
+    void topNguoiTaoQuery.refetch();
+    void lookupQuery.refetch();
+  };
+
   return (
     <div className="flex flex-col h-page relative min-h-0" aria-label={txt('taskReport.title')}>
       <DashboardToolbar
@@ -636,8 +673,12 @@ const BaoCaoCongViecPage: React.FC = () => {
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
-        {isLoadingHeavy && !kpi ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">{txt('taskReport.loading')}</p>
+        {hasReportError ? (
+          <div className="py-12 flex items-center justify-center">
+            <ErrorState className="w-full max-w-md" onRetry={retryReport} primaryButtons />
+          </div>
+        ) : isLoadingHeavy && !kpi ? (
+          <ReportSkeleton chartCount={3} />
         ) : (
           <>
             <StatsKpiGrid items={kpiItems} columns={4} />
@@ -672,6 +713,9 @@ const BaoCaoCongViecPage: React.FC = () => {
                 rows={lookupRows}
                 total={lookupTotal}
                 isLoading={lookupQuery.isLoading || lookupQuery.isFetching}
+                isError={lookupQuery.isError}
+                onRetry={() => void lookupQuery.refetch()}
+                hasFilters={activeFilterCount > 0}
                 page={page}
                 pageSize={pageSize}
                 totalPages={totalPages}
@@ -773,6 +817,11 @@ interface LookupSectionProps {
   rows: TaskReportLookupRow[];
   total: number;
   isLoading: boolean;
+  /** Truy vấn bảng tra cứu lỗi — hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
+  /** Đang có bộ lọc bật — bảng rỗng nghĩa là "không khớp bộ lọc", không phải "chưa có dữ liệu". */
+  hasFilters?: boolean;
   page: number;
   pageSize: number;
   totalPages: number;
@@ -787,6 +836,9 @@ const LookupSection: React.FC<LookupSectionProps> = ({
   rows,
   total,
   isLoading,
+  isError = false,
+  onRetry,
+  hasFilters = false,
   page,
   pageSize,
   totalPages,
@@ -847,10 +899,18 @@ const LookupSection: React.FC<LookupSectionProps> = ({
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && !isLoading ? (
+            {isError ? (
+              <tr>
+                <td colSpan={8} className="py-8">
+                  <div className="flex items-center justify-center">
+                    <ErrorState className="w-full max-w-md" onRetry={onRetry} primaryButtons />
+                  </div>
+                </td>
+              </tr>
+            ) : rows.length === 0 && !isLoading ? (
               <tr>
                 <td colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                  {txt('taskReport.noData')}
+                  {hasFilters ? txt('shared.empty.filteredHint') : txt('taskReport.noData')}
                 </td>
               </tr>
             ) : (

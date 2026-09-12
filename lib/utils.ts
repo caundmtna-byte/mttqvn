@@ -1,11 +1,17 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import dayjs from "dayjs"
+import { SupabaseAppError } from './supabase/errors'
+import { mapSupabaseErrorToVietnamese, __ERROR_MESSAGE_TABLES } from './supabase/error-messages'
+
 import utc from "dayjs/plugin/utc"
 import timezone from "dayjs/plugin/timezone"
 import { useUIStore } from "../store/useStore"
 import { txt } from './text'
 import { buildSansStackCss } from './theme/fonts'
+
+/** Câu mặc định khi không nhận diện được lỗi — không bao giờ để lọt tiếng Anh. */
+const UNKNOWN_ERROR_MESSAGE = __ERROR_MESSAGE_TABLES.FALLBACK
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -15,14 +21,28 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** Safe message for caught errors (TanStack Query, try/catch, …) */
+/**
+ * Câu lỗi hiển thị cho người dùng — **luôn tiếng Việt**.
+ *
+ * ~118 lời gọi `toast.error(getErrorMessage(e))` đi qua đây, nên dịch ở một chỗ
+ * là cả app hết lỗi tiếng Anh. Lỗi nghiệp vụ do app tự ném (vd.
+ * `BaiVietLinkConflictError`) đã có câu tiếng Việt sẵn nên giữ nguyên.
+ */
 export function getErrorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
+  if (err instanceof SupabaseAppError) {
+    return mapSupabaseErrorToVietnamese({
+      code: err.code,
+      constraint: err.constraint,
+      message: `${err.message} ${err.details ?? ''}`,
+    });
   }
+  if (err instanceof Error) {
+    // Lỗi do app tự ném (đã tiếng Việt) thì giữ nguyên; lỗi hạ tầng thì dịch.
+    const mapped = mapSupabaseErrorToVietnamese({ message: err.message });
+    return mapped === UNKNOWN_ERROR_MESSAGE ? err.message : mapped;
+  }
+  if (typeof err === 'string') return err;
+  return UNKNOWN_ERROR_MESSAGE;
 }
 
 /** Lấy timezone hiện tại từ store (fallback: Asia/Ho_Chi_Minh) */

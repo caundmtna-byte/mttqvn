@@ -2,8 +2,9 @@ import React from 'react';
 import { useIsMaxWidth } from '../../lib/use-media-query';
 import { txt } from '../../lib/text';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, ChevronLeft, Home, Wrench } from 'lucide-react';
+import { ChevronLeft, Home } from 'lucide-react';
 import { getParentPath } from '../shared/Breadcrumbs';
+import { NotificationBell } from '../notification';
 import { NOTIFICATIONS_SURFACE_ENABLED } from '@/lib/feature-flags';
 import { cn } from '../../lib/utils';
 
@@ -63,28 +64,16 @@ const MobileBottomNav: React.FC = () => {
           </Link>
         </div>
 
-        {/* Phải: Notification (ẩn khi module chưa sẵn sàng) */}
+        {/*
+          Phải: chuông thông báo.
+
+          Trước đây đây là `<Link to="/thong-bao">` — mà `/thong-bao` KHÔNG có
+          trong bảng định tuyến (`App.tsx`), nên bật cờ lên là bấm vào ra trang
+          trắng. Nay dùng đúng component chuông như trên thanh tiêu đề, mở panel
+          ngay tại chỗ (`placement="top"` để panel bung lên trên thanh dưới).
+        */}
         <div className="flex-1 flex justify-center items-center min-w-0">
-          {NOTIFICATIONS_SURFACE_ENABLED ? (
-          <Link
-            to="/thong-bao"
-            aria-label={txt('nav.notification')}
-            title={txt('notification.demoTooltip')}
-            aria-current={location.pathname === '/thong-bao' ? 'page' : undefined}
-            className={cn(
-              'relative min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition-all',
-              location.pathname === '/thong-bao' && 'bg-primary/10 text-primary'
-            )}
-          >
-            <Bell size={24} strokeWidth={1.8} className="shrink-0" />
-            <span
-              className="absolute -top-0.5 -right-0.5 w-[16px] h-[16px] flex items-center justify-center rounded-full bg-amber-500 text-white shadow-sm ring-2 ring-card dark:bg-amber-400 dark:text-amber-950"
-              aria-hidden
-            >
-              <Wrench size={9} strokeWidth={2.5} className="shrink-0" />
-            </span>
-          </Link>
-          ) : null}
+          {NOTIFICATIONS_SURFACE_ENABLED ? <NotificationBell placement="top" /> : null}
         </div>
       </div>
     </nav>

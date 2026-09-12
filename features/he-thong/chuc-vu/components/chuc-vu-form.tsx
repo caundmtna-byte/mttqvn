@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import { applyConstraintErrorToForm } from '@/lib/supabase/constraint-field-error';
 import { txt } from '../../../../lib/text';
 import { useForm, Controller, SubmitHandler, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -104,7 +105,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
     return opts;
   }, [departments, selectedPhongBanId]);
 
-  const { register, handleSubmit, formState: { errors }, reset, control } = useForm<PositionFormValues>({
+  const { register, handleSubmit, setError, formState: { errors }, reset, control } = useForm<PositionFormValues>({
     resolver: zodResolver(positionSchema) as Resolver<PositionFormValues>,
     defaultValues: DEFAULT_VALUES,
   });
@@ -134,7 +135,7 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
     reset({ ...DEFAULT_VALUES, thu_tu: nextThuTu });
   }, [initialData, positions, reset]);
 
-  const onSubmit: SubmitHandler<PositionFormValues> = (data) => {
+  const onSubmit: SubmitHandler<PositionFormValues> = async (data) => {
     const sanitizedData: PositionFormValues = {
       ...data,
       ten_chuc_vu: data.ten_chuc_vu.trim(),
@@ -143,10 +144,15 @@ const PositionForm: React.FC<Props> = ({ initialData, onClose }) => {
       mo_ta: data.mo_ta && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null,
     };
 
-    if (isEdit && initialData) {
-      updateMutation.mutate({ id: initialData.id, data: sanitizedData });
-    } else {
-      createMutation.mutate(sanitizedData);
+    // Trùng tên chức vụ ⇒ chữ đỏ dưới ô "Tên chức vụ", không phải toast.
+    try {
+      if (isEdit && initialData) {
+        await updateMutation.mutateAsync({ id: initialData.id, data: sanitizedData });
+      } else {
+        await createMutation.mutateAsync(sanitizedData);
+      }
+    } catch (e) {
+      applyConstraintErrorToForm(e, setError);
     }
   };
 

@@ -155,6 +155,10 @@ const authService: AuthService = {
     } = await supabase.auth.getSession();
     if (!session?.user?.email) return null;
     const nhanVien = await resolveNhanVienForAuthEmail(session.user.email);
+    // Khoá tài khoản phải có hiệu lực với cả phiên ĐANG mở, không chỉ lúc đăng nhập.
+    // Trước đây chỉ `signIn` kiểm `trang_thai`, nên khoá một người đang online thì
+    // họ dùng tiếp đến khi tự đăng xuất (bật "Ghi nhớ đăng nhập" có thể là hàng tuần).
+    if (!nhanVien || nhanVien.trang_thai === 'Khóa') return null;
     return { user: buildAppUser(session.user, nhanVien) };
   },
 
@@ -163,13 +167,29 @@ const authService: AuthService = {
     if (!supabase) return () => {};
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user?.email) {
         callback(null);
         return;
       }
-      const nhanVien = await resolveNhanVienForAuthEmail(session.user.email);
-      callback({ user: buildAppUser(session.user, nhanVien) });
+      const email = session.user.email;
+      const authUser = session.user;
+      // QUAN TRỌNG: KHÔNG gọi Supabase bên trong callback này.
+      // supabase-js giữ khoá auth trong suốt lúc callback chạy; một truy vấn ở đây
+      // sẽ chờ khoá đó và khoá đó chờ callback kết thúc ⇒ khoá chết, MỌI truy vấn
+      // của app treo vĩnh viễn mà không phát request nào.
+      // `setTimeout(…, 0)` đẩy phần tra cứu hồ sơ ra ngoài phạm vi khoá.
+      setTimeout(() => {
+        void (async () => {
+          const nhanVien = await resolveNhanVienForAuthEmail(email);
+          // Không còn hồ sơ nhân viên, hoặc đã bị khoá ⇒ coi như mất phiên.
+          if (!nhanVien || nhanVien.trang_thai === 'Khóa') {
+            callback(null);
+            return;
+          }
+          callback({ user: buildAppUser(authUser, nhanVien) });
+        })();
+      }, 0);
     });
     return () => subscription.unsubscribe();
   },

@@ -23,10 +23,19 @@ export interface PermissionFunction {
   groups: PermissionModuleGroup[];
 }
 
-export const PERMISSION_ACTIONS = ['view', 'create', 'update', 'delete', 'admin', 'all'] as const;
+/**
+ * Cột hành động của ma trận phân quyền.
+ *
+ * `approve` (= `phe_duyet` dưới DB) có mặt ở đây vì quyền **Duyệt** đã tách
+ * khỏi quyền **Sửa**: nút đưa quyết định khen thưởng sang "Đã ban hành" nay
+ * đòi `approve`. Thiếu cột này thì cơ quan không có cách nào bỏ tích Duyệt cho
+ * chức vụ chuyên nhập liệu — và tệ hơn, nút "chọn tất cả" của ma trận sẽ ghi
+ * đè mất token `phe_duyet` đang có trong dữ liệu.
+ */
+export const PERMISSION_ACTIONS = ['view', 'create', 'update', 'delete', 'approve', 'admin', 'all'] as const;
 export type PermissionActionType = (typeof PERMISSION_ACTIONS)[number];
 
-/** Thứ tự submenu = thứ tự mục trong sidebar (sau Trang chủ), bỏ qua placeholder / bản quyền. */
+/** Thứ tự submenu = thứ tự mục trong sidebar (sau Trang chủ), bỏ qua placeholder. */
 export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
   {
     id: 'mat-tran-to-quoc',
@@ -154,6 +163,31 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
           { id: 'an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList' },
           { id: 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
           { id: 'an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportReport' },
+        ],
+      },
+      {
+        /**
+         * Quỹ tiền — MỘT nhóm cho CẢ HAI quỹ, cố ý không tách "Vì người nghèo"
+         * và "Cứu trợ" thành hai bộ dòng.
+         *
+         * Lý do kỹ thuật: `module_key` lưu xuống `var_phan_quyen` là segment
+         * cuối của `id`, và RLS trên Supabase cũng kiểm tra đúng ba key
+         * `so-thu-chi` / `danh-muc-chi-phi` / `danh-muc-tai-khoan` — hai quỹ
+         * dùng chung bảng nên cũng dùng chung key. Nếu liệt kê tám dòng, hai
+         * dòng cùng key sẽ ghi đè lẫn nhau trên cùng một bản ghi DB và
+         * `resolveModuleIdFromStorageKey()` chỉ khớp được dòng ĐẦU TIÊN ⇒ quỹ
+         * thứ hai trông như chưa được cấp quyền dù đã bật. Bốn dòng dưới đây là
+         * đúng những gì DB thực sự phân biệt được.
+         *
+         * Muốn tách quyền theo từng quỹ thì phải đổi cả RLS lẫn `module_key`
+         * (ví dụ `quy-vnn-so-thu-chi` / `quy-ct-so-thu-chi`) — việc của DB.
+         */
+        groupTitleKey: 'page.anSinhXaHoiDashboard.groupQuyChung',
+        modules: [
+          { id: 'an-sinh-xa-hoi/quy/so-thu-chi', nameKey: 'page.anSinhXaHoiDashboard.soThuChi' },
+          { id: 'an-sinh-xa-hoi/quy/danh-muc-chi-phi', nameKey: 'page.anSinhXaHoiDashboard.danhMucChiPhi' },
+          { id: 'an-sinh-xa-hoi/quy/danh-muc-tai-khoan', nameKey: 'page.anSinhXaHoiDashboard.danhMucTaiKhoan' },
+          { id: 'an-sinh-xa-hoi/quy/bao-cao-thong-ke', nameKey: 'page.anSinhXaHoiDashboard.baoCaoThongKe' },
         ],
       },
     ],

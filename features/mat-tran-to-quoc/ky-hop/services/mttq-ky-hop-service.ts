@@ -2,6 +2,7 @@ import { createRepository } from '@/lib/data/create-repository';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import type { MttqKyHop, MttqKyHopDiemDanhSummary, MttqKyHopListRow } from '../core/types';
 import { getDiemDanhSummariesForKyHopIds } from './mttq-diem-danh-service';
@@ -97,14 +98,22 @@ export async function getMttqKyHopListForNhiemKyId(nhiemKyId: string): Promise<M
   if (!id) return [];
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('mttq_ky_hop')
-    .select(MTTQ_KY_HOP_SELECT_LIST)
-    .eq('nhiem_ky_id', id)
-    .order('ngay_hop', { ascending: false })
-    .limit(500);
-  if (error) handleSupabaseError(error);
-  const flat = (data ?? []).map((row) => flattenRow(row as unknown as Record<string, unknown>));
+  // Đọc ĐỦ số kỳ họp của nhiệm kỳ — không cắt ở một con số cứng.
+  const data = await fetchAllPages<Record<string, unknown>>(
+    async (from, to) => {
+      const { data: rows, error } = await supabase
+        .from('mttq_ky_hop')
+        .select(MTTQ_KY_HOP_SELECT_LIST)
+        .eq('nhiem_ky_id', id)
+        .order('ngay_hop', { ascending: false })
+        .order('id', { ascending: false })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (rows ?? []) as unknown as Record<string, unknown>[];
+    },
+    { label: 'mttq_ky_hop' },
+  );
+  const flat = data.map((row) => flattenRow(row));
   return withDiemDanhSummaries(flat);
 }
 

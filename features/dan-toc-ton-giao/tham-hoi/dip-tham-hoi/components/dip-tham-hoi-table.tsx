@@ -15,6 +15,9 @@ import { DipThamHoiTableRowActions } from './dip-tham-hoi-table-row-actions';
 interface Props {
   data: DipThamHoi[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onEdit: (item: DipThamHoi) => void;
   onDelete: (id: string) => void;
   onView?: (item: DipThamHoi) => void;
@@ -25,6 +28,8 @@ interface Props {
 const DipThamHoiTable = memo(function DipThamHoiTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   onEdit,
   onDelete,
   onView,
@@ -204,6 +209,8 @@ const DipThamHoiTable = memo(function DipThamHoiTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle ?? txt('danTocDipThamHoi.emptyTitle')}
       emptyDescription={emptyDescription ?? txt('danTocDipThamHoi.emptyHint')}

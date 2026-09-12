@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import type { KhoDanhSachKhoFormValues } from '../core/schema';
 import type { KhoDanhSachKhoListRow } from '../core/types';
 import {
@@ -51,7 +50,6 @@ export function useCreateKhoDanhSachKho(onSuccess?: () => void) {
       toast.success(txt('matTranKhoDanhSach.toast.create'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -73,7 +71,6 @@ export function useUpdateKhoDanhSachKho(onSuccess?: () => void) {
       toast.success(txt('matTranKhoDanhSach.toast.update'));
       onSuccess?.();
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }
 
@@ -96,6 +93,5 @@ export function useDeleteKhoDanhSachKhoMany() {
       }
       toast.success(txt('matTranKhoDanhSach.toast.delete', { count: ids.length }));
     },
-    onError: (err: unknown) => toast.error(getErrorMessage(err)),
   });
 }

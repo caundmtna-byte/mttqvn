@@ -83,7 +83,7 @@ export const VIEW_TYPE_REGISTRY: Record<ViewTypeId, ViewTypeDefinition> = {
       'components/shared/MobileListCard.tsx',
       'pages/Home.tsx',
     ],
-    notesVi: 'Kanban / deck kéo cột: chưa có; @dnd-kit trong package nhưng chưa dùng.',
+    notesVi: 'Kanban / deck kéo cột: chưa có. Cần thêm thư viện kéo-thả khi làm.',
   },
   calendar: {
     id: 'calendar',

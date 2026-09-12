@@ -22,7 +22,7 @@ export function useHydratePositionPermissions(): void {
 
   const enabled = hasHydrated && !!user && !!chucVuKey;
 
-  const { data: payload } = useQuery({
+  const { data: payload, isError, isPending } = useQuery({
     queryKey: ['permission-grants', chucVuKey, capQuanLy],
     queryFn: () => fetchPositionPermissionGrants(chucVuKey, capQuanLy),
     enabled,
@@ -34,14 +34,23 @@ export function useHydratePositionPermissions(): void {
   });
 
   useEffect(() => {
+    const store = usePermissionGrantStore.getState();
     if (!enabled) {
-      usePermissionGrantStore.getState().clearMatrix();
+      // Chưa đăng nhập / chưa có chức vụ: không có gì để chờ, đóng cửa luôn.
+      store.clearMatrix();
       return;
     }
     if (payload) {
-      usePermissionGrantStore
-        .getState()
-        .setMatrixGrants(payload.grantsByModule, payload.chucVuCapBac, payload.chucVuCapQuanLy);
+      store.setMatrixGrants(payload.grantsByModule, payload.chucVuCapBac, payload.chucVuCapQuanLy);
+      return;
     }
-  }, [enabled, payload]);
+    if (isError) {
+      // Truy vấn quyền THẤT BẠI. Trước đây nhánh này không tồn tại nên `matrixActive`
+      // ở lại `false` suốt phiên và `legacyCan` cho xem mọi module. Nay thôi chờ và
+      // áp deny-by-default — người dùng thấy "không có quyền" thay vì thấy hết.
+      store.setMatrixLoading(false);
+      return;
+    }
+    store.setMatrixLoading(isPending);
+  }, [enabled, payload, isError, isPending]);
 }

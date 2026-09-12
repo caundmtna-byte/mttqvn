@@ -39,7 +39,13 @@ import {
   buildStandardDateRangePresets,
   isStandardDateRangeNonDefault,
 } from '@/lib/date-range-presets';
-import { StatsKpiGrid, StatsCard, StatsTableCard, ColoredBar } from '@/components/shared/stats';
+import {
+  ReportSkeleton,
+  StatsKpiGrid,
+  StatsCard,
+  StatsTableCard,
+  ColoredBar,
+} from '@/components/shared/stats';
 import { chartFillFromBadgeConfig } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import ExportDialog from '@/components/shared/ExportDialog';
@@ -59,6 +65,7 @@ import {
   CHUONG_TRINH_STATS_PHONG_BAN_NONE,
   type ChuongTrinhNamStatsDimensionFilters,
   resolveChuongTrinhNamStatsDateRange,
+  resolveChuongTrinhNamStatsTrendChartRange,
   filterRowsForChuongTrinhNamStats,
   computeChuongTrinhNamStatsKpis,
   computeChuongTrinhNamTienDoKpis,
@@ -129,10 +136,18 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
   const kpis = useMemo(() => computeChuongTrinhNamStatsKpis(filtered), [filtered]);
   const tienDoKpis = useMemo(() => computeChuongTrinhNamTienDoKpis(filtered), [filtered]);
 
-  const bucket = useMemo(() => pickChuongTrinhTrendBucket(resolvedRange.start, resolvedRange.end), [resolvedRange]);
+  // Preset «Tất cả» cho start/end rỗng — phải quy đổi về min–max thực tế trước khi dựng chuỗi.
+  const trendRange = useMemo(
+    () => resolveChuongTrinhNamStatsTrendChartRange(resolvedRange, filtered),
+    [resolvedRange, filtered],
+  );
+  const bucket = useMemo(
+    () => pickChuongTrinhTrendBucket(trendRange.start, trendRange.end),
+    [trendRange],
+  );
   const trendSeries = useMemo(
-    () => buildChuongTrinhTrendSeries(filtered, resolvedRange, bucket),
-    [filtered, resolvedRange, bucket],
+    () => buildChuongTrinhTrendSeries(filtered, trendRange, bucket),
+    [filtered, trendRange, bucket],
   );
 
   const topPhongBan = useMemo(() => {
@@ -530,7 +545,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
 
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">{txt('chuongTrinhNam.stats.loading')}</p>
+          <ReportSkeleton />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center space-y-2">
             <p className="text-sm font-medium text-foreground">{txt('chuongTrinhNam.stats.noData')}</p>

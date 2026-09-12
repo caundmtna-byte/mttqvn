@@ -1,4 +1,10 @@
 import { createRepository } from '@/lib/data/create-repository';
+import {
+  buildRpcSortParam,
+  fetchAllServerPages,
+  readRpcTotalCount,
+  type ServerSortState,
+} from '@/lib/data/server-paging';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -104,6 +110,167 @@ function formToPayload(data: ThucHienPhanBienFormValues): Record<string, unknown
 export async function getThucHienPhanBienList(): Promise<ThucHienPhanBien[]> {
   const list = await repo.getAll({ orderBy: 'tg_cap_nhat', ascending: false });
   return list.map((row) => flattenThucHienPhanBienRow(row as unknown as Record<string, unknown>));
+}
+
+// ---------------------------------------------------------------------------
+// Phân trang phía máy chủ (RPC) — xem CLAUDE.md "Chọn kiểu phân trang"
+// ---------------------------------------------------------------------------
+
+/** Cột được RPC sắp xếp; phải khớp khối ORDER BY trong migration. */
+export const PBXH_THUC_HIEN_SERVER_SORT_COLUMNS = [
+  'loai_hinh',
+  'cap_thuc_hien',
+  'noi_dung',
+  'tinh_trang',
+  'don_vi_thuc_hien',
+  'tien_do',
+  'ten_don_vi_chu_tri',
+  'ten_doi_tuong',
+  'ten_hinh_thuc',
+  'ten_phong_ban',
+  'ket_qua_kien_nghi',
+  'link_ket_qua',
+  'mo_ta_thoi_gian',
+  'ho_va_ten_nguoi_tao',
+  'ngay_bat_dau',
+  'ngay_ket_thuc',
+  'so_lan_hoan_thanh',
+  'so_lan_khao_sat',
+  'phan_tram_hoan_thanh',
+  'tg_cap_nhat',
+] as const;
+
+/**
+ * Mẫu câu hiển thị gửi kèm xuống RPC.
+ *
+ * Hai cột "Tiến độ" và "Đơn vị thực hiện" là chuỗi được tính ra chứ không nằm
+ * trong bảng; muốn sắp xếp / tìm theo cột đúng như người dùng nhìn thấy thì SQL
+ * phải dựng lại y hệt chuỗi đó. Câu chữ vẫn chỉ có một nguồn là `lib/text`.
+ */
+export function buildPbxhDisplayLabels(): Record<string, string> {
+  return {
+    don_vi_tinh: txt('pbxhThucHien.store.donViThucHienTinhCap'),
+    empty_cell: txt('common.emptyCell'),
+    tien_do_con: txt('pbxhThucHien.tienDo.conNgay', { count: '{{count}}' }),
+    tien_do_hom_nay: txt('pbxhThucHien.tienDo.hetHanHomNay'),
+    tien_do_qua_han: txt('pbxhThucHien.tienDo.quaHan', { count: '{{count}}' }),
+  };
+}
+
+export type PbxhThucHienPageQuery = {
+  page: number;
+  pageSize: number;
+  search: string;
+  sort?: ServerSortState | null;
+  /** Phạm vi xem — suy từ usePbxhThucHienViewer. */
+  viewAll: boolean;
+  viewerDonViId: string | null;
+  capThucHien: readonly string[];
+  loaiHinh: readonly string[];
+  tinhTrang: readonly string[];
+  donViChuTriIds: readonly string[];
+  columnSearch: Record<string, string> | null;
+};
+
+export type PbxhThucHienPageResult = {
+  rows: ThucHienPhanBien[];
+  hasNextPage: boolean;
+  totalRecords: number;
+};
+
+function toNullableId(v: string | null | undefined): number | null {
+  if (v == null) return null;
+  const t = String(v).trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+function toIdArray(list: readonly string[]): number[] | null {
+  const out = list.map((x) => Number(String(x).trim())).filter((n) => Number.isFinite(n));
+  return out.length > 0 ? out : null;
+}
+
+function toTextArray(list: readonly string[]): string[] | null {
+  return list.length > 0 ? [...list] : null;
+}
+
+/** Bỏ ô trống để RPC không phải lọc theo chuỗi rỗng; rỗng hết ⇒ null. */
+function cleanColumnSearch(cs: Record<string, string> | null | undefined): Record<string, string> | null {
+  if (!cs) return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(cs)) {
+    const t = v?.trim();
+    if (t) out[k] = t;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+/** RPC trả dòng phẳng — dựng lại hình dạng embed để dùng chung flatten. */
+function rpcRowToThucHien(raw: Record<string, unknown>): ThucHienPhanBien {
+  const {
+    ten_doi_tuong,
+    ten_hinh_thuc,
+    ten_don_vi_chu_tri,
+    ten_phong_ban,
+    ten_don_vi_thuc_hien,
+    ho_va_ten_nguoi_tao,
+    ten_tai_khoan_nguoi_tao,
+    total_count: _totalCount,
+    ...base
+  } = raw;
+  return flattenThucHienPhanBienRow({
+    ...base,
+    doi_tuong: { ten: ten_doi_tuong },
+    hinh_thuc: { ten: ten_hinh_thuc },
+    don_vi_chu_tri: { ten: ten_don_vi_chu_tri },
+    phong_ban: { ten_phong_ban },
+    don_vi_thuc_hien: { ten: ten_don_vi_thuc_hien },
+    nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+  });
+}
+
+export async function getThucHienPhanBienPage(
+  q: PbxhThucHienPageQuery,
+): Promise<PbxhThucHienPageResult> {
+  const supabase = getSupabase();
+  if (!supabase) return { rows: [], hasNextPage: false, totalRecords: 0 };
+  const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
+  const page = Math.max(1, Math.floor(q.page));
+  const offset = (page - 1) * pageSize;
+  const search = q.search?.trim() ?? '';
+
+  const { data, error } = await supabase.rpc('get_pbxh_thuc_hien_page', {
+    p_search: search.length > 0 ? search : null,
+    p_limit: pageSize,
+    p_offset: offset,
+    p_sort: buildRpcSortParam(q.sort, PBXH_THUC_HIEN_SERVER_SORT_COLUMNS),
+    p_view_all: q.viewAll,
+    p_viewer_don_vi_id: toNullableId(q.viewerDonViId),
+    p_cap_thuc_hien: toTextArray(q.capThucHien),
+    p_loai_hinh: toTextArray(q.loaiHinh),
+    p_tinh_trang: toTextArray(q.tinhTrang),
+    p_don_vi_chu_tri_ids: toIdArray(q.donViChuTriIds),
+    p_column_search: cleanColumnSearch(q.columnSearch),
+    p_labels: buildPbxhDisplayLabels(),
+  } as never);
+  if (error) handleSupabaseError(error);
+
+  const raw = (data ?? []) as unknown as Record<string, unknown>[];
+  const rows = raw.map(rpcRowToThucHien);
+  const totalFromPage = readRpcTotalCount(raw);
+  // Trang rỗng ngoài trang 1 không mang được tổng ⇒ hỏi lại trang đầu.
+  const totalRecords =
+    totalFromPage ??
+    (offset > 0 ? (await getThucHienPhanBienPage({ ...q, page: 1, pageSize: 1 })).totalRecords : 0);
+  return { rows, hasNextPage: offset + rows.length < totalRecords, totalRecords };
+}
+
+/** Kéo toàn bộ bản ghi khớp bộ lọc để xuất file. */
+export function getThucHienPhanBienAllForExport(
+  q: Omit<PbxhThucHienPageQuery, 'page' | 'pageSize'>,
+): Promise<ThucHienPhanBien[]> {
+  return fetchAllServerPages(q, getThucHienPhanBienPage);
 }
 
 export async function getThucHienPhanBienById(id: string): Promise<ThucHienPhanBien | null> {

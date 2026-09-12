@@ -13,6 +13,9 @@ interface Props {
   store: GenericState<ArticleKhacFilters>;
   data: BaiVietThietLapKhac[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   onRowClick: (item: BaiVietThietLapKhac) => void;
   onEdit: (item: BaiVietThietLapKhac) => void;
   onDelete: (id: string) => void;
@@ -24,6 +27,8 @@ const ArticleKhacTable = memo(function ArticleKhacTable({
   store,
   data,
   isLoading,
+  isError,
+  onRetry,
   onRowClick,
   onEdit,
   onDelete,
@@ -183,6 +188,8 @@ const ArticleKhacTable = memo(function ArticleKhacTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}

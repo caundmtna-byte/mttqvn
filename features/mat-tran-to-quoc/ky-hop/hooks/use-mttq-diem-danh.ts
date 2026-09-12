@@ -4,9 +4,9 @@ import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
 import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
-import type { MttqDiemDanhTrangThai, MttqDiemDanhUyVien, MttqKyHop, MttqKyHopListRow } from '../core/types';
+import type { MttqDiemDanhTrangThai, MttqDiemDanhUyVien } from '../core/types';
 import { getDiemDanhForKyHop, getDiemDanhForNhiemKy, upsertDiemDanh } from '../services/mttq-diem-danh-service';
-import type { MttqUyVienUyBanListRow } from '@/features/mat-tran-to-quoc/uy-vien-uy-ban/core/types';
+import { apDungPatchDiemDanh, hoanNguyenPatchDiemDanh } from '../utils/diem-danh-optimistic';
 
 export const useDiemDanhForKyHop = (kyHopId: string | null, options?: { enabled?: boolean }) =>
   useQuery({
@@ -26,6 +26,16 @@ export const useDiemDanhForNhiemKy = (nhiemKyId: string | null, options?: { enab
     ...masterDataQueryOptions,
   });
 
+/**
+ * Tick điểm danh — hiện kết quả NGAY khi bấm, gửi lên máy chủ sau.
+ *
+ * Điểm danh là thao tác bấm liên tiếp hàng chục lần, nên nếu chờ máy chủ trả lời
+ * rồi mới đổi giao diện thì mỗi nút bấm phải đợi một vòng mạng. Ở đây cache được
+ * sửa trong `onMutate` (trước khi gửi), và nếu lưu thất bại thì `onError` trả
+ * cache về đúng như cũ — người dùng thấy nút quay lại trạng thái trước kèm báo lỗi.
+ *
+ * Toàn bộ phần tính toán nằm ở `utils/diem-danh-optimistic.ts` và có test riêng.
+ */
 export const useUpsertDiemDanh = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,7 +44,7 @@ export const useUpsertDiemDanh = () => {
       uyVienId: string;
       trangThai: MttqDiemDanhTrangThai;
       idNguoiTao: string;
-      /** Khi có — invalidate ma trận điểm danh theo nhiệm kỳ */
+      /** Khi có — cập nhật luôn ma trận điểm danh theo nhiệm kỳ */
       nhiemKyId?: string;
     }) =>
       upsertDiemDanh({
@@ -43,90 +53,42 @@ export const useUpsertDiemDanh = () => {
         trangThai: args.trangThai,
         idNguoiTao: args.idNguoiTao,
       }),
-    onSuccess: (_data, { kyHopId, uyVienId, trangThai, nhiemKyId }) => {
-      // 1) Patch local cache cho điểm danh kỳ họp — không refetch toàn bảng:
-      //    Trước đây invalidate ⇒ mỗi tick = 1 round-trip cho cả bảng N ủy viên.
-      //    Sau: setQueryData đổi đúng row tương ứng (hoặc thêm mới) — 0 egress.
-      const kyHopKey = queryKeys.mttqDiemDanhUyVien.byKyHop(kyHopId);
-      const oldKyHop = queryClient.getQueryData<MttqDiemDanhUyVien[]>(kyHopKey);
-      const oldStatus = oldKyHop?.find((r) => r.uy_vien_id === uyVienId)?.trang_thai;
-      queryClient.setQueryData<MttqDiemDanhUyVien[]>(kyHopKey, (cur) => {
-        if (!cur) return cur;
-        const idx = cur.findIndex((r) => r.uy_vien_id === uyVienId);
-        if (idx === -1) {
-          // Row mới — id thật trả về sau refetch tiếp theo (ghi_chu = null
-          // mặc định để không hiển thị nội dung lạ).
-          const placeholder: MttqDiemDanhUyVien = {
-            id: '',
-            ky_hop_id: kyHopId,
-            uy_vien_id: uyVienId,
-            trang_thai: trangThai,
-            ghi_chu: null,
-          };
-          return [...cur, placeholder];
-        }
-        const next = cur.slice();
-        next[idx] = { ...next[idx], trang_thai: trangThai };
-        return next;
+
+    onMutate: async ({ kyHopId, uyVienId, trangThai, nhiemKyId }) => {
+      // Huỷ các lần tải đang chạy trên đúng những nhánh sắp sửa, nếu không dữ liệu
+      // cũ về sau sẽ ghi đè lên kết quả vừa bấm.
+      const nk = nhiemKyId?.trim();
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: queryKeys.mttqDiemDanhUyVien.byKyHop(kyHopId) }),
+        queryClient.cancelQueries({ queryKey: queryKeys.mttqUyVienUyBan.all }),
+        queryClient.cancelQueries({ queryKey: queryKeys.mttqKyHop.all }),
+        ...(nk ? [queryClient.cancelQueries({ queryKey: queryKeys.mttqDiemDanhUyVien.byNhiemKy(nk) })] : []),
+      ]);
+
+      return apDungPatchDiemDanh(queryClient, { kyHopId, uyVienId, trangThai, nhiemKyId });
+    },
+
+    onSuccess: (saved, { kyHopId, uyVienId }) => {
+      // Dòng vừa thêm lạc quan có `id` rỗng — thay bằng dòng thật máy chủ trả về
+      // để các thao tác sau (sửa ghi chú, xoá) có id đúng.
+      queryClient.setQueryData<MttqDiemDanhUyVien[]>(
+        queryKeys.mttqDiemDanhUyVien.byKyHop(kyHopId),
+        (cur) => cur?.map((r) => (r.ky_hop_id === kyHopId && r.uy_vien_id === uyVienId ? saved : r)),
+      );
+    },
+
+    onError: (e: unknown, _vars, snapshot) => {
+      hoanNguyenPatchDiemDanh(queryClient, snapshot);
+      toast.error(getErrorMessage(e) || txt('matTranKyHop.diemDanh.saveFailed'));
+    },
+
+    onSettled: (_data, _err, { kyHopId, nhiemKyId }) => {
+      // Đánh dấu cũ (KHÔNG tải lại ngay) — cache đã đúng nhờ patch/hoàn nguyên,
+      // tải lại mỗi lần bấm sẽ đốt băng thông vô ích. Lần mở trang sau tự đồng bộ.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.mttqDiemDanhUyVien.byKyHop(kyHopId),
+        refetchType: 'none',
       });
-
-      // 2) Patch summary counters trên ủy viên list — tính delta từ oldStatus → trangThai.
-      //    Không invalidate `mttqUyVienUyBan.all` để tránh refetch toàn list mỗi tick.
-      let dCo = 0;
-      let dVang = 0;
-      let dChua = 0;
-      if (!oldStatus) {
-        dChua = -1;
-        if (trangThai === 'Có mặt') dCo = 1;
-        else dVang = 1;
-      } else if (oldStatus !== trangThai) {
-        if (oldStatus === 'Có mặt') dCo = -1;
-        else dVang = -1;
-        if (trangThai === 'Có mặt') dCo += 1;
-        else dVang += 1;
-      }
-      if (dCo !== 0 || dVang !== 0 || dChua !== 0) {
-        const allKeys = queryClient.getQueriesData<MttqUyVienUyBanListRow[]>({
-          queryKey: queryKeys.mttqUyVienUyBan.all,
-        });
-        for (const [k, list] of allKeys) {
-          if (!Array.isArray(list)) continue;
-          const next = list.map((row) =>
-            row.id === uyVienId
-              ? {
-                  ...row,
-                  diem_danh_co_mat: Math.max(0, (row.diem_danh_co_mat ?? 0) + dCo),
-                  diem_danh_vang_mat: Math.max(0, (row.diem_danh_vang_mat ?? 0) + dVang),
-                  diem_danh_chua: Math.max(0, (row.diem_danh_chua ?? 0) + dChua),
-                }
-              : row,
-          );
-          queryClient.setQueryData(k, next);
-        }
-
-        // Cache patch tương tự cho `mttqKyHop`: bảng list, list theo nhiệm kỳ, và
-        // detail (single object). Tránh stale `diem_danh_*` trên bảng kỳ họp và
-        // drawer summary card cho đến lần refetch tiếp theo.
-        const kyHopPatchOne = <T extends Partial<MttqKyHopListRow>>(row: T): T => ({
-          ...row,
-          diem_danh_co_mat: Math.max(0, (row.diem_danh_co_mat ?? 0) + dCo),
-          diem_danh_vang_mat: Math.max(0, (row.diem_danh_vang_mat ?? 0) + dVang),
-          diem_danh_chua: Math.max(0, (row.diem_danh_chua ?? 0) + dChua),
-        });
-        const kyHopPairs = queryClient.getQueriesData<MttqKyHopListRow[] | MttqKyHop>({
-          queryKey: queryKeys.mttqKyHop.all,
-        });
-        for (const [k, value] of kyHopPairs) {
-          if (Array.isArray(value)) {
-            const next = value.map((row) => (row.id === kyHopId ? kyHopPatchOne(row) : row));
-            queryClient.setQueryData(k, next);
-          } else if (value && typeof value === 'object' && (value as MttqKyHop).id === kyHopId) {
-            queryClient.setQueryData(k, kyHopPatchOne(value as MttqKyHop));
-          }
-        }
-      }
-
-      // 3) Ma trận điểm danh nhiệm kỳ — mark stale (refetch khi user mở trang Ma trận).
       const nk = nhiemKyId?.trim();
       if (nk) {
         void queryClient.invalidateQueries({
@@ -134,9 +96,6 @@ export const useUpsertDiemDanh = () => {
           refetchType: 'none',
         });
       }
-    },
-    onError: (e: unknown) => {
-      toast.error(getErrorMessage(e) || txt('matTranKyHop.diemDanh.saveFailed'));
     },
   });
 };

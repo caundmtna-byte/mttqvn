@@ -160,7 +160,13 @@ export const createGenericStore = <TFilters>(
     columns: defaultColumns.map((col, i) => ({ ...col, order: col.order ?? i }))
   }),
 
-  setSort: (column, direction) => set({ sort: { column, direction } }),
+  // Đổi sắp xếp phải quay về trang 1: với bảng phân trang phía máy chủ, giữ
+  // nguyên số trang cũ sẽ hiện đúng một lát cắt giữa danh sách vừa sắp lại.
+  setSort: (column, direction) =>
+    set((state) => ({
+      sort: { column, direction },
+      pagination: { ...state.pagination, page: 1 },
+    })),
 
   resetState: () => set({
     searchTerm: '',

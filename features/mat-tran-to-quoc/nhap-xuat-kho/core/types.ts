@@ -38,6 +38,9 @@ export interface NhapXuatKhoListRow {
   ten_dot_cuu_tro: string | null;
   /** Số dòng chi tiết (PostgREST aggregate `(count)`). */
   so_dong: number;
+  /** Người LẬP phiếu — gán phía máy chủ từ phiên đăng nhập. */
+  id_nguoi_tao: string | null;
+  ho_va_ten_nguoi_tao: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
 }

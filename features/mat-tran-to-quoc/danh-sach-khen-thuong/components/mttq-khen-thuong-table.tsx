@@ -25,6 +25,9 @@ export interface MttqKhenThuongTrangThaiHeaderOption {
 interface Props {
   data: MttqKhenThuongListRow[];
   isLoading: boolean;
+  /** Query lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   /** Options + count cho MultiSelect header cột trạng thái (đồng bộ toolbar). */
   trangThaiHeaderOptions: MttqKhenThuongTrangThaiHeaderOption[];
   onEdit: (item: MttqKhenThuongListRow) => void;
@@ -35,6 +38,8 @@ interface Props {
 const MttqKhenThuongTable = memo(function MttqKhenThuongTable({
   data,
   isLoading,
+  isError,
+  onRetry,
   trangThaiHeaderOptions,
   onEdit,
   onDelete,
@@ -121,9 +126,17 @@ const MttqKhenThuongTable = memo(function MttqKhenThuongTable({
       switch (colId) {
         case 'so_qd':
           return (
+            <span className="truncate font-semibold text-foreground text-sm tabular-nums tracking-tight">
+              {item.so_qd || txt('common.emptyCell')}
+            </span>
+          );
+        case 'noi_dung_khen':
+          return (
             <div className="flex min-w-0 items-center gap-2">
               <Award size={14} className="shrink-0 text-primary/70" aria-hidden />
-              <span className="truncate font-semibold text-foreground text-sm tracking-tight">{item.so_qd}</span>
+              <span className="truncate text-body-sm text-foreground" title={item.noi_dung_khen ?? undefined}>
+                {item.noi_dung_khen ?? txt('common.emptyCell')}
+              </span>
             </div>
           );
         case 'ngay_khen_thuong':
@@ -214,7 +227,9 @@ const MttqKhenThuongTable = memo(function MttqKhenThuongTable({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start mb-1">
-              <h4 className="font-semibold text-foreground truncate">{item.so_qd}</h4>
+              <h4 className="font-semibold text-foreground truncate">
+                {item.noi_dung_khen || item.so_qd || txt('common.emptyCell')}
+              </h4>
               <input
                 type="checkbox"
                 checked={isSelected}
@@ -257,6 +272,8 @@ const MttqKhenThuongTable = memo(function MttqKhenThuongTable({
       data={data}
       columns={columns}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       loadingText={txt('common.loadingData')}
       emptyTitle={txt('matTranKhenThuong.emptyTitle')}
       emptyDescription={txt('matTranKhenThuong.emptyHint')}

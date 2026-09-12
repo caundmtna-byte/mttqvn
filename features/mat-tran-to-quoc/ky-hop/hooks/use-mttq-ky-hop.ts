@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { queryKeys } from '@/lib/query-keys';
 import { listQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
-import { getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
+import { getErrorMessage } from '@/lib/utils';
+import { hoanNguyenCache, xoaDongKhoiCache } from '../utils/xoa-optimistic';
 import type { MttqKyHop } from '../core/types';
 import type { MttqKyHopFormValues } from '../core/schema';
 import {
@@ -54,7 +55,6 @@ export const useCreateMttqKyHop = (onSuccess?: () => void) => {
       toast.success(txt('matTranKyHop.toast.create'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
@@ -70,22 +70,32 @@ export const useUpdateMttqKyHop = (onSuccess?: () => void) => {
       toast.success(txt('matTranKyHop.toast.update'));
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };
 
+/**
+ * Xóa kỳ họp — dòng biến mất khỏi bảng ngay khi xác nhận, hỏng thì hiện lại.
+ */
 export const useDeleteMttqKyHopMany = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteMttqKyHopMany,
+    onMutate: async (ids: string[]) => {
+      // Huỷ lần tải đang chạy, nếu không dữ liệu cũ về sau sẽ dựng lại dòng vừa xóa.
+      await queryClient.cancelQueries({ queryKey: listKey });
+      return xoaDongKhoiCache<MttqKyHop>(queryClient, listKey, ids);
+    },
     onSuccess: (_, ids) => {
-      void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({ queryKey: listKey, refetchType: 'none' });
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.mttqKyHop.detail(id) });
       }
       toast.success(txt('matTranKyHop.toast.delete', { count: ids.length }));
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
+    onError: (err: unknown, _ids, snapshot) => {
+      hoanNguyenCache(queryClient, snapshot);
+      toast.error(getErrorMessage(err));
+    },
   });
 };
 
@@ -104,6 +114,5 @@ export const useImportMttqKyHop = (onSuccess?: () => void) => {
       }
       onSuccess?.();
     },
-    onError: (e: unknown) => toast.error(getErrorMessage(e)),
   });
 };

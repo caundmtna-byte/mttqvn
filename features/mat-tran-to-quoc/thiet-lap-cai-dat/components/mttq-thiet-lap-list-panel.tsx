@@ -23,7 +23,7 @@ import MttqThietLapTable from './mttq-thiet-lap-table';
 import type { GenericState } from '@/store/createGenericStore';
 import { useDeleteMttqThietLap } from '../hooks/use-mttq-thiet-lap';
 import type { MttqThietLap, MttqThietLapFilters, MttqThietLapLoai } from '../core/types';
-import { mttqMatchesColumnSearch } from '../utils/column-search';
+import { countMttqColumnSearchActive, mttqMatchesColumnSearch } from '../utils/column-search';
 import { MTTQ_THIET_LAP_SEARCH_KEYS } from '../utils/search-keys';
 
 const MttqThietLapForm = lazy(() => import('./mttq-thiet-lap-form'));
@@ -44,12 +44,15 @@ export interface MttqThietLapListPanelProps {
   loai: MttqThietLapLoai;
   items: MttqThietLap[];
   isLoading: boolean;
+  /** Query danh sách lỗi — bảng hiện thông báo lỗi + nút Thử lại thay vì "Không có dữ liệu". */
+  isError?: boolean;
+  onRetry?: () => void;
   store: GenericState<MttqThietLapFilters>;
   tabGroup: React.ReactNode;
   onPageBack: () => void;
 }
 
-export function MttqThietLapListPanel({ loai, items, isLoading, store, tabGroup, onPageBack }: MttqThietLapListPanelProps) {
+export function MttqThietLapListPanel({ loai, items, isLoading, isError, onRetry, store, tabGroup, onPageBack }: MttqThietLapListPanelProps) {
   const confirm = useConfirmStore((s) => s.confirm);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<MttqThietLap | null>(null);
@@ -105,6 +108,21 @@ export function MttqThietLapListPanel({ loai, items, isLoading, store, tabGroup,
     }
     return sorted;
   }, [filteredRows, sort.column, sort.direction]);
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
+   * danh sách gốc có bản ghi mà lọc/tìm kiếm ra rỗng.
+   */
+  const hasListFilters = useMemo(
+    () =>
+      Boolean(searchTerm?.trim()) ||
+      countMttqColumnSearchActive(filters.columnSearch, filters.mo_ta_bucket) > 0 ||
+      filters.mo_ta_bucket === 'has' ||
+      filters.mo_ta_bucket === 'empty',
+    [searchTerm, filters.columnSearch, filters.mo_ta_bucket],
+  );
+
+  const listFilteredEmpty = sortedRows.length === 0 && items.length > 0 && hasListFilters;
 
   const EXPORT_COLUMNS = useMemo(
     () => [
@@ -223,10 +241,13 @@ export function MttqThietLapListPanel({ loai, items, isLoading, store, tabGroup,
           store={store}
           data={sortedRows}
           isLoading={isLoading}
+          isError={isError}
+          onRetry={onRetry}
           onRowClick={setViewing}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          emptyTitle={txt('page.matTranThietLap.empty')}
+          emptyTitle={listFilteredEmpty ? txt('common.noResults') : txt('page.matTranThietLap.empty')}
+          emptyDescription={listFilteredEmpty ? txt('shared.empty.filteredHint') : undefined}
         />
       </div>
 
