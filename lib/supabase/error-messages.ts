@@ -129,6 +129,10 @@ const BY_RPC_CODE: Record<string, string> = {
   // thể); câu dưới chỉ là lưới an toàn khi lỗi đi đường khác và còn nguyên mã.
   TRANG_THAI_KHONG_HOP_LE:
     'Không chuyển sang trạng thái đó được từ trạng thái hiện tại. Hãy tải lại trang để xem trạng thái mới nhất.',
+  // Nhà đại đoàn kết: đưa hồ sơ vào "Đã phê duyệt" đòi quyền Duyệt (`phe_duyet`),
+  // tách khỏi quyền Sửa — xem `20260913103000_nddk_quyen_phe_duyet.sql`.
+  PHE_DUYET_KHONG_DU_QUYEN:
+    'Bạn không có quyền Duyệt hồ sơ này. Hãy chuyển cho người có quyền phê duyệt, hoặc liên hệ quản trị hệ thống.',
 };
 
 /** Câu theo MÃ LỖI — lưới an toàn khi không nhận ra tên ràng buộc. */

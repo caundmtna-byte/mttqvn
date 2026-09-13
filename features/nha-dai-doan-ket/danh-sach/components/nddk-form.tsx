@@ -22,6 +22,7 @@ import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import {
   nhaDaiDoanKetSchema,
   nhaDaiDoanKetToFormInput,
@@ -35,8 +36,8 @@ import {
   NDDK_NAM_MIN,
   NDDK_NGUON_HO_TRO_VALUES,
   NDDK_NGUON_VALUES,
-  NDDK_TRANG_THAI_VALUES,
 } from '../core/constants';
+import { nddkTrangThaiChonDuoc } from '../core/quyen-trang-thai';
 import type { NhaDaiDoanKet } from '../core/types';
 import { useCreateNhaDaiDoanKet, useUpdateNhaDaiDoanKet } from '../hooks/use-nha-dai-doan-ket';
 import { isNddkScopedToXaPhuong, useNddkViewer } from '../hooks/use-nddk-viewer';
@@ -58,6 +59,7 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
   const updateMutation = useUpdateNhaDaiDoanKet(onClose);
   const viewer = useNddkViewer('nhaDaiDoanKetList');
   const scopedToXa = isNddkScopedToXaPhuong(viewer);
+  const { canApprove } = useResourcePermissions('nhaDaiDoanKetList');
 
   const xaPhuongOptions = useNddkXaPhuongOptions(scopedToXa ? viewer.viewerDonViId : null);
   const nguonOptions = useMemo(() => NDDK_NGUON_VALUES.map((v) => ({ label: v, value: v })), []);
@@ -73,9 +75,18 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
     () => NDDK_LOAI_HINH_VALUES.map((v) => ({ label: v, value: v })),
     [],
   );
+  /**
+   * Ô Trạng thái trên form sửa cũng phải lọc theo quyền Duyệt, không chỉ hộp
+   * thoại "Chuyển trạng thái": để nguyên cả 5 lựa chọn thì người không có quyền
+   * vẫn chọn được "Đã phê duyệt" rồi mới ăn lỗi từ DB khi bấm Lưu.
+   */
   const trangThaiOptions = useMemo(
-    () => NDDK_TRANG_THAI_VALUES.map((v) => ({ label: v, value: v })),
-    [],
+    () =>
+      nddkTrangThaiChonDuoc(initialData?.trang_thai, canApprove).map((v) => ({
+        label: v,
+        value: v,
+      })),
+    [initialData?.trang_thai, canApprove],
   );
 
   const {

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
+  ArrowRightLeft,
   Edit,
   Trash2,
   Home,
@@ -22,6 +23,7 @@ import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/De
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
+import DetailToolbar, { type DetailToolbarAction } from '@/components/shared/DetailToolbar';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
@@ -32,6 +34,9 @@ import {
   nddkNguonBadge,
   nddkTrangThaiBadge,
 } from '../core/display-badges';
+import { useUpdateNhaDaiDoanKetTrangThai } from '../hooks/use-nha-dai-doan-ket';
+import NddkChuyenTrangThaiDialog from './nddk-chuyen-trang-thai-dialog';
+import type { NhaDaiDoanKetStatusChangeValues } from '../core/schema';
 import {
   formatNddkDateTimeDisplay,
   formatNddkNgayDisplay,
@@ -48,9 +53,42 @@ interface Props {
 }
 
 const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
-  const { canEdit, canDelete } = useResourcePermissions('nhaDaiDoanKetList');
+  const { canEdit, canDelete, canApprove } = useResourcePermissions('nhaDaiDoanKetList');
   const emptyCell = txt('common.emptyCell');
   const soTienLabel = formatNddkSoTienDisplay(data.so_tien);
+
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const statusMutation = useUpdateNhaDaiDoanKetTrangThai();
+
+  /**
+   * Hành động nghiệp vụ nằm trên toolbar; Đóng / Sửa / Xóa vẫn ở footer —
+   * đúng quy ước các màn detail khác trong repo.
+   *
+   * Nút mở hộp thoại gác bằng `canEdit` chứ không phải `canApprove`: người nhập
+   * liệu phải tự đẩy hồ sơ qua các bước khảo sát → thực hiện → bàn giao. Riêng
+   * "Đã phê duyệt" bị lọc khỏi danh sách bên trong hộp thoại khi thiếu quyền
+   * Duyệt, và DB chặn lần nữa bằng trigger `fn_nddk_kiem_quyen_phe_duyet`.
+   */
+  const toolbarActions: DetailToolbarAction[] = useMemo(() => {
+    if (!canEdit) return [];
+    return [
+      {
+        label: txt('nhaDaiDoanKet.detail.actionChangeStatus'),
+        icon: <ArrowRightLeft size={16} />,
+        variant: 'info' as const,
+        onClick: () => setStatusModalOpen(true),
+      },
+    ];
+  }, [canEdit]);
+
+  const statusInitial: NhaDaiDoanKetStatusChangeValues = useMemo(
+    () => ({ trang_thai: data.trang_thai, ghi_chu: data.ghi_chu ?? undefined }),
+    [data.trang_thai, data.ghi_chu],
+  );
+
+  const handleStatusSave = async (values: NhaDaiDoanKetStatusChangeValues) => {
+    await statusMutation.mutateAsync({ id: data.id, data: values });
+  };
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -148,6 +186,10 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
             </div>
           }
         />
+
+        {toolbarActions.length > 0 ? (
+          <DetailToolbar actions={toolbarActions} className="bg-card rounded-xl border border-border" />
+        ) : null}
 
         <DetailSection
           title={txt('nhaDaiDoanKet.form.sectionHoDan')}
@@ -340,6 +382,15 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
           </DetailFieldGrid>
         </DetailSection>
       </div>
+
+      <NddkChuyenTrangThaiDialog
+        open={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
+        initial={statusInitial}
+        canApprove={canApprove}
+        isSubmitting={statusMutation.isPending}
+        onSave={handleStatusSave}
+      />
     </GenericDrawer>
   );
 };

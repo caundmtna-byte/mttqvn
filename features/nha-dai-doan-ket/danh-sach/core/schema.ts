@@ -77,6 +77,27 @@ export const nhaDaiDoanKetSchema = z.object({
 export type NhaDaiDoanKetFormValues = z.infer<typeof nhaDaiDoanKetSchema>;
 
 /**
+ * Hộp thoại "Chuyển trạng thái" — chỉ hai trường, KHÔNG đi qua form sửa đầy đủ.
+ *
+ * `ghi_chu` ở đây là **lý do của lần đổi này**: trigger
+ * `fn_ghi_lich_su_trang_thai` chụp lại nó vào `lich_su_trang_thai`, nên mỗi lần
+ * đổi giữ được lý do riêng dù cột `ghi_chu` của bản ghi bị ghi đè sau đó.
+ */
+export const nhaDaiDoanKetStatusChangeSchema = z.object({
+  trang_thai: z.enum(NDDK_TRANG_THAI_VALUES, {
+    message: txt('nhaDaiDoanKet.validation.trangThaiInvalid'),
+  }),
+  ghi_chu: optionalText,
+});
+
+export type NhaDaiDoanKetStatusChangeValues = z.infer<typeof nhaDaiDoanKetStatusChangeSchema>;
+
+export type NhaDaiDoanKetStatusChangeInput = {
+  trang_thai: string;
+  ghi_chu?: string;
+};
+
+/**
  * Hình dạng ô nhập (mọi trường là chuỗi / số thô của form).
  * Cố ý KHÔNG có `ngay_cap_nhat_trang_thai`: trigger DB gán khi trạng thái đổi.
  */

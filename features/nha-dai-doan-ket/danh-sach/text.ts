@@ -14,6 +14,20 @@ export const nhaDaiDoanKet = {
   detail: {
     systemInfo: 'Thông tin hệ thống',
     ngayTrangThaiHint: 'Máy chủ tự ghi khi trạng thái thay đổi.',
+    actionChangeStatus: 'Chuyển trạng thái',
+    actionEdit: 'Sửa hồ sơ',
+    actionDelete: 'Xóa hồ sơ',
+  },
+  statusChangeModal: {
+    title: 'Chuyển trạng thái',
+    subtitle: 'Đổi trạng thái hồ sơ và ghi lý do',
+    section: 'Trạng thái mới',
+    save: 'Chuyển trạng thái',
+    lyDoLabel: 'Lý do / ghi chú',
+    lyDoPlaceholder: 'Vì sao chuyển sang trạng thái này?',
+    hint: 'Mỗi lần đổi đều được lưu vết: từ trạng thái nào sang trạng thái nào, ai đổi, lúc nào.',
+    noApproveHint:
+      'Bạn không có quyền Duyệt nên không chọn được "Đã phê duyệt". Các bước còn lại vẫn đổi được.',
   },
   store: {
     namCol: 'Năm',
@@ -45,6 +59,7 @@ export const nhaDaiDoanKet = {
     create: 'Đã thêm hồ sơ',
     update: 'Đã cập nhật hồ sơ',
     delete: 'Đã xóa {{count}} hồ sơ',
+    statusChange: 'Đã chuyển trạng thái hồ sơ',
   },
   service: {
     noEmployeeProfile: 'Không xác định được nhân viên đăng nhập.',

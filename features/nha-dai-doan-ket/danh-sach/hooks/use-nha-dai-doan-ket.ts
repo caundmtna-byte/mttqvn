@@ -3,7 +3,10 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
-import type { NhaDaiDoanKetFormValues } from '../core/schema';
+import type {
+  NhaDaiDoanKetFormValues,
+  NhaDaiDoanKetStatusChangeValues,
+} from '../core/schema';
 import type { NhaDaiDoanKet } from '../core/types';
 import {
   createNhaDaiDoanKet,
@@ -11,6 +14,7 @@ import {
   getNhaDaiDoanKetById,
   getNhaDaiDoanKetList,
   updateNhaDaiDoanKet,
+  updateNhaDaiDoanKetTrangThai,
 } from '../services/nha-dai-doan-ket-service';
 
 const listKey = queryKeys.nhaDaiDoanKet.all;
@@ -76,6 +80,29 @@ export function useUpdateNhaDaiDoanKet(onSuccess?: () => void) {
       queryClient.setQueryData(queryKeys.nhaDaiDoanKet.detail(updated.id), updated);
       invalidateNddkPages(queryClient);
       toast.success(txt('nhaDaiDoanKet.toast.update'));
+      onSuccess?.();
+    },
+  });
+}
+
+/**
+ * Đổi riêng trạng thái từ hộp thoại trên màn chi tiết.
+ *
+ * Tách khỏi `useUpdateNhaDaiDoanKet` vì đây là hành động nghiệp vụ khác: nó có
+ * thể bị DB từ chối do thiếu quyền Duyệt, và toast báo thành công cũng khác.
+ */
+export function useUpdateNhaDaiDoanKetTrangThai(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: NhaDaiDoanKetStatusChangeValues }) =>
+      updateNhaDaiDoanKetTrangThai(id, data),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<NhaDaiDoanKet[]>(listKey, (old) =>
+        old?.map((r) => (r.id === updated.id ? updated : r)),
+      );
+      queryClient.setQueryData(queryKeys.nhaDaiDoanKet.detail(updated.id), updated);
+      invalidateNddkPages(queryClient);
+      toast.success(txt('nhaDaiDoanKet.toast.statusChange'));
       onSuccess?.();
     },
   });

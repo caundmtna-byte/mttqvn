@@ -8,7 +8,10 @@ import {
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import type { NhaDaiDoanKetFormValues } from '../core/schema';
+import type {
+  NhaDaiDoanKetFormValues,
+  NhaDaiDoanKetStatusChangeValues,
+} from '../core/schema';
 import type { NhaDaiDoanKet } from '../core/types';
 import type {
   NddkDoiTuong,
@@ -305,6 +308,32 @@ export async function updateNhaDaiDoanKet(
     id,
     {
       ...formToPayload(data),
+      tg_cap_nhat: new Date().toISOString(),
+    },
+    { returningSelect: NDDK_RETURNING },
+  );
+  return flattenNhaDaiDoanKetRow(updated as unknown as Record<string, unknown>);
+}
+
+/**
+ * Đổi RIÊNG trạng thái + lý do, không đụng các trường khác.
+ *
+ * Cố ý không đi qua `updateNhaDaiDoanKet`: form sửa gửi lên toàn bộ payload, nên
+ * nếu ai đó đang mở hộp thoại trong lúc bản ghi được sửa ở nơi khác thì bấm Lưu
+ * sẽ ghi đè cả những trường mình không hề chạm vào.
+ *
+ * `ngay_cap_nhat_trang_thai` do trigger gán; quyền Duyệt do trigger
+ * `fn_nddk_kiem_quyen_phe_duyet` kiểm — client gửi thẳng, DB từ chối nếu thiếu.
+ */
+export async function updateNhaDaiDoanKetTrangThai(
+  id: string,
+  data: NhaDaiDoanKetStatusChangeValues,
+): Promise<NhaDaiDoanKet> {
+  const updated = await repo.update(
+    id,
+    {
+      trang_thai: data.trang_thai,
+      ghi_chu: data.ghi_chu ?? null,
       tg_cap_nhat: new Date().toISOString(),
     },
     { returningSelect: NDDK_RETURNING },
