@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase/client';
 import { txt } from '@/lib/text';
+import { messageForAuthError } from '@/lib/supabase/error-messages';
 
 export interface ChangePasswordInput {
   currentPassword: string;
@@ -64,7 +65,11 @@ export async function changeUserPassword(
 
   const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
   if (updateError) {
-    return { error: updateError.message || txt('nav.changePassword.errorGeneric') };
+    // `updateError.message` là tiếng Anh của GoTrue ("New password should be
+    // different from the old password.") và hiện inline ngay trong hộp thoại.
+    return {
+      error: messageForAuthError(updateError.message) ?? txt('nav.changePassword.errorGeneric'),
+    };
   }
 
   return {};

@@ -13,8 +13,13 @@ import { getErrorMessage } from './lib/utils';
 import { SupabaseAppError } from './lib/supabase/errors';
 import { RQ_PERSIST_STORAGE_KEY, SERVER_GC_TIME_MS, SERVER_STALE_TIME_MS } from './lib/supabase/query-config';
 import { captureAppError, initSentry } from './lib/observability/sentry';
+import { applyZodVietnameseErrors } from './lib/validation/zod-vi';
 
 initSentry();
+
+// Câu tiếng Việt cho mọi thông báo kiểm tra dữ liệu của zod — phải chạy TRƯỚC
+// khi bất kỳ schema nào được dùng, nếu không người dùng thấy "Too small: …".
+applyZodVietnameseErrors();
 
 // PWA: đăng ký SW + toast cập nhật/offline trong App (PwaRegister)
 

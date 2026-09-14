@@ -1,6 +1,7 @@
 import { getSupabase } from '@/lib/supabase/client';
 import type { User } from '@/types';
 import { loginNameToSupabaseEmail, supabaseEmailToLoginName } from '@/lib/auth-email';
+import { messageForAuthError } from '@/lib/supabase/error-messages';
 
 export interface SignInCredentials {
   email: string;
@@ -111,7 +112,13 @@ const authService: AuthService = {
     const supabase = getSupabase();
     if (!supabase) return { error: 'Supabase chưa được cấu hình' };
     const { data, error } = await supabase.auth.signInWithPassword(credentials);
-    if (error) return { error: error.message };
+    // GoTrue chỉ trả tiếng Anh ("Invalid login credentials") mà `pages/Login.tsx`
+    // đổ thẳng ra toast, nên phải dịch ngay tại đây.
+    if (error) {
+      return {
+        error: messageForAuthError(error.message) ?? 'Đăng nhập không thành công. Vui lòng thử lại.',
+      };
+    }
     if (!data.user?.email) return { error: 'Đăng nhập thất bại' };
 
     const nhanVien = await resolveNhanVienForAuthEmail(data.user.email);
@@ -134,7 +141,11 @@ const authService: AuthService = {
       password,
       options: { data: { full_name: fullName } },
     });
-    if (error) return { error: error.message };
+    if (error) {
+      return {
+        error: messageForAuthError(error.message) ?? 'Không tạo được tài khoản đăng nhập. Vui lòng thử lại.',
+      };
+    }
     if (data.user?.email) {
       const nhanVien = await resolveNhanVienForAuthEmail(data.user.email);
       return { user: buildAppUser(data.user, nhanVien) };

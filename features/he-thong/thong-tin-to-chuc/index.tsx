@@ -12,6 +12,7 @@ import ThongTinToChucForm from './components/thong-tin-to-chuc-form';
 import type { CompanyFormValues } from './core/types';
 import { saveThongTinToChuc } from './services/thong-tin-to-chuc-service';
 import { queryKeys } from '@/lib/query-keys';
+import { getErrorMessage } from '@/lib/utils';
 
 const ThongTinToChucPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
@@ -40,7 +41,9 @@ const ThongTinToChucPage: React.FC = () => {
       queryClient.setQueryData(queryKeys.thongTinToChuc.singleton, saved);
       toast.success(txt('company.saveSuccess'));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Lỗi lưu');
+      // Service ném lại nguyên văn message Supabase, nên trước đây người dùng
+      // thấy `new row violates row-level security policy for table …`.
+      toast.error(getErrorMessage(e));
     }
   };
 

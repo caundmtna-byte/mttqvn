@@ -10,6 +10,7 @@ import {
   DEPARTMENT_SELECT_FULL,
 } from '../core/supabase-select';
 import { txt } from '../../../../lib/text';
+import { getErrorMessage } from '@/lib/utils';
 
 const repo = createRepository<Department>({
   tableName: 'var_phong_ban',
@@ -192,7 +193,7 @@ export const importDepartments = async (
       await createDepartment({ ...data, cha_id: idCha ?? undefined });
       created++;
     } catch (e: unknown) {
-      errors.push(`Dòng ${i + 2}: ${e instanceof Error ? e.message : 'Lỗi'}`);
+      errors.push(`Dòng ${i + 2}: ${getErrorMessage(e)}`);
     }
   }
   return { created, errors };

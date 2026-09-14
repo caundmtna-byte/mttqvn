@@ -12,6 +12,7 @@ import BaoCaoNxtToolbar from './bao-cao-nxt-toolbar';
 import TongHopNxtKyTab from './tong-hop-nxt-ky-tab';
 import { txt } from '@/lib/text';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Props {
   onBack: () => void;
@@ -78,7 +79,7 @@ const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
       await exportNXTToExcel(data);
       toast.success(txt('matTranTonKho.export.success'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : txt('matTranTonKho.export.error'));
+      toast.error(getErrorMessage(e));
     }
   }, [rangeOk, data]);
 

@@ -10,6 +10,7 @@ import {
   POSITION_SELECT_FULL,
 } from '../core/supabase-select';
 import { txt } from '../../../../lib/text';
+import { getErrorMessage } from '@/lib/utils';
 
 const repo = createRepository<Position>({
   tableName: 'var_chuc_vu',
@@ -223,7 +224,7 @@ export const importPositions = async (
       });
       created++;
     } catch (e: unknown) {
-      errors.push(`Dòng ${i + 2}: ${e instanceof Error ? e.message : 'Lỗi'}`);
+      errors.push(`Dòng ${i + 2}: ${getErrorMessage(e)}`);
     }
   }
 

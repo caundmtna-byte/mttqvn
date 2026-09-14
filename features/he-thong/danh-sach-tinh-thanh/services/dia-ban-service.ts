@@ -6,6 +6,7 @@ import type { TinhThanhFormValues, XaPhuongFormValues } from '../core/schema';
 import { tinhThanhSchema, xaPhuongSchema } from '../core/schema';
 import { txt } from '@/lib/text';
 import { TINH_THANH_SELECT_FULL, XA_PHUONG_SELECT_FULL } from '../core/supabase-select';
+import { getErrorMessage } from '@/lib/utils';
 
 function normTinh(row: Record<string, unknown>): TinhThanh {
   return {
@@ -275,7 +276,7 @@ export async function importTinhThanhRows(
       errors.push(
         txt('diaBan.import.rowError', {
           row: String(i + 2),
-          detail: e instanceof Error ? e.message : String(e),
+          detail: getErrorMessage(e),
         }),
       );
     }
@@ -335,7 +336,7 @@ export async function importXaPhuongRows(
       errors.push(
         txt('diaBan.import.rowError', {
           row: String(i + 2),
-          detail: e instanceof Error ? e.message : String(e),
+          detail: getErrorMessage(e),
         }),
       );
     }

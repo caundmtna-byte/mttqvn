@@ -1,4 +1,6 @@
 import { getSupabase } from './client';
+import { messageForAuthError } from './error-messages';
+import { captureAppError } from '@/lib/observability/sentry';
 
 /**
  * Wrapper SPA gọi Edge Function `admin-user` (xem `supabase/functions/admin-user`).
@@ -31,6 +33,14 @@ interface AdminResponse {
   error?: string;
 }
 
+/** Câu mặc định theo thao tác, khi không nhận ra lỗi GoTrue trả về. */
+const CAU_MAC_DINH: Record<AdminAction, string> = {
+  check: 'Không kiểm tra được tài khoản đăng nhập. Vui lòng thử lại.',
+  create: 'Không tạo được tài khoản đăng nhập. Vui lòng thử lại.',
+  reset_password: 'Không đặt lại được mật khẩu. Vui lòng thử lại.',
+  delete: 'Không xoá được tài khoản đăng nhập. Vui lòng thử lại.',
+};
+
 async function callAdminUser(action: AdminAction, username: string, extra?: { password?: string }): Promise<AdminResponse> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error('Supabase chưa được cấu hình. Không thể gọi Edge Function.');
@@ -60,7 +70,13 @@ async function callAdminUser(action: AdminAction, username: string, extra?: { pa
     json = {};
   }
   if (!res.ok) {
-    throw new Error(json.error ?? `admin-user ${action} thất bại (HTTP ${res.status})`);
+    // `json.error` là message thô của GoTrue ("User already registered"), còn
+    // câu ghép cũ lộ tên Edge Function + mã HTTP ra thẳng toast. Chi tiết kỹ
+    // thuật chỉ đi vào Sentry, người dùng nhận câu theo thao tác đang làm.
+    captureAppError(new Error(`admin-user ${action} HTTP ${res.status}: ${json.error ?? ''}`), {
+      nguon: 'admin-user',
+    });
+    throw new Error(messageForAuthError(json.error) ?? CAU_MAC_DINH[action]);
   }
   return json;
 }

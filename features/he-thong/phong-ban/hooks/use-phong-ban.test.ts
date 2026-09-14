@@ -56,12 +56,14 @@ describe('tomTatLyDoHong', () => {
   });
 
   it('nêu tối đa 2 lý do khác nhau', () => {
+    // Lý do phải là câu tiếng Việt thật: `getErrorMessage` nay thay mọi chuỗi
+    // không dấu bằng câu mặc định, nên placeholder kiểu 'A'/'B' sẽ gộp làm một.
     const ket = tomTatLyDoHong([
-      { loi: new Error('A') },
-      { loi: new Error('B') },
-      { loi: new Error('C') },
+      { loi: new Error('Còn phòng ban con bên trong') },
+      { loi: new Error('Còn nhân viên đang thuộc phòng này') },
+      { loi: new Error('Phòng ban đang được dùng ở nơi khác') },
     ]);
-    expect(ket).toBe('A; B');
+    expect(ket).toBe('Còn phòng ban con bên trong; Còn nhân viên đang thuộc phòng này');
   });
 });
 

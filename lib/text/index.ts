@@ -15,6 +15,7 @@ import { articleList } from '../../features/quan-ly-viet-bai/bai-viet/text';
 import { articleStats } from '../../features/quan-ly-viet-bai/bc-thong-ke-bai-viet/text';
 import { articleCommission } from '../../features/quan-ly-viet-bai/hoa-hong-viet-bai/text';
 import { chuongTrinhNam } from '../../features/quan-ly-giao-viec/chuong-trinh-nam/text';
+import { articleSettings } from '../../features/quan-ly-viet-bai/thiet-lap-bai-viet/text';
 import { taskList } from '../../features/quan-ly-giao-viec/cong-viec/text';
 import { taskReport } from '../../features/quan-ly-giao-viec/bao-cao-cong-viec/text';
 import { matTranCanBo } from '../../features/mat-tran-to-quoc/danh-sach-can-bo/text';
@@ -77,6 +78,7 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('articleStats', articleStats),
   ...flatten('articleCommission', articleCommission),
   ...flatten('chuongTrinhNam', chuongTrinhNam),
+  ...flatten('articleSettings', articleSettings),
   ...flatten('taskList', taskList),
   ...flatten('taskReport', taskReport),
   ...flatten('matTranCanBo', matTranCanBo),
@@ -152,6 +154,7 @@ export {
   articleStats,
   articleCommission,
   chuongTrinhNam,
+  articleSettings,
   taskList,
   taskReport,
   matTranCanBo,

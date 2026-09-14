@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 import { txt } from '@/lib/text';
 import { useNXTByPeriod, isNXTDateRangeValid } from '../hooks/use-kho-ton-kho';
 import { useTonKhoNxtStore } from '../store/useTonKhoNxtStore';
@@ -65,7 +65,7 @@ const TongHopNxtKyTab: React.FC<Props> = ({ onClearFilters }) => {
   if (isError) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <p className="text-sm text-destructive">{error instanceof Error ? error.message : txt('common.error')}</p>
+        <p className="text-sm text-destructive">{getErrorMessage(error)}</p>
       </div>
     );
   }

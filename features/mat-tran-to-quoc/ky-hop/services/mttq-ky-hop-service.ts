@@ -8,6 +8,7 @@ import type { MttqKyHop, MttqKyHopDiemDanhSummary, MttqKyHopListRow } from '../c
 import { getDiemDanhSummariesForKyHopIds } from './mttq-diem-danh-service';
 import { mttqKyHopSchema, type MttqKyHopFormInput, type MttqKyHopFormValues } from '../core/schema';
 import { MTTQ_KY_HOP_RETURNING, MTTQ_KY_HOP_SELECT_FULL, MTTQ_KY_HOP_SELECT_LIST } from '../core/supabase-select';
+import { getErrorMessage } from '@/lib/utils';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -267,7 +268,7 @@ export async function importMttqKyHop(
       await createMttqKyHop(data, trimmedNv);
       created++;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = getErrorMessage(e);
       errors.push(txt('matTranKyHop.import.rowError', { row: i + 2, message: msg }));
     }
   }

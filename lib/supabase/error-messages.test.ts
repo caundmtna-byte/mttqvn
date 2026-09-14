@@ -2,10 +2,12 @@ import { describe, it, expect } from 'vitest';
 import {
   mapSupabaseErrorToVietnamese,
   extractConstraintName,
+  messageForAuthError,
   __ERROR_MESSAGE_TABLES,
 } from './error-messages';
 
-const { BY_CONSTRAINT, BY_CODE, FALLBACK } = __ERROR_MESSAGE_TABLES;
+const { BY_CONSTRAINT, BY_CODE, BY_RPC_CODE, BY_AUTH_MESSAGE, FALLBACK } =
+  __ERROR_MESSAGE_TABLES;
 
 /** Không được để lọt chữ tiếng Anh kỹ thuật ra người dùng cuối. */
 function coTiengAnhKyThuat(s: string): boolean {
@@ -114,6 +116,12 @@ describe('bất biến: không bao giờ lọt tiếng Anh kỹ thuật', () => 
     for (const [code, msg] of Object.entries(BY_CODE)) {
       expect(coTiengAnhKyThuat(msg), `${code}: ${msg}`).toBe(false);
     }
+    for (const [code, msg] of Object.entries(BY_RPC_CODE)) {
+      expect(coTiengAnhKyThuat(msg), `${code}: ${msg}`).toBe(false);
+    }
+    for (const [re, msg] of BY_AUTH_MESSAGE) {
+      expect(coTiengAnhKyThuat(msg), `${re.source}: ${msg}`).toBe(false);
+    }
   });
 
   it('đầu vào lạ → câu mặc định tiếng Việt, không trả chuỗi gốc', () => {
@@ -125,5 +133,37 @@ describe('bất biến: không bao giờ lọt tiếng Anh kỹ thuật', () => 
 
   it('rỗng hoàn toàn → vẫn có câu', () => {
     expect(mapSupabaseErrorToVietnamese({})).toBe(FALLBACK);
+  });
+});
+
+describe('lỗi GoTrue (đăng nhập, đổi mật khẩu, tạo tài khoản)', () => {
+  it.each([
+    ['Invalid login credentials', 'Tên đăng nhập hoặc mật khẩu không đúng.'],
+    ['Email not confirmed', 'Tài khoản chưa được kích hoạt. Liên hệ quản trị hệ thống.'],
+    ['User already registered', 'Tên đăng nhập này đã có tài khoản.'],
+    [
+      'New password should be different from the old password.',
+      'Mật khẩu mới phải khác mật khẩu hiện tại.',
+    ],
+    ['Password should be at least 6 characters.', 'Mật khẩu quá ngắn. Vui lòng đặt mật khẩu dài hơn.'],
+    ['Unable to validate email address: invalid format', 'Tên đăng nhập không hợp lệ.'],
+    [
+      'For security purposes, you can only request this after 42 seconds.',
+      'Bạn thao tác quá nhanh. Vui lòng đợi một lát rồi thử lại.',
+    ],
+  ])('«%s» → «%s»', (raw, expected) => {
+    expect(messageForAuthError(raw)).toBe(expected);
+  });
+
+  it('không nhận ra thì trả undefined để nơi gọi tự chọn câu mặc định', () => {
+    expect(messageForAuthError('Some brand new GoTrue error')).toBeUndefined();
+    expect(messageForAuthError('')).toBeUndefined();
+    expect(messageForAuthError(null)).toBeUndefined();
+  });
+
+  it('đi qua mapSupabaseErrorToVietnamese cũng ra tiếng Việt', () => {
+    expect(mapSupabaseErrorToVietnamese({ message: 'Invalid login credentials' })).toBe(
+      'Tên đăng nhập hoặc mật khẩu không đúng.',
+    );
   });
 });

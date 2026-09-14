@@ -36,7 +36,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { txt } from '@/lib/text';
-import { cn, formatCurrency, getLanguage } from '@/lib/utils';
+import { cn, formatCurrency, getLanguage, getErrorMessage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -453,7 +453,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
       });
       toast.success(txt('matTranReliefSupportReport.export.success'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : txt('matTranReliefSupportReport.export.error'));
+      toast.error(getErrorMessage(e));
     }
   }, [stats, sortedLookup]);
 
@@ -618,7 +618,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3 sm:p-4 space-y-4">
         {isError ? (
           <ErrorState
-            message={error instanceof Error ? error.message : txt('common.error')}
+            message={getErrorMessage(error)}
             onRetry={() => void refetch()}
           />
         ) : isReportLoading ? (

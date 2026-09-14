@@ -94,7 +94,7 @@ export const useCreateEmployee = (options?: (() => void) | CreateMutationOptions
         const handled = opts.onAuthConflict?.(err.username);
         if (handled) return;
       }
-      toast.error(`Lỗi: ${getErrorMessage(err)}`);
+      toast.error(getErrorMessage(err));
     },
   });
 };
@@ -137,7 +137,7 @@ export const useUpdateEmployee = (options?: (() => void) | CreateMutationOptions
         const handled = opts.onAuthConflict?.(err.username);
         if (handled) return;
       }
-      toast.error(`Lỗi: ${getErrorMessage(err)}`);
+      toast.error(getErrorMessage(err));
     },
   });
 };

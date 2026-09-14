@@ -9,6 +9,7 @@ import {
   CLOUDINARY_FOLDERS,
   avatarCloudinaryFilename,
 } from '@/lib/cloudinary/upload-image';
+import { getErrorMessage } from '@/lib/utils';
 
 export interface ImageItem {
   id: string;
@@ -117,7 +118,7 @@ const MultiImageInput: React.FC<MultiImageInputProps> = ({
           newItems.push({ id: uid(), src, name: file.name });
         } catch (e) {
           errors.push(
-            e instanceof Error ? e.message : `Upload "${file.name}" thất bại`,
+            getErrorMessage(e),
           );
         }
       }),

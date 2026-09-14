@@ -5,6 +5,7 @@ import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { MttqNhiemKy, MttqNhiemKyListRow } from '../core/types';
 import { mttqNhiemKySchema, type MttqNhiemKyFormInput, type MttqNhiemKyFormValues } from '../core/schema';
 import { MTTQ_NHIEM_KY_RETURNING, MTTQ_NHIEM_KY_SELECT_FULL, MTTQ_NHIEM_KY_SELECT_LIST } from '../core/supabase-select';
+import { getErrorMessage } from '@/lib/utils';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -204,7 +205,7 @@ export async function importMttqNhiemKy(
       await createMttqNhiemKy(data, trimmedNv);
       created++;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = getErrorMessage(e);
       errors.push(txt('matTranNhiemKy.import.rowError', { row: i + 2, message: msg }));
     }
   }

@@ -53,6 +53,21 @@ function buildPublicId(options: CloudinaryUploadOptions): string | undefined {
   return undefined;
 }
 
+/** Câu tiếng Việt cho lỗi Cloudinary — người dùng không đọc được câu gốc. */
+function cauLoiUpload(message: string | undefined, status: number): string {
+  const m = (message ?? '').toLowerCase();
+  if (status === 413 || /file size too large|too large|maximum.*size/.test(m)) {
+    return 'Ảnh vượt quá dung lượng cho phép. Hãy chọn ảnh nhỏ hơn.';
+  }
+  if (/invalid image file|unsupported|not an image|invalid file/.test(m)) {
+    return 'Tệp không phải ảnh hợp lệ. Chọn tệp .jpg hoặc .png.';
+  }
+  if (status === 401 || status === 403 || /unauthorized|preset/.test(m)) {
+    return 'Chưa cấu hình được kho ảnh. Liên hệ quản trị hệ thống.';
+  }
+  return 'Tải ảnh lên thất bại. Vui lòng thử lại.';
+}
+
 async function postToCloudinary(
   body: FormData,
   config: { cloudName: string; uploadPreset: string },
@@ -64,11 +79,13 @@ async function postToCloudinary(
 
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-    throw new Error(err.error?.message ?? `Upload Cloudinary thất bại (${res.status})`);
+    // Cloudinary chỉ trả tiếng Anh ("File size too large", "Invalid image file")
+    // và câu đó đi thẳng ra toast qua `use-nhan-vien.ts`.
+    throw new Error(cauLoiUpload(err.error?.message, res.status));
   }
 
   const data = (await res.json()) as { secure_url?: string };
-  if (!data.secure_url) throw new Error('Cloudinary không trả secure_url');
+  if (!data.secure_url) throw new Error('Tải ảnh lên thất bại. Vui lòng thử lại.');
   return data.secure_url;
 }
 

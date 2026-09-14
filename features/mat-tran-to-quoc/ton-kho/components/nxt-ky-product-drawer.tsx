@@ -8,7 +8,7 @@ import GenericSubTableSection from '@/components/shared/GenericSubTableSection';
 import Button from '@/components/ui/Button';
 import { BTN_CLOSE } from '@/lib/button-labels';
 import { txt } from '@/lib/text';
-import { formatDecimal } from '@/lib/utils';
+import { formatDecimal, getErrorMessage } from '@/lib/utils';
 import type { NXTByProductRow, NXTFilters } from '../core/types';
 import { useNXTProductWarehouse } from '../hooks/use-kho-ton-kho';
 
@@ -63,7 +63,7 @@ const NxtKyProductDrawer: React.FC<Props> = ({ product, filters, onClose }) => {
           count={isLoading ? undefined : byWarehouse.length}
           loading={isLoading}
           emptyTitle={txt('matTranTonKho.nxt.detailDrawer.emptyWarehouse')}
-          emptyDescription={isError && error instanceof Error ? error.message : undefined}
+          emptyDescription={isError ? getErrorMessage(error) : undefined}
           maxTableHeight="280px"
         >
           {!isLoading && !isError && byWarehouse.length > 0 ? (

@@ -13,6 +13,28 @@ import { buildSansStackCss } from './theme/fonts'
 /** Câu mặc định khi không nhận diện được lỗi — không bao giờ để lọt tiếng Anh. */
 const UNKNOWN_ERROR_MESSAGE = __ERROR_MESSAGE_TABLES.FALLBACK
 
+/**
+ * Dấu thanh / ký tự riêng của tiếng Việt. Mọi câu lỗi app tự ném đều có dấu,
+ * còn lỗi thư viện ngoài (xlsx, jspdf, Cloudinary, Edge Function) thì không.
+ */
+const CO_DAU_TIENG_VIET =
+  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i
+
+/**
+ * Giữ nguyên câu gốc nếu đó là tiếng Việt (lỗi nghiệp vụ app tự ném, ví dụ
+ * `BaiVietLinkConflictError`); ngược lại thay bằng câu mặc định.
+ *
+ * Trước đây nhánh này trả thẳng `err.message`, nên bất kỳ `Error` tiếng Anh nào
+ * không khớp bảng tra đều lọt nguyên văn ra toast qua ~118 điểm gọi. Chi tiết
+ * thật không mất: `queryErrorToast` đã gửi lỗi gốc sang Sentry trước khi dựng
+ * câu hiển thị.
+ */
+function cauGocNeuTiengViet(message: string): string {
+  const s = message.trim()
+  if (!s) return UNKNOWN_ERROR_MESSAGE
+  return CO_DAU_TIENG_VIET.test(s) ? s : UNKNOWN_ERROR_MESSAGE
+}
+
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -39,9 +61,9 @@ export function getErrorMessage(err: unknown): string {
   if (err instanceof Error) {
     // Lỗi do app tự ném (đã tiếng Việt) thì giữ nguyên; lỗi hạ tầng thì dịch.
     const mapped = mapSupabaseErrorToVietnamese({ message: err.message });
-    return mapped === UNKNOWN_ERROR_MESSAGE ? err.message : mapped;
+    return mapped === UNKNOWN_ERROR_MESSAGE ? cauGocNeuTiengViet(err.message) : mapped;
   }
-  if (typeof err === 'string') return err;
+  if (typeof err === 'string') return cauGocNeuTiengViet(err);
   return UNKNOWN_ERROR_MESSAGE;
 }
 

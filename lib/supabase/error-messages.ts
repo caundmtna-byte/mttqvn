@@ -193,6 +193,46 @@ function messageForForeignKey(constraint: string): string | undefined {
   return 'Dữ liệu này đang được sử dụng ở nơi khác nên không thể xoá. Hãy gỡ khỏi nơi đang dùng trước.';
 }
 
+/**
+ * Câu theo MESSAGE CỦA GOTRUE (đăng nhập, đổi mật khẩu, tạo tài khoản).
+ *
+ * GoTrue luôn trả tiếng Anh và không có mã lỗi ổn định để tra, nên khớp theo
+ * chuỗi con đã chuyển chữ thường. Trước đây `signIn` trả thẳng `error.message`
+ * nên người dùng nhập sai mật khẩu thì thấy `Invalid login credentials`.
+ */
+const BY_AUTH_MESSAGE: Array<[RegExp, string]> = [
+  [/invalid login credentials|invalid credentials/, 'Tên đăng nhập hoặc mật khẩu không đúng.'],
+  [/email not confirmed/, 'Tài khoản chưa được kích hoạt. Liên hệ quản trị hệ thống.'],
+  [/email logins are disabled|signups not allowed/, 'Chức năng đăng nhập đang tạm tắt. Liên hệ quản trị hệ thống.'],
+  [
+    /too many requests|rate limit|you can only request this after/,
+    'Bạn thao tác quá nhanh. Vui lòng đợi một lát rồi thử lại.',
+  ],
+  [/user already registered|user already exists/, 'Tên đăng nhập này đã có tài khoản.'],
+  [
+    /new password should be different/,
+    'Mật khẩu mới phải khác mật khẩu hiện tại.',
+  ],
+  [/password should be at least/, 'Mật khẩu quá ngắn. Vui lòng đặt mật khẩu dài hơn.'],
+  [/unable to validate email address|invalid email/, 'Tên đăng nhập không hợp lệ.'],
+  [/auth session missing|session not found/, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'],
+  [/user not found/, 'Không tìm thấy tài khoản đăng nhập tương ứng.'],
+];
+
+/**
+ * Câu tiếng Việt cho message của GoTrue. Trả `undefined` nếu không nhận ra —
+ * nơi gọi tự quyết câu mặc định theo ngữ cảnh (đăng nhập / đổi mật khẩu / tạo
+ * tài khoản), vì câu chung chung ở đây sẽ kém hữu ích hơn.
+ */
+export function messageForAuthError(text: string | null | undefined): string | undefined {
+  const m = String(text ?? '').toLowerCase();
+  if (!m) return undefined;
+  for (const [re, cau] of BY_AUTH_MESSAGE) {
+    if (re.test(m)) return cau;
+  }
+  return undefined;
+}
+
 /** Dấu hiệu trong chuỗi — dùng khi không có mã (lỗi mạng, lỗi fetch của trình duyệt). */
 function messageForText(text: string): string | undefined {
   const m = text.toLowerCase();
@@ -232,6 +272,11 @@ export function mapSupabaseErrorToVietnamese(ctx: SupabaseErrorContext): string 
   const byRpc = messageForRpcErrorCode(raw);
   if (byRpc) return byRpc;
 
+  // Lỗi GoTrue không có mã lẫn tên ràng buộc nên phải tra trước khi rơi xuống
+  // `messageForText` — nơi mọi chuỗi chứa "session" đều thành "hết phiên".
+  const byAuth = messageForAuthError(raw);
+  if (byAuth) return byAuth;
+
   const constraint = ctx.constraint ?? extractConstraintName(raw);
 
   if (constraint) {
@@ -247,4 +292,10 @@ export function mapSupabaseErrorToVietnamese(ctx: SupabaseErrorContext): string 
 }
 
 /** Dành cho test và cho màn Phân quyền khi cần liệt kê. */
-export const __ERROR_MESSAGE_TABLES = { BY_CONSTRAINT, BY_CODE, BY_RPC_CODE, FALLBACK };
+export const __ERROR_MESSAGE_TABLES = {
+  BY_CONSTRAINT,
+  BY_CODE,
+  BY_RPC_CODE,
+  BY_AUTH_MESSAGE,
+  FALLBACK,
+};

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { History } from 'lucide-react';
 import GenericSubTableSection from '@/components/shared/GenericSubTableSection';
 import { txt } from '@/lib/text';
-import { formatDecimal } from '@/lib/utils';
+import { formatDecimal, getErrorMessage } from '@/lib/utils';
 import { useHangNxHistory } from '../hooks/use-kho-ton-kho';
 import { computeTonSauByChiTiet } from '../utils/compute-ton-sau-by-chi-tiet';
 import { nxHistoryToLichSuRows } from '../utils/nx-history-to-lich-su';
@@ -39,7 +39,7 @@ interface Props {
 const TonKhoHangNxHistorySection: React.FC<Props> = ({ hangHoaId }) => {
   const { data = [], isLoading, isError, error } = useHangNxHistory(hangHoaId);
 
-  const errMsg = useMemo(() => (error instanceof Error ? error.message : String(error ?? '')), [error]);
+  const errMsg = useMemo(() => getErrorMessage(error), [error]);
 
   const tonSauByChiTiet = useMemo(() => {
     if (!data.length) return new Map<string, number>();

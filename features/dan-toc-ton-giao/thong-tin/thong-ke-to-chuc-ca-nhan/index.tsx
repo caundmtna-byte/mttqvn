@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { cn, getLanguage } from '@/lib/utils';
+import { cn, getLanguage, getErrorMessage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -408,7 +408,7 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
         description: txt('dttgThongKeToChucCaNhan.stats.exportSuccessDesc'),
       });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : txt('dttgThongKeToChucCaNhan.stats.exportError'));
+      toast.error(getErrorMessage(e));
     } finally {
       setExporting(false);
     }

@@ -25,6 +25,7 @@ import {
   UyVienUyBanConflictError,
   type UyVienConflictKind,
 } from '../utils/uy-vien-conflict';
+import { getErrorMessage } from '@/lib/utils';
 
 export { UyVienUyBanConflictError } from '../utils/uy-vien-conflict';
 
@@ -488,7 +489,7 @@ export async function importMttqUyVienUyBan(
       await createMttqUyVienUyBan(data, trimmedNv);
       created++;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = getErrorMessage(e);
       errors.push(txt('matTranUyVienUyBan.import.rowError', { row: i + 2, message: msg }));
     }
   }

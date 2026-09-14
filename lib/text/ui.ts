@@ -677,6 +677,8 @@ export const ui = {
     "permissionPickerTitle": "Phân quyền theo chức vụ",
     "permissionPickerMessage": "Chọn các chức vụ được phép truy cập tài nguyên này.",
     "required": "Trường bắt buộc",
+    "validationError": "Dữ liệu nhập chưa hợp lệ. Vui lòng kiểm tra lại.",
+    "loadError": "Không tải được dữ liệu",
     "saving": "Đang lưu...",
     "cancel": "Hủy",
     "close": "Đóng",

@@ -10,6 +10,7 @@ import {
 } from '@/lib/cloudinary/upload-image';
 import { resolveImageDisplaySrcSync, isLegacySupabaseAvatarPath } from '@/lib/cloudinary/resolve-image-display-src';
 import { cloudinaryThumbUrl, CLOUDINARY_THUMB_WIDTH } from '@/lib/cloudinary/thumb-url';
+import { getErrorMessage } from '@/lib/utils';
 
 export interface SingleImageInputProps {
   label?: string;
@@ -118,7 +119,7 @@ const SingleImageInput: React.FC<SingleImageInputProps> = ({
         return null;
       });
     } catch (e) {
-      setSizeError(e instanceof Error ? e.message : 'Upload ảnh thất bại');
+      setSizeError(getErrorMessage(e));
       setLocalPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;

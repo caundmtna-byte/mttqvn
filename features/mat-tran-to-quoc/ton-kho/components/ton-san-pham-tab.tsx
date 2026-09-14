@@ -22,7 +22,7 @@ import TablePaginationFooter from '@/components/shared/TablePaginationFooter';
 import TonKhoProductDetail from './ton-kho-product-detail';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { txt } from '@/lib/text';
-import { cn, formatDecimal } from '@/lib/utils';
+import { cn, formatDecimal, getErrorMessage } from '@/lib/utils';
 
 const TonSanPhamTab: React.FC<{
   onBack?: () => void;
@@ -268,7 +268,7 @@ const TonSanPhamTab: React.FC<{
       <div className="flex-1 flex items-center justify-center p-6">
         <ErrorState
           title={txt('common.error')}
-          message={error instanceof Error ? error.message : txt('matTranTonKho.listLoadErrorHint')}
+          message={getErrorMessage(error)}
           onRetry={() => void refetch()}
         />
       </div>

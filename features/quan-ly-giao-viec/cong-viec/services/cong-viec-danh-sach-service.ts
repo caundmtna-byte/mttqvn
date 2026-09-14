@@ -171,7 +171,7 @@ export async function createCongViecDanhSach(
   });
   const id = String((inserted as { id: string }).id);
   const full = await getCongViecDanhSachById(id);
-  if (!full) throw new Error(txt('congViecDanhSach.service.notFound'));
+  if (!full) throw new Error(txt('taskList.service.notFound'));
   return full;
 }
 
@@ -186,7 +186,7 @@ export async function updateCongViecDanhSach(
     returningSelect: CONG_VIEC_DANH_SACH_RETURNING,
   });
   const full = await getCongViecDanhSachById(id);
-  if (!full) throw new Error(txt('congViecDanhSach.service.notFound'));
+  if (!full) throw new Error(txt('taskList.service.notFound'));
   return full;
 }
 
