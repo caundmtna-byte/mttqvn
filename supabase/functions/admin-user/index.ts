@@ -73,9 +73,12 @@ function buildEmail(username: string): string {
 
 async function findAuthUserIdByEmail(adminClient: ReturnType<typeof createClient>, email: string): Promise<string | null> {
   const normalized = email.trim().toLowerCase();
-  // GoTrue Admin API hỗ trợ filter email — O(1) thay vì quét tối đa 50×1000 user.
-  const filter = encodeURIComponent(`email.eq.${normalized}`);
-  const url = `${SUPABASE_URL}/auth/v1/admin/users?filter=${filter}&per_page=1&page=1`;
+  // `filter` của GoTrue là chuỗi TÌM KIẾM dạng LIKE '%…%' trên email/full_name,
+  // KHÔNG phải cú pháp PostgREST. Bản trước truyền `email.eq.<email>` nên không
+  // bao giờ khớp: mọi lần tra cứu đều rơi xuống nhánh quét phân trang bên dưới,
+  // và nếu nhánh đó dừng sớm thì tài khoản có thật vẫn bị báo "không tìm thấy".
+  const filter = encodeURIComponent(normalized);
+  const url = `${SUPABASE_URL}/auth/v1/admin/users?filter=${filter}&per_page=100&page=1`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
@@ -91,13 +94,15 @@ async function findAuthUserIdByEmail(adminClient: ReturnType<typeof createClient
   if (match?.id) return match.id;
 
   // Fallback: SDK phân trang (GoTrue cũ / filter không khả dụng).
-  const perPage = 1000;
-  for (let page = 1; page <= 50; page += 1) {
+  // Chỉ dừng khi trang TRỐNG — GoTrue có thể tự hạ `per_page` xuống mức nhỏ hơn
+  // mức yêu cầu, dừng theo `length < perPage` là bỏ sót từ trang thứ hai trở đi.
+  const perPage = 200;
+  for (let page = 1; page <= 100; page += 1) {
     const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
     if (error) throw error;
+    if (data.users.length === 0) break;
     const found = data.users.find((u) => (u.email ?? '').toLowerCase() === normalized);
     if (found) return found.id;
-    if (data.users.length < perPage) break;
   }
   return null;
 }
@@ -230,7 +235,22 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'reset_password') {
       const id = await findAuthUserIdByEmail(adminClient, email);
-      if (!id) return jsonResponse(404, { error: 'Không tìm thấy user Auth' });
+      if (!id) {
+        // Hồ sơ `var_nhan_vien` có nhưng chưa có tài khoản Auth — xảy ra khi dòng
+        // nhân viên được tạo thẳng dưới DB, hoặc lần tạo trước hỏng giữa chừng
+        // (tạo Auth xong mới insert, hoặc ngược lại). Admin đang đặt mật khẩu cho
+        // đúng `ten_tai_khoan` đọc từ DB, nên tạo luôn tài khoản mới là đúng ý:
+        // báo 404 chỉ để lại một hồ sơ vĩnh viễn không đăng nhập được.
+        // `created: true` để giao diện nói rõ là vừa TẠO chứ không phải đổi.
+        const { data, error } = await adminClient.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: username },
+        });
+        if (error) return jsonResponse(400, { error: error.message });
+        return jsonResponse(200, { user_id: data.user?.id, password: generatedPassword, created: true });
+      }
       const { error } = await adminClient.auth.admin.updateUserById(id, { password });
       if (error) return jsonResponse(400, { error: error.message });
       return jsonResponse(200, { user_id: id, password: generatedPassword });

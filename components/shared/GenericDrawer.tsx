@@ -162,7 +162,12 @@ const GenericDrawer: React.FC<GenericDrawerProps> = ({
               typeof subtitle === 'string' ? (
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 break-words">{subtitle}</p>
               ) : (
-                <div className="mt-0.5 flex items-center min-w-0">{subtitle}</div>
+                // `flex-wrap` là bắt buộc: subtitle dạng ReactNode thường là Fragment
+                // gồm nhiều đoạn chữ; không cho xuống dòng thì mỗi đoạn là một flex
+                // item bị bóp lại trên CÙNG một hàng và chữ đè lên nhau.
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-1 min-w-0 text-xs leading-snug text-muted-foreground break-words">
+                  {subtitle}
+                </div>
               )
             )}
           </div>

@@ -338,15 +338,18 @@ export const createEmployeeWithAuthDecision = async (
  * Trả `generatedPassword` khi (và chỉ khi) Edge Function tự sinh mật khẩu —
  * nghĩa là mật khẩu admin gõ đã bị nó từ chối; UI phải hiển thị chuỗi này thay
  * vì báo suông "đã đổi".
+ *
+ * Trả `created = true` khi hồ sơ nhân viên chưa có tài khoản Auth: Edge Function
+ * tạo mới với đúng mật khẩu này thay vì báo lỗi "không tìm thấy user Auth".
  */
 export const resetEmployeePassword = async (
   id: string,
   password: string,
-): Promise<{ username: string; generatedPassword?: string }> => {
+): Promise<{ username: string; generatedPassword?: string; created?: boolean }> => {
   const username = await requireEmployeeTenTaiKhoan(id);
   if (!username) throw new Error(txt('employee.resetPassword.errorNoUsername'));
   const res = await resetAuthUserPassword(username, password);
-  return { username, generatedPassword: res.password };
+  return { username, generatedPassword: res.password, created: res.created };
 };
 
 async function requireEmployeeTenTaiKhoan(id: string): Promise<string> {

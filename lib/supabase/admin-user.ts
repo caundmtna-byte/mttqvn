@@ -26,6 +26,8 @@ interface AdminResponse {
   deleted?: boolean;
   /** Mật khẩu do Edge Function sinh khi không truyền sẵn — chỉ trả về đúng một lần. */
   password?: string;
+  /** `reset_password`: tài khoản Auth chưa có nên vừa được TẠO MỚI, không phải đổi. */
+  created?: boolean;
   error?: string;
 }
 
@@ -82,13 +84,15 @@ export async function createAuthUser(username: string): Promise<{ password?: str
  * - Truyền `password` ⇒ dùng đúng chuỗi đó, và `password` trả về là `undefined`.
  *   Nếu chuỗi ngắn hơn {@link MIN_ADMIN_PASSWORD_LENGTH}, Edge Function bỏ qua
  *   và sinh ngẫu nhiên — nên phía gọi phải tự kiểm độ dài trước.
+ * - `created = true` ⇒ tài khoản Auth chưa tồn tại và vừa được tạo mới với mật
+ *   khẩu này (hồ sơ nhân viên có nhưng chưa bao giờ đăng nhập được).
  */
 export async function resetAuthUserPassword(
   username: string,
   password?: string,
-): Promise<{ password?: string }> {
+): Promise<{ password?: string; created?: boolean }> {
   const res = await callAdminUser('reset_password', username, password ? { password } : undefined);
-  return { password: res.password };
+  return { password: res.password, created: res.created };
 }
 
 export async function deleteAuthUser(username: string): Promise<void> {

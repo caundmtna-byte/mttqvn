@@ -99,6 +99,7 @@ export const employee = {
     "errorCoKhoangTrang": "Mật khẩu không được có khoảng trắng ở đầu hoặc cuối",
     "errorNoUsername": "Nhân viên chưa có tên tài khoản đăng nhập",
     "toastSuccess": "Đã đổi mật khẩu cho tài khoản {{username}}",
+    "toastCreated": "Tài khoản {{username}} chưa có trên hệ thống đăng nhập — đã tạo mới và đặt mật khẩu vừa nhập",
     "toastFallback": "Máy chủ từ chối mật khẩu vừa nhập và đã sinh mật khẩu khác — hãy sao chép ngay",
     "toastFailed": "Đổi mật khẩu không thành công. Lý do: {{reason}}"
   },

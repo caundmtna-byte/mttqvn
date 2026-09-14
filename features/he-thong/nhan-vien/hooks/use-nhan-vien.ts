@@ -192,6 +192,8 @@ export const useResetEmployeePassword = (onSuccess?: () => void) =>
             onClick: () => void navigator.clipboard?.writeText(pw),
           },
         });
+      } else if (res.created) {
+        toast.success(txt('employee.resetPassword.toastCreated', { username: res.username }));
       } else {
         toast.success(txt('employee.resetPassword.toastSuccess', { username: res.username }));
       }
