@@ -14,6 +14,7 @@ import {
   NDDK_TRANG_THAI_VALUES,
 } from './constants';
 import type { NhaDaiDoanKet } from './types';
+import { parseSoInput } from '@/lib/number';
 
 const optionalText = z
   .string()
@@ -37,8 +38,10 @@ const optionalSoTien = z.preprocess(
     if (typeof val === 'number') return Number.isFinite(val) ? val : undefined;
     const s = String(val).trim();
     if (s === '') return undefined;
-    const n = Number(s);
-    return Number.isFinite(n) ? n : Number.NaN;
+    // `Number('500.000.000')` là NaN — cán bộ dán số từ Excel sẽ bị từ chối
+    // trên một chuỗi trông hoàn toàn bình thường.
+    const n = parseSoInput(s);
+    return n ?? Number.NaN;
   },
   z
     .number({ message: txt('nhaDaiDoanKet.validation.soTienInvalid') })

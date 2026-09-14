@@ -52,6 +52,7 @@ export const articleList = {
     tenBaiDuplicate: 'Tên bài này đã tồn tại, đặt tên khác',
     theLoaiRequired: 'Chọn thể loại',
     donGiaMin: 'Đơn giá không âm',
+    donGiaKhongDoc: 'Đơn giá chưa đọc được. Chỉ nhập số, ví dụ 500.000',
     ngayDangRequired: 'Chọn ngày đăng',
     nguonDangRequired: 'Chọn nguồn đăng',
     trangDangRequired: 'Chọn trang đăng',

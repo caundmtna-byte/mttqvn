@@ -17,5 +17,6 @@ export const articleSettings = {
   validation: {
     tenTheLoaiRequired: 'Vui lòng nhập tên thể loại',
     tenRequired: 'Vui lòng nhập tên',
+    donGiaKhongDoc: 'Đơn giá chưa đọc được. Chỉ nhập số, ví dụ 500.000',
   },
 } as const;

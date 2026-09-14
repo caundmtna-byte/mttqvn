@@ -15,6 +15,7 @@ import {
 import { txt } from '@/lib/text';
 import { toast } from 'sonner';
 import Input from '@/components/ui/Input';
+import CurrencyInput from '@/components/ui/CurrencyInput';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
 import GenericDrawer, { DRAWER_WIDTH_FORM } from '@/components/shared/GenericDrawer';
@@ -275,15 +276,25 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
                 />
               )}
             />
-            <Input
-              label={txt('nhaDaiDoanKet.store.soTienCol')}
-              type="number"
-              min={0}
-              step={1000}
-              icon={Coins}
-              placeholder={txt('nhaDaiDoanKet.form.soTienPlaceholder')}
-              {...register('so_tien')}
-              error={errors.so_tien?.message}
+            <Controller
+              name="so_tien"
+              control={control}
+              render={({ field }) => (
+                <CurrencyInput
+                  label={txt('nhaDaiDoanKet.store.soTienCol')}
+                  icon={Coins}
+                  suffix="đ"
+                  placeholder={txt('nhaDaiDoanKet.form.soTienPlaceholder')}
+                  // Form giữ số tiền dạng chuỗi; ô trống là hợp lệ (hồ sơ đang
+                  // khảo sát thì chưa chốt mức hỗ trợ) nên phải giữ '' chứ
+                  // không quy về 0.
+                  value={field.value === '' || field.value == null ? null : field.value}
+                  onChange={(n) => field.onChange(n == null ? '' : String(n))}
+                  onBlur={field.onBlur}
+                  min={0}
+                  error={errors.so_tien?.message}
+                />
+              )}
             />
           </FormGrid>
         </FormSection>

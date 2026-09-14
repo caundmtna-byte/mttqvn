@@ -2,7 +2,7 @@ import React from 'react';
 import { Edit, Trash2, Tags, Calendar, Clock, FileText, Banknote } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
-import { formatDateTimeShort } from '@/lib/utils';
+import { formatDateTimeShort, formatCurrency } from '@/lib/utils';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
 import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/DetailSummaryCard';
 import DetailSection from '@/components/shared/DetailSection';
@@ -21,9 +21,6 @@ interface Props {
 
 const ArticleTheLoaiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('articleSettings');
-
-  const formatMoney = (n: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n);
 
   const footer = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -87,13 +84,13 @@ const ArticleTheLoaiDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
             </DetailSummaryIconTile>
           }
           title={data.ten_the_loai}
-          subtitle={<p className="m-0">{formatMoney(data.don_gia)}</p>}
+          subtitle={<p className="m-0">{formatCurrency(data.don_gia)}</p>}
         />
 
         <DetailSection title={txt('page.articleSettings.detailBasic')} icon={<Tags size={14} />} variant="primary">
           <DetailFieldGrid>
             <DetailField label={txt('page.articleSettings.colTenTheLoai')} value={data.ten_the_loai} icon={<Tags size={12} />} />
-            <DetailField label={txt('page.articleSettings.colDonGia')} value={formatMoney(data.don_gia)} icon={<Banknote size={12} />} />
+            <DetailField label={txt('page.articleSettings.colDonGia')} value={formatCurrency(data.don_gia)} icon={<Banknote size={12} />} />
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('page.articleSettings.colMoTa')}

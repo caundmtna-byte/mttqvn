@@ -7,11 +7,7 @@ import { useArticleTheLoaiStore } from '../store/useArticleTheLoaiStore';
 import type { BaiVietTheLoai } from '../core/types';
 import { ArticleTheLoaiRowActions } from './article-the-loai-row-actions';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
-import { formatDateShort } from '@/lib/utils';
-
-function formatVnd(n: number): string {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n);
-}
+import { formatDateShort, formatCurrency } from '@/lib/utils';
 
 interface Props {
   data: BaiVietTheLoai[];
@@ -105,7 +101,7 @@ const ArticleTheLoaiTable = memo(function ArticleTheLoaiTable({
           return (
             <span className="inline-flex items-center gap-1 text-sm font-medium tabular-nums">
               <Banknote size={12} className="text-muted-foreground shrink-0" aria-hidden />
-              {formatVnd(item.don_gia)}
+              {formatCurrency(item.don_gia)}
             </span>
           );
         case 'tg_tao':
@@ -173,7 +169,7 @@ const ArticleTheLoaiTable = memo(function ArticleTheLoaiTable({
             </div>
             <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.mo_ta ?? '—'}</p>
             <div className="flex items-center justify-between pt-2 border-t border-border">
-              <span className="text-sm font-medium tabular-nums text-foreground">{formatVnd(item.don_gia)}</span>
+              <span className="text-sm font-medium tabular-nums text-foreground">{formatCurrency(item.don_gia)}</span>
               <ArticleTheLoaiRowActions
                 compact
                 item={item}

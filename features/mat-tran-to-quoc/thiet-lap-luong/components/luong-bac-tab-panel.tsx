@@ -307,7 +307,7 @@ const LuongBacTabPanel: React.FC<Props> = ({ onPageBack, tabsSlot, listQueryEnab
         <CurrencyInput
           icon={Banknote}
           value={mlcsDraft}
-          onChange={(n) => setMlcsDraft(n)}
+          onChange={(n) => setMlcsDraft(n ?? 0)}
           disabled={!canEdit}
           suffix="đ"
           className="h-9 py-1.5 text-sm"

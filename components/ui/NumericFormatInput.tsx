@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useId } from 'react';
-import { cn, getLocale } from '../../lib/utils';
+import React, { useCallback } from 'react';
+import CurrencyInput from './CurrencyInput';
+import { formatSoInput } from '../../lib/number';
 
 export interface NumericFormatInputProps {
   label?: string;
@@ -12,7 +13,7 @@ export interface NumericFormatInputProps {
   /** Hiển thị dấu sao (*) cho trường bắt buộc */
   required?: boolean;
   /** Giá trị số (có thể có phần thập phân) */
-  value?: number | string;
+  value?: number | string | null;
   /** Callback khi giá trị thay đổi */
   onChange?: (value: number) => void;
   /** Alias cho onChange, nhận (formattedValue, numberValue) - tương thích react-number-format */
@@ -28,127 +29,36 @@ export interface NumericFormatInputProps {
 }
 
 /**
- * NumericFormatInput – nhập số có tự động format dấu phân cách hàng nghìn (vi-VN: 120.000).
+ * Nhập số có phần thập phân — lớp mỏng trên `CurrencyInput`.
+ *
+ * Hai component từng có hai bộ đọc chuỗi riêng và lệch nhau (`CurrencyInput`
+ * bỏ mọi ký tự không phải chữ số nên `1,5` thành `15`). Nay chỉ còn một lõi;
+ * file này giữ lại vì API của nó khác — `onChange` luôn trả `number`, thêm
+ * `onValueChange` kiểu react-number-format — và `PercentInput` /
+ * `NumberStepper` đang dựa vào đó.
  */
 const NumericFormatInput = React.forwardRef<HTMLInputElement, NumericFormatInputProps>(
-  (
-    {
-      label,
-      error,
-      disabled = false,
-      placeholder = '0',
-      className,
-      icon,
-      required,
-      value,
-      onChange,
-      onValueChange,
-      onBlur,
-      name,
-      decimalScale = 2,
-      min,
-      max,
-      id: idProp,
-    },
-    ref
-  ) => {
-    const autoId = useId();
-    const inputId = idProp ?? `numeric-${autoId.replace(/:/g, '')}`;
-    const errorId = error ? `${inputId}-error` : undefined;
-    const formatNumber = useCallback(
-      (num: number | string): string => {
-        const n = typeof num === 'string' ? parseFloat(num) : num;
-        if (isNaN(n)) return '';
-        if (n === 0) return '';
-        const formatted = new Intl.NumberFormat(getLocale(), {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: decimalScale,
-        }).format(n);
-        return formatted;
+  ({ onChange, onValueChange, decimalScale = 2, ...rest }, ref) => {
+    const handleChange = useCallback(
+      (n: number | null) => {
+        // API cũ không có khái niệm "chưa nhập"; ô trống quy về 0 như trước.
+        const so = n ?? 0;
+        onChange?.(so);
+        onValueChange?.(n == null ? '' : formatSoInput(so, { soLeToiDa: decimalScale }), {
+          floatValue: so,
+        });
       },
-      [decimalScale]
+      [onChange, onValueChange, decimalScale],
     );
-
-    /** Parse chuỗi đã format (vi-VN: "120.000" hoặc "120.000,5") hoặc số thuần (120000). */
-    const parseInput = useCallback((str: string): number => {
-      const s = str.trim();
-      if (!s) return 0;
-      const noThousand = s.replace(/\./g, '');
-      const decimal = noThousand.replace(/,/g, '.');
-      const num = parseFloat(decimal);
-      return isNaN(num) ? 0 : num;
-    }, []);
-
-    const [displayValue, setDisplayValue] = useState(() => formatNumber(value ?? 0));
-
-    useEffect(() => {
-      const formatted = formatNumber(value ?? 0);
-      queueMicrotask(() => setDisplayValue(formatted));
-    }, [value, formatNumber]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const raw = e.target.value;
-      const num = parseInput(raw);
-      const clamped = max != null && num > max ? max : min != null && num < min ? min : num;
-      setDisplayValue(raw === '' ? '' : formatNumber(clamped));
-      onChange?.(clamped);
-      onValueChange?.(raw === '' ? '' : formatNumber(clamped), { floatValue: clamped });
-    };
-
-    const handleBlur = () => {
-      const num = parseInput(displayValue);
-      const clamped = max != null && num > max ? max : min != null && num < min ? min : num;
-      setDisplayValue(num === 0 || isNaN(num) ? '' : formatNumber(clamped));
-      if (num !== clamped) {
-        onChange?.(clamped);
-        onValueChange?.('', { floatValue: clamped });
-      }
-      onBlur?.();
-    };
-
-    const inputEl = (
-      <input
-        ref={ref}
-        id={inputId}
-        type="text"
-        inputMode="decimal"
-        name={name}
-        disabled={disabled}
-        placeholder={placeholder}
-        value={displayValue}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={errorId}
-        className={cn(
-          'flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm tabular-nums text-foreground placeholder:text-muted-foreground ring-offset-background transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/40',
-          'disabled:cursor-not-allowed disabled:opacity-50',
-          error ? 'border-destructive focus-visible:ring-destructive' : '',
-          className
-        )}
-      />
-    );
-
-    if (label) {
-      return (
-        <div className="w-full">
-          <label htmlFor={inputId} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-1.5 flex items-center gap-1.5 text-foreground">
-            {icon && <span className="text-muted-foreground shrink-0">{icon}</span>}
-            {label}
-            {required && <span className="text-destructive" aria-hidden="true">*</span>}
-          </label>
-          {inputEl}
-          {error && <p id={errorId} role="alert" className="text-xs font-medium text-destructive mt-1">{error}</p>}
-        </div>
-      );
-    }
 
     return (
-      <div className="w-full">
-        {inputEl}
-        {error && <p id={errorId} role="alert" className="text-xs font-medium text-destructive mt-1">{error}</p>}
-      </div>
+      <CurrencyInput
+        {...rest}
+        ref={ref}
+        suffix=""
+        decimalScale={decimalScale}
+        onChange={handleChange}
+      />
     );
   }
 );

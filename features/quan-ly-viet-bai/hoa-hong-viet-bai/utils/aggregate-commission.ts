@@ -1,5 +1,6 @@
 import type { BaiVietDanhSach } from '../../bai-viet/core/types';
 import type { StatsTableRow } from '@/components/shared/stats/types';
+import { formatDecimal } from '@/lib/utils';
 
 export type CommissionScope = 'mine' | 'all';
 
@@ -123,8 +124,9 @@ export function aggregateCommission(
     .map(([id, v]) => ({ key: id, label: v.label, total: v.total, count: v.count }))
     .sort((a, b) => b.total - a.total);
 
-  const fmtMoney = (n: number) =>
-    new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
+  // `Intl.NumberFormat(undefined, …)` lấy locale của MÁY: bảng hoa hồng mở trên
+  // máy cài tiếng Anh sẽ hiện "500,000,000" — đọc nhầm thành năm trăm nghìn.
+  const fmtMoney = (n: number) => formatDecimal(n, 0);
 
   const authorTableRows: StatsTableRow[] = seriesByAuthor.map((p) => ({
     id: p.key,

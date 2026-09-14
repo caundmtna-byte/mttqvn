@@ -220,7 +220,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
                   <NumericFormatInput
                     label={txt('matTranNhapXuatKho.form.soLuong')}
                     icon={<Hash size={12} />}
-                    value={field.value === '' ? 0 : Number(field.value)}
+                    value={field.value === '' ? null : Number(field.value)}
                     onChange={(n) => field.onChange(n === 0 ? '' : String(n))}
                     onBlur={field.onBlur}
                     decimalScale={3}
@@ -248,8 +248,9 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
                     label={txt('matTranNhapXuatKho.form.donGia')}
                     icon={<Coins size={12} />}
                     suffix=""
-                    value={field.value === '' ? 0 : Number(field.value)}
-                    onChange={(n) => field.onChange(n === 0 ? '' : String(n))}
+                    value={field.value === '' ? null : Number(field.value)}
+                    onChange={(n) => field.onChange(n == null ? '' : String(n))}
+                    onBlur={field.onBlur}
                     error={errors.don_gia?.message}
                   />
                   {autoFilledDonGia ? (

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
+import CurrencyInput from '@/components/ui/CurrencyInput';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
 import DatePicker from '@/components/ui/DatePicker';
@@ -324,14 +325,25 @@ const QuySoThuChiForm: React.FC<Props> = ({ quy, initialData, onClose }) => {
             />
 
             <div className={FORM_GRID_SPAN_FULL}>
-              <Input
-                label={txt('quy.soThuChi.form.soTien')}
-                required
-                icon={Banknote}
-                inputMode="numeric"
-                placeholder="1.500.000"
-                {...register('so_tien')}
-                error={errors.so_tien?.message}
+              <Controller
+                name="so_tien"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    label={txt('quy.soThuChi.form.soTien')}
+                    required
+                    icon={Banknote}
+                    suffix="đ"
+                    placeholder="1.500.000"
+                    // Schema giữ số tiền dạng chuỗi (service đọc lại bằng
+                    // `parseTienInput`), nên trả chuỗi chứ không trả số.
+                    value={field.value === '' || field.value == null ? null : field.value}
+                    onChange={(n) => field.onChange(n == null ? '' : String(n))}
+                    onBlur={field.onBlur}
+                    min={0}
+                    error={errors.so_tien?.message}
+                  />
+                )}
               />
               <p className="text-xs text-muted-foreground mt-1 m-0">
                 {txt('quy.soThuChi.form.soTienHint')}

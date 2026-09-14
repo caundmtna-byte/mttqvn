@@ -2,6 +2,7 @@ import React from 'react';
 import { Package, ArrowDownCircle, ArrowUpCircle, Layers } from 'lucide-react';
 import { txt } from '@/lib/text';
 import type { TonKhoSummaryTotals } from '../core/types';
+import { formatDecimal } from '@/lib/utils';
 
 const CARD_CLASS = 'bg-card rounded-xl border border-border p-3 sm:p-4 transition-all hover:shadow-md';
 const ICON_WRAP = 'w-9 h-9 rounded-lg flex items-center justify-center shrink-0';
@@ -50,7 +51,7 @@ const NxtSummaryCards: React.FC<Props> = ({ summary }) => {
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-muted-foreground truncate">{item.label}</p>
                 <p className="text-lg font-bold text-foreground tabular-nums mt-0.5">
-                  {item.value.toLocaleString()}
+                  {formatDecimal(item.value)}
                 </p>
               </div>
             </div>

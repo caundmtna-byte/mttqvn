@@ -194,6 +194,7 @@ const BaiVietForm: React.FC<Props> = ({ initialData, onClose }) => {
                     icon={<Banknote size={12} />}
                     value={field.value}
                     onChange={field.onChange}
+                    onBlur={field.onBlur}
                     error={errors.don_gia?.message}
                   />
                 )}

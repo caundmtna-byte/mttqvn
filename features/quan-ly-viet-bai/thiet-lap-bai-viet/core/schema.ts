@@ -1,12 +1,29 @@
 import { z } from 'zod';
 import { txt } from '@/lib/text';
+import { parseSoInput } from '@/lib/number';
 
+/**
+ * Đơn giá thể loại.
+ *
+ * Bản cũ dùng `parseFloat(s.replace(/,/g,''))` mà KHÔNG bỏ dấu chấm, nên
+ * `"500.000.000"` được đọc thành `500` — sai một triệu lần, im lặng, và số sai
+ * đó nhân với số bài để tính nhuận bút cho cả tháng.
+ */
 const donGiaField = z
   .union([z.string(), z.number()])
-  .transform((v) => {
-    if (typeof v === 'number' && Number.isFinite(v)) return Math.max(0, v);
-    const n = parseFloat(String(v).replace(/\s/g, '').replace(/,/g, ''));
-    return Number.isFinite(n) ? Math.max(0, n) : 0;
+  .transform((v, ctx) => {
+    if (typeof v === 'number') {
+      if (Number.isFinite(v)) return Math.max(0, v);
+      ctx.addIssue({ code: 'custom', message: txt('articleSettings.validation.donGiaKhongDoc') });
+      return z.NEVER;
+    }
+    if (String(v).trim() === '') return 0;
+    const n = parseSoInput(v, { choThapPhan: true });
+    if (n == null) {
+      ctx.addIssue({ code: 'custom', message: txt('articleSettings.validation.donGiaKhongDoc') });
+      return z.NEVER;
+    }
+    return Math.max(0, n);
   });
 
 export const theLoaiSchema = z.object({
