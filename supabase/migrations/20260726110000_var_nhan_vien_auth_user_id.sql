@@ -1,3 +1,8 @@
+-- ⚠️ ĐÃ BỊ GỠ BỎ bởi 20260914110000_bo_var_nhan_vien_auth_user_id.sql.
+-- Cột `auth_user_id` không còn tồn tại: hệ thống quay về nhận diện người dùng
+-- bằng `ten_tai_khoan` khớp phần trước @ của email Auth. Giữ file này nguyên
+-- trạng vì đây là lịch sử migration — đừng dùng nó làm mô tả schema hiện tại.
+
 -- ============================================================================
 -- var_nhan_vien.auth_user_id — nối hồ sơ nhân viên với tài khoản đăng nhập
 --
