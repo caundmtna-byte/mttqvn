@@ -8,8 +8,18 @@ import {
   buildTrendSeries,
   getArticleStatsDateFromCreatedAt,
   aggregateByDonVi,
+  aggregateByNguoiTao,
+  aggregateDonViTheLoaiMatrix,
   ARTICLE_STATS_DON_VI_UNKNOWN,
 } from './aggregate-bai-viet-stats';
+
+const noDims = {
+  idTheLoai: [] as string[],
+  idNguonDang: [] as string[],
+  idTrangDang: [] as string[],
+  idNguoiTao: [] as string[],
+  idDonVi: [] as string[],
+};
 
 const base = (over: Partial<BaiVietDanhSach>): BaiVietDanhSach => ({
   id: '1',
@@ -56,49 +66,75 @@ describe('aggregate-bai-viet-stats', () => {
       base({ id: '3', tg_tao: '2026-05-06T10:00:00.000Z', id_the_loai: '2', ten_bai: 'B' }),
     ];
     const range = { start: '2026-05-01', end: '2026-05-31' };
-    const allInMay = filterArticlesForStats(items, range, {
-      idTheLoai: [],
-      idNguonDang: [],
-      idTrangDang: [],
-      idNguoiTao: [],
-    });
+    const allInMay = filterArticlesForStats(items, range, noDims);
     expect(allInMay).toHaveLength(2);
 
-    const byTheLoai = filterArticlesForStats(items, range, {
-      idTheLoai: ['2'],
-      idNguonDang: [],
-      idTrangDang: [],
-      idNguoiTao: [],
-    });
+    const byTheLoai = filterArticlesForStats(items, range, { ...noDims, idTheLoai: ['2'] });
     expect(byTheLoai.map((r) => r.id)).toEqual(['3']);
   });
 
-  it('computeArticleStatsKpis sums don_gia and counts', () => {
+  it('filterArticlesForStats lọc theo đơn vị của người tạo', () => {
     const items = [
-      base({ id: '1', don_gia: 100 }),
-      base({ id: '2', don_gia: 200, id_the_loai: '99', id_nguoi_tao: '88' }),
+      base({ id: '1', id_don_vi_nguoi_tao: '7' }),
+      base({ id: '2', id_don_vi_nguoi_tao: '8' }),
+      base({ id: '3', id_don_vi_nguoi_tao: null }),
+    ];
+    const range = { start: '', end: '', allTime: true };
+    expect(filterArticlesForStats(items, range, { ...noDims, idDonVi: ['7'] }).map((r) => r.id)).toEqual(['1']);
+    // Nhóm "chưa xác định" cũng phải chọn được, nếu không thì bài của tài khoản
+    // chưa gắn đơn vị biến mất khỏi báo cáo mà không ai biết.
+    expect(
+      filterArticlesForStats(items, range, { ...noDims, idDonVi: [ARTICLE_STATS_DON_VI_UNKNOWN] }).map((r) => r.id),
+    ).toEqual(['3']);
+  });
+
+  it('computeArticleStatsKpis đếm bài, thể loại và người tạo', () => {
+    const items = [
+      base({ id: '1' }),
+      base({ id: '2', id_the_loai: '99', id_nguoi_tao: '88' }),
     ];
     const k = computeArticleStatsKpis(items);
     expect(k.totalCount).toBe(2);
-    expect(k.totalDonGia).toBe(300);
-    expect(k.avgDonGia).toBe(150);
     expect(k.distinctTheLoai).toBe(2);
     expect(k.distinctNguoiTao).toBe(2);
+    // Không còn chỉ tiêu tiền nào trên trang báo cáo.
+    expect(k).not.toHaveProperty('totalDonGia');
+    expect(k).not.toHaveProperty('avgDonGia');
+  });
+
+  it('computeArticleStatsKpis: trung bình bài/đơn vị loại nhóm chưa xác định khỏi mẫu số', () => {
+    const items = [
+      base({ id: '1', id_don_vi_nguoi_tao: '1' }),
+      base({ id: '2', id_don_vi_nguoi_tao: '1' }),
+      base({ id: '3', id_don_vi_nguoi_tao: '2' }),
+      base({ id: '4', id_don_vi_nguoi_tao: null }),
+      base({ id: '5', id_don_vi_nguoi_tao: '   ' }),
+    ];
+    const k = computeArticleStatsKpis(items);
+    expect(k.totalCount).toBe(5);
+    expect(k.distinctDonVi).toBe(2);
+    expect(k.soBaiCoDonVi).toBe(3);
+    expect(k.avgBaiMoiDonVi).toBe(1.5);
+  });
+
+  it('computeArticleStatsKpis: không đơn vị nào thì trung bình là 0, không chia cho 0', () => {
+    const k = computeArticleStatsKpis([base({ id: '1', id_don_vi_nguoi_tao: null })]);
+    expect(k.distinctDonVi).toBe(0);
+    expect(k.avgBaiMoiDonVi).toBe(0);
   });
 
   it('buildTrendSeries fills buckets by tg_tao with counts', () => {
     const items = [
-      base({ id: '1', tg_tao: '2026-05-01T12:00:00.000Z', don_gia: 50 }),
-      base({ id: '2', tg_tao: '2026-05-01T13:00:00.000Z', don_gia: 50 }),
-      base({ id: '3', tg_tao: '2026-05-02T10:00:00.000Z', don_gia: 100 }),
+      base({ id: '1', tg_tao: '2026-05-01T12:00:00.000Z' }),
+      base({ id: '2', tg_tao: '2026-05-01T13:00:00.000Z' }),
+      base({ id: '3', tg_tao: '2026-05-02T10:00:00.000Z' }),
     ];
     const range = { start: '2026-05-01', end: '2026-05-02' };
     const series = buildTrendSeries(items, range, 'day');
     expect(series).toHaveLength(2);
     expect(series[0].count).toBe(2);
-    expect(series[0].totalDonGia).toBe(100);
     expect(series[1].count).toBe(1);
-    expect(series[1].totalDonGia).toBe(100);
+    expect(series[0]).not.toHaveProperty('totalDonGia');
   });
 
   describe('aggregateByDonVi', () => {
@@ -107,19 +143,21 @@ describe('aggregate-bai-viet-stats', () => {
       ['2', 'Xã B'],
     ]);
 
-    it('gộp số bài và tổng đơn giá theo xã của người tạo', () => {
+    it('gộp số bài theo xã của người tạo, không còn cột tiền', () => {
       const rows = aggregateByDonVi(
         [
-          base({ id: '1', id_don_vi_nguoi_tao: '1', don_gia: 100 }),
-          base({ id: '2', id_don_vi_nguoi_tao: '1', don_gia: 300 }),
-          base({ id: '3', id_don_vi_nguoi_tao: '2', don_gia: 500 }),
+          base({ id: '1', id_don_vi_nguoi_tao: '1' }),
+          base({ id: '2', id_don_vi_nguoi_tao: '1' }),
+          base({ id: '3', id_don_vi_nguoi_tao: '2' }),
         ],
         tenXa,
         'Chưa xác định',
       );
       expect(rows).toHaveLength(2);
-      expect(rows[0]).toMatchObject({ id: '1', label: 'Xã A', soBai: 2, tongDonGia: 400, avgDonGia: 200 });
-      expect(rows[1]).toMatchObject({ id: '2', label: 'Xã B', soBai: 1, tongDonGia: 500, avgDonGia: 500 });
+      expect(rows[0]).toMatchObject({ id: '1', label: 'Xã A', soBai: 2 });
+      expect(rows[1]).toMatchObject({ id: '2', label: 'Xã B', soBai: 1 });
+      expect(rows[0]).not.toHaveProperty('tongDonGia');
+      expect(rows[0]).not.toHaveProperty('avgDonGia');
     });
 
     it('tỷ trọng tính trên tổng số bài đã lọc', () => {
@@ -165,6 +203,64 @@ describe('aggregate-bai-viet-stats', () => {
 
     it('không có bài nào → mảng rỗng', () => {
       expect(aggregateByDonVi([], tenXa, 'Chưa xác định')).toEqual([]);
+    });
+  });
+
+  describe('aggregateDonViTheLoaiMatrix', () => {
+    const tenXa = new Map([
+      ['1', 'Xã A'],
+      ['2', 'Xã B'],
+    ]);
+    const rows = [
+      base({ id: '1', id_don_vi_nguoi_tao: '1', id_the_loai: 'a', ten_the_loai: 'Tin' }),
+      base({ id: '2', id_don_vi_nguoi_tao: '1', id_the_loai: 'a', ten_the_loai: 'Tin' }),
+      base({ id: '3', id_don_vi_nguoi_tao: '1', id_the_loai: 'b', ten_the_loai: 'Bài' }),
+      base({ id: '4', id_don_vi_nguoi_tao: '2', id_the_loai: 'b', ten_the_loai: 'Bài' }),
+      base({ id: '5', id_don_vi_nguoi_tao: null, id_the_loai: 'a', ten_the_loai: 'Tin' }),
+    ];
+
+    it('tổng dòng, tổng cột và tổng chung đều bằng số bài đã lọc', () => {
+      const m = aggregateDonViTheLoaiMatrix(rows, tenXa, 'Chưa xác định');
+      expect(m.totals.soBai).toBe(5);
+      expect(m.rows.reduce((s, r) => s + r.soBai, 0)).toBe(5);
+      expect(Object.values(m.totals.theoTheLoai).reduce((s, v) => s + v, 0)).toBe(5);
+      for (const r of m.rows) {
+        expect(Object.values(r.theoTheLoai).reduce((s, v) => s + v, 0)).toBe(r.soBai);
+      }
+    });
+
+    it('cột thể loại sắp giảm dần theo tổng số bài, nhóm chưa xác định xếp cuối', () => {
+      const m = aggregateDonViTheLoaiMatrix(rows, tenXa, 'Chưa xác định');
+      expect(m.theLoaiCols.map((c) => c.label)).toEqual(['Tin', 'Bài']);
+      expect(m.rows.map((r) => r.label)).toEqual(['Xã A', 'Xã B', 'Chưa xác định']);
+      expect(m.rows[0].theoTheLoai).toEqual({ a: 2, b: 1 });
+      // Thể loại không có bài ở đơn vị này thì khuyết — lớp xuất file điền 0.
+      expect(m.rows[1].theoTheLoai).toEqual({ b: 1 });
+    });
+
+    it('không có bài nào → không cột, không dòng', () => {
+      const m = aggregateDonViTheLoaiMatrix([], tenXa, 'Chưa xác định');
+      expect(m.theLoaiCols).toEqual([]);
+      expect(m.rows).toEqual([]);
+      expect(m.totals.soBai).toBe(0);
+    });
+  });
+
+  describe('aggregateByNguoiTao', () => {
+    it('gộp theo người tạo kèm tên đơn vị, sắp giảm dần theo số bài', () => {
+      const rows = aggregateByNguoiTao(
+        [
+          base({ id: '1', id_nguoi_tao: '10', ho_va_ten_nguoi_tao: 'An', id_don_vi_nguoi_tao: '1' }),
+          base({ id: '2', id_nguoi_tao: '10', ho_va_ten_nguoi_tao: 'An', id_don_vi_nguoi_tao: '1' }),
+          base({ id: '3', id_nguoi_tao: '11', ho_va_ten_nguoi_tao: 'Bình', id_don_vi_nguoi_tao: null }),
+        ],
+        new Map([['1', 'Xã A']]),
+        'Chưa xác định',
+      );
+      expect(rows).toEqual([
+        { id: '10', label: 'An', tenDonVi: 'Xã A', soBai: 2 },
+        { id: '11', label: 'Bình', tenDonVi: 'Chưa xác định', soBai: 1 },
+      ]);
     });
   });
 });

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, X, AlertCircle, CheckCircle2, Download, ArrowRight } from 'lucide-react';
 import Button from '../ui/Button';
 import { cn, getErrorMessage, getTodayISODate } from '../../lib/utils';
+import { chuanHoaKhoaSoKhop } from '../../lib/vietnamese';
 import Combobox, { type Option } from '../ui/Combobox';
 import { DIALOG_SIZE } from '../../lib/dialog-sizes';
 
@@ -27,8 +28,39 @@ export type ImportErrorRow = {
 
 export type ImportBatchResult = {
   created?: number;
+  /** Số bản ghi đã có bị ghi đè (chỉ chế độ `upsert` / `update`). */
+  updated?: number;
+  /** Số dòng cố ý không ghi (trùng ở chế độ chỉ-thêm-mới, chưa có ở chế độ chỉ-cập-nhật). */
+  skipped?: number;
   errors?: string[];
   errorRows?: ImportErrorRow[];
+};
+
+/**
+ * Chế độ ghi. Mặc định dialog chỉ có `insert` — đúng hành vi cũ của mọi module;
+ * module nào muốn ghi đè phải khai báo `writeModes` để người dùng tự chọn.
+ */
+export type ImportWriteMode = 'insert' | 'upsert' | 'update';
+
+/** Một cột có thể dùng làm khoá nhận diện dòng trùng. */
+export interface ImportMatchColumn {
+  key: string;
+  label: string;
+}
+
+export type ImportRunOptions = {
+  mode: ImportWriteMode;
+  /** Theo đúng thứ tự người dùng thấy: khoá đầu khớp trước, không thấy mới xét khoá sau. */
+  matchKeys: string[];
+};
+
+/** Kết quả chạy thử: đếm trước khi ghi, để không ai ghi đè trong vô thức. */
+export type ImportDryRunResult = {
+  willCreate: number;
+  willUpdate: number;
+  willSkip: number;
+  /** Ghi chú thêm (ví dụ "bỏ qua cột Người tạo vì không đủ quyền"). */
+  notes?: string[];
 };
 
 /** Metadata attached to each parsed row — stripped by import services before insert. */
@@ -38,24 +70,64 @@ interface ImportDialogProps {
   open: boolean;
   onClose: () => void;
   columns: ImportColumn[];
-  onImport: (data: Record<string, unknown>[]) => Promise<ImportBatchResult | void>;
+  /**
+   * Tham số thứ hai là tuỳ chọn ghi của lần chạy này. Callback cũ dạng `(data) => …`
+   * vẫn dùng được nguyên vẹn — JS cho phép hàm nhận ít tham số hơn.
+   */
+  onImport: (
+    data: Record<string, unknown>[],
+    options: ImportRunOptions,
+  ) => Promise<ImportBatchResult | void>;
   templateFileName?: string;
   /** Extra reference sheets appended after the main Template sheet in the downloaded file. */
   templateSheets?: ImportTemplateSheet[];
+  /** Khai báo để bật khối chọn chế độ ghi. Bỏ trống = chỉ thêm mới như trước. */
+  writeModes?: readonly ImportWriteMode[];
+  defaultWriteMode?: ImportWriteMode;
+  /** Khai báo để bật khối chọn cột tham chiếu. */
+  matchColumns?: readonly ImportMatchColumn[];
+  defaultMatchKeys?: readonly string[];
+  /** Khai báo để bật bước xem trước (đếm sẽ thêm / sẽ đè / bỏ qua) trước khi ghi. */
+  onDryRun?: (
+    data: Record<string, unknown>[],
+    options: ImportRunOptions,
+  ) => Promise<ImportDryRunResult>;
 }
 
-type Step = 'upload' | 'mapping' | 'result';
+type Step = 'upload' | 'mapping' | 'preview' | 'result';
 
-type ImportResultState = {
-  success: number;
+const WRITE_MODE_TEXT: Record<ImportWriteMode, { label: string; hint: string }> = {
+  insert: { label: 'shared.import.writeModeInsert', hint: 'shared.import.writeModeInsertHint' },
+  upsert: { label: 'shared.import.writeModeUpsert', hint: 'shared.import.writeModeUpsertHint' },
+  update: { label: 'shared.import.writeModeUpdate', hint: 'shared.import.writeModeUpdateHint' },
+};
+
+/** Dòng đã qua kiểm sơ bộ ở dialog, chờ đẩy xuống service. */
+type CollectedRows = {
+  parsed: Record<string, unknown>[];
   errors: string[];
   errorRows: ImportErrorRow[];
 };
 
-const emptyResult = (): ImportResultState => ({ success: 0, errors: [], errorRows: [] });
+type ImportResultState = {
+  success: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  errorRows: ImportErrorRow[];
+};
+
+const emptyResult = (): ImportResultState => ({
+  success: 0,
+  updated: 0,
+  skipped: 0,
+  errors: [],
+  errorRows: [],
+});
 
 const ImportDialog: React.FC<ImportDialogProps> = ({
   open, onClose, columns, onImport, templateFileName = 'template', templateSheets,
+  writeModes, defaultWriteMode, matchColumns, defaultMatchKeys, onDryRun,
 }) => {
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
@@ -66,6 +138,27 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
   const [result, setResult] = useState<ImportResultState | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const availableModes = useMemo<readonly ImportWriteMode[]>(
+    () => (writeModes && writeModes.length > 0 ? writeModes : ['insert']),
+    [writeModes],
+  );
+  const [writeMode, setWriteMode] = useState<ImportWriteMode>(
+    () => defaultWriteMode ?? (writeModes && writeModes[0]) ?? 'insert',
+  );
+  const [matchKeys, setMatchKeys] = useState<string[]>(
+    () => [...(defaultMatchKeys ?? matchColumns?.map((c) => c.key) ?? [])],
+  );
+  const [dryRun, setDryRun] = useState<ImportDryRunResult | null>(null);
+  const [pendingRows, setPendingRows] = useState<CollectedRows | null>(null);
+  const [optionError, setOptionError] = useState<string | null>(null);
+
+  const runOptions = useMemo<ImportRunOptions>(
+    () => ({ mode: writeMode, matchKeys }),
+    [writeMode, matchKeys],
+  );
+  /** Chỉ chế độ có ghi đè mới cần khoá nhận diện; thêm mới thuần thì không. */
+  const needsMatchKeys = writeMode !== 'insert';
 
   const mappingSelectOptions: Option[] = useMemo(
     () => [
@@ -83,6 +176,11 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
     setMapping({});
     setImporting(false);
     setResult(null);
+    setDryRun(null);
+    setPendingRows(null);
+    setOptionError(null);
+    setWriteMode(defaultWriteMode ?? availableModes[0]);
+    setMatchKeys([...(defaultMatchKeys ?? matchColumns?.map((c) => c.key) ?? [])]);
   };
 
   const handleClose = () => {
@@ -126,15 +224,17 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       setSheetHeaders(headers);
       setSheetData(data as unknown[][]);
 
-      // Auto-detect mapping
+      // Auto-detect mapping — so khớp sau khi BỎ DẤU: file gõ "Ngay dang" vẫn
+      // phải khớp cột "Ngày đăng", nếu không người dùng phải chọn tay từng cột.
       const autoMap: Record<string, string> = {};
+      const normHeaders = headers.map((h) => ({ raw: h, norm: chuanHoaKhoaSoKhop(h) }));
       columns.forEach(col => {
-        const match = headers.find(h =>
-          h.toLowerCase() === col.label.toLowerCase() ||
-          h.toLowerCase().includes(col.label.toLowerCase()) ||
-          col.label.toLowerCase().includes(h.toLowerCase())
-        );
-        if (match) autoMap[col.key] = match;
+        const target = chuanHoaKhoaSoKhop(col.label);
+        if (!target) return;
+        const match =
+          normHeaders.find((h) => h.norm === target) ??
+          normHeaders.find((h) => h.norm !== '' && (h.norm.includes(target) || target.includes(h.norm)));
+        if (match) autoMap[col.key] = match.raw;
       });
       setMapping(autoMap);
       setStep('mapping');
@@ -156,24 +256,11 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
     if (f) parseFile(f);
   };
 
-  const handleImport = async () => {
-    setImporting(true);
+  /** Gom dòng hợp lệ + lỗi sơ bộ. Dùng chung cho bước xem trước và bước ghi. */
+  const collectRows = (): CollectedRows => {
     const errors: string[] = [];
     const errorRows: ImportErrorRow[] = [];
     const parsed: Record<string, unknown>[] = [];
-
-    // Validate required columns are mapped
-    const unmapped = columns.filter(c => c.required && !mapping[c.key]);
-    if (unmapped.length > 0) {
-      setResult({
-        success: 0,
-        errors: [txt('shared.import.missingRequiredColumns', { columns: unmapped.map(c => c.label).join(', ') })],
-        errorRows: [],
-      });
-      setStep('result');
-      setImporting(false);
-      return;
-    }
 
     sheetData.forEach((row, rowIdx) => {
       const rowNum = rowIdx + 2;
@@ -203,15 +290,48 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       }
     });
 
-    try {
-      let successCount = parsed.length;
-      let mergedErrors = errors;
-      let mergedErrorRows = errorRows;
+    return { parsed, errors, errorRows };
+  };
 
-      if (parsed.length > 0) {
-        const importResult = await onImport(parsed);
+  /** Kiểm các lựa chọn của bước map trước khi động vào dữ liệu. */
+  const validateOptions = (): string | null => {
+    const unmapped = columns.filter(c => c.required && !mapping[c.key]);
+    if (unmapped.length > 0) {
+      return txt('shared.import.missingRequiredColumns', {
+        columns: unmapped.map(c => c.label).join(', '),
+      });
+    }
+    if (needsMatchKeys) {
+      if (matchKeys.length === 0) return txt('shared.import.matchRequired');
+      // Khoá tham chiếu mà không có trong file thì mọi dòng đều "không trùng" —
+      // chế độ ghi đè sẽ âm thầm biến thành thêm mới hàng loạt.
+      const missing = matchKeys.filter((k) => !mapping[k]);
+      if (missing.length > 0) {
+        return txt('shared.import.matchNotMapped', {
+          columns: missing
+            .map((k) => matchColumns?.find((c) => c.key === k)?.label ?? k)
+            .join(', '),
+        });
+      }
+    }
+    return null;
+  };
+
+  const runImport = async (collected: CollectedRows) => {
+    setImporting(true);
+    try {
+      let successCount = collected.parsed.length;
+      let updatedCount = 0;
+      let skippedCount = 0;
+      let mergedErrors = collected.errors;
+      let mergedErrorRows = collected.errorRows;
+
+      if (collected.parsed.length > 0) {
+        const importResult = await onImport(collected.parsed, runOptions);
         if (importResult) {
-          successCount = importResult.created ?? parsed.length;
+          successCount = importResult.created ?? collected.parsed.length;
+          updatedCount = importResult.updated ?? 0;
+          skippedCount = importResult.skipped ?? 0;
           if (importResult.errors?.length) {
             mergedErrors = [...mergedErrors, ...importResult.errors];
           }
@@ -223,18 +343,48 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
 
       setResult({
         success: successCount,
+        updated: updatedCount,
+        skipped: skippedCount,
         errors: mergedErrors.slice(0, 10),
         errorRows: mergedErrorRows,
       });
     } catch (err: unknown) {
       setResult({
-        success: 0,
+        ...emptyResult(),
         errors: [getErrorMessage(err) || txt('shared.import.importError')],
-        errorRows,
+        errorRows: collected.errorRows,
       });
     }
     setStep('result');
     setImporting(false);
+  };
+
+  /** Bấm nút chính ở bước map: có `onDryRun` thì xem trước, không thì ghi luôn. */
+  const handleContinue = async () => {
+    const optionProblem = validateOptions();
+    if (optionProblem) {
+      setOptionError(optionProblem);
+      return;
+    }
+    setOptionError(null);
+    const collected = collectRows();
+
+    if (!onDryRun) {
+      await runImport(collected);
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const preview = await onDryRun(collected.parsed, runOptions);
+      setPendingRows(collected);
+      setDryRun(preview);
+      setStep('preview');
+    } catch (err: unknown) {
+      setOptionError(getErrorMessage(err) || txt('shared.import.dryRunFailed'));
+    } finally {
+      setImporting(false);
+    }
   };
 
   const downloadTemplate = async () => {
@@ -355,6 +505,71 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                     </p>
                   </div>
 
+                  {availableModes.length > 1 && (
+                    <div className="border border-border rounded-xl p-3 space-y-3">
+                      <p className="text-xs font-medium text-foreground">{txt('shared.import.writeModeTitle')}</p>
+                      <div className="space-y-2">
+                        {availableModes.map((mode) => (
+                          <div key={mode}>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="import-write-mode"
+                                className="accent-[hsl(var(--primary))]"
+                                checked={writeMode === mode}
+                                onChange={() => {
+                                  setWriteMode(mode);
+                                  setOptionError(null);
+                                }}
+                              />
+                              <span className="text-xs font-medium text-foreground">
+                                {txt(WRITE_MODE_TEXT[mode].label)}
+                              </span>
+                            </label>
+                            <p className="text-[11px] text-muted-foreground pl-6">
+                              {txt(WRITE_MODE_TEXT[mode].hint)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {needsMatchKeys && matchColumns && matchColumns.length > 0 && (
+                        <div className="pt-2 border-t border-border/60 space-y-2">
+                          <p className="text-xs font-medium text-foreground">{txt('shared.import.matchTitle')}</p>
+                          <div className="flex flex-wrap gap-3">
+                            {matchColumns.map((col) => (
+                              <label key={col.key} className="flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="accent-[hsl(var(--primary))]"
+                                  checked={matchKeys.includes(col.key)}
+                                  onChange={(e) => {
+                                    setOptionError(null);
+                                    setMatchKeys((prev) =>
+                                      e.target.checked
+                                        ? matchColumns
+                                            .map((c) => c.key)
+                                            .filter((k) => k === col.key || prev.includes(k))
+                                        : prev.filter((k) => k !== col.key),
+                                    );
+                                  }}
+                                />
+                                <span className="text-xs text-foreground">{col.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">{txt('shared.import.matchHint')}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {optionError && (
+                    <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 rounded-lg p-2">
+                      {optionError}
+                    </p>
+                  )}
+
                   {/* Mapping table */}
                   <div className="border border-border rounded-xl overflow-x-auto">
                     <table
@@ -451,13 +666,61 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                 </motion.div>
               )}
 
+              {step === 'preview' && dryRun && (
+                <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                  <p className="text-xs font-medium text-foreground">{txt('shared.import.previewTitle')}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        [txt('shared.import.previewCreate'), dryRun.willCreate, 'text-primary'],
+                        [txt('shared.import.previewUpdate'), dryRun.willUpdate, 'text-amber-600 dark:text-amber-400'],
+                        [txt('shared.import.previewSkip'), dryRun.willSkip, 'text-muted-foreground'],
+                      ] as const
+                    ).map(([label, value, color]) => (
+                      <div key={label} className="border border-border rounded-xl p-3 text-center">
+                        <p className={cn('text-lg font-semibold tabular-nums', color)}>{value}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {dryRun.notes && dryRun.notes.length > 0 && (
+                    <div className="text-left bg-muted/30 border border-border rounded-lg p-3 space-y-1">
+                      {dryRun.notes.map((note, i) => (
+                        <p key={i} className="text-xs text-muted-foreground">{note}</p>
+                      ))}
+                    </div>
+                  )}
+                  {pendingRows && pendingRows.errors.length > 0 && (
+                    <div className="text-left bg-destructive/5 border border-destructive/20 rounded-lg p-3 max-h-[140px] overflow-y-auto custom-scrollbar">
+                      {pendingRows.errors.slice(0, 10).map((err, i) => (
+                        <p key={i} className="text-xs text-destructive py-0.5">{err}</p>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
               {step === 'result' && result && (
                 <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-6">
-                  {result.success > 0 ? (
+                  {result.success > 0 || result.updated > 0 ? (
                     <div className="space-y-3">
                       <CheckCircle2 size={48} className="mx-auto text-primary" />
                       <p className="text-sm font-semibold text-foreground">{txt('shared.import.success')}</p>
-                      <p className="text-xs text-muted-foreground">{txt('shared.import.successCount', { count: result.success })}</p>
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-muted-foreground">
+                          {txt('shared.import.resultCreated', { count: result.success })}
+                        </p>
+                        {result.updated > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {txt('shared.import.resultUpdated', { count: result.updated })}
+                          </p>
+                        )}
+                        {result.skipped > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {txt('shared.import.resultSkipped', { count: result.skipped })}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -499,15 +762,38 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                     {txt('common.selectFile')}
                   </Button>
                   <Button
-                    onClick={handleImport}
+                    onClick={() => void handleContinue()}
                     disabled={importing}
                     className="bg-primary text-white text-xs h-8 px-4"
                   >
-                    {importing ? txt('common.processing') : txt('shared.import.importRows', { count: sheetData.length })}
+                    {importing
+                      ? txt('common.processing')
+                      : onDryRun
+                        ? txt('shared.import.continueLabel')
+                        : txt('shared.import.importRows', { count: sheetData.length })}
                   </Button>
                 </>
               )}
-              {step === 'result' && result && result.success > 0 && (
+              {step === 'preview' && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => { setStep('mapping'); setDryRun(null); }}
+                    disabled={importing}
+                    className="text-xs h-8"
+                  >
+                    {txt('common.back')}
+                  </Button>
+                  <Button
+                    onClick={() => pendingRows && void runImport(pendingRows)}
+                    disabled={importing || !pendingRows}
+                    className="bg-primary text-white text-xs h-8 px-4"
+                  >
+                    {importing ? txt('shared.import.previewChecking') : txt('shared.import.previewConfirm')}
+                  </Button>
+                </>
+              )}
+              {step === 'result' && result && (result.success > 0 || result.updated > 0) && (
                 <Button onClick={handleClose} className="bg-primary text-white text-xs h-8 px-4">
                   {txt('common.finish')}
                 </Button>

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, FolderOpen, Globe, MonitorSmartphone, User } from 'lucide-react';
+import { Plus, Download, Upload, FolderOpen, Globe, MonitorSmartphone, User } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -23,6 +23,7 @@ interface Props {
   nguoiTaoOptions: ChipOption[];
   onAdd: () => void;
   onExport: () => void;
+  onImport?: () => void;
   onDeleteMany: (ids: string[]) => void;
 }
 
@@ -34,9 +35,12 @@ const BaiVietToolbar: React.FC<Props> = ({
   nguoiTaoOptions,
   onAdd,
   onExport,
+  onImport,
   onDeleteMany,
 }) => {
-  const { canCreate, canExport, canDelete } = useResourcePermissions('articles');
+  const { canCreate, canExport, canDelete, canImport } = useResourcePermissions('articles');
+  // Nhập = ghi thêm bản ghi ⇒ phải có cả quyền `them`. Chỉ dựa vào `canImport` là hở.
+  const showImport = canCreate && canImport && Boolean(onImport);
 
   const {
     searchTerm,
@@ -180,6 +184,18 @@ const BaiVietToolbar: React.FC<Props> = ({
   const renderActions = (
     <>
       <div className="hidden sm:flex items-center gap-2">
+        {showImport && (
+          <Tooltip content={txt('common.import')} placement="bottom">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onImport}
+              className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+            >
+              <Upload className="w-4 h-4" />
+            </Button>
+          </Tooltip>
+        )}
         {canExport && (
           <Tooltip content={txt('common.export')} placement="bottom">
             <Button

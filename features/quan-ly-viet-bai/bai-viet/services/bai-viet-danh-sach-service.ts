@@ -285,6 +285,52 @@ export async function updateBaiVietDanhSach(
   return full;
 }
 
+/* ------------------------------------------------------------------ *
+ * Hai hàm ghi dành riêng cho NHẬP FILE
+ *
+ * Khác `createBaiVietDanhSach` / `updateBaiVietDanhSach` ở hai điểm, đều vì số
+ * lượng dòng:
+ *  - BỎ tiền kiểm trùng tên/link (2 request mỗi dòng). Luồng nhập đã đối chiếu
+ *    offline trên danh sách tải một lần; lớp chặn thật vẫn là unique index dưới
+ *    DB, và lỗi 23505 đã được dịch sẵn sang tiếng Việt.
+ *  - BỎ lần đọc lại bản ghi đầy đủ sau khi ghi (thêm 1 request mỗi dòng) vì
+ *    luồng nhập không dùng tới bản ghi trả về.
+ * Với 500 dòng, hai điểm này tiết kiệm khoảng 1.500 request.
+ * ------------------------------------------------------------------ */
+
+export async function createBaiVietDanhSachForImport(
+  data: BaiVietDanhSachFormValues,
+  idNguoiTao: string,
+): Promise<void> {
+  const trimmed = idNguoiTao.trim();
+  if (!trimmed) throw new Error(txt('articleList.service.noEmployeeProfile'));
+  await supabaseInsertBaiViet({
+    ten_bai: data.ten_bai.trim(),
+    id_the_loai: data.id_the_loai,
+    don_gia: data.don_gia,
+    ngay_dang: data.ngay_dang,
+    id_nguon_dang: data.id_nguon_dang,
+    id_trang_dang: data.id_trang_dang,
+    link: data.link.trim(),
+    id_nguoi_tao: trimmed,
+  });
+}
+
+export async function updateBaiVietDanhSachForImport(
+  id: string,
+  data: BaiVietDanhSachFormValues,
+): Promise<void> {
+  await supabaseUpdateBaiViet(id, {
+    ten_bai: data.ten_bai.trim(),
+    id_the_loai: data.id_the_loai,
+    don_gia: data.don_gia,
+    ngay_dang: data.ngay_dang,
+    id_nguon_dang: data.id_nguon_dang,
+    id_trang_dang: data.id_trang_dang,
+    link: data.link.trim(),
+  });
+}
+
 export async function deleteBaiVietDanhSachMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }

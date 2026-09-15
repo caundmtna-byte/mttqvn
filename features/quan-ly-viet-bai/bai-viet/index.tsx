@@ -41,6 +41,14 @@ import {
 import { useBaiVietDanhSachStore } from './store/useBaiVietDanhSachStore';
 import type { BaiVietDanhSach } from './core/types';
 import { baiVietMatchesColumnSearch } from './utils/column-search';
+import ImportDialog, {
+  type ImportRunOptions,
+} from '@/components/shared/ImportDialog';
+import { useCanEditBaiVietDonGia } from './hooks/use-can-edit-bai-viet-don-gia';
+import { useImportBaiViet } from './hooks/use-bai-viet-danh-sach';
+import { dryRunBaiVietImport, type BaiVietImportContext } from './services/bai-viet-import';
+import { BAI_VIET_IMPORT_MAX_ROWS } from './utils/bai-viet-import-row';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import BaiVietToolbar from './components/bai-viet-toolbar';
 import BaiVietTable from './components/bai-viet-table';
 
@@ -83,6 +91,7 @@ const BaiVietDanhSachPage: React.FC = () => {
   const [viewing, setViewing] = useState<BaiVietDanhSach | null>(null);
   const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const {
     searchTerm,
@@ -245,6 +254,104 @@ const BaiVietDanhSachPage: React.FC = () => {
 
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
+  /* ---------------- Nhập file ---------------- */
+
+  const { canCreate: canCreateArticle, canEdit: canEditArticle, canImport } = useResourcePermissions('articles');
+  const canEditDonGia = useCanEditBaiVietDonGia();
+  const importMutation = useImportBaiViet();
+
+  const importCtx = useMemo<BaiVietImportContext>(
+    () => ({
+      idNhanVienHienTai: listViewer.viewerNhanVienId ?? '',
+      // Cùng điều kiện với quyền sửa đơn giá: chỉ cấp lãnh đạo / quản trị module.
+      // Ai cũng gán bài cho người khác được là mở đường mạo danh.
+      choGanNguoiKhac: canEditDonGia,
+      choSuaDonGia: canEditDonGia,
+    }),
+    [listViewer.viewerNhanVienId, canEditDonGia],
+  );
+
+  const importColumns = useMemo(
+    () => [
+      { key: 'ten_bai', label: txt('articleList.import.colTenBai'), required: true },
+      { key: 'id_the_loai', label: txt('articleList.import.colTheLoai'), required: true },
+      { key: 'ngay_dang', label: txt('articleList.import.colNgayDang'), required: true },
+      { key: 'don_gia', label: txt('articleList.import.colDonGia') },
+      { key: 'id_nguon_dang', label: txt('articleList.import.colNguonDang'), required: true },
+      { key: 'id_trang_dang', label: txt('articleList.import.colTrangDang'), required: true },
+      { key: 'link', label: txt('articleList.import.colLink'), required: true },
+      { key: 'id_nguoi_tao', label: txt('articleList.import.colNguoiTao') },
+    ],
+    [],
+  );
+
+  const importMatchColumns = useMemo(
+    () => [
+      { key: 'link', label: txt('articleList.import.colLink') },
+      { key: 'ten_bai', label: txt('articleList.import.colTenBai') },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng bị DB chặn. */
+  const importWriteModes = useMemo(
+    () => (canEditArticle ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEditArticle],
+  );
+
+  const importTemplateSheets = useMemo(
+    () => [
+      {
+        name: txt('articleList.import.sheetHuongDan'),
+        headers: [txt('articleList.import.sheetHuongDanCot')],
+        rows: [
+          [txt('articleList.import.huongDan1')],
+          [txt('articleList.import.huongDan2')],
+          [txt('articleList.import.huongDan3')],
+          [txt('articleList.import.huongDan4')],
+          [txt('articleList.import.huongDan5')],
+          [txt('articleList.import.huongDan6', { max: BAI_VIET_IMPORT_MAX_ROWS })],
+        ] as (string | number | null)[][],
+      },
+      {
+        name: txt('articleList.import.sheetTheLoai'),
+        headers: [
+          txt('articleList.import.sheetColId'),
+          txt('articleList.import.sheetColTen'),
+          txt('articleList.import.sheetColDonGia'),
+        ],
+        rows: theLoais.map((t) => [t.id, t.ten_the_loai, t.don_gia] as (string | number | null)[]),
+      },
+      {
+        name: txt('articleList.import.sheetNguonDang'),
+        headers: [txt('articleList.import.sheetColId'), txt('articleList.import.sheetColTen')],
+        rows: khacRows
+          .filter((k) => k.loai === 'nguon_dang')
+          .map((k) => [k.id, k.ten] as (string | number | null)[]),
+      },
+      {
+        name: txt('articleList.import.sheetTrangDang'),
+        headers: [txt('articleList.import.sheetColId'), txt('articleList.import.sheetColTen')],
+        rows: khacRows
+          .filter((k) => k.loai === 'trang_dang')
+          .map((k) => [k.id, k.ten] as (string | number | null)[]),
+      },
+    ],
+    [theLoais, khacRows],
+  );
+
+  const handleImportDryRun = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunBaiVietImport(rowsToImport, options, importCtx),
+    [importCtx],
+  );
+
+  const handleImport = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows: rowsToImport, options, ctx: importCtx }),
+    [importMutation, importCtx],
+  );
+
   const handleEdit = (item: BaiVietDanhSach) => {
     startTransition(() => {
       setFormOrigin(viewing ? 'detail' : 'list');
@@ -377,6 +484,7 @@ const BaiVietDanhSachPage: React.FC = () => {
           nguonDangOptions={nguonDangChipOptions}
           trangDangOptions={trangDangChipOptions}
           nguoiTaoOptions={nguoiTaoChipOptions}
+          onImport={canCreateArticle && canImport ? () => setShowImport(true) : undefined}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');
@@ -422,6 +530,23 @@ const BaiVietDanhSachPage: React.FC = () => {
               onDelete={handleDelete}
             />
           </Suspense>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImport && (
+          <ImportDialog
+            open={showImport}
+            onClose={() => setShowImport(false)}
+            columns={importColumns}
+            onImport={handleImport}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['link', 'ten_bai']}
+            templateFileName={txt('articleList.import.templateFileName')}
+            templateSheets={importTemplateSheets}
+          />
         )}
       </AnimatePresence>
 

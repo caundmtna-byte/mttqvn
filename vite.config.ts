@@ -49,8 +49,15 @@ export default defineConfig(() => {
         react(),
         // Pre-compress build output: Vercel/CDN sẽ phục vụ `.br`/`.gz` trực tiếp,
         // giảm bandwidth ~70% cho text assets (JS/CSS/HTML).
-        viteCompression({ algorithm: 'brotliCompress', ext: '.br', threshold: 1024 }),
-        viteCompression({ algorithm: 'gzip', ext: '.gz', threshold: 1024 }),
+        //
+        // `verbose: false`: vite-plugin-compression@0.5.1 (không còn được bảo trì
+        // từ 2021) in sai đường dẫn trong log — nó cắt chuỗi `dist/` ĐẦU TIÊN gặp
+        // trong đường dẫn tuyệt đối rồi lại nối `dist/` vào trước, ra thành
+        // `dist//Users/.../assets/foo.js.br`. File xuất ra vẫn đúng chỗ, chỉ log
+        // sai. Tắt log này đi: bảng kích thước của chính Vite ở trên đã có đủ
+        // (kèm cả cỡ gzip), và bớt được ~600 dòng nhiễu mỗi lần build.
+        viteCompression({ algorithm: 'brotliCompress', ext: '.br', threshold: 1024, verbose: false }),
+        viteCompression({ algorithm: 'gzip', ext: '.gz', threshold: 1024, verbose: false }),
         VitePWA({
           registerType: 'autoUpdate',
           includeAssets: ['favicon.svg'],

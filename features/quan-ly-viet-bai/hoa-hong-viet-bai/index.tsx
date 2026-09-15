@@ -191,15 +191,21 @@ const HoaHongVietBaiPage: React.FC = () => {
     [scopedRows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds],
   );
 
+  /**
+   * Sáu cột đầu là đúng bộ người dùng yêu cầu khi xuất nhuận bút
+   * (STT / Tên bài / Ngày / Thể loại / Tiền / Người viết) và được tick sẵn;
+   * các cột còn lại vẫn có trong hộp thoại để tự tick khi cần.
+   */
   const exportColumns = useMemo(
     () => [
+      { key: 'stt', label: txt('articleCommission.exportColStt') },
       { key: 'ten_bai', label: txt('articleCommission.exportColTenBai') },
+      { key: 'ngay_dang', label: txt('articleCommission.exportColNgayDang') },
       { key: 'ten_the_loai', label: txt('articleCommission.exportColTheLoai') },
       { key: 'don_gia_num', label: txt('articleCommission.exportColDonGia') },
-      { key: 'ngay_dang', label: txt('articleCommission.exportColNgayDang') },
+      { key: 'ho_va_ten_nguoi_tao', label: txt('articleCommission.exportColNguoi') },
       { key: 'ten_nguon_dang', label: txt('articleCommission.exportColNguon') },
       { key: 'ten_trang_dang', label: txt('articleCommission.exportColTrang') },
-      { key: 'ho_va_ten_nguoi_tao', label: txt('articleCommission.exportColNguoi') },
       { key: 'link', label: txt('articleCommission.exportColLink') },
       { key: 'range_start', label: txt('articleCommission.exportRangeFrom') },
       { key: 'range_end', label: txt('articleCommission.exportRangeTo') },
@@ -207,8 +213,25 @@ const HoaHongVietBaiPage: React.FC = () => {
     [],
   );
 
+  const exportDefaultColumnKeys = useMemo(
+    () => ['stt', 'ten_bai', 'ngay_dang', 'ten_the_loai', 'don_gia_num', 'ho_va_ten_nguoi_tao'],
+    [],
+  );
+
+  /**
+   * STT đánh theo thứ tự của cả danh sách đã lọc chứ không theo lô đang xuất:
+   * `useExportData` chỉ truyền item cho `mapFn`, không truyền chỉ số, và chọn
+   * phạm vi "trang hiện tại" thì lô là một lát cắt — đánh lại từ 1 sẽ sai.
+   */
+  const sttById = useMemo(() => {
+    const m = new Map<string, number>();
+    agg.filteredRows.forEach((r, i) => m.set(r.id, i + 1));
+    return m;
+  }, [agg.filteredRows]);
+
   const exportMapFn = useCallback(
     (item: BaiVietDanhSach) => ({
+      stt: sttById.get(item.id) ?? 0,
       ten_bai: item.ten_bai,
       ten_the_loai: item.ten_the_loai ?? '',
       don_gia_num: item.don_gia,
@@ -220,7 +243,7 @@ const HoaHongVietBaiPage: React.FC = () => {
       range_start: dateFrom ?? '',
       range_end: dateTo ?? '',
     }),
-    [dateFrom, dateTo],
+    [dateFrom, dateTo, sttById],
   );
 
   const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
@@ -545,7 +568,7 @@ const HoaHongVietBaiPage: React.FC = () => {
         paginatedData={paginatedExportData}
         selectedData={selectedExportData}
         fileName={txt('articleCommission.exportFileName')}
-        visibleColumnKeys={exportColumns.map((c) => c.key)}
+        visibleColumnKeys={exportDefaultColumnKeys}
       />
     </div>
   );

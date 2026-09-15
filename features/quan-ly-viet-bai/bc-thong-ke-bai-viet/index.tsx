@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, lazy, Suspense, useEffect, useRef } from 'react';
+import React, { useState, useMemo, lazy, Suspense, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
@@ -12,7 +12,6 @@ import {
 } from 'recharts';
 import {
   FileText,
-  Hash,
   Users,
   User,
   Layers,
@@ -23,7 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { cn, formatCurrency, formatDecimal, getLanguage } from '@/lib/utils';
+import { cn, formatDecimal, getLanguage } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -43,8 +42,6 @@ import { chartFillByIndex } from '@/lib/constants/chart-colors';
 import type { StatsTableRow } from '@/components/shared/stats/types';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import type { Option } from '@/components/ui/MultiSelect';
-import ExportDialog from '@/components/shared/ExportDialog';
-import { useExportData } from '@/lib/useExportData';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
@@ -71,7 +68,12 @@ import {
   type LookupSortKey,
   getArticleStatsDateFromCreatedAt,
   aggregateByDonVi,
+  aggregateByNguoiTao,
+  aggregateDonViTheLoaiMatrix,
+  getArticleDonViKey,
+  getArticleDonViLabel,
 } from './utils/aggregate-bai-viet-stats';
+import { exportBcThongKeBaiVietToExcel } from './utils/export-bc-thong-ke-bai-viet';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import { useCan } from '@/hooks/use-can';
 
@@ -84,9 +86,8 @@ const initialDims: ArticleStatsDimensionFilters = {
   idNguonDang: [],
   idTrangDang: [],
   idNguoiTao: [],
+  idDonVi: [],
 };
-
-const EXPORT_PAGINATION = { page: 1, pageSize: 100_000 };
 
 const DrawerLazyFallback: React.FC = () => (
   <div
@@ -197,7 +198,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
   const [sortKey, setSortKey] = useState<LookupSortKey>('ngay_dang');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [viewing, setViewing] = useState<BaiVietDanhSach | null>(null);
-  const [showExport, setShowExport] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!viewing) return;
@@ -259,11 +260,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
   );
 
   const donViTotals = useMemo(
-    () =>
-      donViRows.reduce(
-        (acc, r) => ({ soBai: acc.soBai + r.soBai, tongDonGia: acc.tongDonGia + r.tongDonGia }),
-        { soBai: 0, tongDonGia: 0 },
-      ),
+    () => donViRows.reduce((acc, r) => acc + r.soBai, 0),
     [donViRows],
   );
 
@@ -291,6 +288,18 @@ const BcThongKeBaiVietPage: React.FC = () => {
         label: r.ho_va_ten_nguoi_tao?.trim() || r.ten_tai_khoan_nguoi_tao?.trim() || '',
       })),
     [rows],
+  );
+
+  const donViOptions = useMemo(
+    () =>
+      buildDimOptions(rows, (r) => {
+        const id = getArticleDonViKey(r);
+        return {
+          id,
+          label: getArticleDonViLabel(id, tenDonViById, txt('articleStats.donViKhongXacDinh')),
+        };
+      }),
+    [rows, tenDonViById],
   );
 
   const filterGroups = useMemo<FilterGroup[]>(
@@ -327,54 +336,39 @@ const BcThongKeBaiVietPage: React.FC = () => {
         value: dims.idNguoiTao,
         onChange: (v) => setDims((d) => ({ ...d, idNguoiTao: v })),
       },
+      {
+        key: 'don_vi',
+        label: txt('articleStats.filterDonVi'),
+        icon: MapPin,
+        options: donViOptions.map((o) => ({ label: o.label, value: o.value, count: o.count })),
+        value: dims.idDonVi,
+        onChange: (v) => setDims((d) => ({ ...d, idDonVi: v })),
+      },
     ],
     // `setDims` đến từ `useStatsPageFilters` nên linter không biết nó ổn định như setter của useState.
-    [setDims, theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, dims.idTheLoai, dims.idNguonDang, dims.idTrangDang, dims.idNguoiTao],
+    [setDims, theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, donViOptions, dims.idTheLoai, dims.idNguonDang, dims.idTrangDang, dims.idNguoiTao, dims.idDonVi],
   );
 
-  const exportColumns = useMemo(
-    () => [
-      { key: 'ten_bai', label: txt('articleStats.tableColTenBai') },
-      { key: 'ten_the_loai', label: txt('articleStats.tableColTheLoai') },
-      { key: 'don_gia_num', label: txt('articleStats.tableColDonGia') },
-      { key: 'ngay_dang', label: txt('articleStats.tableColNgayDang') },
-      { key: 'ten_nguon_dang', label: txt('articleStats.tableColNguon') },
-      { key: 'ten_trang_dang', label: txt('articleStats.tableColTrang') },
-      { key: 'ho_va_ten_nguoi_tao', label: txt('articleStats.tableColNguoi') },
-      { key: 'ten_don_vi', label: txt('articleStats.tableColDonVi') },
-      { key: 'link', label: txt('articleStats.tableColLink') },
-      { key: 'range_start', label: txt('articleStats.exportRangeFrom') },
-      { key: 'range_end', label: txt('articleStats.exportRangeTo') },
-    ],
-    [],
-  );
-
-  const exportMapFn = useCallback(
-    (item: BaiVietDanhSach) => ({
-      ten_bai: item.ten_bai,
-      ten_the_loai: item.ten_the_loai ?? '',
-      don_gia_num: item.don_gia,
-      ngay_dang: item.ngay_dang,
-      ten_nguon_dang: item.ten_nguon_dang ?? '',
-      ten_trang_dang: item.ten_trang_dang ?? '',
-      ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? item.ten_tai_khoan_nguoi_tao ?? '',
-      ten_don_vi:
-        (item.id_don_vi_nguoi_tao ? tenDonViById.get(String(item.id_don_vi_nguoi_tao)) : '') ?? '',
-      link: item.link,
-      range_start: resolvedRange.start,
-      range_end: resolvedRange.end,
-    }),
-    [resolvedRange.start, resolvedRange.end, tenDonViById],
-  );
-
-  const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
-    data: sortedLookup,
-    isOpen: showExport,
-    mapFn: exportMapFn,
-    pagination: EXPORT_PAGINATION,
-    selectedIds: new Set(),
-    keyExtractor: (r) => r.id,
-  });
+  /**
+   * Bộ lọc đang bật, đã đổi id thành tên — ghi vào sheet Tổng hợp để người nhận
+   * file biết con số được lọc bằng gì thay vì phải hỏi lại.
+   */
+  const activeFilterSummary = useMemo(() => {
+    const labelsOf = (opts: Option[], values: string[]) =>
+      values.map((v) => opts.find((o) => o.value === v)?.label ?? v).join(', ');
+    const out: { label: string; value: string }[] = [];
+    if (dims.idTheLoai.length)
+      out.push({ label: txt('articleStats.filterTheLoai'), value: labelsOf(theLoaiOptions, dims.idTheLoai) });
+    if (dims.idNguonDang.length)
+      out.push({ label: txt('articleStats.filterNguon'), value: labelsOf(nguonOptions, dims.idNguonDang) });
+    if (dims.idTrangDang.length)
+      out.push({ label: txt('articleStats.filterTrang'), value: labelsOf(trangOptions, dims.idTrangDang) });
+    if (dims.idNguoiTao.length)
+      out.push({ label: txt('articleStats.filterNguoiTao'), value: labelsOf(nguoiOptions, dims.idNguoiTao) });
+    if (dims.idDonVi.length)
+      out.push({ label: txt('articleStats.filterDonVi'), value: labelsOf(donViOptions, dims.idDonVi) });
+    return out;
+  }, [dims, theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, donViOptions]);
 
   const kpiItems = useMemo(
     () => [
@@ -388,18 +382,18 @@ const BcThongKeBaiVietPage: React.FC = () => {
         delta: null,
       },
       {
-        id: 'sum',
-        label: txt('articleStats.kpiTotalDonGia'),
-        value: formatCurrency(kpis.totalDonGia),
-        icon: Hash,
+        id: 'don_vi',
+        label: txt('articleStats.kpiTongDonVi'),
+        value: kpis.distinctDonVi,
+        icon: MapPin,
         bg: 'bg-emerald-500/10',
         color: 'text-emerald-600 dark:text-emerald-400',
         delta: null,
       },
       {
         id: 'avg',
-        label: txt('articleStats.kpiAvgDonGia'),
-        value: formatCurrency(Math.round(kpis.avgDonGia)),
+        label: txt('articleStats.kpiTbSoBai'),
+        value: formatDecimal(kpis.avgBaiMoiDonVi, 1),
         icon: Layers,
         bg: 'bg-amber-500/10',
         color: 'text-amber-600 dark:text-amber-400',
@@ -418,12 +412,37 @@ const BcThongKeBaiVietPage: React.FC = () => {
     [kpis],
   );
 
-  const handleExport = () => {
+  /**
+   * Xuất thẳng ra file nhiều sheet, không qua `ExportDialog`: hộp thoại chung chỉ
+   * ghi được một sheet phẳng, không dựng được bảng chéo đơn vị × thể loại.
+   * Các bảng tổng hợp tính ngay tại đây (không `useMemo`) vì chỉ cần khi bấm xuất.
+   */
+  const handleExport = async () => {
     if (sortedLookup.length === 0) {
       toast.warning(txt('articleStats.noExportData'));
       return;
     }
-    setShowExport(true);
+    setExporting(true);
+    try {
+      const unknownLabel = txt('articleStats.donViKhongXacDinh');
+      await exportBcThongKeBaiVietToExcel({
+        kpis,
+        range: resolvedRange,
+        activeFilters: activeFilterSummary,
+        matrix: aggregateDonViTheLoaiMatrix(filtered, tenDonViById, unknownLabel),
+        theLoaiRows: aggregateTopCounts(filtered, 'the_loai'),
+        nguonRows: aggregateTopCounts(filtered, 'nguon'),
+        trangRows: aggregateTopCounts(filtered, 'trang'),
+        nguoiTaoRows: aggregateByNguoiTao(filtered, tenDonViById, unknownLabel),
+        trendRows: trendSeries,
+        lookupRows: sortedLookup,
+        tenDonViById,
+      });
+    } catch {
+      toast.error(txt('articleStats.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -446,13 +465,14 @@ const BcThongKeBaiVietPage: React.FC = () => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else {
       setSortKey(key);
-      setSortDir(key === 'ten_bai' || key === 'ten_the_loai' || key === 'ten_nguon_dang' || key === 'ten_trang_dang' || key === 'creator' ? 'asc' : 'desc');
+      setSortDir(key === 'ngay_dang' ? 'desc' : 'asc');
     }
   };
 
-  const chartData = useMemo(
-    () => trendSeries.map((p) => ({ ...p, amount: p.totalDonGia })),
-    [trendSeries],
+  const chartData = trendSeries;
+  const theLoaiChartData = useMemo(
+    () => topTheLoai.map((r) => ({ label: r.label, count: r.value })),
+    [topTheLoai],
   );
 
   const dateRangeRow = (
@@ -504,6 +524,14 @@ const BcThongKeBaiVietPage: React.FC = () => {
         placeholder={txt('articleStats.filterNguoiTao')}
         className="shrink-0 w-[160px]"
       />
+      <FilterChipMultiSelect
+        icon={MapPin}
+        options={donViOptions}
+        value={dims.idDonVi}
+        onChange={(v) => setDims((d) => ({ ...d, idDonVi: v }))}
+        placeholder={txt('articleStats.filterDonVi')}
+        className="shrink-0 w-[160px]"
+      />
     </div>
   );
 
@@ -514,7 +542,8 @@ const BcThongKeBaiVietPage: React.FC = () => {
           variant="outline"
           size="sm"
           type="button"
-          onClick={handleExport}
+          onClick={() => void handleExport()}
+          disabled={exporting}
           className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
         >
           <Download className="w-4 h-4" />
@@ -594,18 +623,18 @@ const BcThongKeBaiVietPage: React.FC = () => {
                 </div>
               </StatsCard>
 
-              <StatsCard title={txt('articleStats.chartTrendAmount')} icon={Hash}>
+              <StatsCard title={txt('articleStats.chartTheLoaiCount')} icon={Layers}>
                 <div className="h-[240px] w-full min-w-0">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                    <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <BarChart data={theLoaiChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} width={44} tickFormatter={(v) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : String(v))} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} height={48} angle={-20} textAnchor="end" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
-                        data={chartData}
-                        dataKey="amount"
-                        name={txt('articleStats.kpiTotalDonGia')}
+                        data={theLoaiChartData}
+                        dataKey="count"
+                        name={txt('articleStats.tableColSoBai')}
                         radius={[4, 4, 0, 0]}
                         getFill={(_, i) => chartFillByIndex(i)}
                       />
@@ -688,12 +717,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
                         <th className="py-2 pr-3 font-medium text-right whitespace-nowrap">
                           {txt('articleStats.tableColTyTrong')}
                         </th>
-                        <th className="py-2 pr-3 font-medium text-right whitespace-nowrap">
-                          {txt('articleStats.tableColTongDonGia')}
-                        </th>
-                        <th className="py-2 pr-3 font-medium text-right whitespace-nowrap">
-                          {txt('articleStats.tableColTbDonGia')}
-                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -704,31 +727,15 @@ const BcThongKeBaiVietPage: React.FC = () => {
                           <td className="py-2 pr-3 text-right tabular-nums">
                             {formatDecimal(row.tyTrongSoBai, 1)}%
                           </td>
-                          <td className="py-2 pr-3 text-right tabular-nums">
-                            {formatCurrency(row.tongDonGia)}
-                          </td>
-                          <td className="py-2 pr-3 text-right tabular-nums">
-                            {formatCurrency(Math.round(row.avgDonGia))}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot className="sticky bottom-0 bg-card border-t border-border">
                       <tr className="font-medium">
                         <td className="py-2 px-3">{txt('articleStats.tableRowTong')}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{donViTotals.soBai}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{donViTotals}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">
-                          {donViTotals.soBai > 0 ? `${formatDecimal(100, 1)}%` : '—'}
-                        </td>
-                        <td className="py-2 pr-3 text-right tabular-nums">
-                          {formatCurrency(donViTotals.tongDonGia)}
-                        </td>
-                        <td className="py-2 pr-3 text-right tabular-nums">
-                          {formatCurrency(
-                            donViTotals.soBai > 0
-                              ? Math.round(donViTotals.tongDonGia / donViTotals.soBai)
-                              : 0,
-                          )}
+                          {donViTotals > 0 ? `${formatDecimal(100, 1)}%` : '—'}
                         </td>
                       </tr>
                     </tfoot>
@@ -747,7 +754,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
                           ['ten_bai', txt('articleStats.tableColTenBai')],
                           ['ten_the_loai', txt('articleStats.tableColTheLoai')],
                           ['ngay_dang', txt('articleStats.tableColNgayDang')],
-                          ['don_gia', txt('articleStats.tableColDonGia')],
                           ['ten_nguon_dang', txt('articleStats.tableColNguon')],
                           ['ten_trang_dang', txt('articleStats.tableColTrang')],
                           ['creator', txt('articleStats.tableColNguoi')],
@@ -780,7 +786,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
                         <td className="py-2 pr-3 max-w-[200px] truncate">{row.ten_bai}</td>
                         <td className="py-2 pr-3">{row.ten_the_loai ?? '—'}</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">{row.ngay_dang}</td>
-                        <td className="py-2 pr-3 tabular-nums">{formatCurrency(row.don_gia)}</td>
                         <td className="py-2 pr-3 max-w-[120px] truncate">{row.ten_nguon_dang ?? '—'}</td>
                         <td className="py-2 pr-3 max-w-[120px] truncate">{row.ten_trang_dang ?? '—'}</td>
                         <td className="py-2 pr-3 max-w-[140px] truncate">
@@ -810,17 +815,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
           </>
         )}
       </div>
-
-      <ExportDialog
-        open={showExport}
-        onClose={() => setShowExport(false)}
-        columns={exportColumns}
-        data={exportData}
-        paginatedData={paginatedExportData}
-        selectedData={selectedExportData}
-        fileName={txt('articleStats.exportFileName')}
-        visibleColumnKeys={exportColumns.map((c) => c.key)}
-      />
 
       <AnimatePresence>
         {viewing && (

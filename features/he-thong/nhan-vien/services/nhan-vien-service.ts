@@ -118,6 +118,36 @@ async function enrichEmployee(raw: Employee, lookups?: {
 }
 
 /**
+ * Danh bạ tối giản để TRA TÊN → ID: chỉ 3 cột, không làm giàu dữ liệu.
+ *
+ * `getEmployees()` kéo theo phòng ban, chức vụ, xã, tỉnh và thiết lập để dựng
+ * tên hiển thị — quá tốn cho việc chỉ cần đối chiếu tên khi nhập file Excel.
+ */
+export const getEmployeeNameRefs = async (): Promise<
+  { id: string; ho_va_ten: string; ten_tai_khoan: string }[]
+> => {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const rows = await fetchAllPages<Record<string, unknown>>(
+    async (from, to) => {
+      const { data, error } = await supabase
+        .from('var_nhan_vien')
+        .select('id, ho_va_ten, ten_tai_khoan')
+        .order('ho_va_ten', { ascending: true })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as Record<string, unknown>[];
+    },
+    { label: 'var_nhan_vien (danh bạ tra tên)' },
+  );
+  return rows.map((r) => ({
+    id: String(r.id),
+    ho_va_ten: String(r.ho_va_ten ?? ''),
+    ten_tai_khoan: String(r.ten_tai_khoan ?? ''),
+  }));
+};
+
+/**
  * List nhân viên — dùng `EMPLOYEE_SELECT_LIST` (không có `hinh_anh`) để giảm egress.
  * `hinh_anh` chỉ load khi mở detail/form sửa qua `getEmployeeById`.
  */

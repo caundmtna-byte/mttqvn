@@ -13,6 +13,8 @@ import {
   getBaiVietDanhSachList,
   updateBaiVietDanhSach,
 } from '../services/bai-viet-danh-sach-service';
+import { importBaiVietRows, type BaiVietImportContext } from '../services/bai-viet-import';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
 import { BaiVietLinkConflictError } from '../utils/bai-viet-link-conflict';
 import { BaiVietTenBaiConflictError } from '../utils/bai-viet-ten-bai-conflict';
 
@@ -87,6 +89,35 @@ export const useDeleteBaiVietDanhSachMany = () => {
         queryClient.removeQueries({ queryKey: queryKeys.baiVietDanhSach.detail(id) });
       }
       toast.success(txt('articleList.toast.delete', { count: ids.length }));
+    },
+  });
+};
+
+/**
+ * Nhập file. Không `setQueryData` từng dòng vì một lần nhập có thể đụng hàng
+ * trăm bản ghi — invalidate cả nhánh rồi để list tự tải lại là rẻ và chắc hơn.
+ */
+export const useImportBaiViet = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: BaiVietImportContext;
+    }) => importBaiVietRows(rows, options, ctx),
+    onSuccess: (result) => {
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated === 0) return;
+      void queryClient.invalidateQueries({ queryKey: listKey });
+      toast.success(txt('articleList.import.toastDone', { created, updated }));
+    },
+    onError: (e: unknown) => {
+      toast.error(getErrorMessage(e));
     },
   });
 };
