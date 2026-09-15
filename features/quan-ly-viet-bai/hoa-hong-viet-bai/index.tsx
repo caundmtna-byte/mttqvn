@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { toast } from 'sonner';
-import { FolderOpen, Coins, FileText, Users, TrendingUp, Download } from 'lucide-react';
+import { FolderOpen, Coins, FileText, Users, TrendingUp, Download, MapPin } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/store/useStore';
@@ -23,7 +23,12 @@ import StatsCard from '@/components/shared/stats/StatsCard';
 import StatsTableCard from '@/components/shared/stats/StatsTableCard';
 import type { StatsKpiCardItem } from '@/components/shared/stats/types';
 import { useBaiVietDanhSachList } from '../bai-viet/hooks/use-bai-viet-danh-sach';
-import { aggregateCommission, type CommissionScope } from './utils/aggregate-commission';
+import {
+  aggregateCommission,
+  donViKeyOf,
+  DON_VI_CHUA_GAN,
+  type CommissionScope,
+} from './utils/aggregate-commission';
 import { resolveArticleStatsDateRange } from '../bc-thong-ke-bai-viet/utils/aggregate-bai-viet-stats';
 import {
   CommissionTrendChart,
@@ -87,6 +92,7 @@ const HoaHongVietBaiPage: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRangeValue>(initialDateRange);
   const [theLoaiIds, setTheLoaiIds] = useState<string[]>([]);
   const [authorIds, setAuthorIds] = useState<string[]>([]);
+  const [donViIds, setDonViIds] = useState<string[]>([]);
   const [showExport, setShowExport] = useState(false);
 
   const {
@@ -113,33 +119,55 @@ const HoaHongVietBaiPage: React.FC = () => {
     return rows.filter((r) => rowVisibleOnCommissionAllTab(allTabViewer, r));
   }, [rows, scope, nhanVienId, allTabViewer]);
 
+  const dateScopedRows = useMemo(
+    () =>
+      scopedRows.filter((row) => {
+        const d = row.ngay_dang.slice(0, 10);
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo && d > dateTo) return false;
+        return true;
+      }),
+    [scopedRows, dateFrom, dateTo],
+  );
+
   const rowsForTheLoaiOptions = useMemo(() => {
-    let r = scopedRows.filter((row) => {
-      const d = row.ngay_dang.slice(0, 10);
-      if (dateFrom && d < dateFrom) return false;
-      if (dateTo && d > dateTo) return false;
-      return true;
-    });
+    let r = dateScopedRows;
+    if (scope === TAB_ALL && authorIds.length > 0) {
+      const set = new Set(authorIds);
+      r = r.filter((row) => set.has(String(row.id_nguoi_tao)));
+    }
+    if (scope === TAB_ALL && donViIds.length > 0) {
+      const set = new Set(donViIds);
+      r = r.filter((row) => set.has(donViKeyOf(row)));
+    }
+    return r;
+  }, [dateScopedRows, scope, authorIds, donViIds]);
+
+  const rowsForAuthorOptions = useMemo(() => {
+    let r = dateScopedRows;
+    if (theLoaiIds.length > 0) {
+      const set = new Set(theLoaiIds);
+      r = r.filter((row) => set.has(String(row.id_the_loai)));
+    }
+    if (scope === TAB_ALL && donViIds.length > 0) {
+      const set = new Set(donViIds);
+      r = r.filter((row) => set.has(donViKeyOf(row)));
+    }
+    return r;
+  }, [dateScopedRows, theLoaiIds, scope, donViIds]);
+
+  const rowsForDonViOptions = useMemo(() => {
+    let r = dateScopedRows;
+    if (theLoaiIds.length > 0) {
+      const set = new Set(theLoaiIds);
+      r = r.filter((row) => set.has(String(row.id_the_loai)));
+    }
     if (scope === TAB_ALL && authorIds.length > 0) {
       const set = new Set(authorIds);
       r = r.filter((row) => set.has(String(row.id_nguoi_tao)));
     }
     return r;
-  }, [scopedRows, dateFrom, dateTo, scope, authorIds]);
-
-  const rowsForAuthorOptions = useMemo(() => {
-    let r = scopedRows.filter((row) => {
-      const d = row.ngay_dang.slice(0, 10);
-      if (dateFrom && d < dateFrom) return false;
-      if (dateTo && d > dateTo) return false;
-      return true;
-    });
-    if (theLoaiIds.length > 0) {
-      const set = new Set(theLoaiIds);
-      r = r.filter((row) => set.has(String(row.id_the_loai)));
-    }
-    return r;
-  }, [scopedRows, dateFrom, dateTo, theLoaiIds]);
+  }, [dateScopedRows, theLoaiIds, scope, authorIds]);
 
   const theLoaiOptions = useMemo(() => {
     const map = new Map<string, { label: string; count: number }>();
@@ -172,6 +200,23 @@ const HoaHongVietBaiPage: React.FC = () => {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [rowsForAuthorOptions]);
 
+  const donViOptions = useMemo(() => {
+    const map = new Map<string, { label: string; count: number }>();
+    for (const row of rowsForDonViOptions) {
+      const key = donViKeyOf(row);
+      const label =
+        key === DON_VI_CHUA_GAN
+          ? txt('articleCommission.donViChuaGan')
+          : row.ten_don_vi_nguoi_tao?.trim() || key;
+      const cur = map.get(key) ?? { label, count: 0 };
+      cur.count += 1;
+      map.set(key, cur);
+    }
+    return [...map.entries()]
+      .map(([value, { label, count }]) => ({ label, value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }, [rowsForDonViOptions]);
+
   const tabs = useMemo((): { id: CommissionScope; label: string }[] => {
     const base: { id: CommissionScope; label: string }[] = [{ id: TAB_MINE, label: txt('articleCommission.tabMine') }];
     if (canOpenPage) {
@@ -187,8 +232,9 @@ const HoaHongVietBaiPage: React.FC = () => {
         dateTo,
         theLoaiIds,
         authorIds: scope === TAB_ALL ? authorIds : [],
+        donViIds: scope === TAB_ALL ? donViIds : [],
       }),
-    [scopedRows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds],
+    [scopedRows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds, donViIds],
   );
 
   /**
@@ -204,6 +250,7 @@ const HoaHongVietBaiPage: React.FC = () => {
       { key: 'ten_the_loai', label: txt('articleCommission.exportColTheLoai') },
       { key: 'don_gia_num', label: txt('articleCommission.exportColDonGia') },
       { key: 'ho_va_ten_nguoi_tao', label: txt('articleCommission.exportColNguoi') },
+      { key: 'ten_don_vi', label: txt('articleCommission.exportColDonVi') },
       { key: 'ten_nguon_dang', label: txt('articleCommission.exportColNguon') },
       { key: 'ten_trang_dang', label: txt('articleCommission.exportColTrang') },
       { key: 'link', label: txt('articleCommission.exportColLink') },
@@ -239,6 +286,7 @@ const HoaHongVietBaiPage: React.FC = () => {
       ten_nguon_dang: item.ten_nguon_dang ?? '',
       ten_trang_dang: item.ten_trang_dang ?? '',
       ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? item.ten_tai_khoan_nguoi_tao ?? '',
+      ten_don_vi: item.ten_don_vi_nguoi_tao ?? '',
       link: item.link,
       range_start: dateFrom ?? '',
       range_end: dateTo ?? '',
@@ -259,6 +307,7 @@ const HoaHongVietBaiPage: React.FC = () => {
     setDateRange(initialDateRange);
     setTheLoaiIds([]);
     setAuthorIds([]);
+    setDonViIds([]);
   }, []);
 
   const activeFilterCount = useMemo(() => {
@@ -266,8 +315,9 @@ const HoaHongVietBaiPage: React.FC = () => {
     if (dateRange.preset !== 'all') n += 1;
     if (theLoaiIds.length > 0) n += 1;
     if (scope === TAB_ALL && authorIds.length > 0) n += 1;
+    if (scope === TAB_ALL && donViIds.length > 0) n += 1;
     return n;
-  }, [dateRange.preset, theLoaiIds.length, authorIds.length, scope]);
+  }, [dateRange.preset, theLoaiIds.length, authorIds.length, donViIds.length, scope]);
 
   /**
    * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
@@ -289,6 +339,14 @@ const HoaHongVietBaiPage: React.FC = () => {
       ...(scope === TAB_ALL
         ? [
             {
+              key: 'donVi',
+              label: txt('articleCommission.filterDonVi'),
+              icon: MapPin,
+              options: donViOptions,
+              value: donViIds,
+              onChange: setDonViIds,
+            } as FilterGroup,
+            {
               key: 'author',
               label: txt('articleCommission.filterAuthor'),
               icon: Users,
@@ -299,7 +357,7 @@ const HoaHongVietBaiPage: React.FC = () => {
           ]
         : []),
     ],
-    [theLoaiOptions, theLoaiIds, authorOptions, authorIds, scope],
+    [theLoaiOptions, theLoaiIds, authorOptions, authorIds, donViOptions, donViIds, scope],
   );
 
   const dateRangeRow = (
@@ -325,6 +383,16 @@ const HoaHongVietBaiPage: React.FC = () => {
         icon={FolderOpen}
         className="shrink-0 w-[160px]"
       />
+      {scope === TAB_ALL && (
+        <FilterChipMultiSelect
+          options={donViOptions}
+          value={donViIds}
+          onChange={setDonViIds}
+          placeholder={txt('articleCommission.filterDonVi')}
+          icon={MapPin}
+          className="shrink-0 w-[160px]"
+        />
+      )}
       {scope === TAB_ALL && (
         <FilterChipMultiSelect
           options={authorOptions}
@@ -391,6 +459,7 @@ const HoaHongVietBaiPage: React.FC = () => {
         if (next === TAB_ALL && !canOpenPage) return;
         setScopeRaw(next);
         setAuthorIds([]);
+        setDonViIds([]);
       }}
       className="shrink-0"
     />

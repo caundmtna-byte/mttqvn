@@ -46,7 +46,9 @@ export function flattenBaiVietDanhSachRow(row: Record<string, unknown>): BaiViet
     ten_tai_khoan?: string;
     id_phong_ban?: string | number | null;
     don_vi_id?: string | number | null;
+    don_vi?: unknown;
   }>(row.nguoi_tao);
+  const donVi = pickEmbedded<{ ten?: string }>(nv?.don_vi);
   const rest = { ...row };
   delete rest.the_loai;
   delete rest.nguon_dang;
@@ -84,6 +86,7 @@ export function flattenBaiVietDanhSachRow(row: Record<string, unknown>): BaiViet
       nv?.don_vi_id != null && String(nv.don_vi_id).trim() !== ''
         ? String(nv.don_vi_id).trim()
         : null,
+    ten_don_vi_nguoi_tao: donVi?.ten?.trim() || null,
   } as BaiVietDanhSach;
 }
 

@@ -2,7 +2,7 @@ const EMBED = [
   'the_loai:bai_viet_thiet_lap_the_loai!bai_viet_danh_sach_id_the_loai_fkey(ten_the_loai)',
   'nguon_dang:bai_viet_thiet_lap_khac!bai_viet_danh_sach_id_nguon_dang_fkey(ten,loai)',
   'trang_dang:bai_viet_thiet_lap_khac!bai_viet_danh_sach_id_trang_dang_fkey(ten,loai)',
-  'nguoi_tao:var_nhan_vien!bai_viet_danh_sach_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan,id_phong_ban,don_vi_id)',
+  'nguoi_tao:var_nhan_vien!bai_viet_danh_sach_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan,id_phong_ban,don_vi_id,don_vi:var_ssn_xa_phuong!var_nhan_vien_don_vi_id_fkey(ten))',
 ].join(',');
 
 const BASE_COLS = [

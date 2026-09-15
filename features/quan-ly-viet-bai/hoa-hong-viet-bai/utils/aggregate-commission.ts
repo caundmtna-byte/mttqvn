@@ -9,6 +9,18 @@ export interface CommissionFilters {
   dateTo: string | null;
   theLoaiIds: string[];
   authorIds: string[];
+  donViIds: string[];
+}
+
+/**
+ * Nhân viên chưa gán `don_vi_id` vẫn phải chọn lọc được: bỏ họ khỏi danh sách
+ * đơn vị là đúng chỗ dễ in sót khi chi trả theo đơn vị.
+ */
+export const DON_VI_CHUA_GAN = '__chua_gan__';
+
+export function donViKeyOf(row: BaiVietDanhSach): string {
+  const id = String(row.id_don_vi_nguoi_tao ?? '').trim();
+  return id === '' ? DON_VI_CHUA_GAN : id;
 }
 
 export interface CommissionSeriesPoint {
@@ -75,6 +87,11 @@ export function aggregateCommission(
   if (scope === 'all' && filters.authorIds.length > 0) {
     const set = new Set(filters.authorIds);
     list = list.filter((r) => set.has(String(r.id_nguoi_tao)));
+  }
+
+  if (scope === 'all' && filters.donViIds.length > 0) {
+    const set = new Set(filters.donViIds);
+    list = list.filter((r) => set.has(donViKeyOf(r)));
   }
 
   const totalCommission = list.reduce((s, r) => s + (Number(r.don_gia) || 0), 0);

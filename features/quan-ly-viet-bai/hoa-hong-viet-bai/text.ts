@@ -4,6 +4,8 @@ export const articleCommission = {
   tabAll: 'Tất cả',
   filterTheLoai: 'Thể loại',
   filterAuthor: 'Người viết',
+  filterDonVi: 'Đơn vị',
+  donViChuaGan: 'Chưa gán đơn vị',
   /** Khoảng thời gian không giới hạn (bổ sung trên DateRangePicker chung với BC thống kê). */
   presetAll: 'Toàn bộ',
   kpiTotal: 'Tổng nhuận bút',
@@ -41,5 +43,6 @@ export const articleCommission = {
   exportColNguon: 'Nguồn đăng',
   exportColTrang: 'Trang đăng',
   exportColNguoi: 'Người viết',
+  exportColDonVi: 'Đơn vị',
   exportColLink: 'Liên kết',
 } as const;

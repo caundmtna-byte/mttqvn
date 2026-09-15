@@ -25,6 +25,7 @@ export interface BaiVietDanhSach {
   id_phong_ban_nguoi_tao?: string | null;
   /** Đơn vị nhân viên tạo bài — lọc phạm vi tab "Tất cả" theo `cap_quan_ly`. */
   id_don_vi_nguoi_tao?: string | null;
+  ten_don_vi_nguoi_tao?: string | null;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
   tg_tao: string;
