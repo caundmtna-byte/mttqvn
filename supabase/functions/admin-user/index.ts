@@ -17,8 +17,8 @@
 // - Caller phải có dòng nhân viên trùng email + `trang_thai = 'Hoạt động'`
 //   VÀ có quyền quản trị thật: `var_chuc_vu.cap_bac = 1` hoặc `var_phan_quyen.quyen`
 //   chứa `quan_tri`/`all` trên module `nhan-vien`.
-// - Mật khẩu không có giá trị mặc định: admin phải truyền (>= 8 ký tự), nếu không
-//   Edge Function sinh chuỗi ngẫu nhiên và trả về để admin đưa tận tay người dùng.
+// - Mật khẩu mặc định là `123456` khi admin không truyền; truyền thì phải >= 6 ký tự,
+//   ngắn hơn bị từ chối 400 (không lặng lẽ thay bằng chuỗi khác).
 
 // @ts-expect-error Deno runtime resolves remote modules
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -35,14 +35,9 @@ const EMAIL_SUFFIX = '@gmail.com';
 const ADMIN_MODULE_KEY = 'nhan-vien';
 /** Token `quan_tri` / `all` trong cột `quyen` (chuỗi phân tách bằng dấu phẩy). */
 const ADMIN_QUYEN_RE = '(^|,)\\s*(quan_tri|all|admin)\\s*(,|$)';
-const MIN_PASSWORD_LENGTH = 8;
-
-/** Mật khẩu ngẫu nhiên khi admin không truyền — KHÔNG dùng hằng số đoán được. */
-function generatePassword(): string {
-  const bytes = new Uint8Array(18);
-  crypto.getRandomValues(bytes);
-  return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '').slice(0, 16);
-}
+const MIN_PASSWORD_LENGTH = 6;
+/** Mật khẩu mặc định khi admin không truyền — theo quy ước của cơ quan, admin bàn giao trực tiếp. */
+const DEFAULT_PASSWORD = '123456';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -206,11 +201,13 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(400, { error: 'Thiếu `action` hoặc `username`' });
   }
   const email = buildEmail(username);
-  const suppliedPassword =
-    body.password && body.password.length >= MIN_PASSWORD_LENGTH ? body.password : null;
-  const password = suppliedPassword ?? generatePassword();
-  /** Chỉ trả mật khẩu về khi hệ thống tự sinh — admin cần đọc để đưa cho người dùng. */
-  const generatedPassword = suppliedPassword ? undefined : password;
+  if (body.password !== undefined && typeof body.password !== 'string') {
+    return jsonResponse(400, { error: '`password` phải là chuỗi' });
+  }
+  if (body.password !== undefined && body.password.length < MIN_PASSWORD_LENGTH) {
+    return jsonResponse(400, { error: `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự` });
+  }
+  const password = body.password ?? DEFAULT_PASSWORD;
 
   try {
     if (action === 'check') {
@@ -230,7 +227,7 @@ Deno.serve(async (req: Request) => {
         user_metadata: { full_name: username },
       });
       if (error) return jsonResponse(400, { error: error.message });
-      return jsonResponse(200, { user_id: data.user?.id, password: generatedPassword });
+      return jsonResponse(200, { user_id: data.user?.id });
     }
 
     if (action === 'reset_password') {
@@ -249,11 +246,11 @@ Deno.serve(async (req: Request) => {
           user_metadata: { full_name: username },
         });
         if (error) return jsonResponse(400, { error: error.message });
-        return jsonResponse(200, { user_id: data.user?.id, password: generatedPassword, created: true });
+        return jsonResponse(200, { user_id: data.user?.id, created: true });
       }
       const { error } = await adminClient.auth.admin.updateUserById(id, { password });
       if (error) return jsonResponse(400, { error: error.message });
-      return jsonResponse(200, { user_id: id, password: generatedPassword });
+      return jsonResponse(200, { user_id: id });
     }
 
     if (action === 'delete') {

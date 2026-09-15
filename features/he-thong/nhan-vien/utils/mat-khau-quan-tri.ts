@@ -10,10 +10,8 @@ export interface FormMatKhauQuanTri {
 /**
  * Kiểm tra mật khẩu quản trị viên đặt cho tài khoản NGƯỜI KHÁC.
  *
- * Bắt buộc kiểm ở client vì Edge Function `admin-user` KHÔNG từ chối mật khẩu
- * ngắn: chuỗi dưới {@link MIN_ADMIN_PASSWORD_LENGTH} ký tự bị nó lặng lẽ thay
- * bằng chuỗi ngẫu nhiên, nên nếu không chặn ở đây thì admin gõ "123456", hệ
- * thống báo thành công, còn người dùng thì không đăng nhập được bằng mật khẩu đó.
+ * Edge Function `admin-user` từ chối (400) chuỗi dưới {@link MIN_ADMIN_PASSWORD_LENGTH}
+ * ký tự; kiểm ở client để báo lỗi ngay trong form thay vì chờ round-trip.
  *
  * Khoảng trắng đầu/cuối cũng bị chặn — không cắt ngầm, vì cắt đi là admin đọc
  * một đằng, hệ thống lưu một nẻo.

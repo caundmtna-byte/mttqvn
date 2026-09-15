@@ -10,10 +10,9 @@ describe('kiemTraMatKhauQuanTri', () => {
     expect(kiemTraMatKhauQuanTri({ matKhau: '', xacNhan: '' })).toBe('trong');
   });
 
-  it('dưới 8 ký tự — Edge Function sẽ lặng lẽ sinh mật khẩu ngẫu nhiên nên phải chặn', () => {
-    expect(kiemTraMatKhauQuanTri({ matKhau: '123456', xacNhan: '123456' })).toBe('quaNgan');
-    expect(kiemTraMatKhauQuanTri({ matKhau: '1234567', xacNhan: '1234567' })).toBe('quaNgan');
-    expect(kiemTraMatKhauQuanTri({ matKhau: '12345678', xacNhan: '12345678' })).toBeNull();
+  it('dưới 6 ký tự — khớp ngưỡng Edge Function từ chối; 123456 (mặc định) phải hợp lệ', () => {
+    expect(kiemTraMatKhauQuanTri({ matKhau: '12345', xacNhan: '12345' })).toBe('quaNgan');
+    expect(kiemTraMatKhauQuanTri({ matKhau: '123456', xacNhan: '123456' })).toBeNull();
   });
 
   it('có khoảng trắng đầu/cuối — không cắt ngầm', () => {

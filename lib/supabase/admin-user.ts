@@ -13,12 +13,13 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | und
 
 /**
  * Độ dài tối thiểu Edge Function chấp nhận cho mật khẩu admin tự đặt.
- *
- * Phải khớp `MIN_PASSWORD_LENGTH` trong `supabase/functions/admin-user/index.ts`:
- * chuỗi ngắn hơn KHÔNG bị từ chối mà bị Edge Function lặng lẽ thay bằng mật khẩu
- * ngẫu nhiên — admin tưởng đã đặt được mật khẩu mình gõ, thực tế thì không.
+ * Phải khớp `MIN_PASSWORD_LENGTH` trong `supabase/functions/admin-user/index.ts`
+ * (ngắn hơn bị từ chối 400). Kiểm ở client để báo lỗi ngay trong form.
  */
-export const MIN_ADMIN_PASSWORD_LENGTH = 8;
+export const MIN_ADMIN_PASSWORD_LENGTH = 6;
+
+/** Mật khẩu mặc định Edge Function gán khi không truyền — khớp `DEFAULT_PASSWORD` bên đó. */
+export const DEFAULT_ADMIN_PASSWORD = '123456';
 
 type AdminAction = 'check' | 'create' | 'reset_password' | 'delete';
 
@@ -26,7 +27,7 @@ interface AdminResponse {
   exists?: boolean;
   user_id?: string;
   deleted?: boolean;
-  /** Mật khẩu do Edge Function sinh khi không truyền sẵn — chỉ trả về đúng một lần. */
+  /** Không còn dùng: bản cũ trả mật khẩu ngẫu nhiên; nay mặc định là {@link DEFAULT_ADMIN_PASSWORD}. */
   password?: string;
   /** `reset_password`: tài khoản Auth chưa có nên vừa được TẠO MỚI, không phải đổi. */
   created?: boolean;
@@ -86,7 +87,7 @@ export async function checkAuthUserExists(username: string): Promise<{ exists: b
   return { exists: !!res.exists, user_id: res.user_id };
 }
 
-/** Tạo tài khoản Auth. Trả về mật khẩu hệ thống sinh (chỉ có đúng một lần) để admin đưa cho người dùng. */
+/** Tạo tài khoản Auth với mật khẩu mặc định {@link DEFAULT_ADMIN_PASSWORD}. */
 export async function createAuthUser(username: string): Promise<{ password?: string }> {
   const res = await callAdminUser('create', username);
   return { password: res.password };
@@ -95,11 +96,9 @@ export async function createAuthUser(username: string): Promise<{ password?: str
 /**
  * Đặt lại mật khẩu.
  *
- * - Không truyền `password` ⇒ Edge Function sinh chuỗi ngẫu nhiên và trả về
- *   (chỉ có đúng một lần).
- * - Truyền `password` ⇒ dùng đúng chuỗi đó, và `password` trả về là `undefined`.
- *   Nếu chuỗi ngắn hơn {@link MIN_ADMIN_PASSWORD_LENGTH}, Edge Function bỏ qua
- *   và sinh ngẫu nhiên — nên phía gọi phải tự kiểm độ dài trước.
+ * - Không truyền `password` ⇒ đặt về {@link DEFAULT_ADMIN_PASSWORD}.
+ * - Truyền `password` ⇒ dùng đúng chuỗi đó; ngắn hơn {@link MIN_ADMIN_PASSWORD_LENGTH}
+ *   thì Edge Function trả 400.
  * - `created = true` ⇒ tài khoản Auth chưa tồn tại và vừa được tạo mới với mật
  *   khẩu này (hồ sơ nhân viên có nhưng chưa bao giờ đăng nhập được).
  */

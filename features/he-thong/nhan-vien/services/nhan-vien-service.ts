@@ -339,8 +339,8 @@ export const createEmployee = async (data: EmployeeFormValues): Promise<Employee
   if (exists) throw new AuthUserExistsError(username);
   const { password } = await createAuthUser(username);
   const employee = await insertEmployeeRow(data);
-  // Mật khẩu do hệ thống sinh chỉ trả về đúng một lần — đính vào kết quả để UI
-  // hiển thị cho quản trị viên đưa tận tay người dùng (trước đây mặc định '123456').
+  // Mật khẩu mặc định 123456 (Edge Function gán). `password` chỉ có khi Edge Function
+  // trả về chuỗi tự sinh — hiện không còn, giữ nhánh để UI toast nếu sau này bật lại.
   return password ? { ...employee, __generatedPassword: password } : employee;
 };
 

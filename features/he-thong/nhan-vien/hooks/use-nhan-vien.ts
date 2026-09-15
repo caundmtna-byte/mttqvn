@@ -58,9 +58,9 @@ interface CreateMutationOptions {
 /**
  * Hiển thị mật khẩu hệ thống vừa sinh cho quản trị viên.
  *
- * Trước đây mọi tài khoản đều dùng mật khẩu mặc định `123456` nên không cần báo.
- * Nay Edge Function sinh chuỗi ngẫu nhiên và **chỉ trả về đúng một lần**, nên toast
- * phải ở lại cho tới khi admin tự đóng và phải sao chép được.
+ * Mặc định tài khoản dùng mật khẩu `123456` (Edge Function gán) nên bình thường
+ * không có gì để báo. Chỉ khi Edge Function trả về chuỗi tự sinh thì toast phải ở
+ * lại cho tới khi admin tự đóng và phải sao chép được.
  */
 function toastGeneratedPassword(created: Employee) {
   const pw = created.__generatedPassword;
