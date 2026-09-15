@@ -258,8 +258,8 @@ describe('aggregate-bai-viet-stats', () => {
         'Chưa xác định',
       );
       expect(rows).toEqual([
-        { id: '10', label: 'An', tenDonVi: 'Xã A', soBai: 2 },
-        { id: '11', label: 'Bình', tenDonVi: 'Chưa xác định', soBai: 1 },
+        { id: '10', label: 'An', tenDonVi: 'Xã A', soBai: 2, soTien: 200_000 },
+        { id: '11', label: 'Bình', tenDonVi: 'Chưa xác định', soBai: 1, soTien: 100_000 },
       ]);
     });
   });

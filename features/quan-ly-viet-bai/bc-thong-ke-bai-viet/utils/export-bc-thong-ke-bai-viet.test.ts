@@ -70,7 +70,7 @@ function buildInput(over: Partial<BcThongKeExportInput> = {}): BcThongKeExportIn
     nguonRows: aggregateTopCounts(rows, 'nguon'),
     trangRows: aggregateTopCounts(rows, 'trang'),
     nguoiTaoRows: aggregateByNguoiTao(rows, tenDonViById, unknown),
-    trendRows: [{ key: '2026-05-01', label: '01/05', count: 4 }],
+    trendRows: [{ key: '2026-05-01', label: '01/05', count: 4, soTien: 400_000 }],
     lookupRows: rows,
     tenDonViById,
     ...over,
@@ -94,14 +94,47 @@ describe('buildBcThongKeSheets', () => {
     ]);
   });
 
-  it('KHÔNG sheet nào chứa cột tiền hay giá trị tiền', () => {
-    const cells = cellsOf(buildBcThongKeSheets(buildInput()));
-    for (const cell of cells) {
-      expect(cell).not.toMatch(/đơn giá|nhuận bút|thành tiền|số tiền|₫|VNĐ/i);
+  it('mọi sheet gộp đều có cột Số tiền, không sheet nào còn cột Tỷ trọng', () => {
+    const sheets = buildBcThongKeSheets(buildInput());
+    const cells = cellsOf(sheets);
+    expect(cells).not.toContain('Tỷ trọng');
+
+    for (const name of [
+      'Theo don vi',
+      'Theo the loai',
+      'Theo nguon dang',
+      'Theo trang dang',
+      'Theo nguoi tao',
+      'Theo thoi gian',
+      'Chi tiet',
+    ]) {
+      const sheet = sheets.find((s) => s.name === name)!;
+      expect(Object.keys(sheet.rows[0])).toContain('Số tiền');
     }
-    // 100.000đ là đơn giá của dữ liệu mẫu — không được lọt vào file dưới mọi dạng.
-    expect(cells).not.toContain('100000');
-    expect(cells).not.toContain('400000');
+  });
+
+  it('tiền cộng đúng: tổng các dòng khớp tổng cộng và khớp sheet Tổng hợp', () => {
+    const sheets = buildBcThongKeSheets(buildInput());
+    const theoDonVi = sheets.find((s) => s.name === 'Theo don vi')!;
+    const tongCong = theoDonVi.rows[theoDonVi.rows.length - 1];
+    // 4 bài × 100.000đ
+    expect(tongCong['Số tiền']).toBe(400_000);
+    expect(
+      theoDonVi.rows.slice(0, -1).reduce((s, r) => s + Number(r['Số tiền']), 0),
+    ).toBe(400_000);
+
+    const theoTheLoai = sheets.find((s) => s.name === 'Theo the loai')!;
+    expect(theoTheLoai.rows.reduce((s, r) => s + Number(r['Số tiền']), 0)).toBe(400_000);
+
+    const tongHop = sheets.find((s) => s.name === 'Tong hop')!;
+    const byLabel = new Map(tongHop.rows.map((r) => [String(r['Chỉ tiêu']), r['Giá trị']]));
+    expect(byLabel.get('Tổng số tiền')).toBe(400_000);
+  });
+
+  it('tiền ghi kiểu SỐ để Excel cộng được, không phải chuỗi đã định dạng', () => {
+    const sheet = buildBcThongKeSheets(buildInput()).find((s) => s.name === 'Chi tiet')!;
+    expect(typeof sheet.rows[0]['Số tiền']).toBe('number');
+    expect(sheet.rows[0]['Số tiền']).toBe(100_000);
   });
 
   it('bảng chéo có đủ cột thể loại, ô trống điền 0 và dòng Tổng cộng khớp tổng số bài', () => {
@@ -118,7 +151,6 @@ describe('buildBcThongKeSheets', () => {
     const tong = sheet.rows[sheet.rows.length - 1];
     expect(tong['Đơn vị']).toBe('Tổng cộng');
     expect(tong['Số bài']).toBe(4);
-    expect(tong['Tỷ trọng']).toBe(100);
     // Tổng theo cột thể loại cộng lại đúng bằng tổng số bài.
     expect(Number(tong['Tin']) + Number(tong['Bài viết'])).toBe(4);
     // Và tổng các dòng đơn vị cũng vậy — không đơn vị nào bị rơi.

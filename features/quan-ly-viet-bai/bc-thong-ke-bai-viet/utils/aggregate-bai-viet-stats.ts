@@ -121,6 +121,12 @@ export function computeArticleStatsKpis(filtered: BaiVietDanhSach[]): {
   };
 }
 
+/** `don_gia` từ Supabase có thể là chuỗi (numeric) — cộng thẳng sẽ ra nối chuỗi. */
+function toSoTien(item: BaiVietDanhSach): number {
+  const n = Number(item.don_gia);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export type TrendBucket = 'day' | 'month';
 
 export function pickTrendBucket(start: string, end: string): TrendBucket {
@@ -135,6 +141,8 @@ export interface TrendPoint {
   key: string;
   label: string;
   count: number;
+  /** Tổng nhuận bút của kỳ — chỉ dùng cho file xuất, KPI trên trang vẫn không có tiền. */
+  soTien: number;
 }
 
 /** Chuỗi bucket liên tục trong [start,end], gộp theo ngày hoặc tháng (YYYY-MM). */
@@ -169,23 +177,26 @@ export function buildTrendSeries(
     }
   }
 
-  const map = new Map<string, number>();
+  const map = new Map<string, { count: number; soTien: number }>();
   for (const k of keys) {
-    map.set(k, 0);
+    map.set(k, { count: 0, soTien: 0 });
   }
 
   for (const item of filtered) {
     const d = getArticleStatsDateFromCreatedAt(item);
     if (!d) continue;
     const key = bucket === 'day' ? d.slice(0, 10) : d.slice(0, 7);
-    if (!map.has(key)) continue;
-    map.set(key, (map.get(key) ?? 0) + 1);
+    const cur = map.get(key);
+    if (!cur) continue;
+    cur.count += 1;
+    cur.soTien += toSoTien(item);
   }
 
   return keys.map((key) => {
     const label =
       bucket === 'day' ? dayjs(key).format('DD/MM') : dayjs(key + '-01').format('MM/YYYY');
-    return { key, label, count: map.get(key) ?? 0 };
+    const v = map.get(key);
+    return { key, label, count: v?.count ?? 0, soTien: v?.soTien ?? 0 };
   });
 }
 
@@ -193,6 +204,8 @@ export interface LabelCountRow {
   id: string;
   label: string;
   value: number;
+  /** Tổng nhuận bút của nhóm — chỉ dùng cho file xuất. */
+  soTien: number;
 }
 
 /** `topN` bỏ trống = lấy đủ mọi nhóm (file xuất không được cắt top như giao diện). */
@@ -201,7 +214,7 @@ export function aggregateTopCounts(
   mode: 'the_loai' | 'nguon' | 'trang' | 'nguoi_tao',
   topN: number = Number.POSITIVE_INFINITY,
 ): LabelCountRow[] {
-  const tally = new Map<string, { label: string; count: number }>();
+  const tally = new Map<string, { label: string; count: number; soTien: number }>();
   for (const item of filtered) {
     let id: string;
     let label: string;
@@ -229,12 +242,17 @@ export function aggregateTopCounts(
         id = '';
         label = '';
     }
+    const soTien = toSoTien(item);
     const prev = tally.get(id);
-    if (prev) prev.count += 1;
-    else tally.set(id, { label, count: 1 });
+    if (prev) {
+      prev.count += 1;
+      prev.soTien += soTien;
+    } else {
+      tally.set(id, { label, count: 1, soTien });
+    }
   }
   const rows = [...tally.entries()]
-    .map(([id, v]) => ({ id, label: v.label, value: v.count }))
+    .map(([id, v]) => ({ id, label: v.label, value: v.count, soTien: v.soTien }))
     .sort((a, b) => b.value - a.value);
   return rows.slice(0, topN);
 }
@@ -355,6 +373,8 @@ export interface DonViTheLoaiMatrixRow {
   label: string;
   soBai: number;
   tyTrongSoBai: number;
+  /** Tổng nhuận bút của đơn vị — chỉ dùng cho file xuất. */
+  soTien: number;
   /** Số bài của đơn vị này theo từng `id_the_loai`; thể loại không có bài thì khuyết. */
   theoTheLoai: Record<string, number>;
 }
@@ -363,8 +383,8 @@ export interface DonViTheLoaiMatrix {
   /** Cột thể loại, sắp giảm dần theo tổng số bài toàn báo cáo. */
   theLoaiCols: { id: string; label: string }[];
   rows: DonViTheLoaiMatrixRow[];
-  /** Dòng tổng cộng: tổng số bài và tổng theo từng thể loại. */
-  totals: { soBai: number; theoTheLoai: Record<string, number> };
+  /** Dòng tổng cộng: tổng số bài, tổng tiền và tổng theo từng thể loại. */
+  totals: { soBai: number; soTien: number; theoTheLoai: Record<string, number> };
 }
 
 /**
@@ -378,7 +398,11 @@ export function aggregateDonViTheLoaiMatrix(
   unknownLabel: string,
 ): DonViTheLoaiMatrix {
   const theLoaiTally = new Map<string, { label: string; soBai: number }>();
-  const donViTally = new Map<string, { label: string; soBai: number; theoTheLoai: Map<string, number> }>();
+  const donViTally = new Map<
+    string,
+    { label: string; soBai: number; soTien: number; theoTheLoai: Map<string, number> }
+  >();
+  let tongSoTien = 0;
 
   for (const item of filtered) {
     const theLoaiId = String(item.id_the_loai);
@@ -387,17 +411,22 @@ export function aggregateDonViTheLoaiMatrix(
     if (tl) tl.soBai += 1;
     else theLoaiTally.set(theLoaiId, { label: theLoaiLabel, soBai: 1 });
 
+    const soTien = toSoTien(item);
+    tongSoTien += soTien;
+
     const donViId = getArticleDonViKey(item);
     let dv = donViTally.get(donViId);
     if (!dv) {
       dv = {
         label: getArticleDonViLabel(donViId, tenDonViById, unknownLabel),
         soBai: 0,
+        soTien: 0,
         theoTheLoai: new Map<string, number>(),
       };
       donViTally.set(donViId, dv);
     }
     dv.soBai += 1;
+    dv.soTien += soTien;
     dv.theoTheLoai.set(theLoaiId, (dv.theoTheLoai.get(theLoaiId) ?? 0) + 1);
   }
 
@@ -412,12 +441,14 @@ export function aggregateDonViTheLoaiMatrix(
       label: v.label,
       soBai: v.soBai,
       tyTrongSoBai: tongSoBai > 0 ? (v.soBai * 100) / tongSoBai : 0,
+      soTien: v.soTien,
       theoTheLoai: Object.fromEntries(v.theoTheLoai),
     }))
     .sort(compareDonViRow);
 
-  const totals: { soBai: number; theoTheLoai: Record<string, number> } = {
+  const totals: DonViTheLoaiMatrix['totals'] = {
     soBai: tongSoBai,
+    soTien: tongSoTien,
     theoTheLoai: Object.fromEntries([...theLoaiTally.entries()].map(([id, v]) => [id, v.soBai])),
   };
 
@@ -435,6 +466,8 @@ export interface NguoiTaoStatsRow {
    *  đơn vị lấy trực tiếp từ hồ sơ nhân viên. */
   tenDonVi: string;
   soBai: number;
+  /** Tổng nhuận bút của người này — chỉ dùng cho file xuất. */
+  soTien: number;
 }
 
 export function aggregateByNguoiTao(
@@ -445,9 +478,11 @@ export function aggregateByNguoiTao(
   const tally = new Map<string, NguoiTaoStatsRow>();
   for (const item of filtered) {
     const id = String(item.id_nguoi_tao);
+    const soTien = toSoTien(item);
     const prev = tally.get(id);
     if (prev) {
       prev.soBai += 1;
+      prev.soTien += soTien;
       continue;
     }
     tally.set(id, {
@@ -455,6 +490,7 @@ export function aggregateByNguoiTao(
       label: item.ho_va_ten_nguoi_tao?.trim() || item.ten_tai_khoan_nguoi_tao?.trim() || id,
       tenDonVi: getArticleDonViLabel(getArticleDonViKey(item), tenDonViById, unknownLabel),
       soBai: 1,
+      soTien,
     });
   }
   return [...tally.values()].sort(

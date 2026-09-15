@@ -9,7 +9,6 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
-import ExportDialog from '@/components/shared/ExportDialog';
 import TabGroup from '@/components/ui/TabGroup';
 import Button from '@/components/ui/Button';
 import ErrorState from '@/components/shared/ErrorState';
@@ -36,8 +35,7 @@ import {
   CommissionByAuthorChart,
 } from './components/commission-charts';
 import { useCommissionAllTabViewer, rowVisibleOnCommissionAllTab } from './hooks/use-commission-all-tab-viewer';
-import { useExportData } from '@/lib/useExportData';
-import type { BaiVietDanhSach } from '../bai-viet/core/types';
+import { exportNhuanButToExcel } from './utils/export-nhuan-but';
 
 const TAB_MINE: CommissionScope = 'mine';
 const TAB_ALL: CommissionScope = 'all';
@@ -49,8 +47,6 @@ const initialDateRange: DateRangeValue = {
   customStart: '',
   customEnd: '',
 };
-
-const EXPORT_PAGINATION = { page: 1, pageSize: 100_000 };
 
 const HoaHongVietBaiPage: React.FC = () => {
   const navigate = useNavigate();
@@ -93,7 +89,7 @@ const HoaHongVietBaiPage: React.FC = () => {
   const [theLoaiIds, setTheLoaiIds] = useState<string[]>([]);
   const [authorIds, setAuthorIds] = useState<string[]>([]);
   const [donViIds, setDonViIds] = useState<string[]>([]);
-  const [showExport, setShowExport] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const {
     data: rows = [],
@@ -237,71 +233,33 @@ const HoaHongVietBaiPage: React.FC = () => {
     [scopedRows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds, donViIds],
   );
 
-  /**
-   * Sáu cột đầu là đúng bộ người dùng yêu cầu khi xuất nhuận bút
-   * (STT / Tên bài / Ngày / Thể loại / Tiền / Người viết) và được tick sẵn;
-   * các cột còn lại vẫn có trong hộp thoại để tự tick khi cần.
-   */
-  const exportColumns = useMemo(
-    () => [
-      { key: 'stt', label: txt('articleCommission.exportColStt') },
-      { key: 'ten_bai', label: txt('articleCommission.exportColTenBai') },
-      { key: 'ngay_dang', label: txt('articleCommission.exportColNgayDang') },
-      { key: 'ten_the_loai', label: txt('articleCommission.exportColTheLoai') },
-      { key: 'don_gia_num', label: txt('articleCommission.exportColDonGia') },
-      { key: 'ho_va_ten_nguoi_tao', label: txt('articleCommission.exportColNguoi') },
-      { key: 'ten_don_vi', label: txt('articleCommission.exportColDonVi') },
-      { key: 'ten_nguon_dang', label: txt('articleCommission.exportColNguon') },
-      { key: 'ten_trang_dang', label: txt('articleCommission.exportColTrang') },
-      { key: 'link', label: txt('articleCommission.exportColLink') },
-      { key: 'range_start', label: txt('articleCommission.exportRangeFrom') },
-      { key: 'range_end', label: txt('articleCommission.exportRangeTo') },
-    ],
-    [],
-  );
-
-  const exportDefaultColumnKeys = useMemo(
-    () => ['stt', 'ten_bai', 'ngay_dang', 'ten_the_loai', 'don_gia_num', 'ho_va_ten_nguoi_tao'],
-    [],
-  );
-
-  /**
-   * STT đánh theo thứ tự của cả danh sách đã lọc chứ không theo lô đang xuất:
-   * `useExportData` chỉ truyền item cho `mapFn`, không truyền chỉ số, và chọn
-   * phạm vi "trang hiện tại" thì lô là một lát cắt — đánh lại từ 1 sẽ sai.
-   */
-  const sttById = useMemo(() => {
-    const m = new Map<string, number>();
-    agg.filteredRows.forEach((r, i) => m.set(r.id, i + 1));
-    return m;
-  }, [agg.filteredRows]);
-
-  const exportMapFn = useCallback(
-    (item: BaiVietDanhSach) => ({
-      stt: sttById.get(item.id) ?? 0,
-      ten_bai: item.ten_bai,
-      ten_the_loai: item.ten_the_loai ?? '',
-      don_gia_num: item.don_gia,
-      ngay_dang: item.ngay_dang,
-      ten_nguon_dang: item.ten_nguon_dang ?? '',
-      ten_trang_dang: item.ten_trang_dang ?? '',
-      ho_va_ten_nguoi_tao: item.ho_va_ten_nguoi_tao ?? item.ten_tai_khoan_nguoi_tao ?? '',
-      ten_don_vi: item.ten_don_vi_nguoi_tao ?? '',
-      link: item.link,
-      range_start: dateFrom ?? '',
-      range_end: dateTo ?? '',
-    }),
-    [dateFrom, dateTo, sttById],
-  );
-
-  const { exportData, paginatedData: paginatedExportData, selectedData: selectedExportData } = useExportData({
-    data: agg.filteredRows,
-    isOpen: showExport,
-    mapFn: exportMapFn,
-    pagination: EXPORT_PAGINATION,
-    selectedIds: new Set(),
-    keyExtractor: (r) => r.id,
-  });
+  /** Bộ lọc đang bật, đã đổi id thành tên — ghi vào sheet Tổng hợp của file xuất. */
+  const activeFilterSummary = useMemo(() => {
+    const labelsOf = (ids: string[], options: { label: string; value: string }[]) => {
+      const byValue = new Map(options.map((o) => [o.value, o.label]));
+      return ids.map((id) => byValue.get(id) ?? id).join(', ');
+    };
+    const out: { label: string; value: string }[] = [];
+    if (theLoaiIds.length > 0) {
+      out.push({
+        label: txt('articleCommission.filterTheLoai'),
+        value: labelsOf(theLoaiIds, theLoaiOptions),
+      });
+    }
+    if (scope === TAB_ALL && donViIds.length > 0) {
+      out.push({
+        label: txt('articleCommission.filterDonVi'),
+        value: labelsOf(donViIds, donViOptions),
+      });
+    }
+    if (scope === TAB_ALL && authorIds.length > 0) {
+      out.push({
+        label: txt('articleCommission.filterAuthor'),
+        value: labelsOf(authorIds, authorOptions),
+      });
+    }
+    return out;
+  }, [theLoaiIds, theLoaiOptions, donViIds, donViOptions, authorIds, authorOptions, scope]);
 
   const handleClearFilters = useCallback(() => {
     setDateRange(initialDateRange);
@@ -465,13 +423,31 @@ const HoaHongVietBaiPage: React.FC = () => {
     />
   );
 
-  const handleExportOpen = useCallback(() => {
+  /**
+   * Xuất thẳng ra file nhiều sheet, không qua `ExportDialog`: hộp thoại chung chỉ
+   * ghi được một sheet phẳng, không cộng sẵn tiền theo đơn vị / thể loại / người viết.
+   */
+  const handleExport = useCallback(async () => {
     if (agg.filteredRows.length === 0) {
       toast.warning(txt('articleCommission.noExportData'));
       return;
     }
-    setShowExport(true);
-  }, [agg.filteredRows.length]);
+    setExporting(true);
+    try {
+      await exportNhuanButToExcel({
+        rows: agg.filteredRows,
+        scopeLabel:
+          scope === TAB_ALL ? txt('articleCommission.tabAll') : txt('articleCommission.tabMine'),
+        range: { start: dateFrom, end: dateTo },
+        activeFilters: activeFilterSummary,
+        seriesByMonth: agg.seriesByMonth,
+      });
+    } catch {
+      toast.error(txt('articleCommission.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  }, [agg.filteredRows, agg.seriesByMonth, scope, dateFrom, dateTo, activeFilterSummary]);
 
   const renderExportToolbarButton = () =>
     canExport ? (
@@ -480,7 +456,8 @@ const HoaHongVietBaiPage: React.FC = () => {
           variant="outline"
           size="sm"
           type="button"
-          onClick={handleExportOpen}
+          onClick={() => void handleExport()}
+          disabled={exporting}
           className="inline-flex min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
         >
           <Download className="w-4 h-4" />
@@ -629,16 +606,6 @@ const HoaHongVietBaiPage: React.FC = () => {
         )}
       </div>
 
-      <ExportDialog
-        open={showExport}
-        onClose={() => setShowExport(false)}
-        columns={exportColumns}
-        data={exportData}
-        paginatedData={paginatedExportData}
-        selectedData={selectedExportData}
-        fileName={txt('articleCommission.exportFileName')}
-        visibleColumnKeys={exportDefaultColumnKeys}
-      />
     </div>
   );
 };

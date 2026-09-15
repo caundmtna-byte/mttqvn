@@ -23,6 +23,7 @@ export const articleStats = {
   exportColChiTieu: 'Chỉ tiêu',
   exportColGiaTri: 'Giá trị',
   exportColKy: 'Kỳ',
+  exportTongSoTien: 'Tổng số tiền',
   /* Tên sheet không dấu: tránh mọi rủi ro với phần mềm bảng tính cũ. */
   exportSheetTongHop: 'Tong hop',
   exportSheetTheoDonVi: 'Theo don vi',
@@ -47,6 +48,8 @@ export const articleStats = {
   tableDonViTitle: 'Tổng hợp theo đơn vị',
   tableColDonVi: 'Đơn vị',
   tableColSoBai: 'Số bài',
+  /** Chỉ dùng cho file xuất — màn hình báo cáo vẫn không hiện tiền. */
+  tableColSoTien: 'Số tiền',
   tableColTyTrong: 'Tỷ trọng',
   tableRowTong: 'Tổng cộng',
   donViKhongXacDinh: 'Chưa xác định đơn vị',

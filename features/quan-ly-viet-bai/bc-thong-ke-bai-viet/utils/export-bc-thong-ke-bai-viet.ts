@@ -6,8 +6,9 @@
  * Vì vậy trang này tự dựng workbook, theo đúng tiền lệ `export-bao-cao-ho-tro.ts`
  * và `export-ton-kho.ts`.
  *
- * KHÔNG sheet nào có cột tiền: cơ quan không có ngân sách trả nhuận bút nên số
- * tiền trong báo cáo gây hiểu nhầm. Tiền chỉ còn ở trang Nhuận bút.
+ * Mọi sheet gộp đều có cột "Số tiền" — người dùng cần đối chiếu tiền ngay trong
+ * file này khi chi trả. Màn hình báo cáo thì vẫn KHÔNG có chỉ tiêu tiền nào
+ * (`computeArticleStatsKpis`): tiền trên trang dễ bị hiểu nhầm là khoản sẽ nhận.
  *
  * Tách hai lớp: `buildBcThongKeSheets` thuần (có test) và `exportBcThongKeBaiVietToExcel`
  * mỏng (chỉ ghi file, `xlsx` luôn import động để giữ nguyên tách chunk của vite).
@@ -47,25 +48,22 @@ export interface BcThongKeExportSheet {
   rows: Record<string, unknown>[];
 }
 
-/** Tỷ trọng làm tròn 1 chữ số thập phân, giữ kiểu SỐ để Excel còn cộng được. */
+/** Làm tròn 1 chữ số thập phân, giữ kiểu SỐ để Excel còn cộng được. */
 function pct(value: number): number {
   return Math.round(value * 10) / 10;
-}
-
-function tyTrong(soBai: number, tong: number): number {
-  return tong > 0 ? pct((soBai * 100) / tong) : 0;
 }
 
 export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExportSheet[] {
   const colChiTieu = txt('articleStats.exportColChiTieu');
   const colGiaTri = txt('articleStats.exportColGiaTri');
   const colSoBai = txt('articleStats.tableColSoBai');
-  const colTyTrong = txt('articleStats.tableColTyTrong');
+  const colSoTien = txt('articleStats.tableColSoTien');
   const colDonVi = txt('articleStats.tableColDonVi');
   const unknownLabel = txt('articleStats.donViKhongXacDinh');
 
   const tongHop: Record<string, unknown>[] = [
     { [colChiTieu]: txt('articleStats.kpiTotal'), [colGiaTri]: input.kpis.totalCount },
+    { [colChiTieu]: txt('articleStats.exportTongSoTien'), [colGiaTri]: input.matrix.totals.soTien },
     { [colChiTieu]: txt('articleStats.kpiTongDonVi'), [colGiaTri]: input.kpis.distinctDonVi },
     { [colChiTieu]: txt('articleStats.kpiTbSoBai'), [colGiaTri]: pct(input.kpis.avgBaiMoiDonVi) },
     { [colChiTieu]: txt('articleStats.kpiDistinctAuthors'), [colGiaTri]: input.kpis.distinctNguoiTao },
@@ -87,7 +85,7 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
     const rec: Record<string, unknown> = {
       [colDonVi]: row.label,
       [colSoBai]: row.soBai,
-      [colTyTrong]: pct(row.tyTrongSoBai),
+      [colSoTien]: row.soTien,
     };
     for (const col of input.matrix.theLoaiCols) {
       rec[col.label] = row.theoTheLoai[col.id] ?? 0;
@@ -98,15 +96,13 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
     const tongCong: Record<string, unknown> = {
       [colDonVi]: txt('articleStats.tableRowTong'),
       [colSoBai]: input.matrix.totals.soBai,
-      [colTyTrong]: input.matrix.totals.soBai > 0 ? 100 : 0,
+      [colSoTien]: input.matrix.totals.soTien,
     };
     for (const col of input.matrix.theLoaiCols) {
       tongCong[col.label] = input.matrix.totals.theoTheLoai[col.id] ?? 0;
     }
     theoDonVi.push(tongCong);
   }
-
-  const tongSoBai = input.kpis.totalCount;
 
   return [
     { name: txt('articleStats.exportSheetTongHop'), rows: tongHop },
@@ -116,7 +112,7 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
       rows: input.theLoaiRows.map((r) => ({
         [txt('articleStats.tableColTheLoai')]: r.label,
         [colSoBai]: r.value,
-        [colTyTrong]: tyTrong(r.value, tongSoBai),
+        [colSoTien]: r.soTien,
       })),
     },
     {
@@ -124,7 +120,7 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
       rows: input.nguonRows.map((r) => ({
         [txt('articleStats.tableColNguon')]: r.label,
         [colSoBai]: r.value,
-        [colTyTrong]: tyTrong(r.value, tongSoBai),
+        [colSoTien]: r.soTien,
       })),
     },
     {
@@ -132,7 +128,7 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
       rows: input.trangRows.map((r) => ({
         [txt('articleStats.tableColTrang')]: r.label,
         [colSoBai]: r.value,
-        [colTyTrong]: tyTrong(r.value, tongSoBai),
+        [colSoTien]: r.soTien,
       })),
     },
     {
@@ -141,6 +137,7 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
         [txt('articleStats.tableColNguoi')]: r.label,
         [colDonVi]: r.tenDonVi,
         [colSoBai]: r.soBai,
+        [colSoTien]: r.soTien,
       })),
     },
     {
@@ -148,6 +145,7 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
       rows: input.trendRows.map((p) => ({
         [txt('articleStats.exportColKy')]: p.label,
         [colSoBai]: p.count,
+        [colSoTien]: p.soTien,
       })),
     },
     {
@@ -157,6 +155,7 @@ export function buildBcThongKeSheets(input: BcThongKeExportInput): BcThongKeExpo
         [txt('articleStats.tableColTenBai')]: item.ten_bai,
         [txt('articleStats.tableColNgayDang')]: item.ngay_dang,
         [txt('articleStats.tableColTheLoai')]: item.ten_the_loai ?? '',
+        [colSoTien]: Number(item.don_gia) || 0,
         [txt('articleStats.tableColNguon')]: item.ten_nguon_dang ?? '',
         [txt('articleStats.tableColTrang')]: item.ten_trang_dang ?? '',
         [txt('articleStats.tableColNguoi')]:
