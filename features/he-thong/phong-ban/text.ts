@@ -18,7 +18,6 @@ export const department = {
   "pageTitle": "Cơ cấu tổ chức",
   "pageDescription": "Quản lý sơ đồ phòng ban và phân cấp đơn vị.",
   "addButton": "Thêm phòng ban",
-  "searchPlaceholder": "Tìm kiếm theo tên hoặc mã phòng...",
   "totalCount": "Tổng số: {{count}} đơn vị",
   "deleteTitle": "Xóa phòng ban",
   "deleteMessage": "Bạn có chắc chắn muốn xóa phòng ban này? Lưu ý: Không thể xóa nếu phòng ban đang có cấp con.",

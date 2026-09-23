@@ -4,6 +4,7 @@ import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ArticleTheLoaiTabPanel from './components/article-the-loai-tab-panel';
 import ArticleSettingsPageNav from './components/article-settings-page-nav';
 import { ArticleKhacTrangListPanel } from './components/article-khac-trang-list-panel';
@@ -71,12 +72,13 @@ const ThietLapBaiVietPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative pb-6">
+      <PageTabRow>{tabsSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         {activeTab === TAB_THE_LOAI ? (
-          <ArticleTheLoaiTabPanel onPageBack={goBackModule} tabsSlot={tabsSlot} queriesEnabled={canView} />
+          <ArticleTheLoaiTabPanel onPageBack={goBackModule} queriesEnabled={canView} />
         ) : (
           <>
-            <ArticleSettingsPageNav onBack={goBackModule} tabsSlot={tabsSlot} />
+            <ArticleSettingsPageNav onBack={goBackModule} />
             <div className="flex-1 min-h-0 overflow-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4 md:p-6 space-y-5 sm:space-y-8 md:space-y-10">
               <ArticleKhacTrangListPanel
                 items={trangDang}

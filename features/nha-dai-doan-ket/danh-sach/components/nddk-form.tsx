@@ -58,7 +58,7 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const createMutation = useCreateNhaDaiDoanKet(onClose);
   const updateMutation = useUpdateNhaDaiDoanKet(onClose);
-  const viewer = useNddkViewer('nhaDaiDoanKetList');
+  const viewer = useNddkViewer();
   const scopedToXa = isNddkScopedToXaPhuong(viewer);
   const { canApprove } = useResourcePermissions('nhaDaiDoanKetList');
 

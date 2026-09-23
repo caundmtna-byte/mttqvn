@@ -21,8 +21,19 @@ import ListPageSkeleton from '@/components/shared/ListPageSkeleton';
 import TablePaginationFooter from '@/components/shared/TablePaginationFooter';
 import TonKhoProductDetail from './ton-kho-product-detail';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { matchesSearchTerm } from '@/lib/searchUtils';
 import { txt } from '@/lib/text';
 import { cn, formatDecimal, getErrorMessage } from '@/lib/utils';
+
+/** Ô tìm kiếm tổng — mọi cột của tab tồn theo sản phẩm (`hang_hoa_id` hiển thị ở cột mã hàng). */
+const TON_KHO_SAN_PHAM_SEARCHABLE_KEYS = [
+  'hang_hoa_id',
+  'ten_hang_hoa',
+  'ten_danh_muc',
+  'don_vi_tinh',
+  'so_kho_co_ton',
+  'tong_so_luong',
+];
 
 const TonSanPhamTab: React.FC<{
   onBack?: () => void;
@@ -80,15 +91,11 @@ const TonSanPhamTab: React.FC<{
 
   const aggregated = useMemo(() => aggregateTonKhoByProduct(flatFiltered), [flatFiltered]);
 
-  const filterFn = useCallback((item: TonKhoProductAgg, term: string, _f: TonKhoByProductFilters) => {
-    const q = term.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      item.hang_hoa_id.toLowerCase().includes(q) ||
-      item.ten_hang_hoa.toLowerCase().includes(q) ||
-      (item.ten_danh_muc ?? '').toLowerCase().includes(q)
-    );
-  }, []);
+  const filterFn = useCallback(
+    (item: TonKhoProductAgg, term: string, _f: TonKhoByProductFilters) =>
+      matchesSearchTerm(item as unknown as Record<string, unknown>, term, TON_KHO_SAN_PHAM_SEARCHABLE_KEYS),
+    [],
+  );
 
   const filteredList = useListWithFilter(aggregated, searchTerm, filters, filterFn);
 
@@ -281,7 +288,6 @@ const TonSanPhamTab: React.FC<{
         <TonKhoToolbar
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          searchPlaceholder={txt('matTranTonKho.byProduct.searchPlaceholder')}
           columns={columns}
           onToggleColumn={toggleColumn}
           onReorderColumns={reorderColumns}

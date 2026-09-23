@@ -237,7 +237,6 @@ const EmployeeToolbar: React.FC<Props> = ({ employees, onAdd, onImport, onExport
       showBack
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
-      searchPlaceholder={txt('employee.searchPlaceholder')}
     />
   );
 };

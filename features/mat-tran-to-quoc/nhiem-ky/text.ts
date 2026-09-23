@@ -54,7 +54,6 @@ export const matTranNhiemKy = {
   toolbar: {
     title: 'Nhiệm kỳ',
   },
-  searchPlaceholder: 'Tìm theo tên, năm, ghi chú…',
   emptyTitle: 'Chưa có nhiệm kỳ',
   emptyHint: 'Thêm nhiệm kỳ mới để bắt đầu.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',

@@ -205,7 +205,6 @@ const PhongBanToolbar: React.FC<Props> = ({
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
       showBack
-      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       columns={columns}

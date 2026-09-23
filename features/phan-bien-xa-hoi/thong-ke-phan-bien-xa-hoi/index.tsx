@@ -647,7 +647,6 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
         row2Content={filterPanelDesktop}
         row2ContentMobileOnly
         mobileRow2Content={dateRangeRow}
-        desktopToolbarWrap
         filtersWrapperClassName="flex-1 min-w-0"
       />
 

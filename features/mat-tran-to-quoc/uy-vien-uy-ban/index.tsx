@@ -144,7 +144,7 @@ const UyVienUyBanPage: React.FC = () => {
   const filterFn = useCallback(
     (item: MttqUyVienUyBanListRow, term: string, f: typeof filters) => {
       const matchesSearch = matchesSearchTerm(
-        item as unknown as Record<string, unknown>,
+        { ...item, ten_don_vi: donViDisplayLabel(item, tinhCapLabel) } as unknown as Record<string, unknown>,
         term,
         MTTQ_UY_VIEN_UY_BAN_SEARCHABLE_KEYS,
       );

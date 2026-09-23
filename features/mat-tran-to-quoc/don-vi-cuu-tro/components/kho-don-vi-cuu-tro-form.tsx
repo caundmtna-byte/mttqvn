@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2, FileText, Mail, MapPin, Phone, Type, User } from 'lucide-react';
+import { BadgeCheck, Building2, FileText, Landmark, Mail, MapPin, Phone, Type, User, Users, UserRound } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
@@ -16,6 +16,8 @@ import {
   khoDonViCuuTroLoaiComboboxOptions,
 } from '../core/loai';
 import { khoDonViCuuTroSchema, type KhoDonViCuuTroFormValues } from '../core/schema';
+import { donViGioiThieuToFormValue } from '../utils/don-vi-gioi-thieu';
+import { useDonViGioiThieuOptions } from '../hooks/use-don-vi-gioi-thieu-options';
 import type { KhoDonViCuuTroListRow } from '../core/types';
 import { useCreateKhoDonViCuuTro, useUpdateKhoDonViCuuTro } from '../hooks/use-kho-don-vi-cuu-tro';
 
@@ -24,8 +26,12 @@ const FORM_ID = 'kho-don-vi-cuu-tro-form';
 const DEFAULT_VALUES: KhoDonViCuuTroFormValues = {
   loai: KHO_DON_VI_CUU_TRO_LOAI_DEFAULT,
   ten: '',
+  so_nguoi: '',
+  nguoi_dai_dien: '',
+  chuc_vu: '',
   dia_chi: '',
   dien_thoai: '',
+  don_vi_gioi_thieu: '',
   email: '',
   ghi_chu: '',
 };
@@ -55,14 +61,22 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
   const loai = watch('loai');
 
   const loaiOptions = useMemo(() => khoDonViCuuTroLoaiComboboxOptions(), []);
+  const { options: donViGioiThieuOptions } = useDonViGioiThieuOptions();
 
   useEffect(() => {
     if (initialData) {
       reset({
         loai: initialData.loai,
         ten: initialData.ten,
+        so_nguoi: initialData.so_nguoi == null ? '' : String(initialData.so_nguoi),
+        nguoi_dai_dien: initialData.nguoi_dai_dien ?? '',
+        chuc_vu: initialData.chuc_vu ?? '',
         dia_chi: initialData.dia_chi ?? '',
         dien_thoai: initialData.dien_thoai ?? '',
+        don_vi_gioi_thieu: donViGioiThieuToFormValue(
+          initialData.don_vi_gioi_thieu_loai,
+          initialData.don_vi_gioi_thieu_id,
+        ),
         email: initialData.email ?? '',
         ghi_chu: initialData.ghi_chu ?? '',
       });
@@ -137,6 +151,39 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
                 error={errors.ten?.message}
               />
             </div>
+            <div>
+              <Input
+                label={txt('matTranDonViCuuTro.form.soNguoi')}
+                inputMode="numeric"
+                icon={<Users size={12} />}
+                {...register('so_nguoi')}
+                error={errors.so_nguoi?.message}
+              />
+            </div>
+            <div>
+              <Input
+                label={txt('matTranDonViCuuTro.form.nguoiDaiDien')}
+                icon={<UserRound size={12} />}
+                {...register('nguoi_dai_dien')}
+                error={errors.nguoi_dai_dien?.message}
+              />
+            </div>
+            <div>
+              <Input
+                label={txt('matTranDonViCuuTro.form.chucVu')}
+                icon={<BadgeCheck size={12} />}
+                {...register('chuc_vu')}
+                error={errors.chuc_vu?.message}
+              />
+            </div>
+            <div>
+              <Input
+                label={txt('matTranDonViCuuTro.form.dienThoai')}
+                icon={<Phone size={12} />}
+                {...register('dien_thoai')}
+                error={errors.dien_thoai?.message}
+              />
+            </div>
             <div className={FORM_GRID_SPAN_FULL}>
               <Input
                 label={txt('matTranDonViCuuTro.form.diaChi')}
@@ -146,11 +193,22 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
               />
             </div>
             <div>
-              <Input
-                label={txt('matTranDonViCuuTro.form.dienThoai')}
-                icon={<Phone size={12} />}
-                {...register('dien_thoai')}
-                error={errors.dien_thoai?.message}
+              <Controller
+                name="don_vi_gioi_thieu"
+                control={control}
+                render={({ field }) => (
+                  <Combobox
+                    options={donViGioiThieuOptions}
+                    value={field.value === '' ? null : field.value}
+                    onChange={(v) => field.onChange(v === '' || v == null ? '' : String(v))}
+                    label={txt('matTranDonViCuuTro.form.donViGioiThieu')}
+                    placeholder={txt('matTranDonViCuuTro.form.donViGioiThieuPlaceholder')}
+                    error={errors.don_vi_gioi_thieu?.message}
+                    icon={<Landmark size={14} />}
+                    dropdownInPortal
+                    searchPlaceholder={txt('matTranDonViCuuTro.form.donViGioiThieu')}
+                  />
+                )}
               />
             </div>
             <div>

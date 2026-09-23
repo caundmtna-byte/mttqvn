@@ -151,7 +151,6 @@ const KhoDotCuuTroToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onD
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('matTranDotCuuTro.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

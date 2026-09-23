@@ -9,4 +9,6 @@ export const THONG_TIN_CA_NHAN_TIEU_BIEU_SEARCHABLE_KEYS = [
   'ten_tinh',
   'so_dien_thoai',
   'dong_gop_noi_bat',
+  'trang_thai',
+  'tg_cap_nhat',
 ] as const;

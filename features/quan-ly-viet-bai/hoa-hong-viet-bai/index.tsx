@@ -10,6 +10,7 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import Button from '@/components/ui/Button';
 import ErrorState from '@/components/shared/ErrorState';
 import Tooltip from '@/components/ui/Tooltip';
@@ -479,10 +480,10 @@ const HoaHongVietBaiPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative min-h-0" aria-label={txt('page.articleDashboard.commission')}>
+      <PageTabRow className="mb-1.5">{tabLeading}</PageTabRow>
       <DashboardToolbar
         className="shrink-0 mb-3"
         onBack={() => navigate('/quan-ly-viet-bai')}
-        desktopStartSlot={tabLeading}
         mobileRow2Content={
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
             {dateRangeRow}

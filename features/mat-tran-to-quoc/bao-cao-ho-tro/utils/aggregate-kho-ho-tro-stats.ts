@@ -195,8 +195,12 @@ function aggregateByLoaiDonVi(
     const id = row.don_vi_cuu_tro_id?.trim();
     if (!id) continue;
     const dv = master.donViMap[id];
-    const loaiKey = dv?.loai ?? 'don_vi';
-    const label = dv?.loai_label ?? loaiKey;
+    // Không tra được đơn vị thì cũng không biết nó thuộc loại nào. Trước đây gộp
+    // vào một loại mặc định, tức cộng tiền của phiếu lạ vào một cột có thật trên
+    // biểu đồ "Theo loại đơn vị hỗ trợ" — sai mà không để lại dấu vết nào.
+    if (!dv) continue;
+    const loaiKey = dv.loai;
+    const label = dv.loai_label;
     const prev = tally.get(loaiKey);
     const tien = row.thanh_tien || 0;
     const sl = row.so_luong || 0;

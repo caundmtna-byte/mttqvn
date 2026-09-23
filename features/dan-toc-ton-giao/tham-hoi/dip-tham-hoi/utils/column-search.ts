@@ -38,7 +38,7 @@ export function dipThamHoiMatchesColumnSearch(row: DipThamHoi, columnSearch: Rec
         haystack = row.mo_ta ?? '';
         break;
       default:
-        haystack = record[key] ?? '';
+        haystack = String(record[key] ?? '');
     }
     if (!haystack.toLowerCase().includes(needle)) return false;
   }

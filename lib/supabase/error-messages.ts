@@ -14,14 +14,6 @@
 
 /** Câu theo TÊN RÀNG BUỘC — cụ thể nhất, ưu tiên cao nhất. */
 const BY_CONSTRAINT: Record<string, string> = {
-  // --- Quỹ tiền: sổ thu chi và hai danh mục ---
-  uq_quy_danh_muc_tai_khoan_ten: 'Quỹ này đã có tài khoản trùng tên. Vui lòng đặt tên khác.',
-  uq_quy_danh_muc_khoan_ten: 'Quỹ này đã có khoản mục trùng tên cùng loại. Vui lòng đặt tên khác.',
-  uq_quy_so_thu_chi_so_chung_tu: 'Số chứng từ này đã có trong sổ quỹ.',
-  quy_so_thu_chi_so_tien_check: 'Số tiền phải lớn hơn 0.',
-  // Khoá ngoại ghép (khoan_id, loai): chặn gán khoản CHI cho phiếu THU và ngược lại.
-  quy_so_thu_chi_khoan_fkey:
-    'Khoản mục đã chọn không đúng loại phiếu. Phiếu thu phải chọn khoản thu, phiếu chi phải chọn khoản chi.',
   // --- UNIQUE: trùng dữ liệu (mã 23505) ---
   uq_mttq_uy_vien_uy_ban_nhiem_ky_can_bo: 'Cán bộ này đã là uỷ viên của nhiệm kỳ đã chọn.',
   uq_mttq_uy_vien_uy_ban_nhiem_ky_ma_uv:
@@ -64,7 +56,12 @@ const BY_CONSTRAINT: Record<string, string> = {
   mttq_diem_danh_uy_vien_trang_thai_check: 'Trạng thái điểm danh chưa hợp lệ.',
   mttq_lop_tap_huan_cap_tap_huan_check: 'Cấp tập huấn chưa hợp lệ.',
   mttq_thiet_lap_loai_check: 'Loại thiết lập chưa hợp lệ.',
-  kho_don_vi_cuu_tro_loai_chk: 'Loại đơn vị cứu trợ chưa hợp lệ.',
+  kho_don_vi_cuu_tro_loai_chk: 'Loại đối tượng chưa hợp lệ. Vui lòng chọn lại trong danh sách.',
+  kho_don_vi_cuu_tro_so_nguoi_chk: 'Số người phải là số nguyên không âm.',
+  kho_don_vi_cuu_tro_dv_gioi_thieu_chk:
+    'Đơn vị giới thiệu chưa hợp lệ: chọn "MTTQ tỉnh" hoặc một xã/phường cụ thể.',
+  kho_don_vi_cuu_tro_don_vi_gioi_thieu_id_fkey:
+    'Xã/phường giới thiệu không còn tồn tại hoặc đang được đơn vị hỗ trợ tham chiếu. Vui lòng chọn lại.',
   luong_thiet_lap_bac_luong_he_so_chk: 'Hệ số lương chưa hợp lệ.',
   luong_thiet_lap_bac_luong_ma_bac_chk: 'Mã bậc lương chưa hợp lệ.',
   var_chuc_vu_cap_quan_ly_check: 'Cấp quản lý của chức vụ chưa hợp lệ.',
@@ -72,14 +69,6 @@ const BY_CONSTRAINT: Record<string, string> = {
   luong_thiet_lap_cau_hinh_singleton_chk: 'Chỉ có một bản cấu hình lương, không thể tạo thêm.',
   var_thong_tin_to_chuc_singleton: 'Chỉ có một bản thông tin tổ chức, không thể tạo thêm.',
   chk_pbxh_thuc_hien_ngay: 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.',
-  // Các CHECK còn lại của nhóm quỹ — lưới an toàn nếu người dùng gửi giá trị lạ.
-  quy_danh_muc_khoan_loai_check: 'Loại khoản mục chỉ được là khoản thu hoặc khoản chi.',
-  quy_danh_muc_khoan_trang_thai_check: 'Trạng thái khoản mục chưa hợp lệ.',
-  quy_danh_muc_tai_khoan_trang_thai_check: 'Trạng thái tài khoản chưa hợp lệ.',
-  quy_so_thu_chi_quy_check: 'Phiếu chưa gắn đúng quỹ. Vui lòng tải lại trang rồi lập lại.',
-  quy_so_thu_chi_loai_check: 'Loại phiếu chỉ được là phiếu thu hoặc phiếu chi.',
-  quy_so_thu_chi_tai_khoan_id_fkey:
-    'Tài khoản này đang được dùng trong sổ quỹ nên không xoá được. Hãy chuyển sang trạng thái Ngừng thay vì xoá.',
 
   // --- FK: câu riêng, cụ thể hơn câu chung của `messageForForeignKey` ---
   var_nhan_vien_id_chuc_vu_fkey:
@@ -114,11 +103,6 @@ const BY_RPC_CODE: Record<string, string> = {
     'Tồn kho không đủ — thao tác này sẽ làm tồn kho âm. Kiểm tra lại số lượng hoặc các phiếu xuất liên quan.',
   LOAI_PHIEU_KHONG_DOI_DUOC:
     'Phiếu đã phát hành số nên không đổi được loại phiếu. Hãy xoá phiếu lập sai rồi lập phiếu mới đúng loại.',
-  // Quỹ tiền — sổ thu chi.
-  QUY_KHONG_KHOP:
-    'Khoản mục hoặc tài khoản đã chọn không thuộc quỹ của phiếu này. Hãy chọn lại trong danh mục của đúng quỹ.',
-  SO_CHUNG_TU_KHONG_DOI_DUOC:
-    'Số chứng từ đã phát hành nên không đổi được. Nếu lập sai, hãy xoá phiếu rồi lập phiếu mới.',
   // Khoá kỳ (nhiệm kỳ / kỳ họp). Trigger nêu rõ khoá ở cấp nào và phải mở khoá
   // ở đâu; hai câu dưới là lưới an toàn khi lỗi đi đường khác và còn nguyên mã.
   KY_DA_KHOA:

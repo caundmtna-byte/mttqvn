@@ -165,7 +165,6 @@ const PositionToolbar: React.FC<Props> = ({
         filterGroups={filterGroups}
         mobileActions={mobileActions}
         onAdd={canCreate ? onAdd : undefined}
-        searchPlaceholder={txt('common.searchPlaceholder')}
         activeFilterCount={activeFilterCount}
         onClearAllFilters={handleClearAllFilters}
         onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

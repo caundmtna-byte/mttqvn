@@ -167,48 +167,33 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
       },
       {
         /**
-         * Quỹ tiền — MỘT nhóm cho CẢ HAI quỹ, cố ý không tách "Vì người nghèo"
-         * và "Cứu trợ" thành hai bộ dòng.
-         *
-         * Lý do kỹ thuật: `module_key` lưu xuống `var_phan_quyen` là segment
-         * cuối của `id`, và RLS trên Supabase cũng kiểm tra đúng ba key
-         * `so-thu-chi` / `danh-muc-chi-phi` / `danh-muc-tai-khoan` — hai quỹ
-         * dùng chung bảng nên cũng dùng chung key. Nếu liệt kê tám dòng, hai
-         * dòng cùng key sẽ ghi đè lẫn nhau trên cùng một bản ghi DB và
-         * `resolveModuleIdFromStorageKey()` chỉ khớp được dòng ĐẦU TIÊN ⇒ quỹ
-         * thứ hai trông như chưa được cấp quyền dù đã bật. Bốn dòng dưới đây là
-         * đúng những gì DB thực sự phân biệt được.
-         *
-         * Muốn tách quyền theo từng quỹ thì phải đổi cả RLS lẫn `module_key`
-         * (ví dụ `quy-vnn-so-thu-chi` / `quy-ct-so-thu-chi`) — việc của DB.
-         */
-        groupTitleKey: 'page.anSinhXaHoiDashboard.groupQuyChung',
-        modules: [
-          { id: 'an-sinh-xa-hoi/quy/so-thu-chi', nameKey: 'page.anSinhXaHoiDashboard.soThuChi' },
-          { id: 'an-sinh-xa-hoi/quy/danh-muc-chi-phi', nameKey: 'page.anSinhXaHoiDashboard.danhMucChiPhi' },
-          { id: 'an-sinh-xa-hoi/quy/danh-muc-tai-khoan', nameKey: 'page.anSinhXaHoiDashboard.danhMucTaiKhoan' },
-          { id: 'an-sinh-xa-hoi/quy/bao-cao-thong-ke', nameKey: 'page.anSinhXaHoiDashboard.baoCaoThongKe' },
-        ],
-      },
-      {
-        /**
          * Nhà đại đoàn kết. `storageKey` khai TƯỜNG MINH vì `module_key` lưu DB
          * là segment cuối đường dẫn — ở đây là 'danh-sach' / 'thong-ke', quá
          * chung và sẽ đụng module khác về sau. Hai chuỗi dưới cũng là tham số
          * của `fn_co_quyen(...)` trong RLS bảng `nddk_nha_dai_doan_ket`, nên
          * đổi ở đây là phải đổi cả migration.
          */
-        groupTitleKey: 'page.anSinhXaHoiDashboard.groupNhaDaiDoanKet',
+        groupTitleKey: 'page.anSinhXaHoiDashboard.groupKhenThuongTaiTro',
         modules: [
+          {
+            id: 'an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach',
+            nameKey: 'page.anSinhXaHoiDashboard.khenThuongNhaTaiTro',
+            storageKey: 'khen-thuong-nha-tai-tro',
+          },
           {
             id: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
             nameKey: 'page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet',
             storageKey: 'nha-dai-doan-ket',
           },
           {
-            id: 'an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke',
-            nameKey: 'page.anSinhXaHoiDashboard.thongKeNhaDaiDoanKet',
-            storageKey: 'thong-ke-nha-dai-doan-ket',
+            id: 'an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach',
+            nameKey: 'page.anSinhXaHoiDashboard.viNguoiNgheo',
+            storageKey: 'vi-nguoi-ngheo',
+          },
+          {
+            id: 'an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach',
+            nameKey: 'page.anSinhXaHoiDashboard.thongTinHoNgheo',
+            storageKey: 'thong-tin-ho-ngheo',
           },
         ],
       },

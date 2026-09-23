@@ -48,7 +48,7 @@ export interface MttqThietLapListPanelProps {
   isError?: boolean;
   onRetry?: () => void;
   store: GenericState<MttqThietLapFilters>;
-  tabGroup: React.ReactNode;
+  tabGroup?: React.ReactNode;
   onPageBack: () => void;
 }
 

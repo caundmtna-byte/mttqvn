@@ -4,7 +4,6 @@ export const danTocToChucQuanTrong = {
   noEditOtherDonVi: 'Bạn chỉ được sửa bản ghi thuộc đơn vị của mình.',
   noDeleteOtherDonVi: 'Bạn chỉ được xóa bản ghi thuộc đơn vị của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
-  searchPlaceholder: 'Tìm theo tên cơ sở, chủ trì, xã phường, địa chỉ…',
   emptyTitle: 'Chưa có tổ chức tôn giáo',
   emptyHint: 'Thêm thông tin chùa, giáo xứ, nghĩa trang hoặc cơ sở tôn giáo.',
   emptyFilteredHint: 'Không có bản ghi phù hợp bộ lọc. Thử điều chỉnh tìm kiếm hoặc chip lọc.',

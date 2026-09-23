@@ -6,7 +6,6 @@ export const employee = {
     "more": "Thao tác khác"
   },
   "unassigned": "Chưa gán",
-  "searchPlaceholder": "Tìm theo tài khoản, họ tên, phòng ban, bộ phận, chức vụ, trạng thái…",
   "deleteConfirmTitle": "Xóa nhân viên?",
   "deleteConfirmMessage": "Bạn có chắc muốn xóa nhân viên",
   "deleteConfirmNote": "Bạn có thể hoàn tác trong vài giây.",

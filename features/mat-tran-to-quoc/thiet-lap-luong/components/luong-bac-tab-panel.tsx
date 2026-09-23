@@ -48,7 +48,7 @@ const DrawerLazyFallback: React.FC = () => (
 
 interface Props {
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   listQueryEnabled: boolean;
 }
 

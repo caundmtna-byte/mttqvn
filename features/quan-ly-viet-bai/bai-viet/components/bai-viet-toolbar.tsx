@@ -232,7 +232,6 @@ const BaiVietToolbar: React.FC<Props> = ({
       filters={filtersSlot}
       filterGroups={filterGroups}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

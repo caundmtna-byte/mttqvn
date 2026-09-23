@@ -66,20 +66,10 @@ export type AppResource =
   | 'danTocThamHoiCaNhan'
   | 'danTocThamHoiThongKe'
   | 'danTocThongKeToChucCaNhan'
-  /**
-   * Quỹ tiền — **một resource dùng chung cho CẢ HAI quỹ** (Vì người nghèo và
-   * Cứu trợ). Lý do: RLS trên Supabase siết quyền ghi theo `module_key` là
-   * segment cuối đường dẫn (`so-thu-chi`, `danh-muc-chi-phi`,
-   * `danh-muc-tai-khoan`), mà hai quỹ dùng chung ba key đó. Khai báo hai bộ
-   * resource riêng ở client chỉ tạo ảo giác tách được quyền, trong khi DB vẫn
-   * cho/chặn cả hai như nhau.
-   */
-  | 'quySoThuChi'
-  | 'quyDanhMucKhoan'
-  | 'quyDanhMucTaiKhoan'
-  | 'quyBaoCaoThongKe'
   | 'nhaDaiDoanKetList'
-  | 'nhaDaiDoanKetThongKe'
+  | 'hoNgheoList'
+  | 'viNguoiNgheoList'
+  | 'khenThuongNhaTaiTroList'
   | 'profile'
   | 'notifications'
   | '*';
@@ -141,25 +131,31 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   danTocThamHoiThongKe: 'dan-toc-ton-giao/tham-hoi/thong-ke-tham-hoi',
   danTocThongKeToChucCaNhan: 'dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan',
   /**
-   * Quỹ tiền — `module_id` cố ý KHÔNG mang tên quỹ nào (`.../quy/...`) vì một
-   * dòng phân quyền áp cho cả Quỹ vì người nghèo lẫn Quỹ cứu trợ. Segment cuối
-   * chính là `module_key` mà RLS kiểm tra, nên phải giữ nguyên chữ.
-   * `bao-cao-thong-ke` không có bảng riêng (chỉ đọc lại sổ) nên không xuất hiện
-   * trong RLS, nhưng vẫn cần một dòng phân quyền để ẩn/hiện màn báo cáo.
-   */
-  quySoThuChi: 'an-sinh-xa-hoi/quy/so-thu-chi',
-  quyDanhMucKhoan: 'an-sinh-xa-hoi/quy/danh-muc-chi-phi',
-  quyDanhMucTaiKhoan: 'an-sinh-xa-hoi/quy/danh-muc-tai-khoan',
-  quyBaoCaoThongKe: 'an-sinh-xa-hoi/quy/bao-cao-thong-ke',
-  /**
-   * Nhà đại đoàn kết. `module_key` lưu DB là KHÓA NGẮN, và segment cuối ở đây
-   * ('danh-sach' / 'thong-ke') quá chung nên hai module này khai `storageKey`
-   * tường minh trong `permission-modules-config.ts`:
-   * 'nha-dai-doan-ket' và 'thong-ke-nha-dai-doan-ket'. RLS của bảng
-   * `nddk_nha_dai_doan_ket` gọi `fn_co_quyen('nha-dai-doan-ket', …)`.
+   * Nhà đại đoàn kết — MỘT module, hai tab (Danh sách · Thống kê). `module_key`
+   * lưu DB là KHÓA NGẮN vì segment cuối ('danh-sach') quá chung, nên module này
+   * khai `storageKey: 'nha-dai-doan-ket'` tường minh trong
+   * `permission-modules-config.ts`. RLS của bảng `nddk_nha_dai_doan_ket` gọi
+   * `fn_co_quyen('nha-dai-doan-ket', …)` đúng khóa đó.
    */
   nhaDaiDoanKetList: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
-  nhaDaiDoanKetThongKe: 'an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke',
+  /**
+   * Thông tin hộ nghèo. Segment cuối ('danh-sach') đụng module trên, nên
+   * `storageKey: 'thong-tin-ho-ngheo'` khai tường minh trong
+   * `permission-modules-config.ts`. RLS của `hngh_thong_tin_ho_ngheo` và
+   * `hngh_ho_tro_ct` gọi `fn_co_quyen('thong-tin-ho-ngheo', …)` đúng khoá đó.
+   */
+  hoNgheoList: 'an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach',
+  /**
+   * Chương trình vì người nghèo — một module, hai tab. `storageKey:
+   * 'vi-nguoi-ngheo'` khai tường minh trong `permission-modules-config.ts`; RLS
+   * của `vnn_chuong_trinh` gọi `fn_co_quyen('vi-nguoi-ngheo', …)` đúng khoá đó.
+   */
+  viNguoiNgheoList: 'an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach',
+  /**
+   * Khen thưởng nhà tài trợ — `storageKey: 'khen-thuong-nha-tai-tro'`; RLS và
+   * trigger duyệt của `ktnt_khen_thuong_nha_tai_tro` gọi `fn_co_quyen` đúng khoá đó.
+   */
+  khenThuongNhaTaiTroList: 'an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */

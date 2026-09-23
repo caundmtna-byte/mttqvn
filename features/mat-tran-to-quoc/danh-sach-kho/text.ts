@@ -32,7 +32,6 @@ export const matTranKhoDanhSach = {
   },
   filterDonViChipPlaceholder: 'Xã/phường',
   filterTinhChipPlaceholder: 'Tỉnh',
-  searchPlaceholder: 'Tìm theo tên kho, địa bàn, mô tả…',
   emptyTitle: 'Chưa có kho',
   emptyHint: 'Thêm kho mới để bắt đầu.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',

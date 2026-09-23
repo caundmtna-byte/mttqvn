@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Building2, Calendar, Edit, FileText, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User } from 'lucide-react';
+import { BadgeCheck, Building2, Calendar, Edit, FileText, Landmark, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User, Users, UserRound } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -97,8 +97,24 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
           <DetailFieldGrid>
             <DetailField label={txt('matTranDonViCuuTro.store.ttCol')} value={String(data.tt)} icon={<ListOrdered size={12} />} />
             <DetailField label={txt('matTranDonViCuuTro.form.ten')} value={data.ten} icon={<Type size={12} />} />
-            <DetailField label={txt('matTranDonViCuuTro.form.diaChi')} value={data.dia_chi} icon={<MapPin size={12} />} />
+            <DetailField
+              label={txt('matTranDonViCuuTro.form.soNguoi')}
+              value={data.so_nguoi == null ? null : String(data.so_nguoi)}
+              icon={<Users size={12} />}
+            />
+            <DetailField
+              label={txt('matTranDonViCuuTro.form.nguoiDaiDien')}
+              value={data.nguoi_dai_dien}
+              icon={<UserRound size={12} />}
+            />
+            <DetailField label={txt('matTranDonViCuuTro.form.chucVu')} value={data.chuc_vu} icon={<BadgeCheck size={12} />} />
             <DetailField label={txt('matTranDonViCuuTro.form.dienThoai')} value={data.dien_thoai} icon={<Phone size={12} />} />
+            <DetailField label={txt('matTranDonViCuuTro.form.diaChi')} value={data.dia_chi} icon={<MapPin size={12} />} />
+            <DetailField
+              label={txt('matTranDonViCuuTro.form.donViGioiThieu')}
+              value={data.don_vi_gioi_thieu_label || null}
+              icon={<Landmark size={12} />}
+            />
             <DetailField label={txt('matTranDonViCuuTro.form.email')} value={data.email} icon={<Mail size={12} />} />
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}

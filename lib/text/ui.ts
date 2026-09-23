@@ -1,12 +1,5 @@
-import { quy } from '../../features/quy/text';
-
 /** Chữ giao diện dùng chung (nav, trang, lỗi, …) */
 export const ui = {
-  /**
-   * Bốn màn hình quỹ tiền (`features/quy/text.ts`) — gộp ở đây thay vì
-   * `lib/text/index.ts` để `txt('quy.…')` tra được mà không đụng file khác.
-   */
-  quy,
   "nav": {
     "changePassword": {
       "title": "Đổi mật khẩu",
@@ -382,31 +375,19 @@ export const ui = {
       "backToParent": "Quay lại Mặt trận tổ quốc"
     },
     "anSinhXaHoiDashboard": {
-      "groupQuyViNguoiNgheo": "Quỹ vì người nghèo",
-      "groupQuyCuuTro": "Quỹ cứu trợ",
-      /**
-       * Nhóm dùng cho màn Phân quyền: hai quỹ chia nhau CÙNG một bộ `module_key`
-       * (`so-thu-chi`, `danh-muc-chi-phi`, `danh-muc-tai-khoan`) trong RLS, nên
-       * một dòng phân quyền áp cho cả hai quỹ.
-       */
-      "groupQuyChung": "Quỹ tiền (áp dụng cho cả hai quỹ)",
-      "groupNhaDaiDoanKet": "Nhà đại đoàn kết",
-      "soThuChi": "Sổ thu chi",
-      "soThuChiDesc": "Theo dõi thu – chi và số dư quỹ.",
-      "danhMucChiPhi": "Danh mục chi phí",
-      "danhMucChiPhiDesc": "Phân loại các khoản chi theo quy định quỹ.",
-      "danhMucTaiKhoan": "Danh mục tài khoản",
-      "danhMucTaiKhoanDesc": "Quản lý tài khoản ngân hàng và nguồn quỹ.",
-      "baoCaoThongKe": "Báo cáo thống kê",
-      "baoCaoThongKeDesc": "Tổng hợp thu – chi và báo cáo theo kỳ.",
+      "groupKhenThuongTaiTro": "Khen thưởng tài trợ",
+      "khenThuongNhaTaiTro": "Khen thưởng nhà tài trợ",
+      "khenThuongNhaTaiTroDesc": "Quyết định khen nhà tài trợ, kèm thành tích hỗ trợ người nghèo.",
       "danhSachNhaDaiDoanKet": "Danh sách nhà đại đoàn kết",
+      "viNguoiNgheo": "Chương trình vì người nghèo",
+      "viNguoiNgheoDesc": "Các khoản hỗ trợ Tết, cứu trợ, sinh kế, học sinh nghèo, chữa bệnh…",
+      "thongTinHoNgheo": "Thông tin hộ nghèo",
+      "thongTinHoNgheoDesc": "Hồ sơ từng hộ và các khoản hỗ trợ đã nhận.",
       "danhSachNhaDaiDoanKetDesc": "Hồ sơ hỗ trợ xây mới và sửa chữa nhà đại đoàn kết.",
       /**
        * Thẻ "Sửa chữa nâng cấp" đã bị gỡ: "Sửa chữa" là một giá trị của trường
        * Loại hình hỗ trợ trong chính bảng dữ liệu, không phải một module riêng.
        */
-      "thongKeNhaDaiDoanKet": "Thống kê nhà đại đoàn kết",
-      "thongKeNhaDaiDoanKetDesc": "Tổng hợp số nhà, số tiền theo năm, nguồn và xã phường.",
       "backToParent": "Quay lại An sinh xã hội"
     },
     "hanhChinhDashboard": {
@@ -724,7 +705,7 @@ export const ui = {
     "sortDesc": "Sắp xếp Z đến A",
     /** Placeholder ô tìm trong header cột (dropdown + inline) — dùng chung mọi module */
     "columnHeaderSearchPlaceholder": "Lọc…",
-    "searchPlaceholder": "Tìm kiếm . . .",
+    "searchPlaceholder": "Tìm kiếm...",
     "searchShortcut": "Tìm kiếm... (nhấn /)",
     "unknown": "Không xác định",
     /** Giá trị trống trong bảng / chi tiết (phòng ban, chức vụ chưa gán) */

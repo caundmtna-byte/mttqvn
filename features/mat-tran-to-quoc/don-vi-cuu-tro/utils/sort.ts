@@ -13,6 +13,17 @@ function cmpNum(a: number, b: number, dir: 'asc' | 'desc'): number {
   return dir === 'desc' ? -base : base;
 }
 
+/**
+ * `so_nguoi` để trống KHÁC "0 người" nên không ép `?? 0`; dòng trống xuống cuối ở
+ * cả hai chiều, khớp quy ước NULLS LAST của các RPC trong repo.
+ */
+function cmpNumNullable(a: number | null, b: number | null, dir: 'asc' | 'desc'): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return cmpNum(a, b, dir);
+}
+
 function cmpTime(a: string | null | undefined, b: string | null | undefined, dir: 'asc' | 'desc'): number {
   const ta = a ? new Date(a).getTime() : 0;
   const tb = b ? new Date(b).getTime() : 0;
@@ -33,6 +44,14 @@ export function sortKhoDonViCuuTroList(rows: KhoDonViCuuTroListRow[], sort: Sort
         return cmpStr(a.loai_label, b.loai_label, dir);
       case 'ten':
         return cmpStr(a.ten, b.ten, dir);
+      case 'so_nguoi':
+        return cmpNumNullable(a.so_nguoi, b.so_nguoi, dir);
+      case 'nguoi_dai_dien':
+        return cmpStr(a.nguoi_dai_dien, b.nguoi_dai_dien, dir);
+      case 'chuc_vu':
+        return cmpStr(a.chuc_vu, b.chuc_vu, dir);
+      case 'don_vi_gioi_thieu':
+        return cmpStr(a.don_vi_gioi_thieu_label, b.don_vi_gioi_thieu_label, dir);
       case 'dia_chi':
         return cmpStr(a.dia_chi, b.dia_chi, dir);
       case 'dien_thoai':

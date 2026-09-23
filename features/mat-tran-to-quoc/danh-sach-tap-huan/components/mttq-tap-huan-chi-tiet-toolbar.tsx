@@ -230,7 +230,6 @@ const MttqTapHuanChiTietToolbar: React.FC<Props> = ({
       onClearSelection={clearSelection}
       filters={filtersSlot}
       filterGroups={filterGroups}
-      searchPlaceholder={txt('matTranTapHuan.chiTietList.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       columns={columns}

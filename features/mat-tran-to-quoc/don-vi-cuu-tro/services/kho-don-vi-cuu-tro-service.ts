@@ -2,6 +2,7 @@ import { createRepository } from '@/lib/data/create-repository';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
+import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import type { ImportErrorRow } from '@/components/shared/ImportDialog';
 import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
 import {
@@ -11,6 +12,13 @@ import {
   parseKhoDonViCuuTroLoai,
   type KhoDonViCuuTroLoai,
 } from '../core/loai';
+import {
+  chuanHoaTenDonVi,
+  donViGioiThieuLabel,
+  donViGioiThieuToPayload,
+  parseDonViGioiThieuLoai,
+  resolveDonViGioiThieuImport,
+} from '../utils/don-vi-gioi-thieu';
 import type { KhoDonViCuuTroDetail, KhoDonViCuuTroListRow } from '../core/types';
 import type { KhoDonViCuuTroFormValues } from '../core/schema';
 import { khoDonViCuuTroSchema } from '../core/schema';
@@ -28,17 +36,40 @@ function nullableStr(v: unknown): string | null {
   return String(v);
 }
 
+function nullableNum(v: unknown): number | null {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** PostgREST trả quan hệ embed dạng object (hoặc mảng một phần tử). */
+function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefined {
+  if (Array.isArray(v)) return v[0] as T | undefined;
+  if (v && typeof v === 'object') return v as T;
+  return undefined;
+}
+
 export function flattenKhoDonViCuuTroRow(row: Record<string, unknown>): KhoDonViCuuTroListRow {
   const r = row as Record<string, unknown>;
   const loai = parseKhoDonViCuuTroLoai(r.loai);
+  const dvGioiThieuLoai = parseDonViGioiThieuLoai(r.don_vi_gioi_thieu_loai);
+  const xa = pickEmbedded<{ ten?: string }>(r.don_vi_gioi_thieu);
+  const tenDonViGioiThieu = nullableStr(xa?.ten);
   return {
     id: String(r.id ?? ''),
     tt: Number(r.tt ?? 0),
     loai,
     loai_label: khoDonViCuuTroLoaiLabel(loai),
     ten: String(r.ten ?? ''),
+    so_nguoi: nullableNum(r.so_nguoi),
+    nguoi_dai_dien: nullableStr(r.nguoi_dai_dien),
+    chuc_vu: nullableStr(r.chuc_vu),
     dia_chi: nullableStr(r.dia_chi),
     dien_thoai: nullableStr(r.dien_thoai),
+    don_vi_gioi_thieu_loai: dvGioiThieuLoai,
+    don_vi_gioi_thieu_id: nullableStr(r.don_vi_gioi_thieu_id),
+    ten_don_vi_gioi_thieu: tenDonViGioiThieu,
+    don_vi_gioi_thieu_label: donViGioiThieuLabel(dvGioiThieuLoai, tenDonViGioiThieu),
     email: nullableStr(r.email),
     ghi_chu: nullableStr(r.ghi_chu),
     tg_tao: String(r.tg_tao ?? ''),
@@ -55,8 +86,12 @@ function formToPayload(data: KhoDonViCuuTroFormValues): Record<string, unknown> 
   return {
     loai: data.loai,
     ten: data.ten.trim(),
+    so_nguoi: nullableNum(data.so_nguoi.trim()),
+    nguoi_dai_dien: emptyToNull(data.nguoi_dai_dien),
+    chuc_vu: emptyToNull(data.chuc_vu),
     dia_chi: emptyToNull(data.dia_chi),
     dien_thoai: emptyToNull(data.dien_thoai),
+    ...donViGioiThieuToPayload(data.don_vi_gioi_thieu),
     email: emptyToNull(data.email),
     ghi_chu: emptyToNull(data.ghi_chu),
   };
@@ -126,17 +161,38 @@ export async function importKhoDonViCuuTro(
   const errorRows: ImportErrorRow[] = [];
   const validPayloads: Record<string, unknown>[] = [];
 
+  // Nạp danh mục xã/phường MỘT lần cho cả file — hàm này có cache riêng, gọi
+  // trong vòng lặp là bắn lại request cho từng dòng.
+  const xaPhuongTheoTen = new Map<string, string>();
+  if (rows.some((r) => String(r.don_vi_gioi_thieu ?? '').trim() !== '')) {
+    const danhSachXa = await getXaPhuongAll();
+    for (const xa of danhSachXa) xaPhuongTheoTen.set(chuanHoaTenDonVi(xa.ten), xa.id);
+  }
+
   for (let i = 0; i < rows.length; i++) {
     const raw = rows[i];
     const rowNum = importRowNum(raw, i + 2);
     const rowData = { ...raw };
     delete rowData[IMPORT_ROW_NUM_KEY];
 
+    const dvGioiThieu = resolveDonViGioiThieuImport(raw.don_vi_gioi_thieu, xaPhuongTheoTen);
+    if (!dvGioiThieu.ok) {
+      const msg = txt('matTranDonViCuuTro.import.errDonViGioiThieuNotFound', { ten: dvGioiThieu.ten });
+      const errMsg = txt('matTranDonViCuuTro.import.rowError', { row: rowNum, message: msg });
+      errors.push(errMsg);
+      errorRows.push({ rowNum, data: rowData, message: errMsg });
+      continue;
+    }
+
     const input = {
       loai: resolveLoaiFromImport(raw.loai),
       ten: String(raw.ten ?? '').trim(),
+      so_nguoi: String(raw.so_nguoi ?? '').trim(),
+      nguoi_dai_dien: String(raw.nguoi_dai_dien ?? ''),
+      chuc_vu: String(raw.chuc_vu ?? ''),
       dia_chi: String(raw.dia_chi ?? ''),
       dien_thoai: String(raw.dien_thoai ?? ''),
+      don_vi_gioi_thieu: dvGioiThieu.value,
       email: String(raw.email ?? ''),
       ghi_chu: String(raw.ghi_chu ?? ''),
     };

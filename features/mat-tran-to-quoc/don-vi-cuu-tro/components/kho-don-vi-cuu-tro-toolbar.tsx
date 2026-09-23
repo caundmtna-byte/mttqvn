@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, Tag } from 'lucide-react';
+import { Plus, Download, Upload, Tag, Landmark } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -62,11 +62,26 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
     }));
   }, [itemRows]);
 
+  // Chỉ liệt kê đơn vị giới thiệu THỰC SỰ có trong dữ liệu — 131 xã/phường đổ hết
+  // vào chip lọc thì không ai tìm nổi.
+  const donViGioiThieuOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of itemRows) {
+      const label = r.don_vi_gioi_thieu_label;
+      if (!label) continue;
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'vi'))
+      .map(([value, count]) => ({ value, label: value, count }));
+  }, [itemRows]);
+
   const activeFilterCount = useMemo(() => {
     return (
       (searchTerm ? 1 : 0) +
       countKhoDonViCuuTroColumnSearchActive(filters.columnSearch ?? {}) +
-      (filters.loai_filter.length > 0 ? 1 : 0)
+      (filters.loai_filter.length > 0 ? 1 : 0) +
+      (filters.don_vi_gioi_thieu_filter.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -74,6 +89,7 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
     setSearchTerm('');
     useKhoDonViCuuTroStore.getState().setFilter('columnSearch', {});
     setFilter('loai_filter', []);
+    setFilter('don_vi_gioi_thieu_filter', []);
     setSort(null, null);
   };
 
@@ -86,11 +102,25 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
           onChange={(val) => setFilter('loai_filter', val)}
           placeholder={txt('matTranDonViCuuTro.store.loaiCol')}
           icon={Tag}
-          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,24vw)] sm:max-w-[260px]"
+        />
+        <FilterChipMultiSelect
+          options={donViGioiThieuOptions}
+          value={filters.don_vi_gioi_thieu_filter}
+          onChange={(val) => setFilter('don_vi_gioi_thieu_filter', val)}
+          placeholder={txt('matTranDonViCuuTro.toolbar.filterDonViGioiThieu')}
+          icon={Landmark}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,24vw)] sm:max-w-[260px]"
         />
       </div>
     ),
-    [filters.loai_filter, loaiOptions, setFilter],
+    [
+      filters.loai_filter,
+      filters.don_vi_gioi_thieu_filter,
+      loaiOptions,
+      donViGioiThieuOptions,
+      setFilter,
+    ],
   );
 
   const filterGroups = useMemo(
@@ -103,8 +133,22 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
         value: filters.loai_filter,
         onChange: (val: string[]) => setFilter('loai_filter', val),
       },
+      {
+        key: 'don_vi_gioi_thieu_filter',
+        label: txt('matTranDonViCuuTro.toolbar.filterDonViGioiThieu'),
+        icon: Landmark,
+        options: donViGioiThieuOptions,
+        value: filters.don_vi_gioi_thieu_filter,
+        onChange: (val: string[]) => setFilter('don_vi_gioi_thieu_filter', val),
+      },
     ],
-    [loaiOptions, filters.loai_filter, setFilter],
+    [
+      loaiOptions,
+      donViGioiThieuOptions,
+      filters.loai_filter,
+      filters.don_vi_gioi_thieu_filter,
+      setFilter,
+    ],
   );
 
   const mobileActions = useMemo<ActionItem[]>(
@@ -171,7 +215,6 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('matTranDonViCuuTro.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

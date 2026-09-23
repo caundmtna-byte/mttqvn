@@ -1,6 +1,9 @@
 /** Các key dùng cho ô tìm kiếm tổng trên module khen thưởng. */
 export const MTTQ_KHEN_THUONG_SEARCHABLE_KEYS: string[] = [
   'so_qd',
+  'ngay_khen_thuong',
+  'so_dong',
+  'tg_cap_nhat',
   'noi_dung_khen',
   'don_vi_de_xuat',
   'ghi_chu',
@@ -20,4 +23,6 @@ export const MTTQ_KHEN_THUONG_CHI_TIET_FLAT_SEARCHABLE_KEYS: string[] = [
   'cap_khen_thuong',
   'noi_dung_khen',
   'ho_so_khen',
+  'ngay_khen_thuong',
+  'tg_cap_nhat_qd',
 ];

@@ -17,7 +17,7 @@ const noopSearch = () => {};
 
 interface Props {
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   mainTab: TangLuongMainTab;
   hideListControls?: boolean;
   onAdd?: () => void;
@@ -484,7 +484,6 @@ const MttqTangLuongToolbar: React.FC<Props> = ({
       filters={filtersSlot}
       filterGroups={filterGroups}
       mobileActions={[]}
-      searchPlaceholder={txt('matTranTangLuong.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       columns={hideListControls ? undefined : columns}

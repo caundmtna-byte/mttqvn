@@ -24,6 +24,7 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useEmployees } from '@/features/he-thong/nhan-vien/hooks/use-nhan-vien';
 import { useChuongTrinhNamList } from '@/features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam';
@@ -354,10 +355,10 @@ const CongViecPage: React.FC = () => {
           {txt('taskList.noEmployeeForTabs')}
         </div>
       ) : null}
+      <PageTabRow>{tabsSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <CongViecToolbar
           onPageBack={() => navigate('/quan-ly-giao-viec')}
-          tabsSlot={tabsSlot}
           trangThaiOptions={trangThaiChipOptions}
           mucDoOptions={mucDoChipOptions}
           chuongTrinhOptions={chuongTrinhChipOptions}

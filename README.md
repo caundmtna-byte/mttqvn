@@ -34,9 +34,8 @@ Hai lưu ý về sơ đồ trên, đối chiếu trực tiếp từ `App.tsx`:
 - **Kho cứu trợ đã dời sang An sinh xã hội.** Các đường dẫn cũ `/mat-tran-to-quoc/kho-cuu-tro/*` vẫn
   còn nhưng chỉ `<Navigate>` sang `/an-sinh-xa-hoi/kho-cuu-tro/*`. Mã nguồn vẫn nằm trong
   `features/mat-tran-to-quoc/`.
-- **Hành chính và một phần An sinh xã hội** (Quỹ vì người nghèo, Quỹ cứu trợ, Nhà đại đoàn kết) hiện
-  là **module placeholder**: route sinh tự động từ `PLACEHOLDER_MODULE_PATHS` và render
-  `DashboardModulePlaceholder`, chưa có bảng dữ liệu.
+- **Hành chính** hiện là **module placeholder**: route sinh tự động từ `PLACEHOLDER_MODULE_PATHS`
+  và render `DashboardModulePlaceholder`, chưa có bảng dữ liệu. Nhà đại đoàn kết đã là module thật.
 
 Ngoài menu còn có: Trang chủ (`/`), Hồ sơ (`/ho-so`), Thông báo (`/thong-bao`), Đăng nhập
 (`/dang-nhap`).

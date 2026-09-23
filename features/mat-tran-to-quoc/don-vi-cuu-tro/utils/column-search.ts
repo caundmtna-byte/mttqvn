@@ -28,6 +28,18 @@ export function khoDonViCuuTroMatchesColumnSearch(
       case 'ten':
         haystack = row.ten ?? '';
         break;
+      case 'so_nguoi':
+        haystack = row.so_nguoi == null ? '' : String(row.so_nguoi);
+        break;
+      case 'nguoi_dai_dien':
+        haystack = row.nguoi_dai_dien ?? '';
+        break;
+      case 'chuc_vu':
+        haystack = row.chuc_vu ?? '';
+        break;
+      case 'don_vi_gioi_thieu':
+        haystack = row.don_vi_gioi_thieu_label ?? '';
+        break;
       case 'dia_chi':
         haystack = row.dia_chi ?? '';
         break;

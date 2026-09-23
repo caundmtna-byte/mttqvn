@@ -1,9 +1,12 @@
 export const nhaDaiDoanKet = {
+  tabs: {
+    danhSach: 'Danh sách',
+    thongKe: 'Thống kê',
+  },
   noViewPermission: 'Bạn không có quyền xem module Nhà đại đoàn kết.',
   noViewRowPermission: 'Bạn không có quyền xem bản ghi này.',
   noXaPhuongScopePermission: 'Bạn chỉ được nhập nhà thuộc xã/phường của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
-  searchPlaceholder: 'Tìm theo chủ hộ, nội dung, xã phường, khối xóm…',
   empty: 'Chưa có hồ sơ nhà đại đoàn kết',
   exportFileName: 'Nha_Dai_Doan_Ket',
   deleteTitle: 'Xóa hồ sơ',

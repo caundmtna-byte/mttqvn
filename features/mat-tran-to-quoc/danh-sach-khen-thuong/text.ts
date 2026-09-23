@@ -51,7 +51,6 @@ export const matTranKhenThuong = {
     thongKe: 'Thống kê',
   },
   chiTietList: {
-    searchPlaceholder: 'Tìm theo số quyết định, nội dung khen, cán bộ, hình thức, danh hiệu…',
     emptyTitle: 'Chưa có dòng chi tiết',
     emptyHint: 'Thêm người được khen trong quyết định hoặc đổi bộ lọc.',
     cols: {
@@ -71,7 +70,6 @@ export const matTranKhenThuong = {
     colLabel: 'Nhóm',
     colValue: 'Số lượng',
   },
-  searchPlaceholder: 'Tìm theo số quyết định, nội dung khen, đơn vị, trạng thái…',
   emptyTitle: 'Chưa có quyết định khen thưởng',
   emptyHint: 'Thêm quyết định mới để bắt đầu.',
   form: {

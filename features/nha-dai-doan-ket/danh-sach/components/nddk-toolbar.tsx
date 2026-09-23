@@ -20,13 +20,15 @@ import {
 } from '../core/constants';
 
 interface Props {
+  /** TabGroup của trang — `GenericToolbar` tự xếp desktop/mobile. */
+  tabSlot?: React.ReactNode;
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
 }
 
-const NddkToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDeleteMany }) => {
+const NddkToolbar: React.FC<Props> = ({ tabSlot, onPageBack, onAdd, onExport, onDeleteMany }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('nhaDaiDoanKetList');
 
   const {
@@ -250,6 +252,7 @@ const NddkToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDeleteMan
 
   return (
     <GenericToolbar
+      tabSlot={tabSlot}
       selectedCount={selectedIds.size}
       searchTerm={searchTerm}
       onSearchChange={setSearchTerm}
@@ -259,7 +262,6 @@ const NddkToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDeleteMan
       onAdd={canCreate ? onAdd : undefined}
       filters={filtersSlot}
       filterGroups={filterGroups}
-      searchPlaceholder={txt('nhaDaiDoanKet.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

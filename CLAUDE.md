@@ -131,29 +131,6 @@ Bốn điều dễ sai, đã trả giá một lần:
 `ExportDialog`, với `get<X>AllForExport()` kéo theo từng lô 500 dòng. Không có bước này thì chọn
 phạm vi "Tất cả" vẫn chỉ xuất đúng trang đang xem.
 
-## Hai quỹ tiền — một bộ bảng, hai nhánh dữ liệu
-
-Quỹ Vì người nghèo và Quỹ Cứu trợ **dùng chung** `quy_danh_muc_tai_khoan`,
-`quy_danh_muc_khoan`, `quy_so_thu_chi`, phân biệt bằng cột `quy`
-(`'vi_nguoi_ngheo'` | `'cuu_tro'`). Hai quỹ giống hệt nhau về nghiệp vụ; nhân đôi
-bảng là nhân đôi vĩnh viễn mọi ràng buộc, trigger, RPC và màn hình.
-**Mọi truy vấn bắt buộc lọc theo `quy`** — quên một chỗ là trộn sổ hai quỹ.
-
-Những thứ DB đã tự lo, đừng làm lại ở client:
-- Số chứng từ `PT-2026-0001` / `PC-2026-0001` sinh tự động; đã phát hành thì
-  **không đổi được** số lẫn loại phiếu (cùng lý do với số phiếu kho).
-- `id_nguoi_tao` gán từ phiên đăng nhập — đừng gửi lên.
-- Nhật ký thay đổi (`audit_log`) bật sẵn cho cả ba bảng: đây là tiền.
-- RLS siết quyền ghi theo `fn_co_quyen('<module_key>', 'them|sua|xoa')`.
-
-Ràng buộc DB sẽ từ chối, client phải có câu tiếng Việt tương ứng trong
-`lib/supabase/error-messages.ts`: `so_tien > 0`; khoản mục phải cùng `loai` với
-phiếu (khoá ngoại ghép `(khoan_id, loai)`); khoản mục/tài khoản phải cùng `quy`
-(`QUY_KHONG_KHOP`); trùng tên trong cùng quỹ.
-
-`quy_so_du_view` = tổng thu − tổng chi theo từng tài khoản. **Chưa có tồn đầu
-kỳ** — khi làm chốt sổ theo kỳ phải thay bằng cách tính có số dư đầu kỳ.
-
 ## Trạng thái bản ghi — luật chuyển và vết thay đổi
 
 - **Luật chuyển trạng thái** ở `fn_kiem_luat_trang_thai()`. Hiện chỉ bật cho

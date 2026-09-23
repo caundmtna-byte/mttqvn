@@ -8,7 +8,6 @@ export const matTranTonKho = {
   empty: 'Không có dữ liệu tồn kho.',
   records: 'bản ghi',
   byProduct: {
-    searchPlaceholder: 'Tên hàng, danh mục…',
     empty: 'Không có dữ liệu',
     emptyHint: 'Thử đổi bộ lọc kho hoặc danh mục.',
     totalQty: 'Tổng SL',

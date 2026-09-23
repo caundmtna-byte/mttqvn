@@ -12,7 +12,7 @@ import { countLuongBacColumnSearchActive } from '../utils/bac-column-search';
 
 interface Props {
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   ngachOptions: Option[];
   selectedNgachId: string | null;
   onNgachChange: (id: string | null) => void;
@@ -129,7 +129,6 @@ const LuongBacToolbar: React.FC<Props> = ({
       filters={filtersSlot}
       filterGroups={filterGroups}
       mobileActions={[]}
-      searchPlaceholder={txt('matTranThietLapLuong.bac.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       columns={columns}

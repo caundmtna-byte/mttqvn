@@ -2,15 +2,8 @@ import { useMemo } from 'react';
 import type { Employee, EmployeeFilters } from '../core/types';
 import { matchesSearchTerm } from '@/lib/searchUtils';
 import { employeeMatchesColumnSearch } from '../utils/column-search';
+import { NHAN_VIEN_SEARCHABLE_KEYS as SEARCHABLE_KEYS } from '../utils/search-keys';
 
-const SEARCHABLE_KEYS = [
-  'ten_tai_khoan',
-  'ho_va_ten',
-  'ten_phong_ban',
-  'ten_bo_phan',
-  'ten_chuc_vu',
-  'trang_thai',
-];
 
 export interface FilterCounts {
   /** Số lượng nhân viên thuộc mỗi phòng ban (sau khi bỏ chính filter phòng ban hiện tại). */

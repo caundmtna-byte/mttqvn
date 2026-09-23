@@ -134,6 +134,11 @@ const KhoDonViCuuTroPage: React.FC = () => {
       );
       if (!khoDonViCuuTroMatchesColumnSearch(item, f.columnSearch)) return false;
       if (f.loai_filter.length > 0 && !f.loai_filter.includes(item.loai)) return false;
+      if (
+        f.don_vi_gioi_thieu_filter.length > 0 &&
+        !f.don_vi_gioi_thieu_filter.includes(item.don_vi_gioi_thieu_label)
+      )
+        return false;
       return matchesSearch;
     },
     [],
@@ -148,8 +153,12 @@ const KhoDonViCuuTroPage: React.FC = () => {
       { key: 'tt', label: txt('matTranDonViCuuTro.store.ttCol') },
       { key: 'loai_label', label: txt('matTranDonViCuuTro.store.loaiCol') },
       { key: 'ten', label: txt('matTranDonViCuuTro.store.tenCol') },
-      { key: 'dia_chi', label: txt('matTranDonViCuuTro.store.diaChiCol') },
+      { key: 'so_nguoi', label: txt('matTranDonViCuuTro.store.soNguoiCol') },
+      { key: 'nguoi_dai_dien', label: txt('matTranDonViCuuTro.store.nguoiDaiDienCol') },
+      { key: 'chuc_vu', label: txt('matTranDonViCuuTro.store.chucVuCol') },
       { key: 'dien_thoai', label: txt('matTranDonViCuuTro.store.dienThoaiCol') },
+      { key: 'dia_chi', label: txt('matTranDonViCuuTro.store.diaChiCol') },
+      { key: 'don_vi_gioi_thieu', label: txt('matTranDonViCuuTro.store.donViGioiThieuCol') },
       { key: 'email', label: txt('matTranDonViCuuTro.store.emailCol') },
       { key: 'ghi_chu', label: txt('matTranDonViCuuTro.store.ghiChuCol') },
       { key: 'tg_tao', label: txt('matTranDonViCuuTro.store.tgTaoCol') },
@@ -162,8 +171,12 @@ const KhoDonViCuuTroPage: React.FC = () => {
     () => [
       { key: 'loai', label: txt('matTranDonViCuuTro.form.loai'), required: true },
       { key: 'ten', label: txt('matTranDonViCuuTro.form.ten'), required: true },
-      { key: 'dia_chi', label: txt('matTranDonViCuuTro.form.diaChi') },
+      { key: 'so_nguoi', label: txt('matTranDonViCuuTro.form.soNguoi') },
+      { key: 'nguoi_dai_dien', label: txt('matTranDonViCuuTro.form.nguoiDaiDien') },
+      { key: 'chuc_vu', label: txt('matTranDonViCuuTro.form.chucVu') },
       { key: 'dien_thoai', label: txt('matTranDonViCuuTro.form.dienThoai') },
+      { key: 'dia_chi', label: txt('matTranDonViCuuTro.form.diaChi') },
+      { key: 'don_vi_gioi_thieu', label: txt('matTranDonViCuuTro.form.donViGioiThieu') },
       { key: 'email', label: txt('matTranDonViCuuTro.form.email') },
       { key: 'ghi_chu', label: txt('matTranDonViCuuTro.form.ghiChu') },
     ],
@@ -175,8 +188,12 @@ const KhoDonViCuuTroPage: React.FC = () => {
       tt: item.tt,
       loai_label: item.loai_label,
       ten: item.ten,
-      dia_chi: item.dia_chi ?? '',
+      so_nguoi: item.so_nguoi ?? '',
+      nguoi_dai_dien: item.nguoi_dai_dien ?? '',
+      chuc_vu: item.chuc_vu ?? '',
       dien_thoai: item.dien_thoai ?? '',
+      dia_chi: item.dia_chi ?? '',
+      don_vi_gioi_thieu: item.don_vi_gioi_thieu_label,
       email: item.email ?? '',
       ghi_chu: item.ghi_chu ?? '',
       tg_tao: item.tg_tao,

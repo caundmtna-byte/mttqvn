@@ -179,7 +179,6 @@ const KhoDanhSachKhoToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, o
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('matTranKhoDanhSach.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

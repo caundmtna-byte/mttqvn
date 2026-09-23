@@ -132,7 +132,6 @@ export const matTranCanBo = {
   noViewRowPermission: 'Bạn không có quyền xem hồ sơ cán bộ này.',
   /** Nút đầu dropdown chọn cán bộ ở module khác (khen thưởng, tập huấn, …). */
   comboboxAddNew: 'Thêm cán bộ mới',
-  searchPlaceholder: 'Tìm theo họ tên, tổ chức, chức vụ, trạng thái…',
   noEmployeeBanner:
     'Tài khoản chưa gắn hồ sơ nhân viên: không thể tạo mới cán bộ cho đến khi được gán nhân viên. Liên hệ quản trị.',
   import: {

@@ -29,6 +29,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { useExportData } from '@/lib/useExportData';
 import ExportDialog from '@/components/shared/ExportDialog';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ErrorState from '@/components/shared/ErrorState';
 import {
   useMttqTangLuongList,
@@ -438,10 +439,10 @@ const DanhSachTangLuongPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      <PageTabRow>{tabsSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <MttqTangLuongToolbar
           onPageBack={handlePageBack}
-          tabsSlot={tabsSlot}
           mainTab={mainTab}
           hideListControls={mainTab !== 'lich_su'}
           onAdd={handleAdd}

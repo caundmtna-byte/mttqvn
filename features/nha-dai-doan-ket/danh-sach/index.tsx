@@ -20,7 +20,12 @@ import { CONFIRM_DELETE, CONFIRM_DELETE_ALL } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
+import { BarChart3, List } from 'lucide-react';
 import { useCan } from '@/hooks/use-can';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
+import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import { useServerPagedList } from '@/hooks/use-server-paged-list';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ErrorState from '@/components/shared/ErrorState';
@@ -38,6 +43,8 @@ import type { NhaDaiDoanKet } from './core/types';
 import { countNddkColumnSearchActive } from './utils/column-search';
 import { getNddkColumnDisplayValue } from './utils/column-display';
 import NddkToolbar from './components/nddk-toolbar';
+import NddkThongKePanel from './components/nddk-thong-ke-panel';
+import { NDDK_MAIN_TABS } from './core/constants';
 import NddkTable from './components/nddk-table';
 
 const NddkForm = lazy(() => import('./components/nddk-form'));
@@ -64,6 +71,9 @@ const NhaDaiDoanKetPage: React.FC = () => {
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
+
+  const { canExport } = useResourcePermissions('nhaDaiDoanKetList');
+  const [mainTab, setMainTab] = useTabSearchParam(NDDK_MAIN_TABS, 'danh_sach');
 
   const listQueryEnabled = Boolean(user && (user.role === 'admin' || (matrixActive && canView)));
 
@@ -100,7 +110,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
     columns,
   } = useNhaDaiDoanKetStore();
 
-  const viewer = useNddkViewer('nhaDaiDoanKetList');
+  const viewer = useNddkViewer();
 
   // Phạm vi xem đi xuống RPC: cấp Xã phường chỉ thấy hồ sơ thuộc xã mình, và
   // người chưa được gán đơn vị thấy rỗng (RPC không nới lỏng khi id là NULL).
@@ -321,6 +331,20 @@ const NhaDaiDoanKetPage: React.FC = () => {
     setEditing(null);
   };
 
+  const handlePageBack = () => navigate('/an-sinh-xa-hoi');
+
+  const tabsSlot = (
+    <TabGroup
+      tabs={[
+        { id: 'danh_sach', label: txt('nhaDaiDoanKet.tabs.danhSach'), icon: List },
+        { id: 'thong_ke', label: txt('nhaDaiDoanKet.tabs.thongKe'), icon: BarChart3 },
+      ]}
+      activeTab={mainTab}
+      onChange={setMainTab}
+      className="shrink-0"
+    />
+  );
+
   if (!canView) {
     return (
       <div
@@ -335,9 +359,17 @@ const NhaDaiDoanKetPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative">
+      <PageTabRow>{tabsSlot}</PageTabRow>
+      {mainTab === 'thong_ke' ? (
+        <NddkThongKePanel
+          onPageBack={handlePageBack}
+          canExport={canExport}
+          queryEnabled={listQueryEnabled}
+        />
+      ) : (
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <NddkToolbar
-          onPageBack={() => navigate('/an-sinh-xa-hoi')}
+          onPageBack={handlePageBack}
           onAdd={() => {
             startTransition(() => {
               setEditing(null);
@@ -375,6 +407,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       <AnimatePresence>
         {showForm && (

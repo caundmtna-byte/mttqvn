@@ -162,7 +162,6 @@ const MttqThietLapToolbar: React.FC<Props> = ({
       tabSlot={tabSlot}
       filters={filtersSlot}
       filterGroups={filterGroups}
-      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

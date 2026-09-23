@@ -271,37 +271,47 @@ export const queryKeys = {
     singleton: ['luong-thiet-lap-cau-hinh', 'singleton'] as const,
   },
   /**
-   * Quỹ tiền — hai quỹ dùng chung bảng nên **mọi key phải kèm `quy`**,
-   * nếu không cache của Quỹ vì người nghèo sẽ hiện trên màn Quỹ cứu trợ.
-   */
-  quyDanhMucTaiKhoan: {
-    all: (quy: string) => ['quy-danh-muc-tai-khoan', quy] as const,
-    detail: (quy: string, id: string) => ['quy-danh-muc-tai-khoan', quy, 'detail', id] as const,
-  },
-  quyDanhMucKhoan: {
-    all: (quy: string) => ['quy-danh-muc-khoan', quy] as const,
-    detail: (quy: string, id: string) => ['quy-danh-muc-khoan', quy, 'detail', id] as const,
-  },
-  quySoThuChi: {
-    all: (quy: string) => ['quy-so-thu-chi', quy] as const,
-    /** Một trang sổ từ RPC `get_quy_so_thu_chi_page`. */
-    page: (args: unknown) => ['quy-so-thu-chi', 'page', args] as const,
-    detail: (quy: string, id: string) => ['quy-so-thu-chi', quy, 'detail', id] as const,
-    /** Số dư từng tài khoản (`quy_so_du_view`). */
-    soDu: (quy: string) => ['quy-so-thu-chi', quy, 'so-du'] as const,
-    /** Toàn bộ dòng sổ trong khoảng ngày — chỉ dùng cho màn Báo cáo thống kê. */
-    baoCao: (args: unknown) => ['quy-so-thu-chi', 'bao-cao', args] as const,
-  },
-  /**
    * Nhà đại đoàn kết — bảng giao dịch, trang danh sách phân trang phía máy chủ.
    * `page(args)` phải ôm TRỌN bộ lọc + sắp xếp, nếu không hai bộ lọc khác nhau
    * sẽ dùng chung một ô cache.
    */
+  /**
+   * Thông tin hộ nghèo — bảng giao dịch, danh sách phân trang phía máy chủ.
+   * `nhaDaiDoanKet` là quan hệ con của MỘT hộ đang mở ở màn chi tiết; các khoản
+   * hỗ trợ của hộ nằm ở `viNguoiNgheo.byHoNgheo`.
+   */
+  hoNgheo: {
+    all: ['thong-tin-ho-ngheo'] as const,
+    detail: (id: string) => ['thong-tin-ho-ngheo', 'detail', id] as const,
+    page: (args: unknown) => ['thong-tin-ho-ngheo', 'page', args] as const,
+    nhaDaiDoanKet: (hoId: string) => ['thong-tin-ho-ngheo', 'nha-ddk', hoId] as const,
+  },
   nhaDaiDoanKet: {
     all: ['nha-dai-doan-ket'] as const,
     detail: (id: string) => ['nha-dai-doan-ket', 'detail', id] as const,
     /** Một trang từ RPC `get_nddk_page`. */
     page: (args: unknown) => ['nha-dai-doan-ket', 'page', args] as const,
+  },
+  viNguoiNgheo: {
+    all: ['vi-nguoi-ngheo'] as const,
+    detail: (id: string) => ['vi-nguoi-ngheo', 'detail', id] as const,
+    /** Một trang từ RPC `get_vnn_page`. */
+    page: (args: unknown) => ['vi-nguoi-ngheo', 'page', args] as const,
+    /** Các khoản của một hộ — màn chi tiết hộ nghèo. */
+    byHoNgheo: (hoId: string) => ['vi-nguoi-ngheo', 'by-ho-ngheo', hoId] as const,
+    /** Tuỳ chọn "chọn hộ nghèo" của form, theo phạm vi xã ('' = mọi xã). */
+    hoNgheoOptions: (xaPhuongId: string) => ['vi-nguoi-ngheo', 'ho-ngheo-options', xaPhuongId] as const,
+    /** Các khoản của một nhà tài trợ trong kỳ — Khen thưởng nhà tài trợ. */
+    byDonVi: (donViId: string, tuNam: number | null, denNam: number | null) =>
+      ['vi-nguoi-ngheo', 'by-don-vi', donViId, tuNam, denNam] as const,
+  },
+  khenThuongNhaTaiTro: {
+    all: ['khen-thuong-nha-tai-tro'] as const,
+    detail: (id: string) => ['khen-thuong-nha-tai-tro', 'detail', id] as const,
+    /** Một trang từ RPC `get_ktnt_page`. */
+    page: (args: unknown) => ['khen-thuong-nha-tai-tro', 'page', args] as const,
+    /** Toàn bộ dòng trong phạm vi xem — tab Thống kê. */
+    allRows: (scope: unknown) => ['khen-thuong-nha-tai-tro', 'all-rows', scope] as const,
   },
   mttqTangLuong: {
     all: ['mttq-tang-luong'] as const,

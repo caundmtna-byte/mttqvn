@@ -167,7 +167,6 @@ const XaPhuongToolbar: React.FC<Props> = ({
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate && selectedTinhId ? onAdd : undefined}
-      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete && selectedCount > 0 ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

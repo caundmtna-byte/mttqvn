@@ -53,3 +53,7 @@ export const NDDK_TRANG_THAI_HOAN_THANH: NddkTrangThai = 'Đã bàn giao';
 /** Khoảng năm cho ô nhập và bộ lọc — khớp CHECK `nam BETWEEN 2000 AND 2100`. */
 export const NDDK_NAM_MIN = 2000;
 export const NDDK_NAM_MAX = 2100;
+
+/** Hai tab của module — giữ mảng ở đây để `useTabSearchParam` memo ổn định. */
+export type NddkMainTab = 'danh_sach' | 'thong_ke';
+export const NDDK_MAIN_TABS = ['danh_sach', 'thong_ke'] as const satisfies readonly NddkMainTab[];

@@ -5,20 +5,26 @@ const NHIEM_KY = 'nhiem_ky:mttq_nhiem_ky!mttq_ky_hop_nhiem_ky_id_fkey(ten_nhiem_
 
 const DON_VI = 'don_vi:var_ssn_xa_phuong!mttq_ky_hop_don_vi_id_fkey(ten,id_tinh_thanh)';
 
-/** Cột ngắn — render ở grid danh sách kỳ họp. Bỏ long-text khỏi LIST để giảm egress. */
+/**
+ * Cột render ở grid danh sách kỳ họp. `noi_dung_ky_hop` / `tai_lieu_hop` là cột hiển thị
+ * trên bảng (và ô tìm kiếm tổng) nên phải có trong LIST; `ghi_chu` chỉ ở detail.
+ * Bảng kỳ họp nhỏ (vài kỳ mỗi nhiệm kỳ × đơn vị) nên egress không đáng kể.
+ */
 const LIST_COLS = [
   'id',
   'nhiem_ky_id',
   'don_vi_id',
   'ky_thu',
   'ngay_hop',
+  'noi_dung_ky_hop',
+  'tai_lieu_hop',
   'id_nguoi_tao',
   'tg_tao',
   'tg_cap_nhat',
 ].join(',');
 
 /** Cột long-text chỉ hiện ở detail / form sửa. */
-const FULL_COLS = [LIST_COLS, 'noi_dung_ky_hop', 'tai_lieu_hop', 'ghi_chu'].join(',');
+const FULL_COLS = [LIST_COLS, 'ghi_chu'].join(',');
 
 export const MTTQ_KY_HOP_SELECT_LIST = `${LIST_COLS},${NHIEM_KY},${DON_VI},${NGUOI_TAO}`;
 

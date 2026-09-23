@@ -19,6 +19,12 @@ import MobileActionsSheet from '../ui/MobileActionsSheet';
 import type { FilterGroup } from '../ui/MobileFilterSheet';
 import type { ActionItem } from '../ui/MobileActionsSheet';
 import FilterChipOverflowRow from './FilterChipOverflowRow';
+import {
+    ToolbarBackButton,
+    ToolbarClearFiltersButton,
+    ToolbarTabRow,
+    TOOLBAR_SEARCH_WIDTH_CLASS,
+} from './toolbar-parts';
 
 interface GenericToolbarProps {
     selectedCount: number;
@@ -74,13 +80,13 @@ interface GenericToolbarProps {
     desktopStartSlot?: React.ReactNode;
 
     /**
-     * TabGroup slot: trên mobile render thành hàng riêng cuộn ngang phía TRÊN hàng toolbar;
-     * trên desktop render vào vị trí desktopStartSlot (sau nút Back).
-     * Ưu tiên cao hơn desktopStartSlot khi cả hai được truyền vào cùng lúc ở desktop.
+     * TabGroup slot: LUÔN là hàng riêng phía TRÊN hàng toolbar, ở mọi breakpoint
+     * (mobile cuộn ngang). Không còn chen vào hàng toolbar — chung hàng thì
+     * tablet không đủ chỗ và chip lọc rớt dòng.
      */
     tabSlot?: React.ReactNode;
 
-    /** Số chip lọc tối đa hiển thị trên desktop; phần còn lại gom vào nút … */
+    /** TRẦN số chip lọc trên desktop (tuỳ chọn); chip dư theo bề rộng tự vào nút … */
     maxVisibleFilterChips?: number;
 
     /**
@@ -122,7 +128,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
     filtersMobileBelowSearchScroll = false,
     secondaryRow,
 }) => {
-    const resolvedDesktopStartSlot = tabSlot ?? desktopStartSlot;
+    const resolvedDesktopStartSlot = desktopStartSlot;
     const resolvedSearchPlaceholder = searchPlaceholder ?? txt('common.searchPlaceholder');
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [showMobileActions, setShowMobileActions] = useState(false);
@@ -215,13 +221,10 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
         <div className="sticky top-0 z-30 bg-card border-b border-border/40 px-3 sm:px-4 py-2 space-y-2 shrink-0 [touch-action:manipulation]">
 
             {/* ======================================================== */}
-            {/* MOBILE TAB ROW (< sm): tabSlot cuộn ngang phía trên toolbar */}
+            {/* TAB ROW (mọi breakpoint): hàng riêng phía trên toolbar       */}
+            {/* Mobile ẩn khi đang chọn nhiều để nhường chỗ thanh bulk.      */}
             {/* ======================================================== */}
-            {tabSlot && !hasSelection && (
-                <div className="sm:hidden overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-0.5">
-                    {tabSlot}
-                </div>
-            )}
+            {tabSlot && <ToolbarTabRow hideOnMobile={hasSelection}>{tabSlot}</ToolbarTabRow>}
 
             {/* ======================================================== */}
             {/* MOBILE TOOLBAR (< sm): 1 hàng duy nhất                   */}
@@ -450,34 +453,20 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                             exit={{ opacity: 0, x: -15 }}
                             className="flex w-full min-w-0 flex-1 flex-nowrap items-center gap-2"
                         >
-                            {showBack && (
-                                <button
-                                    onClick={handleBack}
-                                    className="shrink-0 h-8 px-2 -ml-1 flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:scale-95"
-                                >
-                                    <ArrowLeft size={14} strokeWidth={2.25} />
-                                    <span className="text-xs font-medium">{txt('common.back')}</span>
-                                </button>
-                            )}
+                            {showBack && <ToolbarBackButton onClick={handleBack} />}
 
                             {resolvedDesktopStartSlot}
 
                             {(filters || (activeFilterCount > 0 && onClearAllFilters)) && (
                                 <div
                                     className={cn(
-                                        'flex min-w-0 flex-1 flex-wrap items-center gap-2 py-0.5',
+                                        'flex min-w-0 flex-1 flex-nowrap items-center gap-2 py-0.5',
                                         (showBack || resolvedDesktopStartSlot) && 'border-l border-border pl-3 ml-0.5',
                                     )}
                                 >
                                     <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                                     {activeFilterCount > 0 && onClearAllFilters && (
-                                        <button
-                                            onClick={onClearAllFilters}
-                                            className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95"
-                                        >
-                                            <X size={11} className="stroke-[2.5px]" />
-                                            {txt('common.clearFilters', { count: activeFilterCount })}
-                                        </button>
+                                        <ToolbarClearFiltersButton count={activeFilterCount} onClick={onClearAllFilters} />
                                     )}
                                 </div>
                             )}
@@ -489,7 +478,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                             {/* Không giới hạn max-width chung — tránh ép ô tìm + actions vào vùng quá hẹp (mất nút Thêm). */}
                             <div className="flex shrink-0 flex-nowrap items-center gap-2 py-0.5">
                                 {!hideSearch && (
-                                    <div className="relative w-72 min-w-[11rem] max-w-[22rem] shrink-0 group">
+                                    <div className={cn('relative group', TOOLBAR_SEARCH_WIDTH_CLASS)}>
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
                                         <input
                                             ref={searchInputRef}
@@ -563,49 +552,29 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                             initial={{ opacity: 0, x: -15 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -15 }}
-                            className="flex-1 flex items-center gap-2 min-w-0 flex-wrap"
+                            className="flex-1 flex flex-nowrap items-center gap-2 min-w-0"
                         >
-                            {showBack && (
-                                <button
-                                    onClick={handleBack}
-                                    className="shrink-0 h-8 px-2 -ml-1 flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:scale-95"
-                                >
-                                    <ArrowLeft size={14} strokeWidth={2.25} />
-                                    <span className="text-xs font-medium">{txt('common.back')}</span>
-                                </button>
-                            )}
+                            {showBack && <ToolbarBackButton onClick={handleBack} />}
 
                             {resolvedDesktopStartSlot}
 
                             {(filters || (activeFilterCount > 0 && onClearAllFilters)) &&
                             (showBack || resolvedDesktopStartSlot) ? (
-                                <div className="border-l border-border pl-3 ml-1 flex items-center gap-2 flex-wrap min-w-0">
+                                <div className="border-l border-border pl-3 ml-1 flex flex-1 flex-nowrap items-center gap-2 min-w-0">
                                     <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                                     {activeFilterCount > 0 && onClearAllFilters && (
-                                        <button
-                                            onClick={onClearAllFilters}
-                                            className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95"
-                                        >
-                                            <X size={11} className="stroke-[2.5px]" />
-                                            {txt('common.clearFilters', { count: activeFilterCount })}
-                                        </button>
+                                        <ToolbarClearFiltersButton count={activeFilterCount} onClick={onClearAllFilters} />
                                     )}
                                 </div>
                             ) : (
                                 <>
                                     {filters && (
-                                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                        <div className="flex flex-1 flex-nowrap items-center gap-2 min-w-0">
                                             <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
                                         </div>
                                     )}
                                     {activeFilterCount > 0 && onClearAllFilters && (
-                                        <button
-                                            onClick={onClearAllFilters}
-                                            className="shrink-0 h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95"
-                                        >
-                                            <X size={11} className="stroke-[2.5px]" />
-                                            {txt('common.clearFilters', { count: activeFilterCount })}
-                                        </button>
+                                        <ToolbarClearFiltersButton count={activeFilterCount} onClick={onClearAllFilters} />
                                     )}
                                 </>
                             )}
@@ -663,7 +632,7 @@ const GenericToolbar: React.FC<GenericToolbarProps> = ({
                                 className="flex items-center gap-1"
                             >
                                 {!hideSearch && (
-                                    <div className="relative w-64 max-w-[21rem] min-w-[10rem] shrink-0 group">
+                                    <div className={cn('relative group', TOOLBAR_SEARCH_WIDTH_CLASS)}>
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
                                         <input
                                             ref={searchInputRef}

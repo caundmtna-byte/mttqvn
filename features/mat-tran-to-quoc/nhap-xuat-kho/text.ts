@@ -71,8 +71,6 @@ export const matTranNhapXuatKho = {
   },
   tabDanhSach: 'Danh sách',
   tabChiTiet: 'Chi tiết',
-  searchPlaceholderList: 'Tìm theo số phiếu, kho, đơn vị, đợt cứu trợ…',
-  searchPlaceholderCt: 'Tìm theo số phiếu, hàng hoá, kho…',
   emptyTitleList: 'Chưa có phiếu nhập xuất',
   emptyHintList:
     'Lập phiếu nhập kho từ đơn vị cứu trợ, xuất kho cho đợt cứu trợ, hoặc chuyển hàng giữa các kho.',

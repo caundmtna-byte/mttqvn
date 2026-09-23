@@ -1,6 +1,9 @@
 /** Các key dùng cho ô tìm kiếm tổng trên module tập huấn. */
 export const MTTQ_TAP_HUAN_SEARCHABLE_KEYS: string[] = [
   'ten_lop_tap_huan',
+  'nam_tap_huan',
+  'so_dong',
+  'tg_cap_nhat',
   'cap_tap_huan',
   'ten_to_chuc',
   'ten_don_vi',
@@ -21,4 +24,5 @@ export const MTTQ_TAP_HUAN_CHI_TIET_FLAT_SEARCHABLE_KEYS: string[] = [
   'chuc_vu',
   'ten_don_vi_can_bo',
   'thuoc_dien',
+  'tg_cap_nhat_lop',
 ];

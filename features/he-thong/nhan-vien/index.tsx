@@ -44,6 +44,7 @@ import { CONFIRM_DELETE, CONFIRM_DELETE_ALL, CONFIRM_YES } from '../../../lib/bu
 import { getLanguage } from '../../../lib/utils';
 import { useListWithFilter } from '../../../lib/hooks';
 import { matchesSearchTerm } from '../../../lib/searchUtils';
+import { NHAN_VIEN_SEARCHABLE_KEYS } from './utils/search-keys';
 import { employeeMatchesColumnSearch } from './utils/column-search';
 import { mergeEmployeeChucVuFromPositions } from './utils/merge-employee-chuc-vu-from-positions';
 import { useNhanVienViewer, nhanVienRowVisible } from './hooks/use-nhan-vien-viewer';
@@ -98,17 +99,6 @@ const employeesListQueryKey = queryKeys.employees.list({
   orderBy: EMPLOYEES_LIST_QUERY_PARAMS.orderBy,
   ascending: EMPLOYEES_LIST_QUERY_PARAMS.ascending,
 });
-
-const NHAN_VIEN_SEARCHABLE_KEYS: string[] = [
-  'ten_tai_khoan',
-  'ho_va_ten',
-  'ten_phong_ban',
-  'ten_bo_phan',
-  'ten_chuc_vu',
-  'cap_quan_ly',
-  'ten_don_vi',
-  'trang_thai',
-];
 
 const EmployeePage: React.FC = () => {
   const user = useAuthStore((s) => s.user);

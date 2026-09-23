@@ -4,7 +4,6 @@
  * (ghi_chu, …) chỉ khả dụng trong detail; quê quán / nơi ở nằm trên hồ sơ cán bộ (embed).
  */
 export const MTTQ_UY_VIEN_UY_BAN_SEARCHABLE_KEYS: string[] = [
-  'can_bo_id',
   'ma_uv',
   'ngay_sinh',
   'ten_nhiem_ky',
@@ -23,4 +22,5 @@ export const MTTQ_UY_VIEN_UY_BAN_SEARCHABLE_KEYS: string[] = [
   'diem_danh_chua',
   'ho_va_ten_nguoi_tao',
   'ten_tai_khoan_nguoi_tao',
+  'tg_cap_nhat',
 ];

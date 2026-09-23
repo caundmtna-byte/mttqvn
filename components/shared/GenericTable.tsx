@@ -230,6 +230,12 @@ function GenericTable<T>({
   // Scroll shadow state
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollShadow, setScrollShadow] = useState({ left: false, right: false });
+  /**
+   * Bề rộng khung nhìn của vùng cuộn. Ô "không có dữ liệu" dùng nó để GHIM vào
+   * khung nhìn: ô đó `colSpan` cả bảng, nên khi bảng rộng hơn màn (tablet) nội
+   * dung bị canh giữa theo bề rộng bảng và lệch/tràn ra ngoài phần đang thấy.
+   */
+  const [viewportWidth, setViewportWidth] = useState<number | null>(null);
 
   const setTableScrollEl = useCallback((el: HTMLDivElement | null) => {
     scrollRef.current = el;
@@ -243,6 +249,7 @@ function GenericTable<T>({
       left: el.scrollLeft > 2,
       right: el.scrollLeft < el.scrollWidth - el.clientWidth - 2,
     });
+    setViewportWidth((cur) => (cur === el.clientWidth ? cur : el.clientWidth));
   }, []);
 
   useEffect(() => {
@@ -498,8 +505,13 @@ function GenericTable<T>({
             <tbody>
               {paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={dataColumns.length + 2} className="py-16 text-center bg-card">
-                    <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
+                  <td colSpan={dataColumns.length + 2} className="p-0 bg-card">
+                    <div
+                      className="sticky left-0 px-4 py-16 text-center"
+                      style={viewportWidth ? { width: viewportWidth } : undefined}
+                    >
+                      <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
+                    </div>
                   </td>
                 </tr>
               ) : (

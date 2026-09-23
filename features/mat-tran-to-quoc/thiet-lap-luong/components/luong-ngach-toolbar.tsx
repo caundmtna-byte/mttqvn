@@ -16,7 +16,7 @@ interface Props {
   onAdd: () => void;
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   items?: LuongThietLapNgachListRow[] | null;
 }
 
@@ -159,7 +159,6 @@ const LuongNgachToolbar: React.FC<Props> = ({
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('matTranThietLapLuong.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

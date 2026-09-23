@@ -27,6 +27,7 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ExportDialog from '@/components/shared/ExportDialog';
 import {
   useChuongTrinhNamList,
@@ -153,7 +154,7 @@ const ChuongTrinhNamPage: React.FC = () => {
   const filterFn = useCallback(
     (item: ChuongTrinhNamListRow, term: string, f: typeof filters) => {
       const matchesSearch = matchesSearchTerm(
-        item as unknown as Record<string, unknown>,
+        { ...item, tien_do_label: formatChuongTrinhNamTienDo(item) } as unknown as Record<string, unknown>,
         term,
         CHUONG_TRINH_NAM_SEARCHABLE_KEYS,
       );
@@ -465,10 +466,10 @@ const ChuongTrinhNamPage: React.FC = () => {
           {txt('chuongTrinhNam.noEmployeeBanner')}
         </div>
       ) : null}
+      <PageTabRow>{tabsSlot}</PageTabRow>
       {mainTab === 'stats' ? (
         <div className="flex-1 min-h-0 flex flex-col min-w-0">
           <ChuongTrinhNamStatsPanel
-            tabsSlot={tabsSlot}
             rows={scopeRows}
             isLoading={isLoading}
             onOpenDetail={(id) => setViewingId(id)}
@@ -478,7 +479,6 @@ const ChuongTrinhNamPage: React.FC = () => {
         <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
           <ChuongTrinhNamToolbar
             onPageBack={() => navigate('/quan-ly-giao-viec')}
-            tabsSlot={tabsSlot}
             trangThaiOptions={trangThaiChipOptions}
             phongBanOptions={phongBanChipOptions}
             namBatDauOptions={namBatDauChipOptions}

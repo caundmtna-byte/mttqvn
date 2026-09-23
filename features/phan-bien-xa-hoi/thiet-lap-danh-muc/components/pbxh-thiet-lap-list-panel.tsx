@@ -49,7 +49,7 @@ export interface PbxhThietLapListPanelProps {
   isError?: boolean;
   onRetry?: () => void;
   store: GenericState<PbxhThietLapFilters>;
-  tabGroup: React.ReactNode;
+  tabGroup?: React.ReactNode;
   onPageBack: () => void;
 }
 

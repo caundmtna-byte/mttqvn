@@ -7,7 +7,7 @@ import GenericToolbar from '@/components/shared/GenericToolbar';
  */
 interface Props {
   onBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
 }
 
 const ArticleSettingsPageNav: React.FC<Props> = ({ onBack, tabsSlot }) => (

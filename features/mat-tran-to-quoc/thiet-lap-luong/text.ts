@@ -44,7 +44,6 @@ export const matTranThietLapLuong = {
   toolbar: {
     titleNgach: 'Ngạch lương',
   },
-  searchPlaceholder: 'Tìm theo mã, tên, mô tả…',
   filterMoTaChipPlaceholder: 'Mô tả',
   filterMoTaHas: 'Có mô tả',
   filterMoTaEmpty: 'Không mô tả',
@@ -69,7 +68,6 @@ export const matTranThietLapLuong = {
     noBacHint: 'Thêm bậc B1–B9 hoặc dùng nút Thêm trên ngạch mới (tự seed 9 bậc).',
   },
   bac: {
-    searchPlaceholder: 'Tìm theo bậc, hệ số, lương…',
     filterNgachChipPlaceholder: 'Ngạch lương',
     filterNgachSheetGroup: 'Ngạch lương',
     pickNgach: 'Chọn ngạch',

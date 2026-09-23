@@ -4,6 +4,7 @@ import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
@@ -67,16 +68,16 @@ const ThietLapLuongPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative pb-6">
+      <PageTabRow>{tabsSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         {activeTab === TAB_NGACH ? (
           <LuongNgachTabPanel
             onPageBack={goBackModule}
-            tabsSlot={tabsSlot}
             listQueryEnabled={listQueryEnabled}
             waitingMatrixHydrate={waitingMatrixHydrate}
           />
         ) : (
-          <LuongBacTabPanel onPageBack={goBackModule} tabsSlot={tabsSlot} listQueryEnabled={listQueryEnabled} />
+          <LuongBacTabPanel onPageBack={goBackModule} listQueryEnabled={listQueryEnabled} />
         )}
       </div>
     </div>

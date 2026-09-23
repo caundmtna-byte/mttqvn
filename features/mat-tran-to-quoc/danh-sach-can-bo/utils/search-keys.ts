@@ -21,4 +21,7 @@ export const MTTQ_CAN_BO_SEARCHABLE_KEYS: (keyof MttqCanBoRow)[] = [
   'ten_trinh_do',
   'ten_ly_luan_chinh_tri',
   'tuoi',
+  'ngay_sinh',
+  'dang_vien',
+  'tg_cap_nhat',
 ];

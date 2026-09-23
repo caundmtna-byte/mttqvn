@@ -275,21 +275,16 @@ describe.each(RELIEF_WAREHOUSE_MODULES)(
 );
 
 /**
- * Nhà đại đoàn kết — hai module dùng `storageKey` tường minh
- * ('nha-dai-doan-ket' / 'thong-ke-nha-dai-doan-ket') vì segment cuối đường dẫn
- * quá chung. `can()` vẫn tra theo `module_id` đầy đủ, nên phải chắc hai hằng
- * trong `APP_RESOURCE_TO_MODULE` không bị đổi lệch.
+ * Nhà đại đoàn kết — MỘT module (hai tab Danh sách · Thống kê) dùng `storageKey`
+ * tường minh 'nha-dai-doan-ket' vì segment cuối đường dẫn quá chung. `can()` vẫn
+ * tra theo `module_id` đầy đủ, nên phải chắc hằng trong `APP_RESOURCE_TO_MODULE`
+ * không bị đổi lệch.
  */
 const NHA_DAI_DOAN_KET_MODULES: { resource: AppResource; moduleId: string; label: string }[] = [
   {
     resource: 'nhaDaiDoanKetList',
     moduleId: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
     label: 'danh-sach',
-  },
-  {
-    resource: 'nhaDaiDoanKetThongKe',
-    moduleId: 'an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke',
-    label: 'thong-ke',
   },
 ];
 

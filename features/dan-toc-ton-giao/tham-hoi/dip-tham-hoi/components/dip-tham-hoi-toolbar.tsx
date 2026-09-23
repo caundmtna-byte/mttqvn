@@ -206,7 +206,6 @@ const DipThamHoiToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDel
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('danTocDipThamHoi.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

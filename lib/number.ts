@@ -6,8 +6,8 @@
  * ra `NaN` và hồ sơ bị từ chối mà không rõ lý do — hoặc tệ hơn, `parseFloat`
  * đọc `"500.000.000"` thành `500` rồi ghi vào sổ mà không báo gì.
  *
- * Trước đây bộ đọc này nằm riêng trong `features/quy/utils/quy-tien.ts` nên bốn
- * module còn lại mỗi nơi tự parse một kiểu, ba trong số đó sai âm thầm.
+ * Để ở đây một bản dùng chung: trước kia mỗi module tự parse một kiểu, vài nơi
+ * sai âm thầm.
  */
 
 /**

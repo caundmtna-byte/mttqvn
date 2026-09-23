@@ -28,7 +28,6 @@ export const matTranDotCuuTro = {
   filterLinkHas: 'Có liên kết',
   filterLinkEmpty: 'Không có liên kết',
   filterLinkChipPlaceholder: 'Liên kết',
-  searchPlaceholder: 'Tìm theo tên, liên kết…',
   emptyTitle: 'Chưa có đợt cứu trợ',
   emptyHint: 'Thêm đợt tổ chức (VD: Bão Yagi 2026) kèm mô tả và liên kết tham khảo.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',

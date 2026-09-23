@@ -18,7 +18,7 @@ interface ChipOption {
 
 interface Props {
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   trangThaiOptions: ChipOption[];
   mucDoOptions: ChipOption[];
   chuongTrinhOptions: ChipOption[];
@@ -183,7 +183,6 @@ const CongViecToolbar: React.FC<Props> = ({
       filterGroups={filterGroups}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('taskList.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

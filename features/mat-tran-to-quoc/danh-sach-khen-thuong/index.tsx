@@ -28,6 +28,7 @@ import { useCan } from '@/hooks/use-can';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { useDepartments } from '@/features/he-thong/phong-ban/hooks/use-phong-ban';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ExportDialog from '@/components/shared/ExportDialog';
 import {
   useMttqKhenThuongList,
@@ -706,11 +707,11 @@ const DanhSachKhenThuongPage: React.FC = () => {
           {txt('matTranKhenThuong.noEmployeeBanner')}
         </div>
       ) : null}
+      <PageTabRow>{tabsSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         {mainTab === 'danh_sach' ? (
           <>
             <MttqKhenThuongToolbar
-              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               trangThaiOptions={trangThaiChipOptions}
               namKhenThuongOptions={namKhenThuongChipOptions}
@@ -743,7 +744,6 @@ const DanhSachKhenThuongPage: React.FC = () => {
         ) : mainTab === 'chi_tiet' ? (
           <>
             <MttqKhenThuongChiTietToolbar
-              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               trangThaiOptions={trangThaiChipOptionsChiTiet}
               namKhenThuongOptions={namKhenThuongChipOptionsChiTiet}
@@ -770,7 +770,6 @@ const DanhSachKhenThuongPage: React.FC = () => {
         ) : (
           <>
             <MttqKhenThuongToolbar
-              tabSlot={tabsSlot}
               hideListControls
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               trangThaiOptions={trangThaiChipOptions}

@@ -46,7 +46,12 @@ import { pbxhThucHien } from '../../features/phan-bien-xa-hoi/thuc-hien-phan-bie
 import { pbxhThietLap } from '../../features/phan-bien-xa-hoi/thiet-lap-danh-muc/text';
 import { pbxhThongKe } from '../../features/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi/text';
 import { nhaDaiDoanKet } from '../../features/nha-dai-doan-ket/danh-sach/text';
-import { nhaDaiDoanKetThongKe } from '../../features/nha-dai-doan-ket/thong-ke/text';
+import { nhaDaiDoanKetThongKe } from '../../features/nha-dai-doan-ket/danh-sach/text-thong-ke';
+import { hoNgheo } from '../../features/nha-dai-doan-ket/thong-tin-ho-ngheo/text';
+import { khenThuongNhaTaiTro } from '../../features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/text';
+import { khenThuongNhaTaiTroThongKe } from '../../features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/text-thong-ke';
+import { viNguoiNgheo } from '../../features/nha-dai-doan-ket/vi-nguoi-ngheo/text';
+import { viNguoiNgheoThongKe } from '../../features/nha-dai-doan-ket/vi-nguoi-ngheo/text-thong-ke';
 import { diaBan } from '../../features/he-thong/danh-sach-tinh-thanh/text';
 
 function flatten(prefix: string, obj: unknown): Record<string, string> {
@@ -110,6 +115,11 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('pbxhThongKe', pbxhThongKe),
   ...flatten('nhaDaiDoanKet', nhaDaiDoanKet),
   ...flatten('nhaDaiDoanKetThongKe', nhaDaiDoanKetThongKe),
+  ...flatten('hoNgheo', hoNgheo),
+  ...flatten('viNguoiNgheo', viNguoiNgheo),
+  ...flatten('khenThuongNhaTaiTro', khenThuongNhaTaiTro),
+  ...flatten('khenThuongNhaTaiTroThongKe', khenThuongNhaTaiTroThongKe),
+  ...flatten('viNguoiNgheoThongKe', viNguoiNgheoThongKe),
   ...flatten('tenure', tenure),
   ...flatten('taiLieu', taiLieu),
   ...flatten('diaBan', diaBan),
@@ -175,6 +185,11 @@ export {
   matTranThietLapLuong,
   nhaDaiDoanKet,
   nhaDaiDoanKetThongKe,
+  hoNgheo,
+  viNguoiNgheo,
+  khenThuongNhaTaiTro,
+  khenThuongNhaTaiTroThongKe,
+  viNguoiNgheoThongKe,
   diaBan,
 };
 export { fmt };

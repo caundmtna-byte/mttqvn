@@ -62,7 +62,6 @@ export const matTranTapHuan = {
     thuocDienChip: 'Thuộc diện',
   },
   chiTietList: {
-    searchPlaceholder: 'Tìm theo lớp, cán bộ, tổ chức, phòng ban…',
     exportFileName: 'danh-sach-tap-huan-chi-tiet',
     emptyTitle: 'Chưa có dòng chi tiết tham gia',
     emptyHint: 'Thêm cán bộ vào lớp tập huấn hoặc đổi bộ lọc.',
@@ -90,7 +89,6 @@ export const matTranTapHuan = {
   toolbar: {
     title: 'Tập huấn',
   },
-  searchPlaceholder: 'Tìm theo tên lớp, cấp, ghi chú…',
   emptyTitle: 'Chưa có lớp tập huấn',
   emptyHint: 'Thêm lớp tập huấn mới để bắt đầu.',
   form: {

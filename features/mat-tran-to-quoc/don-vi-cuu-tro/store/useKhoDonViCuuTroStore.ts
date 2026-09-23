@@ -32,12 +32,28 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 2,
   },
   {
-    id: 'dia_chi',
-    label: txt('matTranDonViCuuTro.store.diaChiCol'),
+    id: 'so_nguoi',
+    label: txt('matTranDonViCuuTro.store.soNguoiCol'),
+    visible: false,
+    minWidth: 80,
+    maxWidth: 110,
+    order: 3,
+  },
+  {
+    id: 'nguoi_dai_dien',
+    label: txt('matTranDonViCuuTro.store.nguoiDaiDienCol'),
     visible: true,
     minWidth: 140,
-    maxWidth: 280,
-    order: 3,
+    maxWidth: 220,
+    order: 4,
+  },
+  {
+    id: 'chuc_vu',
+    label: txt('matTranDonViCuuTro.store.chucVuCol'),
+    visible: false,
+    minWidth: 120,
+    maxWidth: 180,
+    order: 5,
   },
   {
     id: 'dien_thoai',
@@ -45,7 +61,23 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 120,
     maxWidth: 160,
-    order: 4,
+    order: 6,
+  },
+  {
+    id: 'dia_chi',
+    label: txt('matTranDonViCuuTro.store.diaChiCol'),
+    visible: true,
+    minWidth: 140,
+    maxWidth: 280,
+    order: 7,
+  },
+  {
+    id: 'don_vi_gioi_thieu',
+    label: txt('matTranDonViCuuTro.store.donViGioiThieuCol'),
+    visible: true,
+    minWidth: 150,
+    maxWidth: 240,
+    order: 8,
   },
   {
     id: 'email',
@@ -53,7 +85,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 160,
     maxWidth: 240,
-    order: 5,
+    order: 9,
   },
   {
     id: 'ghi_chu',
@@ -61,21 +93,21 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 140,
     maxWidth: 320,
-    order: 6,
+    order: 10,
   },
   {
     id: 'tg_tao',
     label: txt('matTranDonViCuuTro.store.tgTaoCol'),
     visible: false,
     ...P.datetime,
-    order: 7,
+    order: 11,
   },
   {
     id: 'tg_cap_nhat',
     label: txt('matTranDonViCuuTro.store.tgCapNhatCol'),
     visible: true,
     ...P.datetime,
-    order: 8,
+    order: 12,
   },
   {
     id: 'actions',
@@ -83,13 +115,14 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 96,
     maxWidth: 120,
-    order: 9,
+    order: 13,
   },
 ];
 
 const initialFilters: KhoDonViCuuTroFilters = {
   columnSearch: {},
   loai_filter: [],
+  don_vi_gioi_thieu_filter: [],
 };
 
 export const useKhoDonViCuuTroStore = createGenericStore<KhoDonViCuuTroFilters>(initialFilters, DEFAULT_COLUMNS);

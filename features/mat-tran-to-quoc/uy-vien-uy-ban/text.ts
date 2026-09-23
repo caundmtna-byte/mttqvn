@@ -52,7 +52,6 @@ export const matTranUyVienUyBan = {
   toolbar: {
     title: 'Ủy viên ủy ban',
   },
-  searchPlaceholder: 'Tìm theo tên, mã UV, nhiệm kỳ, đơn vị, chức vụ…',
   trangThamGiaChuaGan: 'Chưa gán trạng thái',
   emptyTitle: 'Chưa có ủy viên',
   emptyHint: 'Thêm ủy viên mới để bắt đầu.',

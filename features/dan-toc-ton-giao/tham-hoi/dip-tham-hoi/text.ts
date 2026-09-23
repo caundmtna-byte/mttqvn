@@ -4,7 +4,6 @@ export const danTocDipThamHoi = {
   noEditOtherDonVi: 'Bạn chỉ được sửa bản ghi thuộc đơn vị của mình.',
   noDeleteOtherDonVi: 'Bạn chỉ được xóa bản ghi thuộc đơn vị của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
-  searchPlaceholder: 'Tìm theo tên dịp, mô tả, ghi chú…',
   emptyTitle: 'Chưa có dịp thăm hỏi',
   emptyHint: 'Thêm dịp thăm hỏi để quản lý kế hoạch và theo dõi thực hiện.',
   emptyFilteredHint: 'Không có bản ghi phù hợp bộ lọc. Thử điều chỉnh tìm kiếm hoặc chip lọc.',

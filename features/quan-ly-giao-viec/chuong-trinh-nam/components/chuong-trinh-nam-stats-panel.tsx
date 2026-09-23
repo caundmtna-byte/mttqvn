@@ -104,7 +104,7 @@ function yearFromNgayBatDau(d: string | null | undefined): string | null {
 }
 
 interface Props {
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   rows: ChuongTrinhNamListRow[];
   isLoading: boolean;
   onOpenDetail: (id: string) => void;
@@ -531,7 +531,7 @@ const ChuongTrinhNamStatsPanel: React.FC<Props> = ({ tabsSlot, rows, isLoading, 
       <DashboardToolbar
         className="shrink-0 mb-3"
         onBack={() => navigate('/quan-ly-giao-viec')}
-        desktopStartSlot={tabsSlot}
+        tabSlot={tabsSlot}
         mobileRow2Content={
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangeRow}</div>
         }

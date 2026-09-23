@@ -27,6 +27,7 @@ import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog, { type ImportColumn, type ImportTemplateSheet } from '@/components/shared/ImportDialog';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import {
   useKhoDanhMucHangHoaList,
   useKhoDanhMucHangHoaDetail,
@@ -562,11 +563,11 @@ const HangHoaPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative">
+      <PageTabRow>{tabSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         {activeTab === TAB_DM ? (
           <>
             <KhoDanhMucHangHoaToolbar
-              tabSlot={tabSlot}
               onPageBack={goBack}
               onAdd={() => {
                 startTransition(() => {
@@ -612,7 +613,6 @@ const HangHoaPage: React.FC = () => {
         ) : (
           <>
             <KhoDanhSachHangHoaToolbar
-              tabSlot={tabSlot}
               onPageBack={goBack}
               onAdd={() => {
                 if (dmRows.length === 0) {

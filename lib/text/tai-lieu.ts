@@ -9,7 +9,6 @@ export const taiLieu = {
   "huongNoiBo": "Nội bộ",
   "huongDen": "Văn bản đến",
   "huongDi": "Văn bản đi",
-  "searchPlaceholder": "Tìm theo trích yếu, số đến, số đi...",
   "deleteTitle": "Xóa tài liệu",
   "deleteMessage": "Bạn có chắc chắn muốn xóa tài liệu này?",
   "bulkDeleteTitle": "Xóa nhiều tài liệu",

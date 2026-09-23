@@ -286,7 +286,6 @@ const MttqKhenThuongToolbar: React.FC<Props> = ({
       filterGroups={filterGroups}
       mobileActions={hideListControls ? undefined : mobileActions}
       onAdd={hideListControls ? undefined : canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('matTranKhenThuong.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={hideListControls ? undefined : canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

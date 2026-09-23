@@ -135,7 +135,7 @@ const KyHopPage: React.FC = () => {
   const filterFn = useCallback(
     (item: MttqKyHopListRow, term: string, f: typeof filters) => {
       const matchesSearch = matchesSearchTerm(
-        item as unknown as Record<string, unknown>,
+        { ...item, ten_don_vi: donViDisplayLabel(item, tinhCapLabel) } as unknown as Record<string, unknown>,
         term,
         MTTQ_KY_HOP_SEARCHABLE_KEYS,
       );
@@ -151,7 +151,7 @@ const KyHopPage: React.FC = () => {
       }
       return matchesSearch;
     },
-    [],
+    [tinhCapLabel],
   );
 
   const filtered = useListWithFilter(viewableRows, searchTerm, filters, filterFn);

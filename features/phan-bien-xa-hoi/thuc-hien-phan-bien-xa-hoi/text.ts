@@ -3,7 +3,6 @@ export const pbxhThucHien = {
   noViewRowPermission: 'Bạn không có quyền xem bản ghi này.',
   noDonViScopePermission: 'Bạn chỉ được chọn đơn vị thực hiện thuộc xã/phường của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
-  searchPlaceholder: 'Tìm theo nội dung, đối tượng, đơn vị…',
   empty: 'Chưa có bản ghi phản biện xã hội',
   deleteTitle: 'Xóa bản ghi',
   deleteMessage: 'Bạn có chắc muốn xóa bản ghi này? Hành động không hoàn tác.',

@@ -11,4 +11,5 @@ export const MTTQ_TANG_LUONG_SEARCHABLE_KEYS = [
   'luong_display',
   'loai_ky_label',
   'ngay_nang_luong',
+  'ghi_chu',
 ] as const;

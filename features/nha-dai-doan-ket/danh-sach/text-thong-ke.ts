@@ -1,0 +1,51 @@
+/**
+ * Chuỗi của TAB Thống kê trong module Nhà đại đoàn kết.
+ *
+ * Giữ namespace riêng thay vì gộp vào `nhaDaiDoanKet` để khỏi phải sửa hơn 60
+ * lời gọi `txt()` mà không được gì. Quyền xem và tiêu đề trang do tab Danh sách
+ * lo, nên ở đây không còn `noViewPermission` / `title`.
+ */
+export const nhaDaiDoanKetThongKe = {
+  listLoadErrorHint: 'Không tải được dữ liệu thống kê. Thử tải lại.',
+  exportFileName: 'Thong_Ke_Nha_Dai_Doan_Ket',
+  kpi: {
+    tongSoNha: 'Tổng số nhà',
+    tongSoNhaHint: 'Số hồ sơ khớp bộ lọc đang chọn',
+    tongSoTien: 'Tổng số tiền',
+    tongSoTienHint: 'Cộng các hồ sơ đã có mức hỗ trợ',
+    daBanGiao: 'Đã bàn giao',
+    dangThucHien: 'Đang thực hiện',
+    tyLeBanGiao: 'Tỷ lệ bàn giao',
+    binhQuan: 'Bình quân mỗi nhà',
+    binhQuanHint: 'Chỉ tính hồ sơ đã có số tiền',
+  },
+  chart: {
+    xuHuongTitle: 'Số nhà và số tiền theo năm',
+    trangThaiTitle: 'Theo trạng thái',
+    nguonTitle: 'Theo nguồn',
+    nguonHoTroTitle: 'Theo nguồn hỗ trợ',
+    loaiHinhTitle: 'Theo loại hình hỗ trợ',
+    doiTuongTitle: 'Theo đối tượng',
+    soNha: 'Số nhà',
+    soTien: 'Số tiền',
+  },
+  table: {
+    theoXaPhuongTitle: 'Theo xã phường',
+    topXaPhuongTitle: 'Top xã phường theo số tiền',
+    colXaPhuong: 'Xã phường',
+    colSoNha: 'Số nhà',
+    colSoTien: 'Số tiền',
+    colDaBanGiao: 'Đã bàn giao',
+    khongXacDinh: 'Chưa gán xã phường',
+    empty: 'Chưa có dữ liệu',
+  },
+  filter: {
+    namLabel: 'Năm',
+    nguonLabel: 'Nguồn',
+    nguonHoTroLabel: 'Nguồn hỗ trợ',
+    loaiHinhLabel: 'Loại hình hỗ trợ',
+    trangThaiLabel: 'Trạng thái',
+    doiTuongLabel: 'Đối tượng',
+  },
+  noExportData: 'Không có dữ liệu để xuất.',
+};

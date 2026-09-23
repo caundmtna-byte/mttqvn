@@ -13,7 +13,7 @@ import { countDanhMucColumnSearchActive } from '../utils/column-search';
 import type { KhoDanhMucHangHoaListRow } from '../core/types';
 
 interface Props {
-  tabSlot: ReactNode;
+  tabSlot?: ReactNode;
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
@@ -215,7 +215,6 @@ const KhoDanhMucHangHoaToolbar: React.FC<Props> = ({
       filters={filtersSlot}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

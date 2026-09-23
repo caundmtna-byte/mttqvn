@@ -49,7 +49,6 @@ export const matTranKyHop = {
   toolbar: {
     title: 'Kỳ họp',
   },
-  searchPlaceholder: 'Tìm theo nhiệm kỳ, kỳ thứ, đơn vị, nội dung…',
   emptyTitle: 'Chưa có kỳ họp',
   emptyHint: 'Thêm kỳ họp mới để bắt đầu.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',

@@ -5,4 +5,6 @@ export const KHO_DANH_SACH_KHO_SEARCHABLE_KEYS = [
   'ten_don_vi',
   'ten_tinh',
   'mo_ta',
+  'tg_tao',
+  'tg_cap_nhat',
 ] as const;

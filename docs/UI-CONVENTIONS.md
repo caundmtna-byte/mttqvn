@@ -54,7 +54,17 @@
   - **Count thực tế:** Khi filter chip hiển thị count (số lượng), danh sách dùng để đếm phải là **danh sách người dùng được phép xem** (sau phân quyền). Toolbar nhận prop danh sách đó (vd. `employees`, `items`) và hook đếm (vd. `useFilterCounts`) đếm trên chính list đó.
   - **Chỉ hiện option có dữ liệu:** Option có `count === 0` (và không đang chọn) được ẩn. Util **`filterOptionsWithCount`** (`lib/filterOptionsWithCount.ts`) và prop **`hideZeroCount`** (mặc định `true`) trên **FilterChipMultiSelect** / **MobileFilterSheet** đảm bảo điều này; toolbar chỉ cần truyền `options` có field `count`, không cần lọc tay.
 - **Ví dụ:** Xem `CapPhatThuHoiToolbar`, `nhan-vien-toolbar` (có count); các `*-toolbar.tsx` khác: `filters` = nhiều `<FilterChipMultiSelect />`, `filterGroups` = mảng `{ key, label, icon, options, value, onChange }` khớp với từng filter.
-- **Desktop — tối đa 5 chip hiển thị:** **GenericToolbar** và **DashboardToolbar** bọc `filters` bằng **FilterChipOverflowRow** (`components/shared/FilterChipOverflowRow.tsx`). Hiển thị tối đa 5 chip; chip còn lại nằm trong dropdown nút **…** (MoreHorizontal). Chip đang có giá trị được ưu tiên giữ trên hàng chính. **DateRangePicker**, divider và node không phải filter chip không tính vào giới hạn 5. Mobile vẫn dùng **MobileFilterSheet** qua `filterGroups`.
+- **Desktop — chip tự thu theo bề rộng:** **GenericToolbar** và **DashboardToolbar** bọc `filters` bằng **FilterChipOverflowRow** (`components/shared/FilterChipOverflowRow.tsx`). Hàng chip đo bề rộng thật (ResizeObserver) và hiện nhiều chip nhất có thể trên **một dòng**; chip không vừa vào dropdown nút **…**. Chip đang có giá trị được ưu tiên giữ trên hàng chính (vẫn vẽ theo thứ tự gốc). Logic tính ở `computeVisibleChipCount` (`lib/collect-filter-chip-children.ts`, có test). `maxVisibleFilterChips` chỉ là **trần** tuỳ chọn. DateRangePicker và node không phải chip luôn hiện, không thu. Mobile vẫn dùng **MobileFilterSheet** qua `filterGroups`.
+
+## Toolbar responsive (tablet / cửa sổ co)
+
+Chuẩn chung cho mọi màn — đã áp tập trung ở `GenericToolbar`, `DashboardToolbar`, `FilterChipOverflowRow`, `components/shared/toolbar-parts.tsx`:
+
+- **TabGroup luôn là hàng riêng phía trên toolbar**, ở mọi breakpoint. Truyền qua `tabSlot` (cả `GenericToolbar` lẫn `DashboardToolbar`). **Không** truyền TabGroup qua `desktopStartSlot` — slot đó chỉ cho nội dung khác (tiêu đề mục, nhãn…).
+- **Hàng toolbar desktop luôn một dòng** (`flex-nowrap`): [Quay lại] · [chip lọc — co giãn] · [Xoá lọc] · [ô tìm][cột][nút]. Không thêm `flex-wrap` ở toolbar hay ở wrapper bọc chip. `desktopToolbarWrap` đã bỏ tác dụng.
+- **Co theo màn:** nút "Quay lại" chỉ hiện chữ từ `lg`; "Xoá lọc (n)" chỉ hiện chữ từ `xl` (hẹp hơn còn X + số, có tooltip); ô tìm `w-44 lg:w-56 xl:w-64` (`TOOLBAR_SEARCH_WIDTH_CLASS`).
+- **Module không tự dựng hàng lọc riêng** hay tự đặt số chip cố định để chống tràn — để `FilterChipOverflowRow` tự thu.
+- Kiểm responsive ở 375 / 768 / 1024 / 1280 / 1920, và thử bật 1–2 bộ lọc (nút "Xoá lọc" xuất hiện) — hàng không được rớt dòng.
 
 ## Tóm tắt
 

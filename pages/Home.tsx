@@ -71,7 +71,14 @@ const Home: React.FC = () => {
 
       <div className="h-px bg-border w-full mb-6" />
 
+      {/*
+        `key` bắt buộc: sau đăng nhập, lưới hiện skeleton trước rồi mới có thẻ. Container
+        đã chạy xong variant `show` lúc còn skeleton, nên các thẻ mount sau kẹt ở `hidden`
+        (opacity 0) — trang chủ trắng tới khi F5 (F5 thì quyền có sẵn từ cache nên không
+        qua skeleton). Đổi key ⇒ mount lại container ⇒ stagger chạy lại cho thẻ thật.
+      */}
       <motion.div
+        key={waitingPermissions ? 'skeleton' : 'modules'}
         variants={container}
         initial="hidden"
         animate="show"

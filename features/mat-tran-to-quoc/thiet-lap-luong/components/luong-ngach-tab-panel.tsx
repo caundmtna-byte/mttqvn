@@ -56,7 +56,7 @@ type FormOrigin = 'list' | 'detail';
 
 interface LuongNgachTabPanelProps {
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   listQueryEnabled: boolean;
   waitingMatrixHydrate: boolean;
 }

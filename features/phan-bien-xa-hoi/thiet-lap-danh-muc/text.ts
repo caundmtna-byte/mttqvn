@@ -1,7 +1,6 @@
 export const pbxhThietLap = {
   noViewPermission: 'Bạn không có quyền xem module Thiết lập danh mục.',
   listLoadErrorHint: 'Không tải được danh mục. Thử tải lại.',
-  searchPlaceholder: 'Tìm theo tên, mô tả…',
   empty: 'Chưa có mục danh mục',
   deleteTitle: 'Xóa mục',
   deleteMessage: 'Bạn có chắc muốn xóa mục này? Hành động không hoàn tác.',

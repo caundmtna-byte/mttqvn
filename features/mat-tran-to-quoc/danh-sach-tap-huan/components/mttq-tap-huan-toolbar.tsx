@@ -263,7 +263,6 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
       filterGroups={filterGroups}
       mobileActions={hideListControls && !showExportWhenListHidden ? undefined : mobileActions}
       onAdd={hideListControls ? undefined : canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('matTranTapHuan.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={hideListControls ? undefined : canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

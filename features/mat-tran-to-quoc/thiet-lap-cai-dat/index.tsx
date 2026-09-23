@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import { MttqThietLapListPanel } from './components/mttq-thiet-lap-list-panel';
 import { useMttqThietLapAll } from './hooks/use-mttq-thiet-lap';
 import { MTTQ_THIET_LAP_LOAI, MTTQ_LOAI_TAB_LABEL_KEY, type MttqThietLapLoai } from './core/types';
@@ -75,6 +76,7 @@ const ThietLapCaiDatPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative">
+      <PageTabRow>{tabsSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <MttqThietLapListPanel
           loai={activeLoai}
@@ -83,7 +85,6 @@ const ThietLapCaiDatPage: React.FC = () => {
           isError={isError}
           onRetry={() => void refetch()}
           store={store}
-          tabGroup={tabsSlot}
           onPageBack={goBack}
         />
       </div>

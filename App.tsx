@@ -76,15 +76,12 @@ const DtTgThongKeThamHoiPage = lazy(() => import('./features/dan-toc-ton-giao/th
 const DtTgThongTinToChucQuanTrongPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/index'));
 const DtTgThongTinCaNhanTieuBieuPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/index'));
 const DtTgThongKeToChucCaNhanPage = lazy(() => import('./features/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan/index'));
-// Quỹ tiền — MỘT bộ màn hình dùng chung cho hai quỹ, phân biệt bằng prop `quy`.
-const QuySoThuChiPage = lazy(() => import('./features/quy/so-thu-chi/index'));
-const QuyDanhMucKhoanPage = lazy(() => import('./features/quy/danh-muc-khoan/index'));
-const QuyDanhMucTaiKhoanPage = lazy(() => import('./features/quy/danh-muc-tai-khoan/index'));
-const QuyBaoCaoThongKePage = lazy(() => import('./features/quy/bao-cao-thong-ke/index'));
 
 // Nhà đại đoàn kết — hai trang thật, thay cho nhóm placeholder cũ.
+const KhenThuongNhaTaiTroPage = lazy(() => import('./features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/index'));
 const NhaDaiDoanKetPage = lazy(() => import('./features/nha-dai-doan-ket/danh-sach/index'));
-const NhaDaiDoanKetThongKePage = lazy(() => import('./features/nha-dai-doan-ket/thong-ke/index'));
+const ViNguoiNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/vi-nguoi-ngheo/index'));
+const ThongTinHoNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/thong-tin-ho-ngheo/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/shared/ErrorBoundary';
@@ -256,54 +253,20 @@ const App = () => {
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" element={<KhoBaoCaoHoTroPage />} />
 
-          {/*
-            Quỹ vì người nghèo và Quỹ cứu trợ dùng CHUNG bốn trang, khác nhau ở
-            prop `quy`. `key` bắt React gắn lại trang khi đổi quỹ — không có nó
-            thì bộ lọc, trang hiện tại và dòng đang mở của quỹ này còn nguyên khi
-            người dùng chuyển sang quỹ kia.
-          */}
-          <Route
-            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/so-thu-chi"
-            element={<QuySoThuChiPage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/danh-muc-chi-phi"
-            element={<QuyDanhMucKhoanPage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/danh-muc-tai-khoan"
-            element={<QuyDanhMucTaiKhoanPage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/quy-vi-nguoi-ngheo/bao-cao-thong-ke"
-            element={<QuyBaoCaoThongKePage key="vi_nguoi_ngheo" quy="vi_nguoi_ngheo" />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/quy-cuu-tro/so-thu-chi"
-            element={<QuySoThuChiPage key="cuu_tro" quy="cuu_tro" />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-chi-phi"
-            element={<QuyDanhMucKhoanPage key="cuu_tro" quy="cuu_tro" />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/quy-cuu-tro/danh-muc-tai-khoan"
-            element={<QuyDanhMucTaiKhoanPage key="cuu_tro" quy="cuu_tro" />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/quy-cuu-tro/bao-cao-thong-ke"
-            element={<QuyBaoCaoThongKePage key="cuu_tro" quy="cuu_tro" />}
-          />
 
           {/*
             Nhà đại đoàn kết. Đường dẫn cũ `/sua-chua-nang-cap` không còn là một
             module: "Sửa chữa" nay là một giá trị của trường Loại hình hỗ trợ,
             nên chuyển hướng về danh sách thay vì để link cũ chết.
           */}
+          <Route path="/an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach" element={<KhenThuongNhaTaiTroPage />} />
           <Route path="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach" element={<NhaDaiDoanKetPage />} />
+          <Route path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach" element={<ViNguoiNgheoPage />} />
+          <Route path="/an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach" element={<ThongTinHoNgheoPage />} />
+          {/* Thống kê nay là một tab của Danh sách — giữ link cũ khỏi chết. */}
           <Route
             path="/an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke"
-            element={<NhaDaiDoanKetThongKePage />}
+            element={<Navigate to="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach?tab=thong_ke" replace />}
           />
           <Route
             path="/an-sinh-xa-hoi/nha-dai-doan-ket/sua-chua-nang-cap"

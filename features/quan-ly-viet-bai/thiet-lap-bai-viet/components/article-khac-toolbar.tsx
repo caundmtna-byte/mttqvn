@@ -161,7 +161,6 @@ const ArticleKhacToolbar: React.FC<Props> = ({ store, items, sectionTitle, onAdd
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
       desktopStartSlot={sectionTitleSlot(sectionTitle)}
-      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       filters={filtersSlot}

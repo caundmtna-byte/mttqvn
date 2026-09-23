@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MoreHorizontal } from 'lucide-react';
 import { txt } from '../../lib/text';
@@ -6,42 +6,125 @@ import { cn } from '../../lib/utils';
 import Tooltip from '../ui/Tooltip';
 import {
   collectFilterChipChildren,
+  computeVisibleChipCount,
   isFilterChipActive,
-  partitionFilterChips,
+  orderChipsByPriority,
 } from '../../lib/collect-filter-chip-children';
 
-/** Đồng bộ listview (`GenericToolbar` maxVisibleFilterChips={2}). */
+/**
+ * @deprecated Chip giờ tự thu theo BỀ RỘNG thật; hằng số này chỉ còn để các
+ * chỗ import cũ không gãy. Truyền `maxVisible` khi thật sự muốn đặt trần.
+ */
 export const DEFAULT_MAX_VISIBLE_FILTER_CHIPS = 2;
+
+/** Khớp `gap-2` của hàng chip. */
+const CHIP_GAP_PX = 8;
+/** Khớp `w-8` của nút "…". */
+const OVERFLOW_BUTTON_PX = 32;
+/** Bù sai số làm tròn subpixel — thiếu nó hàng có thể tràn đúng 1px rồi rớt dòng. */
+const ROUNDING_SLACK_PX = 1;
 
 export interface FilterChipOverflowRowProps {
   children: React.ReactNode;
+  /** TRẦN số chip hiện (tuỳ chọn). Không truyền ⇒ hiện nhiều nhất bề rộng cho phép. */
   maxVisible?: number;
   className?: string;
 }
 
+/**
+ * Hàng chip lọc LUÔN MỘT DÒNG: đo bề rộng thật của hàng và từng chip, chip nào
+ * không vừa thì thu vào nút "…". Chip đang có giá trị lọc được ưu tiên hiện.
+ *
+ * Trước đây cắt theo số cố định (2 chip) nên màn lớn phí chỗ còn tablet vẫn
+ * tràn xuống dòng 2 — nhất là lúc nút "Xoá lọc" xuất hiện cạnh hàng chip.
+ *
+ * Bề rộng từng chip đo trên một bản sao ẩn (`invisible`, `inert`) để biết chip
+ * đang bị thu rộng bao nhiêu mà không phải hiện nó ra.
+ */
 const FilterChipOverflowRow: React.FC<FilterChipOverflowRowProps> = ({
   children,
-  maxVisible = DEFAULT_MAX_VISIBLE_FILTER_CHIPS,
+  maxVisible,
   className,
 }) => {
   const { prefixNodes, chips } = collectFilterChipChildren(children);
+  const ordered = useMemo(() => orderChipsByPriority(chips, isFilterChipActive), [chips]);
 
-  if (chips.length <= maxVisible) {
-    return (
-      <div className={cn('flex flex-wrap items-center gap-2 min-w-0', className)}>
-        {children}
-      </div>
-    );
-  }
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prefixRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(() =>
+    Math.min(chips.length, maxVisible ?? chips.length),
+  );
 
-  const { visible, overflow } = partitionFilterChips(chips, maxVisible);
+  const recompute = useCallback(() => {
+    const root = rootRef.current;
+    const measure = measureRef.current;
+    if (!root || !measure) return;
+    const chipWidths = Array.from(measure.children).map((el) => (el as HTMLElement).offsetWidth);
+    const prefixWidth = prefixRef.current?.offsetWidth ?? 0;
+    const available =
+      root.clientWidth - (prefixWidth > 0 ? prefixWidth + CHIP_GAP_PX : 0) - ROUNDING_SLACK_PX;
+    const next = computeVisibleChipCount({
+      chipWidths,
+      available,
+      gap: CHIP_GAP_PX,
+      overflowWidth: OVERFLOW_BUTTON_PX,
+      cap: maxVisible,
+    });
+    setVisibleCount((cur) => (cur === next ? cur : next));
+  }, [maxVisible]);
+
+  // Đo trước khi vẽ để không nháy "tràn rồi mới thu". Chạy mỗi lần render:
+  // nhãn chip đổi theo giá trị đang chọn nên bề rộng chip đổi theo.
+  useLayoutEffect(() => {
+    recompute();
+  });
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => recompute());
+    if (rootRef.current) ro.observe(rootRef.current);
+    if (measureRef.current) ro.observe(measureRef.current);
+    if (prefixRef.current) ro.observe(prefixRef.current);
+    return () => ro.disconnect();
+  }, [recompute]);
+
+  // Chọn chip hiện theo thứ tự ưu tiên, nhưng VẼ theo thứ tự gốc — bật một bộ
+  // lọc không được làm các chip nhảy chỗ.
+  const shown = new Set(ordered.slice(0, visibleCount));
+  const visible = chips.filter((c) => shown.has(c));
+  const overflow = chips.filter((c) => !shown.has(c));
   const overflowActiveCount = overflow.filter(isFilterChipActive).length;
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-2 min-w-0', className)}>
-      {prefixNodes}
-      {visible}
-      <FilterChipOverflowMenu chips={overflow} activeCount={overflowActiveCount} />
+    <div
+      ref={rootRef}
+      className={cn('relative flex min-w-0 flex-1 flex-nowrap items-center gap-2', className)}
+    >
+      {prefixNodes.length > 0 ? (
+        <div ref={prefixRef} className="flex shrink-0 flex-nowrap items-center gap-2">
+          {prefixNodes}
+        </div>
+      ) : null}
+      {visible.map((chip, i) => (
+        <div key={chip.key ?? `chip-${i}`} className="shrink-0">
+          {chip}
+        </div>
+      ))}
+      {overflow.length > 0 ? (
+        <FilterChipOverflowMenu chips={overflow} activeCount={overflowActiveCount} />
+      ) : null}
+
+      {/* Bản đo: rộng bằng hàng, cắt phần thừa để không làm cuộn ngang trang. */}
+      <div aria-hidden className="pointer-events-none invisible absolute inset-x-0 top-0 h-0 overflow-hidden">
+        <div ref={measureRef} inert className="flex w-max flex-nowrap items-center gap-2">
+          {ordered.map((chip, i) => (
+            <div key={chip.key ?? `measure-${i}`} className="shrink-0">
+              {chip}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

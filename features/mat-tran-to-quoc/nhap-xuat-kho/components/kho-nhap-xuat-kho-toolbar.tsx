@@ -16,7 +16,7 @@ import { countColumnSearchActive } from '../utils/column-search';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 
 interface Props {
-  tabSlot: ReactNode;
+  tabSlot?: ReactNode;
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
@@ -294,7 +294,6 @@ const NhapXuatKhoToolbar: React.FC<Props> = ({
       filters={filtersSlot}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('matTranNhapXuatKho.searchPlaceholderList')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

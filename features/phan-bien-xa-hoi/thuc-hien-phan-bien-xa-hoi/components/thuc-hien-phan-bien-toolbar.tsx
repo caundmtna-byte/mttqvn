@@ -209,7 +209,6 @@ const ThucHienPhanBienToolbar: React.FC<Props> = ({
       onAdd={canCreate ? onAdd : undefined}
       filters={filtersSlot}
       filterGroups={filterGroups}
-      searchPlaceholder={txt('pbxhThucHien.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       onDeleteMany={canDelete ? () => onDeleteMany(Array.from(selectedIds)) : undefined}

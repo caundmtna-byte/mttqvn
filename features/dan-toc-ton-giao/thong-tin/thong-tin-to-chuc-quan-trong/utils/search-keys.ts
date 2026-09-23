@@ -9,4 +9,6 @@ export const THONG_TIN_TO_CHUC_QUAN_TRONG_SEARCHABLE_KEYS = [
   'ten_tinh',
   'dia_chi',
   'so_dien_thoai',
+  'trang_thai',
+  'tg_cap_nhat',
 ] as const;

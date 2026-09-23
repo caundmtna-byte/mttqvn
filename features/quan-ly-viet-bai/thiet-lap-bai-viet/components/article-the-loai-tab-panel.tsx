@@ -42,7 +42,7 @@ type FormOrigin = 'list' | 'detail';
 
 interface ArticleTheLoaiTabPanelProps {
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   /** Tắt query khi không có quyền xem module (Layer 2). */
   queriesEnabled?: boolean;
 }

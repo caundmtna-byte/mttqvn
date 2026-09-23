@@ -119,7 +119,6 @@ export const matTranTangLuong = {
   deleteMessage: 'Bản ghi tăng lương ngày {{ngay}} sẽ bị xóa vĩnh viễn.',
   bulkDeleteTitle: 'Xóa nhiều bản ghi?',
   bulkDeleteMessage: 'Sẽ xóa {{count}} bản ghi tăng lương.',
-  searchPlaceholder: 'Tìm cán bộ, ngạch, bậc, lương, ghi chú…',
   filterLoaiKy: 'Loại kỳ',
   filterPhongBan: 'Phòng ban',
   filterChucVu: 'Chức vụ',

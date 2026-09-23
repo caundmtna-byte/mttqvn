@@ -21,6 +21,7 @@ import { formatLopTenDonViDisplay } from './utils/display-format';
 import { matchesSearchTerm } from '@/lib/searchUtils';
 import { useListWithFilter } from '@/lib/hooks';
 import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
 import { ListFilter, Building2 } from 'lucide-react';
 import { useExportData } from '@/lib/useExportData';
@@ -811,11 +812,11 @@ const DanhSachTapHuanPage: React.FC = () => {
           {txt('matTranTapHuan.noEmployeeBanner')}
         </div>
       ) : null}
+      <PageTabRow>{tabsSlot}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         {mainTab === 'lop' ? (
           <>
             <MttqLopTapHuanToolbar
-              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               capOptions={capChipOptions}
               namOptions={namChipOptions}
@@ -847,7 +848,6 @@ const DanhSachTapHuanPage: React.FC = () => {
         ) : mainTab === 'chi_tiet' ? (
           <>
             <MttqTapHuanChiTietToolbar
-              tabSlot={tabsSlot}
               onPageBack={() => navigate('/mat-tran-to-quoc')}
               onExport={handleExport}
               onAdd={handleChiTietAdd}
@@ -871,7 +871,6 @@ const DanhSachTapHuanPage: React.FC = () => {
         ) : (
           <>
             <MttqLopTapHuanToolbar
-              tabSlot={tabsSlot}
               hideListControls
               showExportWhenListHidden
               extraFiltersSlot={thongKeExtraFiltersSlot}

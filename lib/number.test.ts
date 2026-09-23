@@ -109,7 +109,7 @@ describe('isSoTienHopLe', () => {
     expect(isSoTienHopLe(1_500_000)).toBe(true);
   });
 
-  it('từ chối 0 và số âm — đúng ràng buộc quy_so_thu_chi_so_tien_check', () => {
+  it('từ chối 0 và số âm', () => {
     expect(isSoTienHopLe(0)).toBe(false);
     expect(isSoTienHopLe(-1)).toBe(false);
   });

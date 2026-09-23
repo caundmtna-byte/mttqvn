@@ -15,7 +15,7 @@ interface Props {
   onExport: () => void;
   onDeleteMany: (ids: string[]) => void;
   onPageBack: () => void;
-  tabsSlot: React.ReactNode;
+  tabsSlot?: React.ReactNode;
   donGiaCounts: { free: number; paid: number };
 }
 
@@ -141,7 +141,6 @@ const ArticleTheLoaiToolbar: React.FC<Props> = ({
       actions={renderActions}
       mobileActions={mobileActions}
       onAdd={canCreate ? onAdd : undefined}
-      searchPlaceholder={txt('common.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       filters={filtersSlot}

@@ -1,0 +1,36 @@
+/** Chuỗi của TAB Thống kê — quyền xem và tiêu đề trang do tab Danh sách lo. */
+export const viNguoiNgheoThongKe = {
+  listLoadErrorHint: 'Không tải được dữ liệu thống kê. Thử tải lại.',
+  exportFileName: 'Thong_Ke_Vi_Nguoi_Ngheo',
+  kpi: {
+    tongSoKhoan: 'Tổng số khoản',
+    tongSoTien: 'Tổng số tiền',
+    daNhan: 'Đã nhận',
+    dangKhaoSat: 'Đang khảo sát',
+    tyLeDaNhan: 'Tỷ lệ đã nhận',
+    soNguoiNhan: 'Số người được hỗ trợ',
+  },
+  chart: {
+    xuHuongTitle: 'Số khoản và số tiền theo năm',
+    linhVucTitle: 'Theo lĩnh vực hỗ trợ',
+    hinhThucTitle: 'Theo hình thức hỗ trợ',
+    nguonTitle: 'Theo nguồn',
+    nguonHoTroTitle: 'Theo nguồn hỗ trợ',
+    doiTuongTitle: 'Theo đối tượng',
+    soKhoan: 'Số khoản',
+    soTien: 'Số tiền',
+  },
+  table: {
+    theoXaPhuongTitle: 'Theo xã phường',
+    topDonViTitle: 'Top đơn vị, cá nhân hỗ trợ theo số tiền',
+    colXaPhuong: 'Xã phường',
+    colDonVi: 'Đơn vị, cá nhân',
+    colSoKhoan: 'Số khoản',
+    colSoTien: 'Số tiền',
+    colDaNhan: 'Đã nhận',
+    khongXacDinh: 'Chưa gán xã phường',
+    khongDonVi: 'Chưa gán đơn vị',
+    empty: 'Chưa có dữ liệu',
+  },
+  noExportData: 'Không có dữ liệu để xuất.',
+};

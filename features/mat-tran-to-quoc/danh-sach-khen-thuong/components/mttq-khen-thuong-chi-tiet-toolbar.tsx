@@ -227,7 +227,6 @@ const MttqKhenThuongChiTietToolbar: React.FC<Props> = ({
       onClearSelection={clearSelection}
       filters={filtersSlot}
       filterGroups={filterGroups}
-      searchPlaceholder={txt('matTranKhenThuong.chiTietList.searchPlaceholder')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       columns={columns}

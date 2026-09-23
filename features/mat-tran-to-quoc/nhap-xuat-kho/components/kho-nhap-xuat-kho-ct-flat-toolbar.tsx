@@ -15,7 +15,7 @@ import { countColumnSearchActive } from '../utils/column-search';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 
 interface Props {
-  tabSlot: ReactNode;
+  tabSlot?: ReactNode;
   onPageBack: () => void;
   onExport: () => void;
 }
@@ -196,7 +196,6 @@ const NhapXuatKhoCtFlatToolbar: React.FC<Props> = ({ tabSlot, onPageBack, onExpo
       filterGroups={filterGroups}
       filters={filtersSlot}
       mobileActions={mobileActions}
-      searchPlaceholder={txt('matTranNhapXuatKho.searchPlaceholderCt')}
       activeFilterCount={activeFilterCount}
       onClearAllFilters={handleClearAllFilters}
       columns={columns}

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { APP_RESOURCE_TO_MODULE, type AppResource, isChucVuCapBacOne } from '@/lib/permissions';
+import { APP_RESOURCE_TO_MODULE, isChucVuCapBacOne } from '@/lib/permissions';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import type { CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
@@ -17,18 +17,16 @@ export type NddkRowForViewGate = {
   xa_phuong_id?: string | null;
 };
 
-type NddkViewerResource = Extract<AppResource, 'nhaDaiDoanKetList' | 'nhaDaiDoanKetThongKe'>;
-
 /**
- * Phạm vi xem của module Nhà đại đoàn kết — dùng chung cho trang Danh sách và
- * trang Thống kê (trang thống kê bắt buộc áp cùng luật, nếu không là lộ dữ liệu
- * toàn hệ thống qua các con số tổng hợp).
+ * Phạm vi xem của module Nhà đại đoàn kết — dùng chung cho tab Danh sách và tab
+ * Thống kê (tab thống kê bắt buộc áp cùng luật, nếu không là lộ dữ liệu toàn hệ
+ * thống qua các con số tổng hợp).
  *
  * - `canViewAll` hoặc `cap_quan_ly` = **Tỉnh** → mọi hồ sơ
  * - `cap_quan_ly` = **Xã phường** → chỉ hồ sơ có `xa_phuong_id` trùng đơn vị mình
  * - Khác / null → mọi hồ sơ
  */
-export function useNddkViewer(appResource: NddkViewerResource = 'nhaDaiDoanKetList'): NddkViewer {
+export function useNddkViewer(): NddkViewer {
   const user = useAuthStore((s) => s.user);
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
@@ -37,10 +35,7 @@ export function useNddkViewer(appResource: NddkViewerResource = 'nhaDaiDoanKetLi
 
   return useMemo(() => {
     const moduleId =
-      APP_RESOURCE_TO_MODULE[appResource] ??
-      (appResource === 'nhaDaiDoanKetThongKe'
-        ? 'an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke'
-        : 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach');
+      APP_RESOURCE_TO_MODULE.nhaDaiDoanKetList ?? 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||
@@ -55,7 +50,6 @@ export function useNddkViewer(appResource: NddkViewerResource = 'nhaDaiDoanKetLi
       viewerDonViId: dv ? dv : null,
     };
   }, [
-    appResource,
     user?.role,
     user?.don_vi_id,
     matrixActive,

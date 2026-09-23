@@ -7,9 +7,8 @@ import { ArrowLeft, Filter, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import MobileFilterSheet from '../ui/MobileFilterSheet';
 import type { FilterGroup } from '../ui/MobileFilterSheet';
-import FilterChipOverflowRow, {
-  DEFAULT_MAX_VISIBLE_FILTER_CHIPS,
-} from './FilterChipOverflowRow';
+import FilterChipOverflowRow from './FilterChipOverflowRow';
+import { ToolbarBackButton, ToolbarClearFiltersButton, ToolbarTabRow } from './toolbar-parts';
 
 interface DashboardToolbarProps {
   /** Desktop filter chips (MultiSelect, etc.) */
@@ -20,7 +19,12 @@ interface DashboardToolbarProps {
   mobileActions?: React.ReactNode;
   /** Nội dung hiển thị ngay sau nút Back (cả mobile & desktop), ví dụ ô search */
   leadingContent?: React.ReactNode;
-  /** Desktop (≥sm): ngay sau Back — vd. TabGroup; trước filter chips */
+  /**
+   * TabGroup của trang: LUÔN là hàng riêng phía TRÊN toolbar (mọi breakpoint) —
+   * giống `GenericToolbar.tabSlot`. Đừng truyền TabGroup qua `desktopStartSlot`.
+   */
+  tabSlot?: React.ReactNode;
+  /** Ngay sau Back (cả mobile & desktop) — cho nội dung KHÔNG phải TabGroup. */
   desktopStartSlot?: React.ReactNode;
   /** Mobile: nội dung hàng 2 full width (vd. ô search), Back + leadingContent ở hàng 1 */
   mobileRow2Content?: React.ReactNode;
@@ -44,11 +48,14 @@ interface DashboardToolbarProps {
   innerWrapperClassName?: string;
   /** @deprecated Không còn tác dụng — overflow chip xử lý bởi FilterChipOverflowRow. */
   filtersSingleRow?: boolean;
-  /** Desktop: `flex-wrap` trên hàng toolbar để ô tìm + bộ lọc có thể xuống dòng (tránh chip chồng). */
+  /**
+   * @deprecated Không còn tác dụng: hàng toolbar LUÔN một dòng, chip dư tự thu
+   * vào "…" theo bề rộng (`FilterChipOverflowRow`).
+   */
   desktopToolbarWrap?: boolean;
   /** Class thêm vào wrapper bọc `filters` (vd. `flex-1 min-w-0`). */
   filtersWrapperClassName?: string;
-  /** Số chip lọc hiển thị trước nút … — mặc định 2 (giống listview). */
+  /** TRẦN số chip lọc (tuỳ chọn); chip dư theo bề rộng tự vào nút …. */
   maxVisibleFilterChips?: number;
 }
 
@@ -57,6 +64,7 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
   actions,
   mobileActions,
   leadingContent,
+  tabSlot,
   desktopStartSlot,
   mobileRow2Content,
   row2Content,
@@ -68,9 +76,8 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
   hideBack = false,
   className,
   innerWrapperClassName,
-  desktopToolbarWrap = false,
   filtersWrapperClassName,
-  maxVisibleFilterChips = DEFAULT_MAX_VISIBLE_FILTER_CHIPS,
+  maxVisibleFilterChips,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,6 +95,12 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
 
   const innerContent = (
     <>
+      {tabSlot && (
+        <div className="pb-2">
+          <ToolbarTabRow>{tabSlot}</ToolbarTabRow>
+        </div>
+      )}
+
       {/* ===== MOBILE (< sm) ===== */}
       <div className={cn("sm:hidden flex gap-2", row2 && "flex-col")}>
         <div className="flex items-center gap-1.5 w-full min-w-0">
@@ -156,21 +169,8 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
       )}
 
       {/* ===== DESKTOP (>= sm): một hàng — Back + desktopStartSlot + filter chips … flex … actions */}
-      <div
-        className={cn(
-          'hidden sm:flex items-center gap-2 min-w-0',
-          desktopToolbarWrap && 'flex-wrap',
-        )}
-      >
-        {!hideBack && (
-          <button
-            onClick={handleBack}
-            className="shrink-0 h-8 px-2 -ml-1 flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:scale-95"
-          >
-            <ArrowLeft size={15} className="stroke-[2.5px]" />
-            <span className="text-xs font-medium">{txt('common.back')}</span>
-          </button>
-        )}
+      <div className="hidden sm:flex flex-nowrap items-center gap-2 min-w-0">
+        {!hideBack && <ToolbarBackButton onClick={handleBack} />}
 
         {desktopStartSlot && (
           <div className="shrink-0 min-w-0">{desktopStartSlot}</div>
@@ -182,19 +182,13 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
         {filters && (
           <div
             className={cn(
-              'flex min-w-0 flex-1 items-center gap-2 flex-wrap',
+              'flex min-w-0 flex-1 flex-nowrap items-center gap-2',
               filtersWrapperClassName,
             )}
           >
             <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{filters}</FilterChipOverflowRow>
             {activeFilterCount > 0 && onClearFilters && (
-              <button
-                onClick={onClearFilters}
-                className="h-7 px-2 flex items-center gap-1 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-all border border-destructive/20 hover:border-destructive/30 active:scale-95 shrink-0"
-              >
-                <X size={11} className="stroke-[2.5px]" />
-                {txt('common.clearFilters', { count: activeFilterCount })}
-              </button>
+              <ToolbarClearFiltersButton count={activeFilterCount} onClick={onClearFilters} />
             )}
           </div>
         )}
@@ -213,8 +207,8 @@ const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
           "pt-2 mt-2 border-t border-border/60",
           row2ContentMobileOnly ? "sm:hidden" : "hidden sm:block"
         )}>
-          <div className="flex flex-wrap items-center gap-2">
-          <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{row2Content}</FilterChipOverflowRow>
+          <div className="flex flex-nowrap items-center gap-2 min-w-0">
+            <FilterChipOverflowRow maxVisible={maxVisibleFilterChips}>{row2Content}</FilterChipOverflowRow>
           </div>
         </div>
       )}

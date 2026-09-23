@@ -42,14 +42,10 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'matTranReliefWarehouseList',
       'matTranReliefSupportUnits',
       'matTranReliefSupportReport',
-      // Quỹ tiền: cán bộ chỉ được cấp quyền quỹ (không có quyền kho cứu trợ)
-      // vẫn phải thấy mục "An sinh xã hội" trên sidebar.
-      'quySoThuChi',
-      'quyDanhMucKhoan',
-      'quyDanhMucTaiKhoan',
-      'quyBaoCaoThongKe',
+      'khenThuongNhaTaiTroList',
       'nhaDaiDoanKetList',
-      'nhaDaiDoanKetThongKe',
+      'viNguoiNgheoList',
+      'hoNgheoList',
     ];
   }
   if (path === '/quan-ly-viet-bai') {

@@ -4,7 +4,6 @@ export const danTocThamHoiToChuc = {
   noEditOtherDonVi: 'Bạn chỉ được sửa bản ghi thuộc đơn vị của mình.',
   noDeleteOtherDonVi: 'Bạn chỉ được xóa bản ghi thuộc đơn vị của mình.',
   listLoadErrorHint: 'Không tải được danh sách. Thử tải lại.',
-  searchPlaceholder: 'Tìm theo tên cơ sở, dịp thăm hỏi, đơn vị thăm hỏi, nội dung…',
   emptyTitle: 'Chưa có lượt thăm hỏi',
   emptyHint: 'Thêm kế hoạch hoặc ghi nhận lượt thăm hỏi tổ chức dân tộc, tôn giáo.',
   emptyFilteredHint: 'Không có bản ghi phù hợp bộ lọc. Thử điều chỉnh tìm kiếm hoặc chip lọc.',

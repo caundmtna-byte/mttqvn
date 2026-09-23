@@ -19,6 +19,7 @@ import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
 import { DRAWER_Z_CONTENT_BASE, DRAWER_WIDTH_DETAIL_SMALL } from '@/lib/dialog-sizes';
 import TabGroup, { type Tab } from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import type { Option } from '@/components/ui/Combobox';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog, { type ImportTemplateSheet } from '@/components/shared/ImportDialog';
@@ -627,11 +628,11 @@ const DanhSachTinhThanhPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative">
+      <PageTabRow>{tabGroup}</PageTabRow>
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         {tab === TAB_TINH ? (
           <>
             <TinhThanhToolbar
-              tabSlot={tabGroup}
               soXaCounts={tinhSoXaCounts}
               onAdd={openAddTinh}
               onExport={canExport ? handleExportOpen : undefined}
@@ -658,7 +659,6 @@ const DanhSachTinhThanhPage: React.FC = () => {
         ) : (
           <>
             <XaPhuongToolbar
-              tabSlot={tabGroup}
               tinhOptions={tinhOptions}
               selectedTinhId={selectedTinhId}
               onTinhChange={onTinhFilterChange}

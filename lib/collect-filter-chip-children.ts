@@ -72,19 +72,24 @@ export function collectFilterChipChildren(node: React.ReactNode): CollectedFilte
         return;
       }
 
-      prefixNodes.push(
-        React.cloneElement(
-          child,
-          child.props as Record<string, unknown>,
-          ...nested.prefixNodes,
-          ...nested.chips,
-        ),
-      );
+      // Wrapper trộn chip với phần tử khác (DateRange + chip…): tách hẳn ra.
+      // Giữ nguyên cục thì các chip bên trong không thu vào "…" được và cả cục
+      // rộng cố định — đúng thứ làm hàng toolbar rớt dòng trên tablet.
+      prefixNodes.push(...nested.prefixNodes);
+      chips.push(...nested.chips);
     });
   };
 
   walk(node);
   return { prefixNodes, chips };
+}
+
+/**
+ * Thứ tự ưu tiên hiện chip: chip ĐANG CÓ giá trị lọc trước (người dùng phải
+ * thấy bộ lọc nào đang bật), rồi tới chip còn lại — mỗi nhóm giữ thứ tự gốc.
+ */
+export function orderChipsByPriority<T>(items: readonly T[], isActive: (item: T) => boolean): T[] {
+  return [...items.filter(isActive), ...items.filter((item) => !isActive(item))];
 }
 
 export function partitionFilterChips(
@@ -95,11 +100,56 @@ export function partitionFilterChips(
     return { visible: chips, overflow: [] };
   }
 
-  const active = chips.filter(isFilterChipActive);
-  const inactive = chips.filter((chip) => !isFilterChipActive(chip));
-  const visible = [...active, ...inactive].slice(0, maxVisible);
+  const visible = orderChipsByPriority(chips, isFilterChipActive).slice(0, Math.max(0, maxVisible));
   const visibleSet = new Set(visible);
   const overflow = chips.filter((chip) => !visibleSet.has(chip));
 
   return { visible, overflow };
+}
+
+export interface VisibleChipCountInput {
+  /** Bề rộng từng chip (px), ĐÃ xếp theo thứ tự ưu tiên hiện. */
+  chipWidths: readonly number[];
+  /** Bề rộng còn lại cho chip (px) — đã trừ phần tử cố định khác trong hàng. */
+  available: number;
+  /** Khoảng cách giữa hai phần tử liền nhau (px). */
+  gap: number;
+  /** Bề rộng nút "…" (px) — chỉ tính khi còn chip bị thu vào. */
+  overflowWidth: number;
+  /** Trần số chip hiện; không truyền ⇒ không trần. */
+  cap?: number;
+}
+
+/**
+ * Số chip hiện được trên MỘT hàng mà không tràn.
+ *
+ * Còn chip bị thu ⇒ phải chừa chỗ cho nút "…"; hiện hết ⇒ không cần nút. Vì
+ * vậy thử từ nhiều xuống ít: số lớn nhất vừa khít là đáp án. Luôn ≥ 0 — hẹp
+ * tới mức không chip nào vừa thì mọi chip nằm trong "…".
+ */
+export function computeVisibleChipCount({
+  chipWidths,
+  available,
+  gap,
+  overflowWidth,
+  cap,
+}: VisibleChipCountInput): number {
+  const n = chipWidths.length;
+  const max = Math.min(n, cap == null ? n : Math.max(0, Math.floor(cap)));
+  if (!(available > 0)) return 0;
+
+  let used = 0;
+  const prefix: number[] = [0];
+  for (let i = 0; i < n; i += 1) {
+    used += chipWidths[i] + (i > 0 ? gap : 0);
+    prefix.push(used);
+  }
+
+  for (let k = max; k >= 0; k -= 1) {
+    const chips = prefix[k];
+    const needsOverflow = k < n;
+    const total = chips + (needsOverflow ? overflowWidth + (k > 0 ? gap : 0) : 0);
+    if (total <= available) return k;
+  }
+  return 0;
 }

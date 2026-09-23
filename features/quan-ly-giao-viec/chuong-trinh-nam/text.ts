@@ -48,7 +48,6 @@ export const chuongTrinhNam = {
   },
   noViewPermission: 'Bạn không có quyền xem module Chương trình BTT.',
   noEmployeeBanner: 'Tài khoản chưa gắn hồ sơ nhân viên — không thể tạo chương trình mới.',
-  searchPlaceholder: 'Tìm theo tên chương trình, phòng ban, người tạo…',
   emptyTitle: 'Chưa có chương trình BTT',
   emptyHint: 'Thêm chương trình để theo dõi kế hoạch theo phòng ban.',
   deleteTitle: 'Xóa chương trình BTT',

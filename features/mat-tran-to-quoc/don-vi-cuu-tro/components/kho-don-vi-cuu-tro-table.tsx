@@ -107,6 +107,30 @@ const KhoDonViCuuTroTable = memo(function KhoDonViCuuTroTable({
               <span className="truncate font-semibold text-foreground text-sm tracking-tight">{item.ten}</span>
             </div>
           );
+        case 'so_nguoi':
+          return (
+            <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+              {item.so_nguoi ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'nguoi_dai_dien':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.nguoi_dai_dien ?? undefined}>
+              {item.nguoi_dai_dien ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'chuc_vu':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.chuc_vu ?? undefined}>
+              {item.chuc_vu ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'don_vi_gioi_thieu':
+          return (
+            <span className="text-body-sm text-muted-foreground truncate" title={item.don_vi_gioi_thieu_label || undefined}>
+              {item.don_vi_gioi_thieu_label || txt('common.emptyCell')}
+            </span>
+          );
         case 'dia_chi':
           return (
             <span className="text-body-sm text-muted-foreground truncate" title={item.dia_chi ?? undefined}>
