@@ -46,6 +46,11 @@ export type ImportWriteMode = 'insert' | 'upsert' | 'update';
 export interface ImportMatchColumn {
   key: string;
   label: string;
+  /**
+   * Cột trong file mà khoá này cần (khoá ghép như "Họ tên + Xã phường").
+   * Bỏ trống = đúng một cột trùng tên `key`.
+   */
+  columns?: readonly string[];
 }
 
 export type ImportRunOptions = {
@@ -305,7 +310,10 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       if (matchKeys.length === 0) return txt('shared.import.matchRequired');
       // Khoá tham chiếu mà không có trong file thì mọi dòng đều "không trùng" —
       // chế độ ghi đè sẽ âm thầm biến thành thêm mới hàng loạt.
-      const missing = matchKeys.filter((k) => !mapping[k]);
+      const missing = matchKeys.filter((k) => {
+        const cols = matchColumns?.find((c) => c.key === k)?.columns ?? [k];
+        return cols.some((c) => !mapping[c]);
+      });
       if (missing.length > 0) {
         return txt('shared.import.matchNotMapped', {
           columns: missing

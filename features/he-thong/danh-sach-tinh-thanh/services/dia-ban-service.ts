@@ -3,10 +3,7 @@ import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { TinhThanh, XaPhuong } from '../core/types';
 import type { TinhThanhFormValues, XaPhuongFormValues } from '../core/schema';
-import { tinhThanhSchema, xaPhuongSchema } from '../core/schema';
-import { txt } from '@/lib/text';
 import { TINH_THANH_SELECT_FULL, XA_PHUONG_SELECT_FULL } from '../core/supabase-select';
-import { getErrorMessage } from '@/lib/utils';
 
 function normTinh(row: Record<string, unknown>): TinhThanh {
   return {
@@ -182,15 +179,32 @@ export async function getTinhThanhById(id: string): Promise<TinhThanh | null> {
   return row ? normTinh(row as unknown as Record<string, unknown>) : null;
 }
 
+/** Form → cột DB. Dùng chung cho form và nhập file. */
+export function tinhThanhFormToPayload(values: TinhThanhFormValues): Record<string, unknown> {
+  return { ten: values.ten.trim(), thu_tu: values.thu_tu };
+}
+
+export function xaPhuongFormToPayload(values: XaPhuongFormValues): Record<string, unknown> {
+  return {
+    id_tinh_thanh: values.id_tinh_thanh.trim(),
+    ten: values.ten.trim(),
+    thu_tu: values.thu_tu,
+  };
+}
+
 export async function createTinhThanh(values: TinhThanhFormValues): Promise<TinhThanh> {
-  const payload = { ten: values.ten.trim(), thu_tu: values.thu_tu };
-  const inserted = await tinhRepo.insert(payload as never);
+  const inserted = await tinhRepo.insert(tinhThanhFormToPayload(values) as never);
   return normTinh(inserted as unknown as Record<string, unknown>);
 }
 
 export async function updateTinhThanh(id: string, values: TinhThanhFormValues): Promise<TinhThanh> {
-  const updated = await tinhRepo.update(id, { ten: values.ten.trim(), thu_tu: values.thu_tu } as never);
+  const updated = await tinhRepo.update(id, tinhThanhFormToPayload(values) as never);
   return normTinh(updated as unknown as Record<string, unknown>);
+}
+
+/** Ghi đè từ file: chỉ các cột có trong `payload`. */
+export async function updateTinhThanhPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  await tinhRepo.update(id, payload as never, { returningSelect: 'id' });
 }
 
 export async function deleteTinhThanhMany(ids: string[]): Promise<void> {
@@ -202,144 +216,25 @@ export async function deleteTinhThanhMany(ids: string[]): Promise<void> {
 }
 
 export async function createXaPhuong(values: XaPhuongFormValues): Promise<XaPhuong> {
-  const payload = {
-    id_tinh_thanh: values.id_tinh_thanh.trim(),
-    ten: values.ten.trim(),
-    thu_tu: values.thu_tu,
-  };
-  const inserted = await xaRepo.insert(payload as never);
+  const inserted = await xaRepo.insert(xaPhuongFormToPayload(values) as never);
   invalidateXaPhuongAllCache();
   return normXa(inserted as unknown as Record<string, unknown>);
 }
 
 export async function updateXaPhuong(id: string, values: XaPhuongFormValues): Promise<XaPhuong> {
-  const updated = await xaRepo.update(id, {
-    id_tinh_thanh: values.id_tinh_thanh.trim(),
-    ten: values.ten.trim(),
-    thu_tu: values.thu_tu,
-  } as never);
+  const updated = await xaRepo.update(id, xaPhuongFormToPayload(values) as never);
   invalidateXaPhuongAllCache();
   return normXa(updated as unknown as Record<string, unknown>);
+}
+
+/** Ghi đè từ file: chỉ các cột có trong `payload`. */
+export async function updateXaPhuongPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  await xaRepo.update(id, payload as never, { returningSelect: 'id' });
+  invalidateXaPhuongAllCache();
 }
 
 export async function deleteXaPhuongMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await xaRepo.remove(ids);
   invalidateXaPhuongAllCache();
-}
-
-function numCell(row: Record<string, unknown>, ...keys: string[]): number {
-  for (const k of keys) {
-    if (row[k] === undefined || row[k] === null || row[k] === '') continue;
-    const n = Number(row[k]);
-    if (Number.isFinite(n)) return n;
-  }
-  return 0;
-}
-
-/** Import CSV: cột `ten`, `thu_tu` (chỉ thêm mới; trùng tên trong file hoặc DB → bỏ qua dòng + lỗi). */
-export async function importTinhThanhRows(
-  rows: Record<string, unknown>[],
-): Promise<{ created: number; errors: string[] }> {
-  const errors: string[] = [];
-  let created = 0;
-  const list = await getTinhThanhList();
-  const seenLower = new Set(list.map((t) => t.ten.trim().toLowerCase()));
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const ten = String(row.ten ?? row.Ten ?? '').trim();
-    const thu_tu = numCell(row, 'thu_tu', 'ThuTu', 'thuTu', 'order');
-    if (!ten) {
-      errors.push(txt('diaBan.import.rowEmptyTenTinh', { row: String(i + 2) }));
-      continue;
-    }
-    const parsed = tinhThanhSchema.safeParse({ ten, thu_tu });
-    if (!parsed.success) {
-      errors.push(
-        txt('diaBan.import.rowInvalidTinh', {
-          row: String(i + 2),
-          detail: parsed.error.issues[0]?.message ?? '',
-        }),
-      );
-      continue;
-    }
-    if (seenLower.has(parsed.data.ten.toLowerCase())) {
-      errors.push(txt('diaBan.import.rowDupTenTinh', { row: String(i + 2), ten: parsed.data.ten }));
-      continue;
-    }
-    try {
-      await createTinhThanh(parsed.data);
-      seenLower.add(parsed.data.ten.toLowerCase());
-      created++;
-    } catch (e: unknown) {
-      errors.push(
-        txt('diaBan.import.rowError', {
-          row: String(i + 2),
-          detail: getErrorMessage(e),
-        }),
-      );
-    }
-  }
-  return { created, errors };
-}
-
-/**
- * Import CSV xã: bắt buộc `ten`; `id_tinh_thanh` (số) hoặc `ten_tinh` / `tinh` (tên khớp danh mục tỉnh).
- */
-export async function importXaPhuongRows(
-  rows: Record<string, unknown>[],
-  tinhList: TinhThanh[],
-): Promise<{ created: number; errors: string[] }> {
-  const errors: string[] = [];
-  let created = 0;
-  const tinhByName = new Map(tinhList.map((t) => [t.ten.trim().toLowerCase(), t.id]));
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const ten = String(row.ten ?? row.Ten ?? '').trim();
-    const thu_tu = numCell(row, 'thu_tu', 'ThuTu', 'thuTu', 'order');
-    if (!ten) {
-      errors.push(txt('diaBan.import.rowEmptyTenXa', { row: String(i + 2) }));
-      continue;
-    }
-
-    const rawId = row.id_tinh_thanh ?? row.id_tinh ?? row.ma_tinh;
-    let id_tinh_thanh = rawId != null && String(rawId).trim() !== '' ? String(rawId).trim() : '';
-
-    if (!id_tinh_thanh || !tinhList.some((t) => t.id === id_tinh_thanh)) {
-      const nameHint = String(row.ten_tinh ?? row.tinh_thanh ?? row.tinh ?? row.Tinh ?? '').trim().toLowerCase();
-      const fromName = nameHint ? tinhByName.get(nameHint) : undefined;
-      if (fromName) id_tinh_thanh = fromName;
-    }
-
-    if (!id_tinh_thanh || !tinhList.some((t) => t.id === id_tinh_thanh)) {
-      errors.push(txt('diaBan.import.rowMissingTinhXa', { row: String(i + 2) }));
-      continue;
-    }
-
-    const parsed = xaPhuongSchema.safeParse({ id_tinh_thanh, ten, thu_tu });
-    if (!parsed.success) {
-      errors.push(
-        txt('diaBan.import.rowInvalidXa', {
-          row: String(i + 2),
-          detail: parsed.error.issues[0]?.message ?? '',
-        }),
-      );
-      continue;
-    }
-
-    try {
-      await createXaPhuong(parsed.data);
-      created++;
-    } catch (e: unknown) {
-      errors.push(
-        txt('diaBan.import.rowError', {
-          row: String(i + 2),
-          detail: getErrorMessage(e),
-        }),
-      );
-    }
-  }
-  return { created, errors };
 }

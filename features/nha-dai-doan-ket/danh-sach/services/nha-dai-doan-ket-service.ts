@@ -77,6 +77,7 @@ export function flattenNhaDaiDoanKetRow(row: Record<string, unknown>): NhaDaiDoa
     nam: Number(r.nam ?? 0),
     nguon: String(r.nguon ?? NDDK_NGUON_DEFAULT) as NddkNguon,
     nguon_ho_tro: String(r.nguon_ho_tro ?? NDDK_NGUON_HO_TRO_DEFAULT) as NddkNguonHoTro,
+    ho_ngheo_id: nullableStr(r.ho_ngheo_id),
     ho_ten_chu_ho: String(r.ho_ten_chu_ho ?? ''),
     xa_phuong_id: nullableStr(r.xa_phuong_id),
     ten_xa_phuong: embeddedName(xp?.ten),
@@ -105,6 +106,9 @@ function formToPayload(data: NhaDaiDoanKetFormValues): Record<string, unknown> {
     nam: data.nam,
     nguon: data.nguon,
     nguon_ho_tro: data.nguon_ho_tro,
+    // Họ tên / xã / khối xóm / đối tượng vẫn gửi lên cho khớp màn hình, nhưng
+    // trigger `fn_nddk_dong_bo_tu_ho_ngheo` ghi đè bằng dữ liệu của hộ.
+    ho_ngheo_id: nullableFk(data.ho_ngheo_id),
     ho_ten_chu_ho: data.ho_ten_chu_ho,
     xa_phuong_id: nullableFk(data.xa_phuong_id),
     khoi_xom: data.khoi_xom ?? null,

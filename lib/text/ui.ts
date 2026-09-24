@@ -126,7 +126,22 @@ export const ui = {
       "dryRunFailed": "Không đối chiếu được dữ liệu. Vui lòng thử lại.",
       "resultCreated": "{{count}} bản ghi thêm mới",
       "resultUpdated": "{{count}} bản ghi được ghi đè",
-      "resultSkipped": "{{count}} dòng bỏ qua"
+      "resultSkipped": "{{count}} dòng bỏ qua",
+      "rowPrefix": "Dòng {{row}}: ",
+      "colMaHeThong": "Mã hệ thống (id)",
+      "skipDaTonTai": "bản ghi này đã có trong hệ thống nên được bỏ qua.",
+      "skipChuaTonTai": "chưa có bản ghi nào khớp nên không cập nhật được.",
+      "errTrungTrongFile": "trùng {{cot}} với dòng {{row}} trong chính file này.",
+      "errTrungBanGhiDich": "cùng trỏ tới một bản ghi đã có với dòng {{row}}. Mỗi bản ghi chỉ được một dòng ghi đè.",
+      "errTrungKhoaKhac": "đụng một bản ghi đã có ở cột không được chọn làm tham chiếu. Tick thêm cột tham chiếu rồi nhập lại.",
+      "errTrungBanGhiKhac": "{{cot}} đã thuộc về một bản ghi khác trong hệ thống.",
+      "errKhopNhieu": "{{cot}} khớp {{count}} bản ghi khác nhau nên không biết ghi đè bản nào. Dùng cột tham chiếu chắc hơn (ví dụ Mã hệ thống).",
+      "errNgoaiPhamVi": "bản ghi khớp nằm ngoài phạm vi bạn được sửa.",
+      "errNgoaiDonVi": "bạn chỉ được nhập bản ghi của đơn vị (xã/phường) mình.",
+      "errChuaGanDonVi": "Tài khoản cấp xã/phường chưa được gán đơn vị nên chưa nhập được. Liên hệ quản trị để gán đơn vị.",
+      "errTooManyRows": "File có {{count}} dòng, vượt mức tối đa {{max}} dòng mỗi lần nhập. Hãy chia nhỏ file.",
+      "errSummary": "Có tất cả {{count}} dòng lỗi, dưới đây là 10 dòng đầu.",
+      "noteChiThemMoi": "Bạn không có quyền sửa nên chỉ nhập được bản ghi mới."
     },
     "empty": {
       "title": "Không có dữ liệu",

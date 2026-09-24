@@ -13,7 +13,8 @@ import {
   getMttqCanBoStatsList,
   updateMttqCanBo,
 } from '../services/mttq-can-bo-service';
-import { importMttqCanBoRows } from '../services/mttq-can-bo-import';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importMttqCanBoRows, type CanBoImportContext } from '../services/mttq-can-bo-import';
 
 const listKey = queryKeys.mttqCanBo.all;
 const statsListKey = queryKeys.mttqCanBo.stats;
@@ -85,18 +86,26 @@ export const useDeleteMttqCanBoMany = () => {
   });
 };
 
-export const useImportMttqCanBo = (onSuccess?: () => void) => {
+export const useImportMttqCanBo = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importMttqCanBoRows(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: CanBoImportContext;
+    }) => importMttqCanBoRows(rows, options, ctx),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
       void queryClient.invalidateQueries({ queryKey: statsListKey });
-      if (result.created > 0) {
-        toast.success(txt('matTranCanBo.import.toastSuccess', { count: String(result.created) }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('matTranCanBo.import.toastSuccess', { created, updated }));
       }
-      onSuccess?.();
     },
   });
 };

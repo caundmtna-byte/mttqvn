@@ -253,6 +253,31 @@ function toRowPayload(data: EmployeeFormValues) {
   };
 }
 
+/**
+ * Cột hồ sơ được ghi đè từ file. KHÔNG có `ten_tai_khoan` — cột này gắn với tài
+ * khoản đăng nhập (Auth), đổi nó mà không qua Edge Function là hồ sơ mồ côi —
+ * và không có `hinh_anh` (file Excel không mang ảnh).
+ */
+const HO_SO_KHONG_GHI_DE = ['ten_tai_khoan', 'hinh_anh'] as const;
+
+export function employeeFormToProfilePayload(data: EmployeeFormValues): Record<string, unknown> {
+  const payload: Record<string, unknown> = { ...toRowPayload(data) };
+  for (const k of HO_SO_KHONG_GHI_DE) delete payload[k];
+  return payload;
+}
+
+/**
+ * Ghi đè hồ sơ từ file: chỉ các cột có trong `payload`, chỉ bảng `var_nhan_vien`.
+ * Không gọi Edge Function, không đụng tài khoản đăng nhập / mật khẩu.
+ */
+export async function updateEmployeeProfilePartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  const safe: Record<string, unknown> = { ...payload };
+  for (const k of HO_SO_KHONG_GHI_DE) delete safe[k];
+  await repo.update(id, { ...safe, tg_cap_nhat: now() } as unknown as Partial<Employee>, {
+    returningSelect: 'id',
+  });
+}
+
 async function fetchLookups() {
   const [depts, positions, xaAll, tinhAll, thietLapAll] = await Promise.all([
     getDepartments(),

@@ -100,6 +100,19 @@ export async function updateKhoDanhSachHangHoa(id: string, data: KhoDanhSachHang
   return normalizeHangHoaRow(updated as unknown as Record<string, unknown>);
 }
 
+/**
+ * Ghi cho luồng nhập file: payload đã dựng sẵn (ghi đè chỉ gồm cột có trong
+ * file), trả về đúng `id` — không kéo lại cả dòng cho mỗi dòng Excel.
+ */
+export async function insertKhoDanhSachHangHoaForImport(payload: Record<string, unknown>): Promise<void> {
+  await repo.insert(payload as unknown as Omit<RepoRow, 'id'>, { returningSelect: 'id' });
+}
+
+export async function updateKhoDanhSachHangHoaPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  if (Object.keys(payload).length === 0) return;
+  await repo.update(id, payload as unknown as Partial<RepoRow>, { returningSelect: 'id' });
+}
+
 export async function deleteKhoDanhSachHangHoaMany(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await repo.remove(ids);

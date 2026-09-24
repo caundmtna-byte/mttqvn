@@ -60,6 +60,7 @@ export const nhaDaiDoanKetSchema = z.object({
   nguon_ho_tro: z.enum(NDDK_NGUON_HO_TRO_VALUES, {
     message: txt('nhaDaiDoanKet.validation.nguonHoTroInvalid'),
   }),
+  ho_ngheo_id: z.string().trim().min(1, txt('nhaDaiDoanKet.validation.hoNgheoRequired')),
   ho_ten_chu_ho: z.string().trim().min(1, txt('nhaDaiDoanKet.validation.chuHoRequired')),
   xa_phuong_id: optionalFk,
   khoi_xom: optionalText,
@@ -109,6 +110,7 @@ export type NhaDaiDoanKetFormInput = {
   nam: number;
   nguon: string;
   nguon_ho_tro: string;
+  ho_ngheo_id: string;
   ho_ten_chu_ho: string;
   xa_phuong_id?: string;
   khoi_xom?: string;
@@ -126,6 +128,7 @@ export function nhaDaiDoanKetToFormInput(row: NhaDaiDoanKet | null): NhaDaiDoanK
       nam: new Date().getFullYear(),
       nguon: NDDK_NGUON_DEFAULT,
       nguon_ho_tro: NDDK_NGUON_HO_TRO_DEFAULT,
+      ho_ngheo_id: '',
       ho_ten_chu_ho: '',
       xa_phuong_id: '',
       khoi_xom: '',
@@ -141,6 +144,7 @@ export function nhaDaiDoanKetToFormInput(row: NhaDaiDoanKet | null): NhaDaiDoanK
     nam: row.nam ?? new Date().getFullYear(),
     nguon: row.nguon ?? NDDK_NGUON_DEFAULT,
     nguon_ho_tro: row.nguon_ho_tro ?? NDDK_NGUON_HO_TRO_DEFAULT,
+    ho_ngheo_id: row.ho_ngheo_id ?? '',
     ho_ten_chu_ho: row.ho_ten_chu_ho ?? '',
     xa_phuong_id: row.xa_phuong_id ?? '',
     khoi_xom: row.khoi_xom ?? '',

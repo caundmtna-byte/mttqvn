@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowRightLeft,
   Edit,
@@ -15,6 +16,7 @@ import {
   StickyNote,
   User,
   Users,
+  ExternalLink,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -53,6 +55,7 @@ interface Props {
 }
 
 const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
+  const navigate = useNavigate();
   const { canEdit, canDelete, canApprove } = useResourcePermissions('nhaDaiDoanKetList');
   const emptyCell = txt('common.emptyCell');
   const soTienLabel = formatNddkSoTienDisplay(data.so_tien);
@@ -197,6 +200,27 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
           variant="primary"
         >
           <DetailFieldGrid>
+            <DetailField
+              className={DETAIL_FIELD_SPAN_FULL}
+              label={txt('nhaDaiDoanKet.form.hoNgheoLabel')}
+              icon={<Users size={12} />}
+              value={
+                data.ho_ngheo_id ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                    onClick={() =>
+                      navigate(`/an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach?open=${encodeURIComponent(data.ho_ngheo_id!)}`)
+                    }
+                  >
+                    {txt('nhaDaiDoanKet.detail.moHoNgheo')}
+                    <ExternalLink size={12} />
+                  </button>
+                ) : (
+                  <span className="text-muted-foreground">{txt('nhaDaiDoanKet.detail.chuaGanHo')}</span>
+                )
+              }
+            />
             <DetailField
               label={txt('nhaDaiDoanKet.store.chuHoCol')}
               icon={<Users size={12} />}

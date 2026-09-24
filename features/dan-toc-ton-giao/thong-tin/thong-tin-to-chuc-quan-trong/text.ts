@@ -28,6 +28,14 @@ export const danTocToChucQuanTrong = {
   import: {
     templateName: 'to-chuc-quan-trong',
     rowError: 'Dòng {{row}}: {{message}}',
+    toastDone: 'Đã nhập: {{created}} tổ chức mới, {{updated}} tổ chức được ghi đè.',
+    keyTenCoSo: 'tên cơ sở',
+    errDonVi: 'không tìm thấy xã, phường “{{gia_tri}}”.',
+    errDonViTrungTen: 'có nhiều xã, phường tên “{{gia_tri}}”. Nhập mã (id) xã, phường thay cho tên.',
+    errLoaiHinh: 'loại hình “{{gia_tri}}” không hợp lệ — chỉ nhận: {{hop_le}}.',
+    errTrangThai: 'trạng thái “{{gia_tri}}” không hợp lệ — chỉ nhận: {{hop_le}}.',
+    errNgoaiDonVi: 'bạn chỉ được nhập hồ sơ thuộc xã, phường của mình.',
+    errChuaGanDonVi: 'Tài khoản cấp xã, phường chưa được gán đơn vị nên không nhập file được.',
   },
   validation: {
     tenCoSoRequired: 'Vui lòng nhập tên cơ sở',

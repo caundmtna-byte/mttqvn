@@ -13,10 +13,14 @@ import {
   getThamHoiCaNhanByCaNhanId,
   getThamHoiCaNhanByDipId,
   getThamHoiCaNhanList,
-  importThamHoiCaNhan,
   updateThamHoiCaNhan,
   updateThamHoiCaNhanTrangThai,
 } from '../services/tham-hoi-ca-nhan-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import {
+  importThamHoiCaNhanRows,
+  type ThamHoiCaNhanImportContext,
+} from '../services/tham-hoi-ca-nhan-import';
 
 const listKey = queryKeys.danTocThamHoiCaNhan.all;
 
@@ -170,21 +174,33 @@ export function useDeleteThamHoiCaNhanMany() {
   });
 }
 
-export function useImportThamHoiCaNhan(onSuccess?: () => void) {
+/**
+ * Không tự đóng hộp thoại khi xong: bước kết quả của `ImportDialog` cần ở lại để
+ * người dùng xem dòng lỗi / tải file lỗi.
+ */
+export function useImportThamHoiCaNhan() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importThamHoiCaNhan(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: ThamHoiCaNhanImportContext;
+    }) => importThamHoiCaNhanRows(rows, options, ctx),
     onSuccess: (result) => {
+      // Tiền tố `all` phủ cả trang server, chi tiết, by-ca-nhan và by-dip.
       void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: ['dttg-tham-hoi-ca-nhan', 'by-ca-nhan'] });
-      if (result.created > 0) {
-        toast.success(txt('danTocThamHoiCaNhan.toast.importSuccess', { count: result.created }));
+      if ((result.created ?? 0) + (result.updated ?? 0) > 0) {
+        toast.success(
+          txt('danTocThamHoiCaNhan.import.toastDone', {
+            created: String(result.created ?? 0),
+            updated: String(result.updated ?? 0),
+          }),
+        );
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 }

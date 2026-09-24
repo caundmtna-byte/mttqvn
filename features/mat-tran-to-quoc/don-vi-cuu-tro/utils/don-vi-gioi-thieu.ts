@@ -1,4 +1,5 @@
 import { txt } from '@/lib/text';
+import { findRefStrict, type NamedRef } from '@/lib/data/import-cells';
 
 /**
  * "Đơn vị giới thiệu" — MỘT ô chọn trên form, HAI cột dưới DB.
@@ -86,24 +87,23 @@ const TEN_CAP_TINH = new Set(['mttq tỉnh', 'mttq tinh', 'tỉnh', 'tinh', 'c�
 
 export type DonViGioiThieuImportResult =
   | { ok: true; value: string }
-  | { ok: false; ten: string };
+  | { ok: false; ten: string; reason: 'missing' | 'ambiguous' };
 
 /**
- * Tên trong file nhập → giá trị dùng cho form (rồi qua `donViGioiThieuToPayload`).
- * `xaPhuongTheoTen` là map tên đã chuẩn hoá → id, dựng một lần trước vòng lặp.
+ * Tên (hoặc id) trong file nhập → giá trị dùng cho form (rồi qua
+ * `donViGioiThieuToPayload`). `xaPhuong` là danh mục nạp một lần trước vòng lặp.
+ * Khớp NGUYÊN VẸN tên sau khi bỏ dấu; hai xã trùng tên ⇒ báo lỗi thay vì lấy bừa.
  */
 export function resolveDonViGioiThieuImport(
   raw: unknown,
-  xaPhuongTheoTen: Map<string, string>,
+  xaPhuong: readonly NamedRef[],
 ): DonViGioiThieuImportResult {
   const ten = String(raw ?? '').trim();
   if (ten === '') return { ok: true, value: '' };
 
-  const khoa = chuanHoaTenDonVi(ten);
-  if (TEN_CAP_TINH.has(khoa)) return { ok: true, value: DON_VI_GIOI_THIEU_TINH };
+  if (TEN_CAP_TINH.has(chuanHoaTenDonVi(ten))) return { ok: true, value: DON_VI_GIOI_THIEU_TINH };
 
-  const id = xaPhuongTheoTen.get(khoa);
-  if (id) return { ok: true, value: String(id) };
-
-  return { ok: false, ten };
+  const hit = findRefStrict(xaPhuong, ten);
+  if (hit.ok && hit.ref) return { ok: true, value: String(hit.ref.id) };
+  return { ok: false, ten, reason: !hit.ok && hit.reason === 'ambiguous' ? 'ambiguous' : 'missing' };
 }

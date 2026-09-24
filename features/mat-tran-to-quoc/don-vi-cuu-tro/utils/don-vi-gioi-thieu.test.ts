@@ -88,33 +88,38 @@ describe('donViGioiThieuLabel', () => {
 });
 
 describe('resolveDonViGioiThieuImport', () => {
-  const map = new Map<string, string>([
-    ['xã tam quang', '245'],
-    ['phường tây hiếu', '209'],
-  ]);
+  const xa = [
+    { id: '245', ten: 'Xã Tam Quang' },
+    { id: '209', ten: 'Phường Tây Hiếu' },
+    { id: '300', ten: 'Xã Hưng Lộc' },
+    { id: '301', ten: 'Xã Hưng Lộc' },
+  ];
 
   it('ô trống ⇒ chưa nhập', () => {
-    expect(resolveDonViGioiThieuImport('', map)).toEqual({ ok: true, value: '' });
+    expect(resolveDonViGioiThieuImport('', xa)).toEqual({ ok: true, value: '' });
   });
 
   it('nhận nhiều cách gõ cấp tỉnh', () => {
     for (const s of ['MTTQ tỉnh', 'mttq tinh', 'Cấp tỉnh', '  Tỉnh  ']) {
-      expect(resolveDonViGioiThieuImport(s, map)).toEqual({
+      expect(resolveDonViGioiThieuImport(s, xa)).toEqual({
         ok: true,
         value: DON_VI_GIOI_THIEU_TINH,
       });
     }
   });
 
-  it('khớp tên xã bất kể hoa thường và dấu cách thừa', () => {
-    expect(resolveDonViGioiThieuImport('Xã  Tam   Quang', map)).toEqual({ ok: true, value: '245' });
-    expect(resolveDonViGioiThieuImport('phường tây hiếu', map)).toEqual({ ok: true, value: '209' });
+  it('khớp tên xã bất kể hoa thường, dấu và dấu cách thừa; nhận cả id', () => {
+    expect(resolveDonViGioiThieuImport('Xã  Tam   Quang', xa)).toEqual({ ok: true, value: '245' });
+    expect(resolveDonViGioiThieuImport('phuong tay hieu', xa)).toEqual({ ok: true, value: '209' });
+    expect(resolveDonViGioiThieuImport('245', xa)).toEqual({ ok: true, value: '245' });
   });
 
-  it('tên không khớp ⇒ báo lỗi dòng, không im lặng bỏ trống', () => {
-    expect(resolveDonViGioiThieuImport('Xã Không Có Thật', map)).toEqual({
+  it('tên không khớp / trùng tên ⇒ báo lỗi dòng, không im lặng bỏ trống hay lấy bừa', () => {
+    expect(resolveDonViGioiThieuImport('Xã Không Có Thật', xa)).toEqual({
       ok: false,
       ten: 'Xã Không Có Thật',
+      reason: 'missing',
     });
+    expect(resolveDonViGioiThieuImport('xã hưng lộc', xa)).toMatchObject({ ok: false, reason: 'ambiguous' });
   });
 });

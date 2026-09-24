@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isConstraintFieldError } from '@/lib/supabase/constraint-field-error';
-import { getDepartments, createDepartment, updateDepartment, deleteDepartment, updateDepartmentStatus, importDepartments } from "../services/phong-ban-service";
+import { getDepartments, createDepartment, updateDepartment, deleteDepartment, updateDepartmentStatus } from "../services/phong-ban-service";
 import { DepartmentFormValues } from "../core/schema";
 import type { Department } from '../core/types';
 import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import { toast } from "sonner";
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importPhongBanRows } from '../services/phong-ban-import';
 import { txt } from '../../../../lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
@@ -250,19 +252,18 @@ export const useDeleteDepartmentMany = () => {
   });
 };
 
-export const useImportDepartments = (onSuccess?: () => void) => {
+export const useImportDepartments = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: importDepartments,
+    mutationFn: ({ rows, options }: { rows: Record<string, unknown>[]; options: ImportRunOptions }) =>
+      importPhongBanRows(rows, options),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: departmentsQueryKey });
-      if (result.created > 0) {
-        toast.success(txt('department.toast.importSuccess', { count: result.created }));
+      void queryClient.invalidateQueries({ queryKey: departmentsQueryKey });
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('department.import.toastDone', { created, updated }));
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      if (onSuccess) onSuccess();
     },
   });
 };

@@ -15,9 +15,9 @@ import {
   createXaPhuong,
   updateXaPhuong,
   deleteXaPhuongMany,
-  importTinhThanhRows,
-  importXaPhuongRows,
 } from '../services/dia-ban-service';
+import type { ImportBatchResult, ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importTinhThanhRows, importXaPhuongRows } from '../services/dia-ban-import';
 
 const tinhKey = queryKeys.tinhThanh.all;
 
@@ -311,38 +311,33 @@ export function useDeleteXaPhuong() {
   });
 }
 
-export function useImportTinhThanhRows(onDone?: () => void) {
+type ImportArgs = { rows: Record<string, unknown>[]; options: ImportRunOptions };
+
+function toastImportDone(result: ImportBatchResult) {
+  const created = result.created ?? 0;
+  const updated = result.updated ?? 0;
+  if (created + updated > 0) toast.success(txt('diaBan.import.toastDone', { created, updated }));
+}
+
+export function useImportTinhThanhRows() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: importTinhThanhRows,
+    mutationFn: ({ rows, options }: ImportArgs) => importTinhThanhRows(rows, options),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: tinhKey });
-      if (result.created > 0) {
-        toast.success(txt('diaBan.toast.importSuccess', { count: result.created }));
-      }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 5).join('; '));
-      }
-      onDone?.();
+      toastImportDone(result);
     },
   });
 }
 
-export function useImportXaPhuongRows(onDone?: () => void) {
+export function useImportXaPhuongRows() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (args: { rows: Record<string, unknown>[]; tinhList: TinhThanh[] }) =>
-      importXaPhuongRows(args.rows, args.tinhList),
+    mutationFn: ({ rows, options }: ImportArgs) => importXaPhuongRows(rows, options),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: tinhKey });
       void queryClient.invalidateQueries({ queryKey: queryKeys.xaPhuong.all });
-      if (result.created > 0) {
-        toast.success(txt('diaBan.toast.importSuccess', { count: result.created }));
-      }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 5).join('; '));
-      }
-      onDone?.();
+      toastImportDone(result);
     },
   });
 }

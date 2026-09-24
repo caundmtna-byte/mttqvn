@@ -3,9 +3,8 @@ import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { MttqNhiemKy, MttqNhiemKyListRow } from '../core/types';
-import { mttqNhiemKySchema, type MttqNhiemKyFormInput, type MttqNhiemKyFormValues } from '../core/schema';
+import type { MttqNhiemKyFormValues } from '../core/schema';
 import { MTTQ_NHIEM_KY_RETURNING, MTTQ_NHIEM_KY_SELECT_FULL, MTTQ_NHIEM_KY_SELECT_LIST } from '../core/supabase-select';
-import { getErrorMessage } from '@/lib/utils';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -160,55 +159,25 @@ export async function deleteMttqNhiemKyMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }
 
-function importRowToFormInput(row: Record<string, unknown>): MttqNhiemKyFormInput {
-  const num = (v: unknown, def: number) => {
-    if (v == null || String(v).trim() === '') return def;
-    const n = Number(v);
-    return Number.isFinite(n) ? Math.trunc(n) : def;
-  };
-  return {
-    ten_nhiem_ky: String(row.ten_nhiem_ky ?? '').trim(),
-    tu_nam: row.tu_nam != null && String(row.tu_nam).trim() !== '' ? String(row.tu_nam) : '',
-    den_nam: row.den_nam != null && String(row.den_nam).trim() !== '' ? String(row.den_nam) : '',
-    thong_tin: row.thong_tin != null && String(row.thong_tin).trim() !== '' ? String(row.thong_tin) : undefined,
-    ghi_chu: row.ghi_chu != null && String(row.ghi_chu).trim() !== '' ? String(row.ghi_chu) : undefined,
-    sl_dau_nhiem_ky: num(row.sl_dau_nhiem_ky, 0),
-    sl_dang_tham_gia: num(row.sl_dang_tham_gia, 0),
-    sl_thoi_tham_gia: num(row.sl_thoi_tham_gia, 0),
-    sl_can_bo_sung: num(row.sl_can_bo_sung, 0),
-    sl_thieu: num(row.sl_thieu, 0),
-  };
+/**
+ * Ghi cho luồng nhập file (`nhiem-ky-import.ts`): payload đã dựng sẵn, chỉ trả
+ * `id` — không đọc lại cả hồ sơ cho mỗi dòng Excel.
+ */
+export async function insertMttqNhiemKyForImport(
+  payload: Record<string, unknown>,
+  idNguoiTao: string,
+): Promise<void> {
+  await repo.insert({ ...payload, id_nguoi_tao: idNguoiTao } as unknown as Omit<RepoRow, 'id'>, {
+    returningSelect: 'id',
+  });
 }
 
-/** Import nhiều nhiệm kỳ (chỉ thêm mới). Cột khớp export / form. */
-export async function importMttqNhiemKy(
-  rows: Record<string, unknown>[],
-  idNguoiTao: string,
-): Promise<{ created: number; errors: string[] }> {
-  const trimmedNv = idNguoiTao.trim();
-  if (!trimmedNv) throw new Error(txt('matTranNhiemKy.service.noEmployeeProfile'));
-
-  const errors: string[] = [];
-  let created = 0;
-
-  for (let i = 0; i < rows.length; i++) {
-    const raw = rows[i];
-    const input = importRowToFormInput(raw);
-    const parsed = mttqNhiemKySchema.safeParse(input);
-    if (!parsed.success) {
-      const msg = parsed.error.flatten().formErrors[0] ?? parsed.error.message;
-      errors.push(txt('matTranNhiemKy.import.rowError', { row: i + 2, message: msg }));
-      continue;
-    }
-    const data = parsed.data as MttqNhiemKyFormValues;
-    try {
-      await createMttqNhiemKy(data, trimmedNv);
-      created++;
-    } catch (e: unknown) {
-      const msg = getErrorMessage(e);
-      errors.push(txt('matTranNhiemKy.import.rowError', { row: i + 2, message: msg }));
-    }
-  }
-
-  return { created, errors };
+/** Ghi đè MỘT PHẦN — `payload` chỉ gồm các cột có trong file. */
+export async function updateMttqNhiemKyPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  if (Object.keys(payload).length === 0) return;
+  await repo.update(
+    id,
+    { ...payload, tg_cap_nhat: new Date().toISOString() } as unknown as Partial<RepoRow>,
+    { returningSelect: 'id' },
+  );
 }

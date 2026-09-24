@@ -27,6 +27,15 @@ export const danTocThamHoiToChuc = {
   import: {
     templateName: 'tham-hoi-to-chuc',
     rowError: 'Dòng {{row}}: {{message}}',
+    toastDone: 'Đã nhập: {{created}} lượt thăm hỏi mới, {{updated}} lượt được ghi đè.',
+    errKhongThay: 'không tìm thấy {{cot}} “{{gia_tri}}”.',
+    errTrungTen: 'có nhiều {{cot}} tên “{{gia_tri}}”. Nhập mã (id) thay cho tên.',
+    cotToChuc: 'cơ sở tôn giáo',
+    cotDip: 'dịp thăm hỏi',
+    cotDonViThamHoi: 'đơn vị thăm hỏi (xã, phường)',
+    errTienDo: 'tiến độ “{{gia_tri}}” không hợp lệ — chỉ nhận: {{hop_le}}.',
+    errNgoaiDonVi: 'bạn chỉ được nhập lượt thăm hỏi có đơn vị thăm hỏi là đơn vị của mình.',
+    errChuaGanDonVi: 'Tài khoản cấp xã, phường chưa được gán đơn vị nên không nhập file được.',
   },
   validation: {
     toChucRequired: 'Vui lòng chọn cơ sở tôn giáo',

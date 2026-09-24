@@ -24,7 +24,13 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, {
+  type ImportColumn,
+  type ImportMatchColumn,
+  type ImportRunOptions,
+  type ImportWriteMode,
+} from '@/components/shared/ImportDialog';
+import { dryRunDonViCuuTroImport } from './services/don-vi-cuu-tro-import';
 import ErrorState from '@/components/shared/ErrorState';
 import {
   useKhoDonViCuuTroList,
@@ -63,6 +69,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefSupportUnits');
+  const canEdit = useCan('edit', 'matTranReliefSupportUnits');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
@@ -119,7 +126,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
   const { data: viewingData } = useKhoDonViCuuTroDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteKhoDonViCuuTroMany();
-  const importMutation = useImportKhoDonViCuuTro(() => setShowImport(false));
+  const importMutation = useImportKhoDonViCuuTro();
 
   useEffect(() => {
     return () => resetState();
@@ -167,7 +174,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
     [],
   );
 
-  const IMPORT_COLUMNS = useMemo(
+  const IMPORT_COLUMNS = useMemo<ImportColumn[]>(
     () => [
       { key: 'loai', label: txt('matTranDonViCuuTro.form.loai'), required: true },
       { key: 'ten', label: txt('matTranDonViCuuTro.form.ten'), required: true },
@@ -179,8 +186,23 @@ const KhoDonViCuuTroPage: React.FC = () => {
       { key: 'don_vi_gioi_thieu', label: txt('matTranDonViCuuTro.form.donViGioiThieu') },
       { key: 'email', label: txt('matTranDonViCuuTro.form.email') },
       { key: 'ghi_chu', label: txt('matTranDonViCuuTro.form.ghiChu') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo<ImportMatchColumn[]>(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten', label: txt('matTranDonViCuuTro.form.ten') },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo<readonly ImportWriteMode[]>(
+    () => (canEdit ? ['insert', 'upsert', 'update'] : ['insert']),
+    [canEdit],
   );
 
   const exportMapFn = useCallback(
@@ -305,7 +327,8 @@ const KhoDonViCuuTroPage: React.FC = () => {
   };
 
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => importMutation.mutateAsync(data),
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows: rowsToImport, options }),
     [importMutation],
   );
 
@@ -420,6 +443,10 @@ const KhoDonViCuuTroPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={dryRunDonViCuuTroImport}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ten']}
             templateFileName={txt('matTranDonViCuuTro.import.templateName')}
           />
         )}

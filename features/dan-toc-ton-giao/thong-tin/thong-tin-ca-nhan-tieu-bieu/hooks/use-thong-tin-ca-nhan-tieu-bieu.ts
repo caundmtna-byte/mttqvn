@@ -11,10 +11,14 @@ import {
   deleteThongTinCaNhanTieuBieuMany,
   getThongTinCaNhanTieuBieuById,
   getThongTinCaNhanTieuBieuList,
-  importThongTinCaNhanTieuBieu,
   updateThongTinCaNhanTieuBieu,
   updateThongTinCaNhanTieuBieuStatus,
 } from '../services/thong-tin-ca-nhan-tieu-bieu-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import {
+  importCaNhanTieuBieuRows,
+  type CaNhanTieuBieuImportContext,
+} from '../services/thong-tin-ca-nhan-tieu-bieu-import';
 
 const listKey = queryKeys.danTocCaNhanTieuBieu.all;
 
@@ -101,20 +105,33 @@ export function useDeleteThongTinCaNhanTieuBieuMany() {
   });
 }
 
-export function useImportThongTinCaNhanTieuBieu(onSuccess?: () => void) {
+/**
+ * Không tự đóng hộp thoại khi xong: bước kết quả của `ImportDialog` cần ở lại để
+ * người dùng xem dòng lỗi / tải file lỗi.
+ */
+export function useImportThongTinCaNhanTieuBieu() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importThongTinCaNhanTieuBieu(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: CaNhanTieuBieuImportContext;
+    }) => importCaNhanTieuBieuRows(rows, options, ctx),
     onSuccess: (result) => {
+      // Tiền tố `all` phủ cả danh sách lẫn chi tiết.
       void queryClient.invalidateQueries({ queryKey: listKey });
-      if (result.created > 0) {
-        toast.success(txt('danTocCaNhanTieuBieu.toast.importSuccess', { count: result.created }));
+      if ((result.created ?? 0) + (result.updated ?? 0) > 0) {
+        toast.success(
+          txt('danTocCaNhanTieuBieu.import.toastDone', {
+            created: String(result.created ?? 0),
+            updated: String(result.updated ?? 0),
+          }),
+        );
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 }

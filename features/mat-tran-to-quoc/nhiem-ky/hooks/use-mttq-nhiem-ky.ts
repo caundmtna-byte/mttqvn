@@ -8,12 +8,13 @@ import { getErrorMessage } from '@/lib/utils';
 import { hoanNguyenCache, xoaDongKhoiCache } from '@/features/mat-tran-to-quoc/ky-hop/utils/xoa-optimistic';
 import type { MttqNhiemKy } from '../core/types';
 import type { MttqNhiemKyFormValues } from '../core/schema';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importNhiemKyRows } from '../services/nhiem-ky-import';
 import {
   createMttqNhiemKy,
   deleteMttqNhiemKyMany,
   getMttqNhiemKyById,
   getMttqNhiemKyList,
-  importMttqNhiemKy,
   setMttqNhiemKyDaKhoa,
   updateMttqNhiemKy,
 } from '../services/mttq-nhiem-ky-service';
@@ -115,20 +116,25 @@ export const useDeleteMttqNhiemKyMany = () => {
   });
 };
 
-export const useImportMttqNhiemKy = (onSuccess?: () => void) => {
+export const useImportMttqNhiemKy = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importMttqNhiemKy(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      idNguoiTao,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      idNguoiTao: string;
+    }) => importNhiemKyRows(rows, options, idNguoiTao),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
-      if (result.created > 0) {
-        toast.success(txt('matTranNhiemKy.toast.importSuccess', { count: result.created }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('matTranNhiemKy.toast.importSuccess', { created, updated }));
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 };

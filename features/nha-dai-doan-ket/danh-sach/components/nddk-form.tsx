@@ -11,6 +11,7 @@ import {
   MapPin,
   Users,
   StickyNote,
+  UserSearch,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { toast } from 'sonner';
@@ -43,15 +44,18 @@ import type { NhaDaiDoanKet } from '../core/types';
 import { useCreateNhaDaiDoanKet, useUpdateNhaDaiDoanKet } from '../hooks/use-nha-dai-doan-ket';
 import { isNddkScopedToXaPhuong, useNddkViewer } from '../hooks/use-nddk-viewer';
 import { useNddkXaPhuongOptions } from '../hooks/use-nddk-xa-phuong-options';
+import { useVnnHoNgheoOptions } from '../../vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
 
 const FORM_ID = 'nddk-form';
 
 interface Props {
   initialData?: NhaDaiDoanKet | null;
   onClose: () => void;
+  /** Tạo mới từ chi tiết hộ nghèo: hộ đang xem được chọn sẵn. */
+  prefill?: Partial<NhaDaiDoanKetFormInput>;
 }
 
-const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
+const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
   const isEdit = Boolean(initialData);
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
@@ -62,7 +66,27 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
   const scopedToXa = isNddkScopedToXaPhuong(viewer);
   const { canApprove } = useResourcePermissions('nhaDaiDoanKetList');
 
-  const xaPhuongOptions = useNddkXaPhuongOptions(scopedToXa ? viewer.viewerDonViId : null);
+  const scopedXaId = scopedToXa ? viewer.viewerDonViId : null;
+  const xaPhuongOptions = useNddkXaPhuongOptions();
+  const tenXaById = useMemo(
+    () => new Map(xaPhuongOptions.map((o) => [o.value, o.label])),
+    [xaPhuongOptions],
+  );
+
+  // Nhà đại đoàn kết BẮT BUỘC gắn một hộ; cán bộ cấp xã chỉ thấy hộ của xã mình.
+  const { data: hoNgheoRows = [], isLoading: hoNgheoLoading } = useVnnHoNgheoOptions(scopedXaId);
+  const hoNgheoById = useMemo(() => new Map(hoNgheoRows.map((h) => [h.id, h])), [hoNgheoRows]);
+  const hoNgheoOptions = useMemo(
+    () =>
+      hoNgheoRows.map((h) => ({
+        value: h.id,
+        label: h.ho_ten_dai_dien,
+        subLabel: [h.so_cccd, h.xa_phuong_id ? tenXaById.get(h.xa_phuong_id) : null]
+          .filter(Boolean)
+          .join(' · '),
+      })),
+    [hoNgheoRows, tenXaById],
+  );
   const nguonOptions = useMemo(() => NDDK_NGUON_VALUES.map((v) => ({ label: v, value: v })), []);
   const nguonHoTroOptions = useMemo(
     () => NDDK_NGUON_HO_TRO_VALUES.map((v) => ({ label: v, value: v })),
@@ -95,6 +119,7 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<NhaDaiDoanKetFormInput, unknown, NhaDaiDoanKetFormValues>({
     defaultValues: nhaDaiDoanKetToFormInput(null),
@@ -107,18 +132,24 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   useEffect(() => {
     const base = nhaDaiDoanKetToFormInput(initialData ?? null);
-    if (initialData) {
-      reset(base);
-      return;
-    }
-    // Tạo mới: cán bộ cấp xã nhập hồ sơ của chính xã mình — điền sẵn để không
-    // phải chọn lại, và combobox cũng chỉ còn đúng xã đó.
-    if (scopedToXa && viewer.viewerDonViId) {
-      reset({ ...base, xa_phuong_id: viewer.viewerDonViId });
-      return;
-    }
-    reset(base);
-  }, [initialData, reset, scopedToXa, viewer.viewerDonViId]);
+    reset(initialData ? base : { ...base, ...prefill });
+  }, [initialData, prefill, reset]);
+
+  /**
+   * Chọn hộ ⇒ điền họ tên / xã / khối xóm / đối tượng theo hộ. Bốn ô đó khoá
+   * lại: dưới DB trigger `fn_nddk_dong_bo_tu_ho_ngheo` cũng chép từ hộ, sửa tay
+   * ở đây sẽ bị ghi đè.
+   */
+  const handlePickHoNgheo = (id: string) => {
+    const opts = { shouldDirty: true, shouldValidate: true } as const;
+    setValue('ho_ngheo_id', id, opts);
+    const ho = hoNgheoById.get(id);
+    if (!ho) return;
+    setValue('ho_ten_chu_ho', ho.ho_ten_dai_dien, opts);
+    setValue('xa_phuong_id', ho.xa_phuong_id ?? '', opts);
+    setValue('khoi_xom', ho.khoi_xom ?? '', opts);
+    setValue('doi_tuong', ho.doi_tuong ?? '', opts);
+  };
 
   const onSubmit: SubmitHandler<NhaDaiDoanKetFormValues> = (parsed) => {
     if (scopedToXa) {
@@ -164,12 +195,38 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
       <form id={FORM_ID} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <FormSection title={txt('nhaDaiDoanKet.form.sectionHoDan')} icon={<Users size={14} />}>
           <FormGrid cols={2}>
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Controller
+                name="ho_ngheo_id"
+                control={control}
+                render={({ field }) => (
+                  <Combobox
+                    label={txt('nhaDaiDoanKet.form.hoNgheoLabel')}
+                    icon={UserSearch}
+                    options={hoNgheoOptions}
+                    value={field.value ?? ''}
+                    onChange={(v) => {
+                      const id = v == null ? '' : String(v);
+                      if (id) handlePickHoNgheo(id);
+                      else field.onChange('');
+                    }}
+                    placeholder={
+                      hoNgheoLoading ? txt('common.loading') : txt('nhaDaiDoanKet.form.hoNgheoPlaceholder')
+                    }
+                    hint={txt('nhaDaiDoanKet.form.hoNgheoHint')}
+                    error={errors.ho_ngheo_id?.message}
+                    required
+                  />
+                )}
+              />
+            </div>
             <Input
               label={txt('nhaDaiDoanKet.store.chuHoCol')}
               icon={Users}
               {...register('ho_ten_chu_ho')}
               error={errors.ho_ten_chu_ho?.message}
-              required
+              readOnly
+              className="bg-muted cursor-not-allowed"
             />
             <Controller
               name="doi_tuong"
@@ -181,8 +238,8 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
                   options={doiTuongOptions}
                   value={field.value ?? ''}
                   onChange={field.onChange}
-                  placeholder={txt('common.select')}
-                  error={errors.doi_tuong?.message}
+                  placeholder={txt('common.emptyCell')}
+                  disabled
                 />
               )}
             />
@@ -196,7 +253,8 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
                   options={xaPhuongOptions}
                   value={field.value ?? ''}
                   onChange={(v) => field.onChange(v == null ? '' : String(v))}
-                  placeholder={txt('common.select')}
+                  placeholder={txt('common.emptyCell')}
+                  disabled
                 />
               )}
             />
@@ -204,7 +262,8 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose }) => {
               label={txt('nhaDaiDoanKet.store.khoiXomCol')}
               icon={MapPin}
               {...register('khoi_xom')}
-              error={errors.khoi_xom?.message}
+              readOnly
+              className="bg-muted cursor-not-allowed"
             />
           </FormGrid>
         </FormSection>

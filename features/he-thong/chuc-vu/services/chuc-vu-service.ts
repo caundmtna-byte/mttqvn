@@ -1,16 +1,13 @@
 import { Position } from '../core/types';
-import { PositionFormValues, positionSchema } from '../core/schema';
-import { parseTrangThaiHoatDongImport, type TrangThaiHoatDong } from '@/lib/constants/trang-thai';
+import type { PositionFormValues } from '../core/schema';
+import type { TrangThaiHoatDong } from '@/lib/constants/trang-thai';
 import { getJobLevels } from '../../cap-bac/services/cap-bac-service';
-import { getDepartments } from '../../phong-ban/services/phong-ban-service';
 import { createRepository } from '@/lib/data/create-repository';
 import {
   POSITION_RETURNING_FULL,
   POSITION_RETURNING_STATUS_ONLY,
   POSITION_SELECT_FULL,
 } from '../core/supabase-select';
-import { txt } from '../../../../lib/text';
-import { getErrorMessage } from '@/lib/utils';
 
 const repo = createRepository<Position>({
   tableName: 'var_chuc_vu',
@@ -88,22 +85,25 @@ export const getPositions = async (): Promise<Position[]> => {
   return Promise.all((flattened as Position[]).map(enrichPosition));
 };
 
+/** Form → cột DB (không có mốc thời gian). Dùng chung cho form và nhập file. */
+export function positionFormToPayload(data: PositionFormValues): Record<string, unknown> {
+  const moTa = data.mo_ta && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
+  return {
+    ten_chuc_vu: data.ten_chuc_vu.trim(),
+    mo_ta: moTa,
+    cap_bac: normInt16Fk(data.cap_bac ?? undefined),
+    phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
+    thu_tu: data.thu_tu ?? 0,
+    trang_thai: data.trang_thai,
+  };
+}
+
 export const createPosition = async (data: PositionFormValues): Promise<Position> => {
   const now = new Date().toISOString();
-  const ten = data.ten_chuc_vu.trim();
-  const moTa = data.mo_ta && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
-
   const inserted = await repo.insert(
-    {
-      ten_chuc_vu: ten,
-      mo_ta: moTa,
-      cap_bac: normInt16Fk(data.cap_bac ?? undefined),
-      phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
-      thu_tu: data.thu_tu ?? 0,
-      trang_thai: data.trang_thai,
-      tg_tao: now,
-      tg_cap_nhat: now,
-    } as unknown as Omit<Position, 'id'> & { id?: string },
+    { ...positionFormToPayload(data), tg_tao: now, tg_cap_nhat: now } as unknown as Omit<Position, 'id'> & {
+      id?: string;
+    },
     { returningSelect: POSITION_RETURNING_FULL },
   );
   const flat = flattenSupabaseRow(inserted as unknown as Record<string, unknown>);
@@ -111,16 +111,8 @@ export const createPosition = async (data: PositionFormValues): Promise<Position
 };
 
 export const updatePosition = async (id: string, data: PositionFormValues): Promise<Position> => {
-  const ten = data.ten_chuc_vu.trim();
-  const moTa = data.mo_ta && String(data.mo_ta).trim() !== '' ? String(data.mo_ta).trim() : null;
-
   const payload = {
-    ten_chuc_vu: ten,
-    mo_ta: moTa,
-    cap_bac: normInt16Fk(data.cap_bac ?? undefined),
-    phong_ban_id: normInt8Fk(data.phong_ban_id ?? undefined),
-    thu_tu: data.thu_tu ?? 0,
-    trang_thai: data.trang_thai,
+    ...positionFormToPayload(data),
     tg_cap_nhat: new Date().toISOString(),
   } as unknown as Partial<Position>;
 
@@ -128,6 +120,15 @@ export const updatePosition = async (id: string, data: PositionFormValues): Prom
   const flat = flattenSupabaseRow(updated as unknown as Record<string, unknown>);
   return enrichPosition(flat as Position);
 };
+
+/** Ghi đè từ file: chỉ các cột có trong `payload`, không đọc lại cả bản ghi. */
+export async function updatePositionPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  await repo.update(
+    id,
+    { ...payload, tg_cap_nhat: new Date().toISOString() } as unknown as Partial<Position>,
+    { returningSelect: 'id' },
+  );
+}
 
 export const updatePositionStatus = async (ids: string[], status: TrangThaiHoatDong): Promise<Position | undefined> => {
   const now = new Date().toISOString();
@@ -147,86 +148,4 @@ export const updatePositionStatus = async (ids: string[], status: TrangThaiHoatD
 
 export const deletePositions = async (ids: string[]): Promise<void> => {
   await repo.remove(ids);
-};
-
-/** Import nhiều chức vụ (chỉ thêm mới). Cột: ten_chuc_vu; cấp bậc: cap_bac | ma_cap_bac | cap_bac_id (legacy); phòng ban: phong_ban_id | ten_phong_ban; mo_ta, thu_tu, trang_thai */
-export const importPositions = async (
-  rows: Record<string, unknown>[]
-): Promise<{ created: number; errors: string[] }> => {
-  const levels = await getJobLevels();
-  const depts = await getDepartments();
-  const errors: string[] = [];
-  let created = 0;
-
-  const resolveCapId = (raw: unknown): string | null => {
-    if (raw == null || String(raw).trim() === '') return null;
-    const s = String(raw).trim();
-    const byId = levels.find((l) => l.id === s);
-    if (byId) return byId.id;
-    const up = s.toUpperCase();
-    const byMa = levels.find((l) => l.ma_cap_bac?.toUpperCase() === up);
-    return byMa?.id ?? null;
-  };
-
-  const resolveDeptId = (raw: unknown): string | null => {
-    if (raw == null || String(raw).trim() === '') return null;
-    const s = String(raw).trim();
-    const byId = depts.find((d) => d.id === s);
-    if (byId) return byId.id;
-    const key = s.toLowerCase();
-    const byTen = depts.find((d) => (d.ten_phong_ban ?? '').trim().toLowerCase() === key);
-    return byTen?.id ?? null;
-  };
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const ten_chuc_vu = String(row.ten_chuc_vu ?? '').trim();
-    if (!ten_chuc_vu) {
-      errors.push(`Dòng ${i + 2}: Thiếu tên chức vụ`);
-      continue;
-    }
-
-    const capRaw = row.cap_bac ?? row['cap_bac_id'] ?? row.ma_cap_bac;
-    const pbRaw = row.phong_ban_id ?? row.ten_phong_ban;
-    const resolvedCapBac = resolveCapId(capRaw);
-    const phong_ban_id = resolveDeptId(pbRaw);
-    if (!resolvedCapBac) {
-      errors.push(
-        `Dòng ${i + 2}: ${capRaw != null && String(capRaw).trim() !== '' ? 'Không tìm thấy cấp bậc (mã hoặc id)' : txt('position.validation.levelRequired')}`,
-      );
-      continue;
-    }
-    if (!phong_ban_id) {
-      errors.push(
-        `Dòng ${i + 2}: ${pbRaw != null && String(pbRaw).trim() !== '' ? 'Không tìm thấy phòng ban (tên hoặc id)' : txt('position.validation.departmentRequired')}`,
-      );
-      continue;
-    }
-
-    const parsed = positionSchema.safeParse({
-      ten_chuc_vu,
-      cap_bac: resolvedCapBac,
-      phong_ban_id,
-      mo_ta: row.mo_ta != null ? String(row.mo_ta) : '',
-      thu_tu: row.thu_tu != null && String(row.thu_tu).trim() !== '' ? Number(row.thu_tu) : 0,
-      trang_thai: parseTrangThaiHoatDongImport(row.trang_thai),
-    });
-    if (!parsed.success) {
-      const msg = parsed.error.flatten().formErrors[0] ?? parsed.error.message;
-      errors.push(`Dòng ${i + 2}: ${msg}`);
-      continue;
-    }
-
-    try {
-      await createPosition({
-        ...parsed.data,
-        mo_ta: parsed.data.mo_ta?.trim() || null,
-      });
-      created++;
-    } catch (e: unknown) {
-      errors.push(`Dòng ${i + 2}: ${getErrorMessage(e)}`);
-    }
-  }
-
-  return { created, errors };
 };

@@ -8,6 +8,8 @@ import type {
   HoNgheoStatusChangeValues,
 } from '../core/schema';
 import type { HoNgheo } from '../core/types';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importHoNgheoRows, type HoNgheoImportContext } from '../services/ho-ngheo-import';
 import {
   createHoNgheo,
   deleteHoNgheoMany,
@@ -111,5 +113,34 @@ export function useNhaDaiDoanKetCuaHo(hoNgheoId: string | null, options?: { enab
     },
     enabled,
     ...transactionalCrudListQueryOptions,
+  });
+}
+
+export function useImportHoNgheo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: HoNgheoImportContext;
+    }) => importHoNgheoRows(rows, options, ctx),
+    onSuccess: (result) => {
+      invalidateHoNgheoPages(queryClient);
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'detail'] });
+      // Ô chọn hộ ở form Vì người nghèo / Nhà đại đoàn kết đọc danh sách hộ riêng.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.viNguoiNgheo.all });
+      if ((result.created ?? 0) + (result.updated ?? 0) > 0) {
+        toast.success(
+          txt('hoNgheo.import.toastDone', {
+            created: String(result.created ?? 0),
+            updated: String(result.updated ?? 0),
+          }),
+        );
+      }
+    },
   });
 }

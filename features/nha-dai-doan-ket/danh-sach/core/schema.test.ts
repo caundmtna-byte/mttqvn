@@ -10,6 +10,7 @@ const HO_SO_HOP_LE = {
   loai_hinh_ho_tro: 'Xây mới',
   nguon: 'Vì người nghèo',
   nguon_ho_tro: 'Cấp xã',
+  ho_ngheo_id: '9',
   ho_ten_chu_ho: 'Hồ Văn Thu',
   trang_thai: 'Đang khảo sát',
 };
@@ -17,6 +18,13 @@ const HO_SO_HOP_LE = {
 function soTien(v: unknown) {
   return nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, so_tien: v });
 }
+
+describe('liên kết hộ nghèo', () => {
+  it('bắt buộc chọn hộ', () => {
+    expect(nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, ho_ngheo_id: ' ' }).success).toBe(false);
+    expect(nhaDaiDoanKetSchema.safeParse(HO_SO_HOP_LE).success).toBe(true);
+  });
+});
 
 describe('số tiền hồ sơ Nhà đại đoàn kết', () => {
   it('đọc được số dán từ Excel có dấu phân tách', () => {

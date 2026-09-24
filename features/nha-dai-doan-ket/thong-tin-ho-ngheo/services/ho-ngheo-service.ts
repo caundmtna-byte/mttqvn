@@ -85,7 +85,7 @@ export function flattenHoNgheoRow(row: Record<string, unknown>): HoNgheo {
 }
 
 /** Cố ý KHÔNG có `ngay_cap_nhat_trang_thai`: trigger DB gán khi trạng thái đổi. */
-function formToPayload(data: HoNgheoFormValues): Record<string, unknown> {
+export function formToPayload(data: HoNgheoFormValues): Record<string, unknown> {
   return {
     ho_ten_dai_dien: data.ho_ten_dai_dien.trim(),
     so_cccd: data.so_cccd ?? null,
@@ -280,6 +280,21 @@ export async function updateHoNgheo(id: string, data: HoNgheoFormValues): Promis
     { returningSelect: HNGH_RETURNING },
   );
   return flattenHoNgheoRow(updated as unknown as Record<string, unknown>);
+}
+
+/**
+ * Ghi đè MỘT PHẦN — dùng cho nhập file: chỉ các cột có trong file, cột khác giữ
+ * nguyên. `payload` đã qua `formToPayload` rồi lọc cột.
+ */
+export async function updateHoNgheoPartial(
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await repo.update(
+    id,
+    { ...payload, tg_cap_nhat: new Date().toISOString() },
+    { returningSelect: 'id' },
+  );
 }
 
 /**

@@ -15,7 +15,7 @@ export const matTranNhiemKy = {
     create: 'Đã tạo nhiệm kỳ.',
     update: 'Đã cập nhật nhiệm kỳ.',
     delete: 'Đã xóa {{count}} bản ghi.',
-    importSuccess: 'Đã nhập {{count}} nhiệm kỳ.',
+    importSuccess: 'Nhập nhiệm kỳ từ Excel: thêm mới {{created}}, ghi đè {{updated}}.',
     khoa: 'Đã khoá sổ nhiệm kỳ.',
     moKhoa: 'Đã mở khoá nhiệm kỳ.',
   },
@@ -31,8 +31,8 @@ export const matTranNhiemKy = {
     canhBaoDaKhoa: 'Nhiệm kỳ đã khoá sổ — chỉ xem, không sửa được.',
   },
   import: {
-    rowError: 'Dòng {{row}}: {{message}}',
     templateName: 'mau-nhap-nhiem-ky',
+    errSoLuong: 'ô số lượng « {{gia_tri}} » không phải số nguyên. Điền số hoặc để trống.',
   },
   validation: {
     tenRequired: 'Nhập tên nhiệm kỳ.',

@@ -361,6 +361,15 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
   );
 
   const onSubmit: SubmitHandler<MttqUyVienUyBanFormValues> = async (data) => {
+    // Form khoá ô đơn vị về xã của cán bộ cấp xã, nhưng chỉ khi tài khoản đã
+    // được gán đơn vị — chốt lại ở đây để không lưu sang xã khác.
+    if (!viewer.canViewAll && viewer.chucVuCapQuanLy === 'Xã phường') {
+      const dv = String(data.don_vi_id ?? '').trim();
+      if (!viewer.viewerDonViId || dv !== viewer.viewerDonViId) {
+        toast.error(txt('matTranUyVienUyBan.noXaPhuongScopePermission'));
+        return;
+      }
+    }
     const uniquenessErr = validateUyVienUniqueness(data, {
       uyVienInNhiemKy,
       excludeId: isEdit && initialData ? initialData.id : undefined,

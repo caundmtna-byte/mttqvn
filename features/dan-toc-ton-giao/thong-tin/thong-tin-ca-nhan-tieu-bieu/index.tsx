@@ -25,8 +25,12 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { formatDate } from '@/lib/utils';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, { type ImportRunOptions } from '@/components/shared/ImportDialog';
 import ErrorState from '@/components/shared/ErrorState';
+import {
+  dryRunCaNhanTieuBieuImport,
+  type CaNhanTieuBieuImportContext,
+} from './services/thong-tin-ca-nhan-tieu-bieu-import';
 import {
   useThongTinCaNhanTieuBieuList,
   useThongTinCaNhanTieuBieuDetail,
@@ -127,8 +131,13 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteThongTinCaNhanTieuBieuMany();
   const statusMutation = useUpdateThongTinCaNhanTieuBieuStatus();
-  const importMutation = useImportThongTinCaNhanTieuBieu(() => setShowImport(false));
+  const importMutation = useImportThongTinCaNhanTieuBieu();
   const viewer = useDttgViewer('danTocCaNhanTieuBieu');
+  const canEdit = useCan('edit', 'danTocCaNhanTieuBieu');
+  const importCtx = useMemo<CaNhanTieuBieuImportContext>(
+    () => ({ idNguoiTao: nhanVienId, viewer }),
+    [nhanVienId, viewer],
+  );
 
   const viewableRows = useMemo(
     () => rows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_id])),
@@ -187,8 +196,27 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
       { key: 'so_dien_thoai', label: txt('danTocCaNhanTieuBieu.form.soDienThoai') },
       { key: 'dong_gop_noi_bat', label: txt('danTocCaNhanTieuBieu.form.dongGopNoiBat') },
       { key: 'trang_thai', label: txt('danTocCaNhanTieuBieu.form.trangThai') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      {
+        key: 'ho_ten_ngay_sinh',
+        label: txt('danTocCaNhanTieuBieu.import.matchHoTenNgaySinh'),
+        columns: ['ho_va_ten', 'ngay_sinh'],
+      },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo(
+    () => (canEdit ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEdit],
   );
 
   const exportMapFn = useCallback(
@@ -365,15 +393,21 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const handleImportDryRun = useCallback(
+    (data: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunCaNhanTieuBieuImport(data, options, importCtx),
+    [importCtx],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
+    async (data: Record<string, unknown>[], options: ImportRunOptions) => {
       if (!nhanVienId) {
         toast.error(txt('danTocCaNhanTieuBieu.service.noEmployeeProfile'));
         return { created: 0, errors: [], errorRows: [] };
       }
-      return importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
+      return importMutation.mutateAsync({ rows: data, options, ctx: importCtx });
     },
-    [importMutation, nhanVienId],
+    [importMutation, nhanVienId, importCtx],
   );
 
   const handleCloseForm = () => {
@@ -478,6 +512,10 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ho_ten_ngay_sinh']}
             templateFileName={txt('danTocCaNhanTieuBieu.import.templateName')}
           />
         )}

@@ -226,7 +226,7 @@ const HoNgheoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
 
         <HoNgheoHoTroSection hoNgheo={data} />
 
-        <HoNgheoNhaSection hoNgheoId={data.id} />
+        <HoNgheoNhaSection hoNgheo={data} />
 
         <DetailSection title={txt('hoNgheo.detail.systemInfo')} icon={<Clock size={14} />}>
           <DetailFieldGrid>

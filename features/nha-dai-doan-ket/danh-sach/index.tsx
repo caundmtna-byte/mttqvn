@@ -8,7 +8,7 @@ import React, {
   Suspense,
   startTransition,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -64,6 +64,7 @@ const DrawerLazyFallback: React.FC = () => (
 
 const NhaDaiDoanKetPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
@@ -160,6 +161,25 @@ const NhaDaiDoanKetPage: React.FC = () => {
 
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useNhaDaiDoanKetDetail(viewingId, { enabled: detailEnabled });
+
+  /** Liên kết `?open=<id>` từ module khác (hộ nghèo ↔ nhà đại đoàn kết): mở chi tiết. */
+  useEffect(() => {
+    const raw = searchParams.get('open')?.trim();
+    if (!raw) return;
+    setViewingId(raw);
+    const next = new URLSearchParams(searchParams);
+    next.delete('open');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  /** Mở bằng id (liên kết, đoán id) thì vẫn phải qua phạm vi xem như bấm từ bảng. */
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewNddkRow(viewer, viewingData)) {
+      toast.error(txt('nhaDaiDoanKet.noViewRowPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, viewer]);
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteNhaDaiDoanKetMany();
 

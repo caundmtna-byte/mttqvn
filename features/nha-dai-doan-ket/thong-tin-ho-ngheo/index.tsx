@@ -8,7 +8,7 @@ import React, {
   Suspense,
   startTransition,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,8 +23,21 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useServerPagedList } from '@/hooks/use-server-paged-list';
 import ExportDialog from '@/components/shared/ExportDialog';
+import ImportDialog, {
+  type ImportRunOptions,
+  type ImportTemplateSheet,
+} from '@/components/shared/ImportDialog';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import ErrorState from '@/components/shared/ErrorState';
-import { useHoNgheoDetail, useDeleteHoNgheoMany } from './hooks/use-ho-ngheo';
+import { useHoNgheoDetail, useDeleteHoNgheoMany, useImportHoNgheo } from './hooks/use-ho-ngheo';
+import { useDanTocOptions } from './hooks/use-dan-toc-options';
+import { useNddkXaPhuongOptions } from '../danh-sach/hooks/use-nddk-xa-phuong-options';
+import { dryRunHoNgheoImport, type HoNgheoImportContext } from './services/ho-ngheo-import';
+import {
+  HNGH_DOI_TUONG_VALUES,
+  HNGH_TON_GIAO_VALUES,
+  HNGH_TRANG_THAI_VALUES,
+} from './core/constants';
 import {
   canViewHoNgheoRow,
   isHoNgheoScopedToXaPhuong,
@@ -56,6 +69,7 @@ const DrawerLazyFallback: React.FC = () => (
 
 const ThongTinHoNgheoPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
@@ -87,6 +101,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
   const [editing, setEditing] = useState<HoNgheo | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const {
     searchTerm,
@@ -146,6 +161,25 @@ const ThongTinHoNgheoPage: React.FC = () => {
 
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useHoNgheoDetail(viewingId, { enabled: detailEnabled });
+
+  /** Liên kết `?open=<id>` từ module khác (hộ nghèo ↔ nhà đại đoàn kết): mở chi tiết. */
+  useEffect(() => {
+    const raw = searchParams.get('open')?.trim();
+    if (!raw) return;
+    setViewingId(raw);
+    const next = new URLSearchParams(searchParams);
+    next.delete('open');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  /** Mở bằng id (liên kết, đoán id) thì vẫn phải qua phạm vi xem như bấm từ bảng. */
+  useEffect(() => {
+    if (!viewingId || !viewingData) return;
+    if (!canViewHoNgheoRow(viewer, viewingData)) {
+      toast.error(txt('hoNgheo.noViewRowPermission'));
+      setViewingId(null);
+    }
+  }, [viewingId, viewingData, viewer]);
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteHoNgheoMany();
 
@@ -312,6 +346,98 @@ const ThongTinHoNgheoPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const { canImport, canEdit } = useResourcePermissions('hoNgheoList');
+  const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
+  const importMutation = useImportHoNgheo();
+  const importXaOptions = useNddkXaPhuongOptions(scopedToXa ? viewer.viewerDonViId : null);
+  const importDanTocOptions = useDanTocOptions({ enabled: showImport });
+
+  const importCtx = useMemo<HoNgheoImportContext>(
+    () => ({ idNguoiTao: nhanVienId, viewer }),
+    [nhanVienId, viewer],
+  );
+
+  const importColumns = useMemo(
+    () => [
+      { key: 'ho_ten_dai_dien', label: txt('hoNgheo.store.hoTenCol'), required: true },
+      { key: 'so_cccd', label: txt('hoNgheo.store.soCccdCol') },
+      { key: 'xa_phuong_id', label: txt('hoNgheo.store.xaPhuongCol') },
+      { key: 'khoi_xom', label: txt('hoNgheo.store.khoiXomCol') },
+      { key: 'doi_tuong', label: txt('hoNgheo.store.doiTuongCol') },
+      { key: 'dien_thoai', label: txt('hoNgheo.store.dienThoaiCol') },
+      { key: 'dan_toc_id', label: txt('hoNgheo.store.danTocCol') },
+      { key: 'ton_giao', label: txt('hoNgheo.store.tonGiaoCol') },
+      { key: 'so_tai_khoan', label: txt('hoNgheo.store.soTaiKhoanCol') },
+      { key: 'ngan_hang', label: txt('hoNgheo.store.nganHangCol') },
+      { key: 'trang_thai', label: txt('hoNgheo.store.trangThaiCol') },
+      { key: 'ghi_chu', label: txt('hoNgheo.store.ghiChuCol') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+    ],
+    [],
+  );
+
+  const importMatchColumns = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'so_cccd', label: txt('hoNgheo.store.soCccdCol') },
+      {
+        key: 'ho_ten_xa',
+        label: txt('hoNgheo.import.matchHoTenXa'),
+        columns: ['ho_ten_dai_dien', 'xa_phuong_id'],
+      },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo(
+    () => (canEdit ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEdit],
+  );
+
+  const importTemplateSheets = useMemo((): ImportTemplateSheet[] => {
+    if (!showImport) return [];
+    const k = (key: string) => txt(`hoNgheo.import.${key}`);
+    return [
+      {
+        name: k('sheetHuongDan'),
+        headers: [k('huongDanColMuc'), k('huongDanColNoiDung')],
+        rows: [1, 2, 3, 4, 5, 6].map((i) => [k(`huong${i}k`), k(`huong${i}v`)]),
+      },
+      {
+        name: k('sheetXaPhuong'),
+        headers: [k('refColId'), k('refColTen'), txt('hoNgheo.store.xaPhuongCol')],
+        rows: importXaOptions.map((o) => [o.value, o.label, o.subLabel ?? '']),
+      },
+      {
+        name: k('sheetDanToc'),
+        headers: [k('refColId'), k('refColTen')],
+        rows: importDanTocOptions.map((o) => [o.value, o.label]),
+      },
+      {
+        name: k('sheetGiaTri'),
+        headers: [k('giaTriColCot'), k('giaTriColGiaTri')],
+        rows: [
+          [txt('hoNgheo.store.doiTuongCol'), HNGH_DOI_TUONG_VALUES.join(' · ')],
+          [txt('hoNgheo.store.tonGiaoCol'), HNGH_TON_GIAO_VALUES.join(' · ')],
+          [txt('hoNgheo.store.trangThaiCol'), HNGH_TRANG_THAI_VALUES.join(' · ')],
+        ],
+      },
+    ];
+  }, [showImport, importXaOptions, importDanTocOptions]);
+
+  const handleImportDryRun = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunHoNgheoImport(rowsToImport, options, importCtx),
+    [importCtx],
+  );
+
+  const handleImport = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows: rowsToImport, options, ctx: importCtx }),
+    [importMutation, importCtx],
+  );
+
   const handleCloseForm = () => {
     setShowForm(false);
     setEditing(null);
@@ -343,6 +469,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
             });
           }}
           onExport={handleExport}
+          onImport={canImport && nhanVienId ? () => setShowImport(true) : undefined}
           onDeleteMany={handleDeleteMany}
           scopedToXaPhuongId={scopedToXa ? viewer.viewerDonViId : null}
         />
@@ -393,6 +520,23 @@ const ThongTinHoNgheoPage: React.FC = () => {
               onDelete={handleDelete}
             />
           </Suspense>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImport && (
+          <ImportDialog
+            open={showImport}
+            onClose={() => setShowImport(false)}
+            columns={importColumns}
+            onImport={handleImport}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['so_cccd']}
+            templateFileName={txt('hoNgheo.import.templateFileName')}
+            templateSheets={importTemplateSheets}
+          />
         )}
       </AnimatePresence>
 

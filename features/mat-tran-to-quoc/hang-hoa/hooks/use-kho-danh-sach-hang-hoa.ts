@@ -12,6 +12,7 @@ import {
   getKhoDanhSachHangHoaList,
   updateKhoDanhSachHangHoa,
 } from '../services/kho-danh-sach-hang-hoa-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
 import { importKhoDanhSachHangHoaRows } from '../services/kho-hang-hoa-import';
 
 const listKey = queryKeys.khoDanhSachHangHoa.all;
@@ -98,11 +99,14 @@ export function useDeleteKhoDanhSachHangHoaMany() {
 export function useImportKhoDanhSachHangHoa(onSuccess?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (rows: Record<string, unknown>[]) => importKhoDanhSachHangHoaRows(rows),
+    mutationFn: ({ rows, options }: { rows: Record<string, unknown>[]; options: ImportRunOptions }) =>
+      importKhoDanhSachHangHoaRows(rows, options),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
-      if (result.created > 0) {
-        toast.success(txt('matTranHangHoa.import.toastSuccessHangHoa', { count: result.created }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('matTranHangHoa.import.toastSuccessHangHoa', { created, updated }));
       }
       onSuccess?.();
     },

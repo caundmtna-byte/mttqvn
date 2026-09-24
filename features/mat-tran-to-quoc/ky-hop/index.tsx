@@ -19,7 +19,12 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, {
+  type ImportColumn,
+  type ImportMatchColumn,
+  type ImportRunOptions,
+  type ImportWriteMode,
+} from '@/components/shared/ImportDialog';
 import Button from '@/components/ui/Button';
 import {
   useMttqKyHopList,
@@ -33,6 +38,7 @@ import type { MttqKyHop, MttqKyHopListRow } from './core/types';
 import { MTTQ_KY_HOP_SEARCHABLE_KEYS } from './utils/search-keys';
 import { mttqKyHopMatchesColumnSearch, donViDisplayLabel, yearFromNgayHop } from './utils/column-search';
 import { getMttqKyHopById } from './services/mttq-ky-hop-service';
+import { dryRunKyHopImport, type KyHopImportContext } from './services/ky-hop-import';
 import MttqKyHopToolbar from './components/mttq-ky-hop-toolbar';
 import MttqKyHopTable from './components/mttq-ky-hop-table';
 
@@ -62,7 +68,7 @@ const KyHopPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranSession');
-  const { canCreate } = useResourcePermissions('matTranSession');
+  const { canCreate, canEdit } = useResourcePermissions('matTranSession');
   const tinhCapLabel = txt('matTranKyHop.tinhCap');
   // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
   // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
@@ -100,7 +106,7 @@ const KyHopPage: React.FC = () => {
   const { data: rows = [], isLoading, isError, refetch } = useMttqKyHopList({ enabled: canView });
   const { data: viewingData } = useMttqKyHopDetail(viewingId);
   const deleteMutation = useDeleteMttqKyHopMany();
-  const importMutation = useImportMttqKyHop(() => setShowImport(false));
+  const importMutation = useImportMttqKyHop();
 
   const viewer = useMttqKyHopViewer();
 
@@ -253,7 +259,7 @@ const KyHopPage: React.FC = () => {
     [],
   );
 
-  const IMPORT_COLUMNS = useMemo(
+  const IMPORT_COLUMNS = useMemo<ImportColumn[]>(
     () => [
       { key: 'nhiem_ky_id', label: txt('matTranKyHop.import.nhiemKyIdCol') },
       { key: 'don_vi_id', label: txt('matTranKyHop.import.donViIdCol') },
@@ -264,8 +270,29 @@ const KyHopPage: React.FC = () => {
       { key: 'noi_dung_ky_hop', label: txt('matTranKyHop.store.noiDungCol') },
       { key: 'tai_lieu_hop', label: txt('matTranKyHop.form.taiLieuHop') },
       { key: 'ghi_chu', label: txt('matTranKyHop.form.ghiChu') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo<ImportMatchColumn[]>(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      // Nhiệm kỳ đến từ cột ID HOẶC cột tên — thiếu cả hai thì dòng lỗi riêng.
+      { key: 'nhiem_ky_ky_thu', label: txt('matTranKyHop.import.keyNhiemKyKyThu'), columns: ['ky_thu'] },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo<readonly ImportWriteMode[]>(
+    () => (canEdit ? ['insert', 'upsert', 'update'] : ['insert']),
+    [canEdit],
+  );
+
+  const importCtx = useMemo<KyHopImportContext>(
+    () => ({ idNguoiTao: nhanVienId, viewer }),
+    [nhanVienId, viewer],
   );
 
   const exportMapFn = useCallback(
@@ -298,15 +325,16 @@ const KyHopPage: React.FC = () => {
 
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
+  const handleImportDryRun = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunKyHopImport(rowsToImport, options, importCtx),
+    [importCtx],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
-      if (!nhanVienId) {
-        toast.error(txt('matTranKyHop.service.noEmployeeProfile'));
-        return;
-      }
-      await importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
-    },
-    [importMutation, nhanVienId],
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows: rowsToImport, options, ctx: importCtx }),
+    [importMutation, importCtx],
   );
 
   const handleEditFromList = async (item: MttqKyHopListRow) => {
@@ -514,6 +542,10 @@ const KyHopPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['nhiem_ky_ky_thu']}
             templateFileName={txt('matTranKyHop.import.templateName')}
           />
         )}

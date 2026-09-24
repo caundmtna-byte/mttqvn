@@ -9,7 +9,9 @@ import { useCan } from '../../../hooks/use-can';
 import PhongBanToolbar from './components/phong-ban-toolbar';
 import DepartmentList from './components/phong-ban-list';
 import ExportDialog from '../../../components/shared/ExportDialog';
-import ImportDialog from '../../../components/shared/ImportDialog';
+import ImportDialog, { type ImportRunOptions } from '../../../components/shared/ImportDialog';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { dryRunPhongBanImport } from './services/phong-ban-import';
 import {
   useDepartments,
   useDeleteDepartment,
@@ -25,8 +27,6 @@ import { useListWithFilter } from '../../../lib/hooks';
 import { useExportData } from '../../../lib/useExportData';
 import { DRAWER_WIDTH_DETAIL_SMALL, DRAWER_Z_CONTENT_BASE } from '../../../lib/dialog-sizes';
 import { Department } from './core/types';
-import type { DepartmentFormValues } from './core/schema';
-import { parseTrangThaiHoatDongImport } from '../../../lib/constants/trang-thai';
 import { departmentMatchesColumnSearch } from './utils/column-search';
 import { compareDepartments } from './utils/department-sort';
 import { matchesSearchTerm } from '../../../lib/searchUtils';
@@ -92,17 +92,33 @@ const DepartmentPage = () => {
   const deleteManyMutation = useDeleteDepartmentMany();
   const statusMutation = useUpdateStatusDepartment();
   const statusManyMutation = useUpdateStatusDepartmentMany();
-  const importMutation = useImportDepartments(() => setShowImport(false));
+  const importMutation = useImportDepartments();
+  const { canEdit } = useResourcePermissions('departments');
 
   const IMPORT_COLUMNS = useMemo(
     () => [
       { key: 'ten_phong_ban', label: txt('department.name'), required: true },
       { key: 'mo_ta', label: txt('department.store.descCol') },
-      { key: 'cha_id', label: txt('department.detail.parent') },
+      { key: 'cha_id', label: txt('department.import.colCha') },
       { key: 'thu_tu', label: txt('department.detail.order') },
       { key: 'trang_thai', label: txt('common.status') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     []
+  );
+
+  const importMatchColumns = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten_phong_ban', label: txt('department.name') },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè. */
+  const importWriteModes = useMemo(
+    () => (canEdit ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEdit],
   );
 
   useEffect(() => {
@@ -309,16 +325,9 @@ const DepartmentPage = () => {
     });
   };
 
-  const handleImportData = async (data: Record<string, unknown>[]) => {
-    const rows: DepartmentFormValues[] = data.map((row) => ({
-      ten_phong_ban: String(row.ten_phong_ban ?? '').trim(),
-      mo_ta: row.mo_ta != null ? String(row.mo_ta).trim() : undefined,
-      cha_id: row.cha_id != null && String(row.cha_id).trim() !== '' ? String(row.cha_id).trim() : '',
-      thu_tu: Number(row.thu_tu) || 0,
-      trang_thai: parseTrangThaiHoatDongImport(row.trang_thai),
-    }));
-    await importMutation.mutateAsync(rows);
-  };
+  const handleImportData = (rows: Record<string, unknown>[], options: ImportRunOptions) =>
+    importMutation.mutateAsync({ rows, options });
+
 
   const handleCloseForm = () => {
     const wasEditing = editingDept;
@@ -468,6 +477,10 @@ const DepartmentPage = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={dryRunPhongBanImport}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ten_phong_ban']}
             templateFileName={txt('department.importTemplateName')}
           />
         )}

@@ -11,10 +11,14 @@ import {
   deleteThongTinToChucQuanTrongMany,
   getThongTinToChucQuanTrongById,
   getThongTinToChucQuanTrongList,
-  importThongTinToChucQuanTrong,
   updateThongTinToChucQuanTrong,
   updateThongTinToChucQuanTrongStatus,
 } from '../services/thong-tin-to-chuc-quan-trong-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import {
+  importToChucQuanTrongRows,
+  type ToChucQuanTrongImportContext,
+} from '../services/thong-tin-to-chuc-quan-trong-import';
 
 const listKey = queryKeys.danTocToChucQuanTrong.all;
 
@@ -101,20 +105,33 @@ export function useDeleteThongTinToChucQuanTrongMany() {
   });
 }
 
-export function useImportThongTinToChucQuanTrong(onSuccess?: () => void) {
+/**
+ * Không tự đóng hộp thoại khi xong: bước kết quả của `ImportDialog` cần ở lại để
+ * người dùng xem dòng lỗi / tải file lỗi.
+ */
+export function useImportThongTinToChucQuanTrong() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importThongTinToChucQuanTrong(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: ToChucQuanTrongImportContext;
+    }) => importToChucQuanTrongRows(rows, options, ctx),
     onSuccess: (result) => {
+      // Tiền tố `all` phủ cả danh sách lẫn chi tiết.
       void queryClient.invalidateQueries({ queryKey: listKey });
-      if (result.created > 0) {
-        toast.success(txt('danTocToChucQuanTrong.toast.importSuccess', { count: result.created }));
+      if ((result.created ?? 0) + (result.updated ?? 0) > 0) {
+        toast.success(
+          txt('danTocToChucQuanTrong.import.toastDone', {
+            created: String(result.created ?? 0),
+            updated: String(result.updated ?? 0),
+          }),
+        );
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 }

@@ -10,7 +10,6 @@ import {
   DEPARTMENT_SELECT_FULL,
 } from '../core/supabase-select';
 import { txt } from '../../../../lib/text';
-import { getErrorMessage } from '@/lib/utils';
 
 const repo = createRepository<Department>({
   tableName: 'var_phong_ban',
@@ -49,18 +48,22 @@ export const getDepartments = async (): Promise<Department[]> => {
   return list.map((row) => normalizeDepartmentRow(row as Department));
 };
 
+/** Form → cột DB (không có đường dẫn cây / mốc thời gian). Dùng chung cho form và nhập file. */
+export function departmentFormToPayload(data: DepartmentFormValues): Record<string, unknown> {
+  return {
+    ten_phong_ban: data.ten_phong_ban.trim(),
+    mo_ta: data.mo_ta && data.mo_ta.trim() !== '' ? data.mo_ta.trim() : null,
+    cha_id: chaIdForStorage(resolveChaIdForm(data.cha_id)),
+    trang_thai: data.trang_thai,
+    thu_tu: data.thu_tu ?? 0,
+  };
+}
+
 export const createDepartment = async (data: DepartmentFormValues): Promise<Department> => {
   const now = new Date().toISOString();
-  const chaId = resolveChaIdForm(data.cha_id);
-  const ten = data.ten_phong_ban.trim();
-
   const inserted = await repo.insert(
     {
-      ten_phong_ban: ten,
-      mo_ta: data.mo_ta && data.mo_ta.trim() !== '' ? data.mo_ta.trim() : null,
-      cha_id: normInt8Fk(chaId ?? undefined),
-      trang_thai: data.trang_thai,
-      thu_tu: data.thu_tu ?? 0,
+      ...departmentFormToPayload(data),
       duong_dan: '',
       cap_do: 0,
       tg_tao: now,
@@ -72,16 +75,12 @@ export const createDepartment = async (data: DepartmentFormValues): Promise<Depa
 };
 
 /**
- * Cập nhật phòng ban — tránh `repo.getAll()` để recompute `duong_dan`/`cap_do`:
+ * `duong_dan` / `cap_do` khi gán cha mới — tránh `repo.getAll()`:
  * ưu tiên RPC `get_phong_ban_path_level` (1 round-trip, server-side)
- * với fallback `.in('id', [...])` chỉ 4 cột nhẹ nếu RPC chưa apply.
+ * với fallback chỉ 2 cột của phòng cha nếu RPC chưa apply.
+ * Trigger DB chỉ tính đường dẫn lúc INSERT, nên UPDATE phải tự tính.
  */
-export const updateDepartment = async (id: string, data: DepartmentFormValues): Promise<Department> => {
-  const chaId = resolveChaIdForm(data.cha_id);
-  const ten = data.ten_phong_ban.trim();
-  let duong_dan: string;
-  let cap_do: number;
-
+async function tinhViTriCay(id: string, chaId: string | null): Promise<{ duong_dan: string; cap_do: number }> {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Supabase client is not configured.');
 
@@ -103,53 +102,59 @@ export const updateDepartment = async (id: string, data: DepartmentFormValues): 
     cap_do: Number((existingRow as { cap_do: number | string }).cap_do),
   };
 
-  if (chaId === existing.cha_id) {
-    duong_dan = existing.duong_dan;
-    cap_do = existing.cap_do;
-  } else {
-    const { data: rpcData, error: rpcErr } = await supabase.rpc('get_phong_ban_path_level', {
-      p_id: idNum,
-      p_cha_id: chaNum,
-    });
-    const rpcRow = Array.isArray(rpcData) ? rpcData[0] : rpcData;
-    if (!rpcErr && rpcRow) {
-      duong_dan = String((rpcRow as { duong_dan: string }).duong_dan);
-      cap_do = Number((rpcRow as { cap_do: number | string }).cap_do);
-    } else if (chaNum == null) {
-      duong_dan = `/${id}`;
-      cap_do = 1;
-    } else {
-      const { data: parentRow } = await supabase
-        .from('var_phong_ban')
-        .select('duong_dan, cap_do')
-        .eq('id', chaNum)
-        .maybeSingle();
-      if (parentRow) {
-        duong_dan = `${(parentRow as { duong_dan: string }).duong_dan}/${id}`;
-        cap_do = Number((parentRow as { cap_do: number | string }).cap_do) + 1;
-      } else {
-        duong_dan = existing.duong_dan;
-        cap_do = existing.cap_do;
-      }
-    }
-  }
+  if (chaId === existing.cha_id) return { duong_dan: existing.duong_dan, cap_do: existing.cap_do };
 
+  const { data: rpcData, error: rpcErr } = await supabase.rpc('get_phong_ban_path_level', {
+    p_id: idNum,
+    p_cha_id: chaNum,
+  });
+  const rpcRow = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+  if (!rpcErr && rpcRow) {
+    return {
+      duong_dan: String((rpcRow as { duong_dan: string }).duong_dan),
+      cap_do: Number((rpcRow as { cap_do: number | string }).cap_do),
+    };
+  }
+  if (chaNum == null) return { duong_dan: `/${id}`, cap_do: 1 };
+  const { data: parentRow } = await supabase
+    .from('var_phong_ban')
+    .select('duong_dan, cap_do')
+    .eq('id', chaNum)
+    .maybeSingle();
+  if (parentRow) {
+    return {
+      duong_dan: `${(parentRow as { duong_dan: string }).duong_dan}/${id}`,
+      cap_do: Number((parentRow as { cap_do: number | string }).cap_do) + 1,
+    };
+  }
+  return { duong_dan: existing.duong_dan, cap_do: existing.cap_do };
+}
+
+export const updateDepartment = async (id: string, data: DepartmentFormValues): Promise<Department> => {
+  const viTri = await tinhViTriCay(id, resolveChaIdForm(data.cha_id));
   const updated = await repo.update(
     id,
     {
-      ten_phong_ban: ten,
-      mo_ta: data.mo_ta && data.mo_ta.trim() !== '' ? data.mo_ta.trim() : null,
-      cha_id: chaIdForStorage(chaId),
-      trang_thai: data.trang_thai,
-      thu_tu: data.thu_tu ?? 0,
-      duong_dan,
-      cap_do,
+      ...departmentFormToPayload(data),
+      ...viTri,
       tg_cap_nhat: new Date().toISOString(),
     } as unknown as Partial<Department>,
     { returningSelect: DEPARTMENT_RETURNING_FULL },
   );
   return normalizeDepartmentRow(updated as Department);
 };
+
+/**
+ * Ghi đè từ file: chỉ các cột có trong `payload`. Có đổi phòng cha thì tính lại
+ * đường dẫn cây như form sửa.
+ */
+export async function updateDepartmentPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  const out: Record<string, unknown> = { ...payload, tg_cap_nhat: new Date().toISOString() };
+  if ('cha_id' in payload) {
+    Object.assign(out, await tinhViTriCay(id, payload.cha_id == null ? null : String(payload.cha_id)));
+  }
+  await repo.update(id, out as unknown as Partial<Department>, { returningSelect: 'id' });
+}
 
 export const updateDepartmentStatus = async (id: string, status: TrangThaiHoatDong): Promise<Department> => {
   const updated = await repo.update(
@@ -173,28 +178,4 @@ export const deleteDepartment = async (id: string): Promise<void> => {
     if ((count ?? 0) > 0) throw new Error(txt('department.service.hasChildren'));
   }
   await repo.remove([id]);
-};
-
-/** Import nhiều phòng ban (chỉ thêm mới, cha_id = null hoặc id có sẵn) */
-export const importDepartments = async (
-  rows: DepartmentFormValues[],
-): Promise<{ created: number; errors: string[] }> => {
-  const errors: string[] = [];
-  let created = 0;
-  const all = await getDepartments(); // fetch 1 lần cho toàn bộ import
-  for (let i = 0; i < rows.length; i++) {
-    try {
-      const data = rows[i];
-      const idCha = resolveChaIdForm(data.cha_id);
-      if (idCha && !all.some((d) => d.id === idCha)) {
-        errors.push(`Dòng ${i + 2}: Phòng cha không tồn tại`);
-        continue;
-      }
-      await createDepartment({ ...data, cha_id: idCha ?? undefined });
-      created++;
-    } catch (e: unknown) {
-      errors.push(`Dòng ${i + 2}: ${getErrorMessage(e)}`);
-    }
-  }
-  return { created, errors };
 };

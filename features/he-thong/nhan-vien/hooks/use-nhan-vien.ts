@@ -13,7 +13,8 @@ import {
   AuthUserExistsError,
   type AuthConflictDecision,
 } from '../services/nhan-vien-service';
-import { importEmployeeRows } from '../services/nhan-vien-import';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importEmployeeRows, type NhanVienImportContext } from '../services/nhan-vien-import';
 import { EmployeeFormValues } from '../core/schema';
 import { Employee } from '../core/types';
 import type { TrangThaiNhanVien } from '../core/constants';
@@ -389,16 +390,24 @@ export const useDeleteWithUndo = () => {
 };
 
 /** Nhập nhân viên từ Excel — xem `services/nhan-vien-import.ts`. */
-export const useImportEmployees = (onSuccess?: () => void) => {
+export const useImportEmployees = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (rows: Record<string, unknown>[]) => importEmployeeRows(rows),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: NhanVienImportContext;
+    }) => importEmployeeRows(rows, options, ctx),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
-      if (result.created > 0) {
-        toast.success(txt('employee.import.toastSuccess', { count: result.created }));
-      }
-      onSuccess?.();
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created > 0) toast.success(txt('employee.import.toastSuccess', { count: created }));
+      if (updated > 0) toast.success(txt('employee.import.toastUpdated', { count: updated }));
     },
   });
 };

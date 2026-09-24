@@ -10,9 +10,10 @@ import {
   deleteKhoDonViCuuTroMany,
   getKhoDonViCuuTroById,
   getKhoDonViCuuTroList,
-  importKhoDonViCuuTro,
   updateKhoDonViCuuTro,
 } from '../services/kho-don-vi-cuu-tro-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importDonViCuuTroRows } from '../services/don-vi-cuu-tro-import';
 
 const listKey = queryKeys.khoDonViCuuTro.all;
 
@@ -97,19 +98,18 @@ export function useDeleteKhoDonViCuuTroMany() {
   });
 }
 
-export function useImportKhoDonViCuuTro(onSuccess?: () => void) {
+export function useImportKhoDonViCuuTro() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (rows: Record<string, unknown>[]) => importKhoDonViCuuTro(rows),
+    mutationFn: ({ rows, options }: { rows: Record<string, unknown>[]; options: ImportRunOptions }) =>
+      importDonViCuuTroRows(rows, options),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
-      if (result.created > 0) {
-        toast.success(txt('matTranDonViCuuTro.toast.importSuccess', { count: result.created }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('matTranDonViCuuTro.toast.importSuccess', { created, updated }));
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 }

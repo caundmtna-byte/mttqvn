@@ -28,6 +28,16 @@ export const danTocCaNhanTieuBieu = {
   import: {
     templateName: 'ca-nhan-tieu-bieu',
     rowError: 'Dòng {{row}}: {{message}}',
+    toastDone: 'Đã nhập: {{created}} cá nhân mới, {{updated}} cá nhân được ghi đè.',
+    keyHoTenNgaySinh: 'họ tên + ngày sinh',
+    matchHoTenNgaySinh: 'Họ và tên + Ngày sinh',
+    errDonVi: 'không tìm thấy xã, phường “{{gia_tri}}”.',
+    errDonViTrungTen: 'có nhiều xã, phường tên “{{gia_tri}}”. Nhập mã (id) xã, phường thay cho tên.',
+    errDoiTuong: 'đối tượng “{{gia_tri}}” không hợp lệ — chỉ nhận: {{hop_le}}.',
+    errTrangThai: 'trạng thái “{{gia_tri}}” không hợp lệ — chỉ nhận: {{hop_le}}.',
+    errNgaySinh: 'ngày sinh “{{gia_tri}}” không hợp lệ — dùng dd/mm/yyyy hoặc yyyy-mm-dd.',
+    errNgoaiDonVi: 'bạn chỉ được nhập hồ sơ thuộc xã, phường của mình.',
+    errChuaGanDonVi: 'Tài khoản cấp xã, phường chưa được gán đơn vị nên không nhập file được.',
   },
   validation: {
     hoVaTenRequired: 'Vui lòng nhập họ và tên',

@@ -1,34 +1,51 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { Suspense, lazy, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, ExternalLink } from 'lucide-react';
+import { Home, ExternalLink, Plus } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import EnumBadge from '@/components/ui/EnumBadge';
 import DetailSection from '@/components/shared/DetailSection';
 import EmbeddedChildDataGrid from '@/components/shared/EmbeddedChildDataGrid';
 import EmptyState from '@/components/shared/EmptyState';
-import { useCan } from '@/hooks/use-can';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { nddkLoaiHinhBadge, nddkTrangThaiBadge } from '../../danh-sach/core/display-badges';
 import { formatHnghSoTienDisplay, trimmedHnghDisplay } from '../utils/display-format';
 import type { NhaCuaHo } from '../services/nha-cua-ho-service';
 import { useNhaDaiDoanKetCuaHo } from '../hooks/use-ho-ngheo';
+import type { HoNgheo } from '../core/types';
+import type { NhaDaiDoanKetFormInput } from '../../danh-sach/core/schema';
+
+const NddkForm = lazy(() => import('../../danh-sach/components/nddk-form'));
 
 const NDDK_LIST_PATH = '/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach';
 
 interface Props {
-  hoNgheoId: string;
+  hoNgheo: HoNgheo;
 }
 
 /**
- * Nhà đại đoàn kết đã gắn cho hộ — CHỈ ĐỌC.
+ * Nhà đại đoàn kết đã gắn cho hộ.
  *
- * Dữ liệu thuộc module Nhà đại đoàn kết. Sửa ở đây sẽ là nguồn sự thật thứ hai,
- * nên chỉ hiển thị và cho bấm sang module gốc.
+ * Dữ liệu thuộc module Nhà đại đoàn kết: thêm mới tại chỗ dùng đúng form và
+ * quyền của module đó (hộ đang xem được chọn sẵn); xem/sửa thì bấm sang module
+ * gốc — hai màn cùng ghi một bảng mà quyền lệch nhau là mở cửa sau.
  */
-const HoNgheoNhaSection: React.FC<Props> = ({ hoNgheoId }) => {
+const HoNgheoNhaSection: React.FC<Props> = ({ hoNgheo }) => {
   const navigate = useNavigate();
-  const canViewNddk = useCan('view', 'nhaDaiDoanKetList');
-  const { data: rows = [], isLoading } = useNhaDaiDoanKetCuaHo(hoNgheoId, { enabled: canViewNddk });
+  const { canView: canViewNddk, canCreate } = useResourcePermissions('nhaDaiDoanKetList');
+  const { data: rows = [], isLoading } = useNhaDaiDoanKetCuaHo(hoNgheo.id, { enabled: canViewNddk });
+  const [showForm, setShowForm] = useState(false);
+
+  const prefill = useMemo<Partial<NhaDaiDoanKetFormInput>>(
+    () => ({
+      ho_ngheo_id: hoNgheo.id,
+      ho_ten_chu_ho: hoNgheo.ho_ten_dai_dien,
+      xa_phuong_id: hoNgheo.xa_phuong_id ?? '',
+      khoi_xom: hoNgheo.khoi_xom ?? '',
+      doi_tuong: hoNgheo.doi_tuong ?? '',
+    }),
+    [hoNgheo.id, hoNgheo.ho_ten_dai_dien, hoNgheo.xa_phuong_id, hoNgheo.khoi_xom, hoNgheo.doi_tuong],
+  );
 
   const openNddk = useCallback(
     (id: string) => {
@@ -92,6 +109,18 @@ const HoNgheoNhaSection: React.FC<Props> = ({ hoNgheoId }) => {
           <span className="inline-flex items-center rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground">
             {countLabel} {txt('hoNgheo.detail.nhaRecordsSuffix')}
           </span>
+          {canCreate ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 gap-1.5 text-xs"
+              onClick={() => setShowForm(true)}
+            >
+              <Plus size={14} />
+              {txt('hoNgheo.detail.nhaAdd')}
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -144,6 +173,12 @@ const HoNgheoNhaSection: React.FC<Props> = ({ hoNgheoId }) => {
           </p>
         </>
       )}
+
+      {showForm ? (
+        <Suspense fallback={null}>
+          <NddkForm prefill={prefill} onClose={() => setShowForm(false)} />
+        </Suspense>
+      ) : null}
     </DetailSection>
   );
 };

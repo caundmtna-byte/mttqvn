@@ -25,6 +25,8 @@ const existingRow = (over: Partial<BaiVietDanhSach>): BaiVietDanhSach => ({
 
 const importRow = (rowNum: number, tenBai: string, link: string): BaiVietImportRow => ({
   rowNum,
+  raw: {},
+  idKey: null,
   values: {
     ten_bai: tenBai,
     id_the_loai: '1',
@@ -102,13 +104,24 @@ describe('buildBaiVietImportPlan', () => {
       expect(p.updates).toEqual([]);
     });
 
-    it('link ưu tiên hơn tên bài khi hai khoá trỏ hai bản ghi khác nhau', () => {
+    it('khớp theo link nhưng tên bài đã thuộc bài khác → lỗi ngay, không để DB trả 23505', () => {
       const p = buildBaiVietImportPlan({
         rows: [importRow(2, 'Bài B', 'https://example.test/a')],
         existing: [
           existingRow({ id: 'theo-link', link: 'https://example.test/a', ten_bai: 'Bài A' }),
           existingRow({ id: 'theo-ten', link: 'https://example.test/b', ten_bai: 'Bài B' }),
         ],
+        mode: 'upsert',
+        matchKeys: BOTH_KEYS,
+      });
+      expect(p.updates).toEqual([]);
+      expect(p.errors.map((e) => e.rowNum)).toEqual([2]);
+    });
+
+    it('link ưu tiên hơn tên bài khi cả hai cùng trỏ một bài', () => {
+      const p = buildBaiVietImportPlan({
+        rows: [importRow(2, 'Bài A', 'https://example.test/a')],
+        existing: [existingRow({ id: 'theo-link', link: 'https://example.test/a', ten_bai: 'Bài A' })],
         mode: 'upsert',
         matchKeys: BOTH_KEYS,
       });

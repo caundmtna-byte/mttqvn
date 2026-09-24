@@ -1,27 +1,14 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
-import type { ImportErrorRow } from '@/components/shared/ImportDialog';
-import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
+import { khoDonViCuuTroLoaiLabel, parseKhoDonViCuuTroLoai } from '../core/loai';
 import {
-  KHO_DON_VI_CUU_TRO_LOAI,
-  KHO_DON_VI_CUU_TRO_LOAI_DEFAULT,
-  khoDonViCuuTroLoaiLabel,
-  parseKhoDonViCuuTroLoai,
-  type KhoDonViCuuTroLoai,
-} from '../core/loai';
-import {
-  chuanHoaTenDonVi,
   donViGioiThieuLabel,
   donViGioiThieuToPayload,
   parseDonViGioiThieuLoai,
-  resolveDonViGioiThieuImport,
 } from '../utils/don-vi-gioi-thieu';
 import type { KhoDonViCuuTroDetail, KhoDonViCuuTroListRow } from '../core/types';
 import type { KhoDonViCuuTroFormValues } from '../core/schema';
-import { khoDonViCuuTroSchema } from '../core/schema';
 import { KHO_DON_VI_CUU_TRO_RETURNING, KHO_DON_VI_CUU_TRO_SELECT } from '../core/supabase-select';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -82,7 +69,7 @@ function emptyToNull(s: string): string | null {
   return t === '' ? null : t;
 }
 
-function formToPayload(data: KhoDonViCuuTroFormValues): Record<string, unknown> {
+export function khoDonViCuuTroFormToPayload(data: KhoDonViCuuTroFormValues): Record<string, unknown> {
   return {
     loai: data.loai,
     ten: data.ten.trim(),
@@ -116,7 +103,7 @@ export async function getKhoDonViCuuTroById(id: string): Promise<KhoDonViCuuTroD
 }
 
 export async function createKhoDonViCuuTro(data: KhoDonViCuuTroFormValues): Promise<KhoDonViCuuTroListRow> {
-  const payload = formToPayload(data);
+  const payload = khoDonViCuuTroFormToPayload(data);
   const inserted = await repo.insert(payload as unknown as Omit<RepoRow, 'id'>, {
     returningSelect: KHO_DON_VI_CUU_TRO_RETURNING,
   });
@@ -124,7 +111,7 @@ export async function createKhoDonViCuuTro(data: KhoDonViCuuTroFormValues): Prom
 }
 
 export async function updateKhoDonViCuuTro(id: string, data: KhoDonViCuuTroFormValues): Promise<KhoDonViCuuTroListRow> {
-  const payload = formToPayload(data);
+  const payload = khoDonViCuuTroFormToPayload(data);
   const updated = await repo.update(id, payload as unknown as Partial<RepoRow>, {
     returningSelect: KHO_DON_VI_CUU_TRO_RETURNING,
   });
@@ -136,83 +123,16 @@ export async function deleteKhoDonViCuuTroMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }
 
-function importRowNum(raw: Record<string, unknown>, fallback: number): number {
-  const n = raw[IMPORT_ROW_NUM_KEY];
-  if (typeof n === 'number' && Number.isFinite(n)) return n;
-  const parsed = Number(n);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+/**
+ * Ghi cho luồng nhập file (`don-vi-cuu-tro-import.ts`): payload đã dựng sẵn,
+ * chỉ trả `id` — không kéo lại cả dòng cho mỗi dòng Excel.
+ */
+export async function insertKhoDonViCuuTroForImport(payload: Record<string, unknown>): Promise<void> {
+  await repo.insert(payload as unknown as Omit<RepoRow, 'id'>, { returningSelect: 'id' });
 }
 
-function resolveLoaiFromImport(raw: unknown): KhoDonViCuuTroLoai {
-  const s = String(raw ?? '').trim();
-  if (!s) return KHO_DON_VI_CUU_TRO_LOAI_DEFAULT;
-  const lower = s.toLowerCase();
-  for (const v of KHO_DON_VI_CUU_TRO_LOAI) {
-    if (v === lower || v === s) return v;
-    if (khoDonViCuuTroLoaiLabel(v).toLowerCase() === lower) return v;
-  }
-  return parseKhoDonViCuuTroLoai(s);
-}
-
-export async function importKhoDonViCuuTro(
-  rows: Record<string, unknown>[],
-): Promise<{ created: number; errors: string[]; errorRows: ImportErrorRow[] }> {
-  const errors: string[] = [];
-  const errorRows: ImportErrorRow[] = [];
-  const validPayloads: Record<string, unknown>[] = [];
-
-  // Nạp danh mục xã/phường MỘT lần cho cả file — hàm này có cache riêng, gọi
-  // trong vòng lặp là bắn lại request cho từng dòng.
-  const xaPhuongTheoTen = new Map<string, string>();
-  if (rows.some((r) => String(r.don_vi_gioi_thieu ?? '').trim() !== '')) {
-    const danhSachXa = await getXaPhuongAll();
-    for (const xa of danhSachXa) xaPhuongTheoTen.set(chuanHoaTenDonVi(xa.ten), xa.id);
-  }
-
-  for (let i = 0; i < rows.length; i++) {
-    const raw = rows[i];
-    const rowNum = importRowNum(raw, i + 2);
-    const rowData = { ...raw };
-    delete rowData[IMPORT_ROW_NUM_KEY];
-
-    const dvGioiThieu = resolveDonViGioiThieuImport(raw.don_vi_gioi_thieu, xaPhuongTheoTen);
-    if (!dvGioiThieu.ok) {
-      const msg = txt('matTranDonViCuuTro.import.errDonViGioiThieuNotFound', { ten: dvGioiThieu.ten });
-      const errMsg = txt('matTranDonViCuuTro.import.rowError', { row: rowNum, message: msg });
-      errors.push(errMsg);
-      errorRows.push({ rowNum, data: rowData, message: errMsg });
-      continue;
-    }
-
-    const input = {
-      loai: resolveLoaiFromImport(raw.loai),
-      ten: String(raw.ten ?? '').trim(),
-      so_nguoi: String(raw.so_nguoi ?? '').trim(),
-      nguoi_dai_dien: String(raw.nguoi_dai_dien ?? ''),
-      chuc_vu: String(raw.chuc_vu ?? ''),
-      dia_chi: String(raw.dia_chi ?? ''),
-      dien_thoai: String(raw.dien_thoai ?? ''),
-      don_vi_gioi_thieu: dvGioiThieu.value,
-      email: String(raw.email ?? ''),
-      ghi_chu: String(raw.ghi_chu ?? ''),
-    };
-    const parsed = khoDonViCuuTroSchema.safeParse(input);
-    if (!parsed.success) {
-      const msg = parsed.error.flatten().formErrors[0] ?? parsed.error.message;
-      const errMsg = txt('matTranDonViCuuTro.import.rowError', { row: rowNum, message: msg });
-      errors.push(errMsg);
-      errorRows.push({ rowNum, data: rowData, message: errMsg });
-      continue;
-    }
-    validPayloads.push(formToPayload(parsed.data));
-  }
-
-  if (validPayloads.length > 0) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error(txt('matTranDonViCuuTro.service.notFound'));
-    const { error } = await supabase.from('kho_don_vi_cuu_tro').insert(validPayloads);
-    if (error) handleSupabaseError(error);
-  }
-
-  return { created: validPayloads.length, errors, errorRows };
+/** Ghi đè MỘT PHẦN — `payload` chỉ gồm các cột có trong file. */
+export async function updateKhoDonViCuuTroPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  if (Object.keys(payload).length === 0) return;
+  await repo.update(id, payload as unknown as Partial<RepoRow>, { returningSelect: 'id' });
 }

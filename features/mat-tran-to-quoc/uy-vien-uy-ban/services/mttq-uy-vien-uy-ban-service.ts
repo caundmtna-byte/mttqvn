@@ -3,16 +3,10 @@ import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
-import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import { flattenMttqCanBoRow } from '@/features/mat-tran-to-quoc/danh-sach-can-bo/services/mttq-can-bo-service';
 import type { MttqUyVienUyBan, MttqUyVienUyBanListRow } from '../core/types';
 import { getUyVienDiemDanhSummariesForIds } from '@/features/mat-tran-to-quoc/ky-hop/services/mttq-diem-danh-service';
-import {
-  mttqUyVienUyBanSchema,
-  type MttqUyVienUyBanFormInput,
-  type MttqUyVienUyBanFormValues,
-} from '../core/schema';
-import { normalizeUyVienTrangThamGia } from '../core/constants';
+import type { MttqUyVienUyBanFormValues } from '../core/schema';
 import {
   MTTQ_UY_VIEN_UY_BAN_SELECT_FULL,
   MTTQ_UY_VIEN_UY_BAN_SELECT_LIST,
@@ -25,7 +19,6 @@ import {
   UyVienUyBanConflictError,
   type UyVienConflictKind,
 } from '../utils/uy-vien-conflict';
-import { getErrorMessage } from '@/lib/utils';
 
 export { UyVienUyBanConflictError } from '../utils/uy-vien-conflict';
 
@@ -337,162 +330,42 @@ export async function deleteMttqUyVienUyBanMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }
 
-async function resolveNhiemKyIdByTen(ten: string): Promise<string | null> {
-  const t = ten.trim();
-  if (!t) return null;
-  const supabase = getSupabase();
-  if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('mttq_nhiem_ky')
-    .select('id')
-    .eq('ten_nhiem_ky', t)
-    .maybeSingle();
-  if (error) handleSupabaseError(error);
-  if (data?.id != null) return String(data.id);
-  const { data: data2, error: err2 } = await supabase
-    .from('mttq_nhiem_ky')
-    .select('id')
-    .ilike('ten_nhiem_ky', `%${t}%`)
-    .limit(1)
-    .maybeSingle();
-  if (err2) handleSupabaseError(err2);
-  return data2?.id != null ? String(data2.id) : null;
-}
-
-async function resolveDonViIdByTen(tenDonVi: string): Promise<string | null> {
-  const t = tenDonVi.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  if (lower === 'tỉnh' || lower === 'tinh' || lower === 'mttq tỉnh' || lower === 'mttq tinh') return null;
-  const all = await getXaPhuongAll();
-  const exact = all.find((x) => x.ten.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find((x) => x.ten.toLowerCase().includes(lower) || lower.includes(x.ten.toLowerCase()));
-  return partial?.id ?? null;
-}
-
-async function resolveCanBoIdFromImportRow(raw: Record<string, unknown>): Promise<string | null> {
-  const idRaw = raw.can_bo_id != null ? String(raw.can_bo_id).trim() : '';
-  if (/^\d+$/.test(idRaw)) return idRaw;
-
-  const hoTen = String(raw.ho_va_ten ?? raw.ho_ten ?? '').trim();
-  if (!hoTen) return null;
-
-  const nsRaw = raw.ngay_sinh != null && String(raw.ngay_sinh).trim() !== '' ? String(raw.ngay_sinh).trim() : '';
-  const ns = nsRaw.length >= 10 ? nsRaw.slice(0, 10) : nsRaw || null;
-
-  const supabase = getSupabase();
-  if (!supabase) return null;
-
-  const { data: eqData, error: eqErr } = await supabase
-    .from('mttq_can_bo')
-    .select('id,ho_ten,ngay_sinh')
-    .eq('ho_ten', hoTen)
-    .limit(10);
-  if (eqErr) handleSupabaseError(eqErr);
-  let rows = eqData ?? [];
-  if (rows.length === 0) {
-    const esc = hoTen.replace(/%/g, '\\%').replace(/_/g, '\\_');
-    const { data: likeData, error: likeErr } = await supabase
-      .from('mttq_can_bo')
-      .select('id,ho_ten,ngay_sinh')
-      .ilike('ho_ten', `%${esc}%`)
-      .limit(40);
-    if (likeErr) handleSupabaseError(likeErr);
-    rows = likeData ?? [];
-  }
-  const lower = hoTen.toLowerCase();
-  const exactDob = rows.filter(
-    (r) =>
-      String(r.ho_ten ?? '')
-        .trim()
-        .toLowerCase() === lower &&
-      (ns == null ||
-        r.ngay_sinh == null ||
-        String(r.ngay_sinh).slice(0, 10) === ns),
-  );
-  if (exactDob.length === 1) return String(exactDob[0].id);
-  const exactName = rows.filter((r) => String(r.ho_ten ?? '').trim().toLowerCase() === lower);
-  if (exactName.length === 1) return String(exactName[0].id);
-  return null;
-}
-
-function importRowToFormInput(
-  row: Record<string, unknown>,
-  resolved: { nhiem_ky_id: string; don_vi_id: string; can_bo_id: string },
-): MttqUyVienUyBanFormInput {
-  return {
-    can_bo_id: resolved.can_bo_id,
-    ma_uv: row.ma_uv != null && String(row.ma_uv).trim() !== '' ? String(row.ma_uv) : undefined,
-    nhiem_ky_id: resolved.nhiem_ky_id,
-    don_vi_id: resolved.don_vi_id,
-    trang_thai_tham_gia: normalizeUyVienTrangThamGia(
-      row.trang_thai_tham_gia != null ? String(row.trang_thai_tham_gia) : undefined,
-    ),
-    ghi_chu: row.ghi_chu != null && String(row.ghi_chu).trim() !== '' ? String(row.ghi_chu) : undefined,
-  };
-}
-
-/** Import chỉ thêm mới. Cột: ten_nhiem_ky hoặc nhiem_ky_id; ten_don_vi hoặc don_vi_id; can_bo_id hoặc ho_va_ten (+ ngày sinh). */
-export async function importMttqUyVienUyBan(
-  rows: Record<string, unknown>[],
+/**
+ * Ghi cho luồng nhập file (`uy-vien-import.ts`). Trùng khoá do lõi nhập file
+ * soi trước bằng danh sách nạp một lần — ở đây không tra lại từng dòng, chỉ
+ * dịch lỗi 23505 (hai người nhập cùng lúc) sang câu nghiệp vụ.
+ */
+export async function insertMttqUyVienUyBanForImport(
+  payload: Record<string, unknown>,
   idNguoiTao: string,
-): Promise<{ created: number; errors: string[] }> {
-  const trimmedNv = idNguoiTao.trim();
-  if (!trimmedNv) throw new Error(txt('matTranUyVienUyBan.service.noEmployeeProfile'));
-
-  const errors: string[] = [];
-  let created = 0;
-
-  for (let i = 0; i < rows.length; i++) {
-    const raw = rows[i];
-    const nkRaw = String(raw.nhiem_ky_id ?? raw.ten_nhiem_ky ?? '').trim();
-    let nhiem_ky_id = nkRaw;
-    if (!/^\d+$/.test(nhiem_ky_id)) {
-      const resolvedNk = await resolveNhiemKyIdByTen(nkRaw);
-      if (!resolvedNk) {
-        errors.push(
-          txt('matTranUyVienUyBan.import.rowError', { row: i + 2, message: txt('matTranUyVienUyBan.import.badNhiemKy') }),
-        );
-        continue;
-      }
-      nhiem_ky_id = resolvedNk;
-    }
-
-    const dvRaw = raw.don_vi_id != null && String(raw.don_vi_id).trim() !== '' ? String(raw.don_vi_id).trim() : '';
-    let don_vi_id = '';
-    if (dvRaw && /^\d+$/.test(dvRaw)) {
-      don_vi_id = dvRaw;
-    } else {
-      const tenDv = String(raw.ten_don_vi ?? '').trim();
-      don_vi_id = (await resolveDonViIdByTen(tenDv)) ?? '';
-    }
-
-    const can_bo_id = await resolveCanBoIdFromImportRow(raw);
-    if (!can_bo_id) {
-      errors.push(
-        txt('matTranUyVienUyBan.import.rowError', { row: i + 2, message: txt('matTranUyVienUyBan.import.badCanBo') }),
-      );
-      continue;
-    }
-
-    const input = importRowToFormInput(raw, { nhiem_ky_id, don_vi_id, can_bo_id });
-
-    const parsed = mttqUyVienUyBanSchema.safeParse(input);
-    if (!parsed.success) {
-      const msg = parsed.error.flatten().formErrors[0] ?? parsed.error.message;
-      errors.push(txt('matTranUyVienUyBan.import.rowError', { row: i + 2, message: msg }));
-      continue;
-    }
-    const data = parsed.data as MttqUyVienUyBanFormValues;
-    try {
-      await createMttqUyVienUyBan(data, trimmedNv);
-      created++;
-    } catch (e: unknown) {
-      const msg = getErrorMessage(e);
-      errors.push(txt('matTranUyVienUyBan.import.rowError', { row: i + 2, message: msg }));
-    }
+): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error(txt('matTranUyVienUyBan.service.noEmployeeProfile'));
+  const { error } = await supabase
+    .from('mttq_uy_vien_uy_ban')
+    .insert({ ...payload, id_nguoi_tao: idNguoiTao } as never);
+  if (error) {
+    const mapped = mapUyVienConstraintError(error);
+    if (mapped) throw mapped;
+    handleSupabaseError(error);
   }
+}
 
-  return { created, errors };
+/** Ghi đè MỘT PHẦN — `payload` chỉ gồm các cột có trong file. */
+export async function updateMttqUyVienUyBanPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  if (Object.keys(payload).length === 0) return;
+  const supabase = getSupabase();
+  if (!supabase) throw new Error(txt('matTranUyVienUyBan.service.noEmployeeProfile'));
+  const { data, error } = await supabase
+    .from('mttq_uy_vien_uy_ban')
+    .update({ ...payload, tg_cap_nhat: new Date().toISOString() } as never)
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
+  if (error) {
+    const mapped = mapUyVienConstraintError(error);
+    if (mapped) throw mapped;
+    handleSupabaseError(error);
+  }
+  if (!data) throw new Error(txt('matTranUyVienUyBan.import.errKhongConBanGhi'));
 }

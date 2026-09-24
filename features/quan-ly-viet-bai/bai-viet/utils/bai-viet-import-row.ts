@@ -9,8 +9,9 @@
  * để người nhập không phải gõ đúng từng dấu.
  */
 import { txt } from '@/lib/text';
+import type { ImportRowOutcome } from '@/lib/data/import-runner';
 import { parseSoInput } from '@/lib/number';
-import { chuanHoaKhoaSoKhop } from '@/lib/vietnamese';
+import { findRef, parseImportNgay, trimCell, type NamedRef } from '@/lib/data/import-cells';
 import { baiVietDanhSachSchema, type BaiVietDanhSachFormValues } from '../core/schema';
 import { normalizeBaiVietLinkForCompare } from './bai-viet-link-conflict';
 import { normalizeBaiVietTenBaiForCompare } from './bai-viet-ten-bai-conflict';
@@ -18,19 +19,13 @@ import { normalizeBaiVietTenBaiForCompare } from './bai-viet-ten-bai-conflict';
 /** Trần dòng mỗi lần nhập. Cao hơn nữa thì trình duyệt ôm cả file lẫn danh mục sẽ đuối. */
 export const BAI_VIET_IMPORT_MAX_ROWS = 2000;
 
-export interface NamedRef {
-  id: string;
-  ten: string;
-  /** Khoá phụ để tra thêm (ví dụ tên tài khoản của nhân viên). */
-  alias?: string | null;
-}
-
 export interface TheLoaiRef extends NamedRef {
   /** Đơn giá mặc định của thể loại — dùng khi người nhập không được sửa đơn giá. */
   donGia: number;
 }
 
-export type ImportRowOutcome<T> = { ok: true; data: T } | { ok: false; message: string };
+export type { ImportRowOutcome } from '@/lib/data/import-runner';
+export { findRef, parseImportNgay, trimCell, type NamedRef };
 
 export interface BaiVietImportRowInput {
   theLoai: readonly TheLoaiRef[];
@@ -46,93 +41,15 @@ export interface BaiVietImportRowInput {
 
 export interface BaiVietImportRow {
   rowNum: number;
+  /** Dữ liệu gốc của dòng — để file lỗi tải về còn đủ. */
+  raw: Record<string, unknown>;
+  /** Cột "Mã hệ thống" (id) nếu file có — khoá chắc nhất để ghi đè. */
+  idKey: string | null;
   values: BaiVietDanhSachFormValues;
   idNguoiTao: string;
   /** Khoá so trùng, tính sẵn để lớp lập kế hoạch khỏi chuẩn hoá lại. */
   linkKey: string;
   tenBaiKey: string;
-}
-
-/**
- * Ô Excel → chuỗi đã cắt hai đầu.
- * Số nguyên rất lớn (id dán từ hệ thống khác) bị `Number` làm tròn mất chữ số,
- * nên đi qua `BigInt` trước khi đổi sang chuỗi.
- */
-export function trimCell(v: unknown): string {
-  if (v == null) return '';
-  if (typeof v === 'number') {
-    if (Number.isInteger(v) && Math.abs(v) > 1e12) return String(BigInt(v));
-    return String(v);
-  }
-  if (v instanceof Date) return v.toISOString();
-  return String(v).trim();
-}
-
-const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
-/** Ngoài dải này chắc chắn không phải serial ngày của Excel (≈ năm 1900–7000). */
-const EXCEL_SERIAL_MIN = 200;
-const EXCEL_SERIAL_MAX = 2_000_000;
-
-/**
- * Ghép ngày và KIỂM LẠI bằng cách so ngược từng thành phần.
- * `Date.parse('2026-02-31')` KHÔNG trả NaN mà tự trôi sang 03/03/2026 — nhận
- * bừa như vậy là ghi sai ngày vào CSDL mà không ai thấy dấu vết.
- */
-function ghepNgayChuan(nam: number, thang: number, ngay: number): string | null {
-  if (!Number.isInteger(nam) || !Number.isInteger(thang) || !Number.isInteger(ngay)) return null;
-  const d = new Date(Date.UTC(nam, thang - 1, ngay));
-  if (
-    d.getUTCFullYear() !== nam ||
-    d.getUTCMonth() !== thang - 1 ||
-    d.getUTCDate() !== ngay
-  ) {
-    return null;
-  }
-  return `${String(nam).padStart(4, '0')}-${String(thang).padStart(2, '0')}-${String(ngay).padStart(2, '0')}`;
-}
-
-/**
- * Ngày ở 4 dạng thường gặp: `Date`, serial Excel, ISO `yyyy-mm-dd`, `dd/mm/yyyy`.
- * Không dùng `dayjs(s, fmt, true)` vì repo chưa nạp plugin `customParseFormat`.
- */
-export function parseImportNgay(raw: unknown): string | null {
-  if (raw == null || raw === '') return null;
-
-  if (raw instanceof Date) {
-    return Number.isNaN(raw.getTime()) ? null : raw.toISOString().slice(0, 10);
-  }
-
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
-    if (raw <= EXCEL_SERIAL_MIN || raw >= EXCEL_SERIAL_MAX) return null;
-    const d = new Date(EXCEL_EPOCH_MS + Math.floor(raw) * 86_400_000);
-    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
-  }
-
-  const s = trimCell(raw);
-  if (!s) return null;
-
-  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (iso) return ghepNgayChuan(Number(iso[1]), Number(iso[2]), Number(iso[3]));
-
-  const dmy = /^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/.exec(s);
-  if (dmy) return ghepNgayChuan(Number(dmy[3]), Number(dmy[2]), Number(dmy[1]));
-
-  return null;
-}
-
-/** Tra theo id trước, rồi tên, rồi alias — tất cả đều bỏ dấu khi so. */
-export function findRef<T extends NamedRef>(list: readonly T[], raw: unknown): T | null {
-  const s = trimCell(raw);
-  if (!s) return null;
-  const byId = list.find((x) => String(x.id) === s);
-  if (byId) return byId;
-  const key = chuanHoaKhoaSoKhop(s);
-  if (!key) return null;
-  return (
-    list.find((x) => chuanHoaKhoaSoKhop(x.ten) === key) ??
-    list.find((x) => x.alias != null && chuanHoaKhoaSoKhop(x.alias) === key) ??
-    null
-  );
 }
 
 function fail(rowNum: number, message: string): { ok: false; message: string } {
@@ -211,6 +128,8 @@ export function parseBaiVietImportRow(
     ok: true,
     data: {
       rowNum,
+      raw,
+      idKey: trimCell(raw.id) || null,
       values: parsed.data,
       idNguoiTao,
       linkKey: normalizeBaiVietLinkForCompare(parsed.data.link),

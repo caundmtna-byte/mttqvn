@@ -23,8 +23,12 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useServerPagedList } from '@/hooks/use-server-paged-list';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, { type ImportRunOptions } from '@/components/shared/ImportDialog';
 import ErrorState from '@/components/shared/ErrorState';
+import {
+  dryRunThamHoiToChucImport,
+  type ThamHoiToChucImportContext,
+} from './services/tham-hoi-to-chuc-import';
 import {
   useThamHoiToChucDetail,
   useDeleteThamHoiToChucMany,
@@ -167,7 +171,12 @@ const ThamHoiToChucPage: React.FC = () => {
   const { data: viewingData } = useThamHoiToChucDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteThamHoiToChucMany();
-  const importMutation = useImportThamHoiToChuc(() => setShowImport(false));
+  const importMutation = useImportThamHoiToChuc();
+  const canEdit = useCan('edit', 'danTocThamHoiToChuc');
+  const importCtx = useMemo<ThamHoiToChucImportContext>(
+    () => ({ idNguoiTao: nhanVienId, viewer }),
+    [nhanVienId, viewer],
+  );
 
   useEffect(() => {
     return () => resetState();
@@ -202,8 +211,20 @@ const ThamHoiToChucPage: React.FC = () => {
       { key: 'tien_do', label: txt('danTocThamHoiToChuc.store.tienDoCol'), required: true },
       { key: 'ket_qua_thuc_hien', label: txt('danTocThamHoiToChuc.store.ketQuaCol') },
       { key: 'link_ket_qua', label: txt('danTocThamHoiToChuc.store.linkKetQuaCol') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo(
+    () => [{ key: 'id', label: txt('shared.import.colMaHeThong') }],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo(
+    () => (canEdit ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEdit],
   );
 
   const exportMapFn = useCallback(
@@ -406,15 +427,21 @@ const ThamHoiToChucPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const handleImportDryRun = useCallback(
+    (data: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunThamHoiToChucImport(data, options, importCtx),
+    [importCtx],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
+    async (data: Record<string, unknown>[], options: ImportRunOptions) => {
       if (!nhanVienId) {
         toast.error(txt('danTocThamHoiToChuc.service.noEmployeeProfile'));
         return { created: 0, errors: [], errorRows: [] };
       }
-      return importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
+      return importMutation.mutateAsync({ rows: data, options, ctx: importCtx });
     },
-    [importMutation, nhanVienId],
+    [importMutation, nhanVienId, importCtx],
   );
 
   const handleCloseForm = () => {
@@ -529,6 +556,10 @@ const ThamHoiToChucPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['id']}
             templateFileName={txt('danTocThamHoiToChuc.import.templateName')}
           />
         )}

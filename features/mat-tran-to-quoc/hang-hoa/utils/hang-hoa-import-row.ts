@@ -1,16 +1,20 @@
 /**
  * Chuyển một dòng Excel thành dữ liệu danh mục / hàng hóa — LOGIC THUẦN, không gọi mạng.
  *
- * Toàn bộ câu báo lỗi ở đây là câu người dùng cuối đọc: phải nói rõ DÒNG nào,
- * SAI cái gì và SỬA thế nào. Cán bộ tải file lỗi về, sửa cột « Lỗi » rồi nhập lại.
+ * Chống trùng (trong file / với hệ thống) và ghi đè do lõi chung
+ * `lib/data/import-plan.ts` lo — ở đây chỉ đọc và kiểm từng ô.
+ *
+ * Thứ tự và trạng thái để TRỐNG được giữ là `null`: thêm mới thì lấy mặc định
+ * (tự đánh số tiếp / Đang hoạt động), ghi đè thì GIỮ NGUYÊN giá trị cũ — không
+ * để một ô bỏ trống âm thầm đổi thứ tự hay mở lại hàng đã ngừng.
  */
 import { txt } from '@/lib/text';
-import type { KhoDanhMucHangHoaFormValues, KhoDanhSachHangHoaFormValues } from '../core/schema';
+import { findRefStrict, trimCell, type NamedRef } from '@/lib/data/import-cells';
+import type { ImportParsedRow, ImportRowOutcome } from '@/lib/data/import-runner';
+import { khoDanhMucHangHoaSchema, khoDanhSachHangHoaSchema } from '../core/schema';
 
 /** Trần số dòng một lần nhập — chặn file dán nhầm vài chục nghìn dòng làm treo trình duyệt. */
 export const HANG_HOA_IMPORT_MAX_ROWS = 2000;
-
-export type ImportRowOutcome<T> = { ok: true; data: T } | { ok: false; message: string };
 
 /** Khớp đúng `z.enum` trong `core/schema.ts` — chuỗi lưu DB có dấu. */
 const DANG_HOAT_DONG = 'Đang hoạt động';
@@ -18,24 +22,19 @@ const NGUNG_HOAT_DONG = 'Ngừng hoạt động';
 
 export type TrangThaiHangHoa = typeof DANG_HOAT_DONG | typeof NGUNG_HOAT_DONG;
 
-export function trimCell(v: unknown): string {
-  if (v == null) return '';
-  if (typeof v === 'number' && Number.isFinite(v)) return String(v).trim();
-  return String(v).trim();
-}
+export const TRANG_THAI_HANG_HOA_MAC_DINH: TrangThaiHangHoa = DANG_HOAT_DONG;
 
-/** Khoá so khớp/chống trùng: bỏ dấu cách thừa + không phân biệt hoa thường. */
-export function normalizeMatchKey(v: unknown): string {
+function khoaO(v: unknown): string {
   return trimCell(v).replace(/\s+/g, ' ').toLowerCase();
 }
 
 /**
  * Trạng thái: chấp nhận cách viết tắt cán bộ hay gõ ("hoạt động", "ngưng", "x", "1"/"0").
- * Để trống ⇒ mặc định Đang hoạt động (không bắt cán bộ điền cột này).
+ * Trả `''` khi ô trống (người gọi tự quyết mặc định), `null` khi giá trị lạ.
  */
-export function parseImportTrangThai(raw: unknown): TrangThaiHangHoa | null {
-  const s = normalizeMatchKey(raw);
-  if (!s) return DANG_HOAT_DONG;
+export function parseImportTrangThai(raw: unknown): TrangThaiHangHoa | '' | null {
+  const s = khoaO(raw);
+  if (!s) return '';
   if (['đang hoạt động', 'dang hoat dong', 'hoạt động', 'hoat dong', 'x', '1', 'có', 'co'].includes(s)) {
     return DANG_HOAT_DONG;
   }
@@ -59,7 +58,7 @@ export function parseImportTrangThai(raw: unknown): TrangThaiHangHoa | null {
   return null;
 }
 
-/** Thứ tự: để trống ⇒ tự đánh tiếp; có giá trị thì phải là số nguyên ≥ 0. */
+/** Thứ tự: để trống ⇒ `null`; có giá trị thì phải là số nguyên ≥ 0. */
 export function parseImportThuTu(raw: unknown): { ok: true; value: number | null } | { ok: false } {
   const s = trimCell(raw);
   if (!s) return { ok: true, value: null };
@@ -68,138 +67,193 @@ export function parseImportThuTu(raw: unknown): { ok: true; value: number | null
   return { ok: true, value: n };
 }
 
-export interface DanhMucImportCtx {
-  /** Tên danh mục đã có trong hệ thống (khoá chuẩn hoá → tên hiển thị). */
-  existingTen: Map<string, string>;
-  /** Tên đã gặp ở các dòng trước TRONG CÙNG FILE (khoá chuẩn hoá → số dòng). */
-  seenTen: Map<string, number>;
-  /** Thứ tự kế tiếp dùng khi cột Thứ tự để trống — người gọi tự tăng sau mỗi dòng hợp lệ. */
-  nextThuTu: number;
+function fail(rowNum: number, message: string): { ok: false; message: string } {
+  return { ok: false, message: txt('matTranHangHoa.import.rowPrefix', { row: rowNum }) + message };
+}
+
+function nullIfEmpty(s: string): string | null {
+  const t = s.trim();
+  return t === '' ? null : t;
+}
+
+/** Đọc trạng thái + thứ tự dùng chung cho hai loại dòng. */
+function parseTrangThaiThuTu(
+  rowNum: number,
+  row: Record<string, unknown>,
+):
+  | { ok: true; trangThai: TrangThaiHangHoa | null; thuTu: number | null }
+  | { ok: false; message: string } {
+  const trangThai = parseImportTrangThai(row.trang_thai);
+  if (trangThai == null) {
+    return fail(rowNum, txt('matTranHangHoa.import.errTrangThai', { gia_tri: trimCell(row.trang_thai) }));
+  }
+  const thuTu = parseImportThuTu(row.thu_tu);
+  if (!thuTu.ok) {
+    return fail(rowNum, txt('matTranHangHoa.import.errThuTu', { gia_tri: trimCell(row.thu_tu) }));
+  }
+  return { ok: true, trangThai: trangThai === '' ? null : trangThai, thuTu: thuTu.value };
+}
+
+// ---------------------------------------------------------------------------
+// Danh mục
+// ---------------------------------------------------------------------------
+
+export interface DanhMucImportRow extends ImportParsedRow {
+  idKey: string | null;
+  ten_danh_muc: string;
+  mo_ta: string;
+  /** `null` = ô trống. */
+  thu_tu: number | null;
+  /** `null` = ô trống. */
+  trang_thai: TrangThaiHangHoa | null;
 }
 
 export function parseDanhMucImportRow(
   rowNum: number,
   row: Record<string, unknown>,
-  ctx: DanhMucImportCtx,
-): ImportRowOutcome<KhoDanhMucHangHoaFormValues> {
-  const prefix = txt('matTranHangHoa.import.rowPrefix', { row: rowNum });
-
+): ImportRowOutcome<DanhMucImportRow> {
   const ten = trimCell(row.ten_danh_muc);
-  if (!ten) return { ok: false, message: prefix + txt('matTranHangHoa.import.errTenDanhMucEmpty') };
+  if (!ten) return fail(rowNum, txt('matTranHangHoa.import.errTenDanhMucEmpty'));
 
-  const key = normalizeMatchKey(ten);
-  const daCo = ctx.existingTen.get(key);
-  if (daCo != null) {
-    return { ok: false, message: prefix + txt('matTranHangHoa.import.errDanhMucTrungHeThong', { ten: daCo }) };
-  }
-  const dongTruoc = ctx.seenTen.get(key);
-  if (dongTruoc != null) {
-    return {
-      ok: false,
-      message: prefix + txt('matTranHangHoa.import.errDanhMucTrungFile', { ten, row: dongTruoc }),
-    };
-  }
+  const tt = parseTrangThaiThuTu(rowNum, row);
+  if (!tt.ok) return tt;
 
-  const trangThai = parseImportTrangThai(row.trang_thai);
-  if (trangThai == null) {
-    return {
-      ok: false,
-      message: prefix + txt('matTranHangHoa.import.errTrangThai', { gia_tri: trimCell(row.trang_thai) }),
-    };
-  }
-
-  const thuTu = parseImportThuTu(row.thu_tu);
-  if (!thuTu.ok) {
-    return { ok: false, message: prefix + txt('matTranHangHoa.import.errThuTu', { gia_tri: trimCell(row.thu_tu) }) };
-  }
+  const moTa = trimCell(row.mo_ta);
+  const checked = khoDanhMucHangHoaSchema.safeParse({
+    ten_danh_muc: ten,
+    mo_ta: moTa,
+    thu_tu: tt.thuTu ?? 0,
+    trang_thai: tt.trangThai ?? TRANG_THAI_HANG_HOA_MAC_DINH,
+  });
+  if (!checked.success) return fail(rowNum, checked.error.issues[0]?.message ?? checked.error.message);
 
   return {
     ok: true,
     data: {
+      rowNum,
+      raw: row,
+      idKey: trimCell(row.id) || null,
       ten_danh_muc: ten,
-      mo_ta: trimCell(row.mo_ta),
-      thu_tu: thuTu.value ?? ctx.nextThuTu,
-      trang_thai: trangThai,
+      mo_ta: moTa,
+      thu_tu: tt.thuTu,
+      trang_thai: tt.trangThai,
     },
   };
 }
 
-export interface HangHoaImportCtx {
-  /** Danh mục hiện có — tra theo id hoặc theo tên. */
-  danhMuc: { id: string; ten: string }[];
-  /** Cặp (id danh mục + tên hàng) đã có trong hệ thống. */
-  existingHang: Set<string>;
-  /** Cặp đã gặp ở dòng trước trong cùng file → số dòng. */
-  seenHang: Map<string, number>;
-  /** Thứ tự kế tiếp theo từng danh mục — người gọi tự tăng. */
-  nextThuTuByDanhMuc: Map<string, number>;
+/** Có khi THÊM MỚI; ghi đè không truyền để thứ tự / trạng thái trống giữ giá trị cũ. */
+export interface ImportTaoMoi {
+  thuTuTiepTheo: number;
 }
 
-/** Khoá chống trùng hàng hóa: cùng danh mục + cùng tên hàng (không phân biệt hoa thường). */
-export function hangHoaDedupKey(idDanhMuc: string, tenHang: string): string {
-  return `${String(idDanhMuc).trim()}::${normalizeMatchKey(tenHang)}`;
+function ganThuTuTrangThai(
+  out: Record<string, unknown>,
+  row: { thu_tu: number | null; trang_thai: TrangThaiHangHoa | null },
+  taoMoi: ImportTaoMoi | undefined,
+): Record<string, unknown> {
+  const thuTu = row.thu_tu ?? taoMoi?.thuTuTiepTheo;
+  if (thuTu != null) out.thu_tu = thuTu;
+  const trangThai = row.trang_thai ?? (taoMoi ? TRANG_THAI_HANG_HOA_MAC_DINH : null);
+  if (trangThai != null) out.trang_thai = trangThai;
+  return out;
+}
+
+export function danhMucImportPayload(
+  row: DanhMucImportRow,
+  taoMoi?: ImportTaoMoi,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    ten_danh_muc: row.ten_danh_muc,
+    mo_ta: nullIfEmpty(row.mo_ta),
+  };
+  return ganThuTuTrangThai(out, row, taoMoi);
+}
+
+// ---------------------------------------------------------------------------
+// Hàng hóa
+// ---------------------------------------------------------------------------
+
+export interface HangHoaImportRowCtx {
+  /** Danh mục hiện có — tra theo id hoặc đúng tên (bỏ dấu, không phân biệt hoa thường). */
+  danhMuc: readonly NamedRef[];
+}
+
+export interface HangHoaImportRow extends ImportParsedRow {
+  idKey: string | null;
+  id_danh_muc: string;
+  ten_hang_hoa: string;
+  don_vi_tinh: string;
+  mo_ta: string;
+  quy_cach: string;
+  thu_tu: number | null;
+  trang_thai: TrangThaiHangHoa | null;
 }
 
 export function parseHangHoaImportRow(
   rowNum: number,
   row: Record<string, unknown>,
-  ctx: HangHoaImportCtx,
-): ImportRowOutcome<KhoDanhSachHangHoaFormValues> {
-  const prefix = txt('matTranHangHoa.import.rowPrefix', { row: rowNum });
-
+  ctx: HangHoaImportRowCtx,
+): ImportRowOutcome<HangHoaImportRow> {
   const dmRaw = trimCell(row.id_danh_muc);
-  if (!dmRaw) return { ok: false, message: prefix + txt('matTranHangHoa.import.errDanhMucEmpty') };
-  const dm =
-    ctx.danhMuc.find((d) => String(d.id) === dmRaw) ??
-    ctx.danhMuc.find((d) => normalizeMatchKey(d.ten) === normalizeMatchKey(dmRaw));
-  if (!dm) {
-    return { ok: false, message: prefix + txt('matTranHangHoa.import.errDanhMucNotFound', { ten: dmRaw }) };
+  if (!dmRaw) return fail(rowNum, txt('matTranHangHoa.import.errDanhMucEmpty'));
+  const dm = findRefStrict(ctx.danhMuc, dmRaw);
+  if (!dm.ok || !dm.ref) {
+    const key =
+      !dm.ok && dm.reason === 'ambiguous'
+        ? 'matTranHangHoa.import.errDanhMucTrungTen'
+        : 'matTranHangHoa.import.errDanhMucNotFound';
+    return fail(rowNum, txt(key, { ten: dmRaw }));
   }
 
   const tenHang = trimCell(row.ten_hang_hoa);
-  if (!tenHang) return { ok: false, message: prefix + txt('matTranHangHoa.import.errTenHangEmpty') };
+  if (!tenHang) return fail(rowNum, txt('matTranHangHoa.import.errTenHangEmpty'));
 
   const donViTinh = trimCell(row.don_vi_tinh);
-  if (!donViTinh) return { ok: false, message: prefix + txt('matTranHangHoa.import.errDonViTinhEmpty') };
+  if (!donViTinh) return fail(rowNum, txt('matTranHangHoa.import.errDonViTinhEmpty'));
 
-  const key = hangHoaDedupKey(dm.id, tenHang);
-  if (ctx.existingHang.has(key)) {
-    return {
-      ok: false,
-      message: prefix + txt('matTranHangHoa.import.errHangTrungHeThong', { ten: tenHang, danh_muc: dm.ten }),
-    };
-  }
-  const dongTruoc = ctx.seenHang.get(key);
-  if (dongTruoc != null) {
-    return {
-      ok: false,
-      message: prefix + txt('matTranHangHoa.import.errHangTrungFile', { ten: tenHang, row: dongTruoc }),
-    };
-  }
+  const tt = parseTrangThaiThuTu(rowNum, row);
+  if (!tt.ok) return tt;
 
-  const trangThai = parseImportTrangThai(row.trang_thai);
-  if (trangThai == null) {
-    return {
-      ok: false,
-      message: prefix + txt('matTranHangHoa.import.errTrangThai', { gia_tri: trimCell(row.trang_thai) }),
-    };
-  }
-
-  const thuTu = parseImportThuTu(row.thu_tu);
-  if (!thuTu.ok) {
-    return { ok: false, message: prefix + txt('matTranHangHoa.import.errThuTu', { gia_tri: trimCell(row.thu_tu) }) };
-  }
+  const moTa = trimCell(row.mo_ta);
+  const quyCach = trimCell(row.quy_cach);
+  const checked = khoDanhSachHangHoaSchema.safeParse({
+    id_danh_muc: dm.ref.id,
+    ten_hang_hoa: tenHang,
+    don_vi_tinh: donViTinh,
+    mo_ta: moTa,
+    quy_cach: quyCach,
+    thu_tu: tt.thuTu ?? 0,
+    trang_thai: tt.trangThai ?? TRANG_THAI_HANG_HOA_MAC_DINH,
+  });
+  if (!checked.success) return fail(rowNum, checked.error.issues[0]?.message ?? checked.error.message);
 
   return {
     ok: true,
     data: {
-      id_danh_muc: String(dm.id),
+      rowNum,
+      raw: row,
+      idKey: trimCell(row.id) || null,
+      id_danh_muc: String(dm.ref.id),
       ten_hang_hoa: tenHang,
       don_vi_tinh: donViTinh,
-      mo_ta: trimCell(row.mo_ta),
-      quy_cach: trimCell(row.quy_cach),
-      thu_tu: thuTu.value ?? ctx.nextThuTuByDanhMuc.get(String(dm.id)) ?? 0,
-      trang_thai: trangThai,
+      mo_ta: moTa,
+      quy_cach: quyCach,
+      thu_tu: tt.thuTu,
+      trang_thai: tt.trangThai,
     },
   };
+}
+
+export function hangHoaImportPayload(
+  row: HangHoaImportRow,
+  taoMoi?: ImportTaoMoi,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    id_danh_muc: Number(row.id_danh_muc),
+    ten_hang_hoa: row.ten_hang_hoa,
+    don_vi_tinh: row.don_vi_tinh,
+    mo_ta: nullIfEmpty(row.mo_ta),
+    quy_cach: nullIfEmpty(row.quy_cach),
+  };
+  return ganThuTuTrangThai(out, row, taoMoi);
 }

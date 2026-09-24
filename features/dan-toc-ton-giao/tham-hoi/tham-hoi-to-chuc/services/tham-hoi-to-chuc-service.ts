@@ -9,16 +9,11 @@ import { DON_VI_THAM_HOI_TINH_LABEL, DON_VI_THAM_HOI_TINH_VALUE } from '../core/
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import type { ImportErrorRow } from '@/components/shared/ImportDialog';
-import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
-import { getThongTinToChucQuanTrongList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong/services/thong-tin-to-chuc-quan-trong-service';
-import { getDipTenById, getDipThamHoiList } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/services/dip-tham-hoi-service';
-import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
+import { getDipTenById } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/services/dip-tham-hoi-service';
 import type { ThamHoiToChucFormValues } from '../core/schema';
-import { thamHoiToChucSchema } from '../core/schema';
 import type { ThamHoiToChuc } from '../core/types';
 import type { TienDoThamHoi } from '../core/constants';
-import { TIEN_DO_DEFAULT, TIEN_DO_VALUES } from '../core/constants';
+import { TIEN_DO_DEFAULT } from '../core/constants';
 import {
   DTTG_THAM_HOI_TO_CHUC_RETURNING,
   DTTG_THAM_HOI_TO_CHUC_SELECT,
@@ -101,6 +96,14 @@ async function buildPayload(data: ThamHoiToChucFormValues): Promise<Record<strin
   if (!dipTen?.trim()) {
     throw new Error(txt('danTocThamHoiToChuc.validation.dipThamHoiInvalid'));
   }
+  return thamHoiToChucPayload(data, dipTen);
+}
+
+/**
+ * Dựng payload ghi DB — đồng bộ, không gọi mạng. Tên dịp (`dip_tham_hoi`) do
+ * nơi gọi tra sẵn: form tra từng lần, nhập file tra một lần cho cả file.
+ */
+export function thamHoiToChucPayload(data: ThamHoiToChucFormValues, dipTen: string): Record<string, unknown> {
   return {
     to_chuc_id: Number(data.to_chuc_id),
     dip_tham_hoi_id: Number(data.dip_tham_hoi_id),
@@ -122,30 +125,6 @@ async function buildPayload(data: ThamHoiToChucFormValues): Promise<Record<strin
     ket_qua_thuc_hien: data.ket_qua_thuc_hien ?? null,
     link_ket_qua: data.link_ket_qua ?? null,
   };
-}
-
-async function resolveXaPhuongIdByTen(ten: string): Promise<string | null> {
-  const t = ten.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const all = await getXaPhuongAll();
-  const exact = all.find((x) => x.ten.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find(
-    (x) => x.ten.toLowerCase().includes(lower) || lower.includes(x.ten.toLowerCase()),
-  );
-  return partial?.id ?? null;
-}
-
-function isMttqTinhLabel(raw: string): boolean {
-  const lower = raw.trim().toLowerCase();
-  return (
-    lower === '' ||
-    lower === 'mttq tỉnh' ||
-    lower === 'mttq tinh' ||
-    lower === 'cqmttq tỉnh' ||
-    lower === 'cqmttq tinh'
-  );
 }
 
 export async function getThamHoiToChucList(): Promise<ThamHoiToChuc[]> {
@@ -380,181 +359,27 @@ export async function deleteThamHoiToChucMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }
 
-function importRowNum(raw: Record<string, unknown>, fallback: number): number {
-  const n = raw[IMPORT_ROW_NUM_KEY];
-  if (typeof n === 'number' && Number.isFinite(n)) return n;
-  const parsed = Number(n);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function resolveTienDoFromImport(raw: unknown): TienDoThamHoi {
-  const s = String(raw ?? '').trim();
-  if (!s) return TIEN_DO_DEFAULT;
-  const exact = TIEN_DO_VALUES.find((v) => v === s);
-  if (exact) return exact;
-  const lower = s.toLowerCase();
-  const match = TIEN_DO_VALUES.find((v) => v.toLowerCase() === lower);
-  return match ?? TIEN_DO_DEFAULT;
-}
-
-async function resolveDipIdByTen(tenDip: string): Promise<string | null> {
-  const t = tenDip.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const all = await getDipThamHoiList();
-  const exact = all.find((x) => x.ten_dip.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find(
-    (x) => x.ten_dip.toLowerCase().includes(lower) || lower.includes(x.ten_dip.toLowerCase()),
-  );
-  return partial?.id ?? null;
-}
-
-async function resolveToChucIdByTen(tenCoSo: string): Promise<string | null> {
-  const t = tenCoSo.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const all = await getThongTinToChucQuanTrongList();
-  const exact = all.find((x) => x.ten_co_so.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find(
-    (x) =>
-      x.ten_co_so.toLowerCase().includes(lower) || lower.includes(x.ten_co_so.toLowerCase()),
-  );
-  return partial?.id ?? null;
-}
-
-export async function importThamHoiToChuc(
-  rows: Record<string, unknown>[],
+/** Thêm mới từ file nhập — chỉ trả `id`, không kéo embed về cho từng dòng. */
+export async function insertThamHoiToChucFromImport(
+  payload: Record<string, unknown>,
   idNguoiTao: string,
-): Promise<{ created: number; errors: string[]; errorRows: ImportErrorRow[] }> {
-  const trimmedNv = idNguoiTao.trim();
-  if (!trimmedNv) throw new Error(txt('danTocThamHoiToChuc.service.noEmployeeProfile'));
+): Promise<void> {
+  const trimmed = idNguoiTao.trim();
+  if (!trimmed) throw new Error(txt('danTocThamHoiToChuc.service.noEmployeeProfile'));
+  await repo.insert({ ...payload, id_nguoi_tao: Number(trimmed) }, { returningSelect: 'id' });
+}
 
-  const errors: string[] = [];
-  const errorRows: ImportErrorRow[] = [];
-  const validPayloads: Record<string, unknown>[] = [];
-
-  for (let i = 0; i < rows.length; i++) {
-    const raw = rows[i];
-    const rowNum = importRowNum(raw, i + 2);
-    const rowData = { ...raw };
-    delete rowData[IMPORT_ROW_NUM_KEY];
-
-    const tcRaw =
-      raw.to_chuc_id != null && String(raw.to_chuc_id).trim() !== '' ? String(raw.to_chuc_id).trim() : '';
-    let to_chuc_id: string | null = null;
-    if (tcRaw && /^\d+$/.test(tcRaw)) {
-      to_chuc_id = tcRaw;
-    } else {
-      const tenCoSo = String(raw.ten_co_so ?? '').trim();
-      if (tenCoSo) {
-        to_chuc_id = (await resolveToChucIdByTen(tenCoSo)) ?? null;
-        if (!to_chuc_id) {
-          const msg = txt('danTocThamHoiToChuc.validation.toChucInvalid');
-          const errMsg = txt('danTocThamHoiToChuc.import.rowError', { row: rowNum, message: msg });
-          errors.push(errMsg);
-          errorRows.push({ rowNum, data: rowData, message: errMsg });
-          continue;
-        }
-      }
-    }
-
-    let don_vi_tham_hoi_id: string | undefined;
-    const dvRaw =
-      raw.don_vi_tham_hoi_id != null && String(raw.don_vi_tham_hoi_id).trim() !== ''
-        ? String(raw.don_vi_tham_hoi_id).trim()
-        : '';
-    if (dvRaw && /^\d+$/.test(dvRaw)) {
-      don_vi_tham_hoi_id = dvRaw;
-    } else {
-      const tenDv =
-        String(raw.ten_don_vi_tham_hoi ?? raw.don_vi_tham_hoi ?? '').trim();
-      if (tenDv && !isMttqTinhLabel(tenDv)) {
-        const resolved = (await resolveXaPhuongIdByTen(tenDv)) ?? null;
-        if (!resolved) {
-          const msg = txt('danTocThamHoiToChuc.validation.donViThamHoiInvalid');
-          const errMsg = txt('danTocThamHoiToChuc.import.rowError', { row: rowNum, message: msg });
-          errors.push(errMsg);
-          errorRows.push({ rowNum, data: rowData, message: errMsg });
-          continue;
-        }
-        don_vi_tham_hoi_id = resolved;
-      }
-    }
-
-    const dipRaw =
-      raw.dip_tham_hoi_id != null && String(raw.dip_tham_hoi_id).trim() !== ''
-        ? String(raw.dip_tham_hoi_id).trim()
-        : '';
-    let dip_tham_hoi_id: string | null = null;
-    if (dipRaw && /^\d+$/.test(dipRaw)) {
-      dip_tham_hoi_id = dipRaw;
-    } else {
-      const tenDip = String(raw.dip_tham_hoi ?? raw.ten_dip ?? '').trim();
-      if (!tenDip) {
-        const msg = txt('danTocThamHoiToChuc.validation.dipThamHoiRequired');
-        const errMsg = txt('danTocThamHoiToChuc.import.rowError', { row: rowNum, message: msg });
-        errors.push(errMsg);
-        errorRows.push({ rowNum, data: rowData, message: errMsg });
-        continue;
-      }
-      dip_tham_hoi_id = (await resolveDipIdByTen(tenDip)) ?? null;
-      if (!dip_tham_hoi_id) {
-        const msg = txt('danTocThamHoiToChuc.validation.dipThamHoiInvalid');
-        const errMsg = txt('danTocThamHoiToChuc.import.rowError', { row: rowNum, message: msg });
-        errors.push(errMsg);
-        errorRows.push({ rowNum, data: rowData, message: errMsg });
-        continue;
-      }
-    }
-
-    const input = {
-      to_chuc_id: to_chuc_id ?? '',
-      dip_tham_hoi_id: dip_tham_hoi_id ?? '',
-      thoi_gian_du_kien:
-        raw.thoi_gian_du_kien != null && String(raw.thoi_gian_du_kien).trim() !== ''
-          ? String(raw.thoi_gian_du_kien)
-          : undefined,
-      don_vi_tham_hoi_id,
-      noi_dung_tham_hoi:
-        raw.noi_dung_tham_hoi != null && String(raw.noi_dung_tham_hoi).trim() !== ''
-          ? String(raw.noi_dung_tham_hoi)
-          : undefined,
-      thanh_phan_doan:
-        raw.thanh_phan_doan != null && String(raw.thanh_phan_doan).trim() !== ''
-          ? String(raw.thanh_phan_doan)
-          : undefined,
-      qua_tang:
-        raw.qua_tang != null && String(raw.qua_tang).trim() !== '' ? String(raw.qua_tang) : undefined,
-      tien_do: resolveTienDoFromImport(raw.tien_do),
-      ket_qua_thuc_hien:
-        raw.ket_qua_thuc_hien != null && String(raw.ket_qua_thuc_hien).trim() !== ''
-          ? String(raw.ket_qua_thuc_hien)
-          : undefined,
-      link_ket_qua:
-        raw.link_ket_qua != null && String(raw.link_ket_qua).trim() !== ''
-          ? String(raw.link_ket_qua)
-          : undefined,
-    };
-
-    const parsed = thamHoiToChucSchema.safeParse(input);
-    if (!parsed.success) {
-      const msg = parsed.error.flatten().formErrors[0] ?? parsed.error.message;
-      const errMsg = txt('danTocThamHoiToChuc.import.rowError', { row: rowNum, message: msg });
-      errors.push(errMsg);
-      errorRows.push({ rowNum, data: rowData, message: errMsg });
-      continue;
-    }
-    validPayloads.push({ ...(await buildPayload(parsed.data)), id_nguoi_tao: Number(trimmedNv) });
-  }
-
-  if (validPayloads.length > 0) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error(txt('danTocThamHoiToChuc.service.notFound'));
-    const { error } = await supabase.from('dttg_tham_hoi_to_chuc').insert(validPayloads);
-    if (error) handleSupabaseError(error);
-  }
-
-  return { created: validPayloads.length, errors, errorRows };
+/**
+ * Ghi đè từ file nhập: chỉ các cột có trong file (payload đã qua `pickMappedColumns`).
+ * Không kéo lại bản ghi đầy đủ sau khi ghi — trả `id` là đủ.
+ */
+export async function updateThamHoiToChucPartial(
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await repo.update(
+    id,
+    { ...payload, tg_cap_nhat: new Date().toISOString() } as unknown as Partial<RepoRow>,
+    { returningSelect: 'id' },
+  );
 }

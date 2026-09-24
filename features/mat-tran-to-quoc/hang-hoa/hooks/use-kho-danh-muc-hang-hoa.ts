@@ -12,6 +12,7 @@ import {
   getKhoDanhMucHangHoaList,
   updateKhoDanhMucHangHoa,
 } from '../services/kho-danh-muc-hang-hoa-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
 import { importKhoDanhMucHangHoaRows } from '../services/kho-hang-hoa-import';
 
 const listKey = queryKeys.khoDanhMucHangHoa.all;
@@ -102,12 +103,15 @@ export function useDeleteKhoDanhMucHangHoaMany() {
 export function useImportKhoDanhMucHangHoa(onSuccess?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (rows: Record<string, unknown>[]) => importKhoDanhMucHangHoaRows(rows),
+    mutationFn: ({ rows, options }: { rows: Record<string, unknown>[]; options: ImportRunOptions }) =>
+      importKhoDanhMucHangHoaRows(rows, options),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
       void queryClient.invalidateQueries({ queryKey: hangListPrefix, refetchType: 'none' });
-      if (result.created > 0) {
-        toast.success(txt('matTranHangHoa.import.toastSuccessDanhMuc', { count: result.created }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('matTranHangHoa.import.toastSuccessDanhMuc', { created, updated }));
       }
       onSuccess?.();
     },

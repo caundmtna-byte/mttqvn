@@ -1,12 +1,12 @@
 /**
  * Chuẩn hoá số căn cước trước khi so trùng.
  *
- * Dưới DB, unique index so trên `btrim(so_cccd)`. Client phải chuẩn hoá y hệt,
- * nếu không người dùng gõ thừa một dấu cách sẽ thấy "trùng" ở DB mà giao diện
- * bảo là khác nhau.
+ * Phải khớp ĐÚNG trigger `fn_hngh_chuan_hoa()` (migration 20260921150600): bóc
+ * MỌI khoảng trắng, kể cả ở giữa — cách gõ "040 012 345 678" rất phổ biến. Chỉ
+ * cắt hai đầu thì giao diện bảo hai số khác nhau còn DB báo trùng khoá.
  */
 export function chuanHoaSoCccd(raw: string | null | undefined): string {
-  return String(raw ?? '').trim();
+  return String(raw ?? '').replace(/\s+/g, '');
 }
 
 /** Rỗng (hoặc chỉ toàn khoảng trắng) ⇒ không tham gia kiểm trùng. */

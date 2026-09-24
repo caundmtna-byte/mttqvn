@@ -60,13 +60,22 @@ export const department = {
     "createSuccess": "Tạo phòng ban thành công",
     "updateSuccess": "Cập nhật thành công",
     "deleteSuccess": "Xóa phòng ban thành công",
-    "importSuccess": "Đã import {{count}} phòng ban",
     "deleteManySuccess": "Đã xóa {{count}} phòng ban",
     "deleteManyPartial": "Đã xóa {{done}}/{{total}} phòng ban. {{failed}} phòng ban không xóa được: {{reason}}",
     "statusManySuccess": "Đã đổi trạng thái {{count}} phòng ban",
     "statusManyPartial": "Đã đổi trạng thái {{done}}/{{total}} phòng ban. {{failed}} phòng ban giữ nguyên: {{reason}}"
   },
   "importTemplateName": "Mau_Import_Phong_Ban",
+  "import": {
+    "keyTen": "tên phòng ban",
+    "colCha": "Phòng ban cấp trên (id hoặc tên)",
+    "errTenEmpty": "chưa điền Tên phòng ban.",
+    "errCha": "không tìm thấy phòng ban cấp trên « {{gia_tri}} ». Nhập id hoặc đúng tên một phòng ban đã có.",
+    "errChaVong": "không gán được phòng ban cấp trên là chính nó hoặc một phòng ban cấp dưới của nó.",
+    "errThuTu": "thứ tự « {{gia_tri}} » phải là số không âm.",
+    "errTrangThai": "trạng thái « {{gia_tri}} » không hợp lệ — chỉ nhận « Đang hoạt động » hoặc « Ngừng hoạt động ».",
+    "toastDone": "Đã nhập: {{created}} phòng ban mới, {{updated}} phòng ban được ghi đè."
+  },
   "service": {
     "notFound": "Phòng ban không tồn tại",
     "hasChildren": "Không thể xóa phòng ban đang chứa phòng ban con."

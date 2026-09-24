@@ -3,12 +3,10 @@ import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
-import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
 import type { MttqKyHop, MttqKyHopDiemDanhSummary, MttqKyHopListRow } from '../core/types';
 import { getDiemDanhSummariesForKyHopIds } from './mttq-diem-danh-service';
-import { mttqKyHopSchema, type MttqKyHopFormInput, type MttqKyHopFormValues } from '../core/schema';
+import type { MttqKyHopFormValues } from '../core/schema';
 import { MTTQ_KY_HOP_RETURNING, MTTQ_KY_HOP_SELECT_FULL, MTTQ_KY_HOP_SELECT_LIST } from '../core/supabase-select';
-import { getErrorMessage } from '@/lib/utils';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -169,109 +167,22 @@ export async function deleteMttqKyHopMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }
 
-async function resolveNhiemKyIdByTen(ten: string): Promise<string | null> {
-  const t = ten.trim();
-  if (!t) return null;
-  const supabase = getSupabase();
-  if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('mttq_nhiem_ky')
-    .select('id')
-    .eq('ten_nhiem_ky', t)
-    .maybeSingle();
-  if (error) handleSupabaseError(error);
-  if (data?.id != null) return String(data.id);
-  const { data: data2, error: err2 } = await supabase
-    .from('mttq_nhiem_ky')
-    .select('id')
-    .ilike('ten_nhiem_ky', `%${t}%`)
-    .limit(1)
-    .maybeSingle();
-  if (err2) handleSupabaseError(err2);
-  return data2?.id != null ? String(data2.id) : null;
+/**
+ * Ghi cho luồng nhập file (`ky-hop-import.ts`): payload đã dựng sẵn, chỉ trả
+ * `id` — không đọc lại cả hồ sơ + điểm danh cho mỗi dòng Excel.
+ */
+export async function insertMttqKyHopForImport(payload: Record<string, unknown>, idNguoiTao: string): Promise<void> {
+  await repo.insert({ ...payload, id_nguoi_tao: idNguoiTao } as unknown as Omit<RepoRow, 'id'>, {
+    returningSelect: 'id',
+  });
 }
 
-async function resolveDonViIdByTen(tenDonVi: string): Promise<string | null> {
-  const t = tenDonVi.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  if (lower === 'mttq tỉnh' || lower === 'mttq tinh') return null;
-  const all = await getXaPhuongAll();
-  const exact = all.find((x) => x.ten.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find((x) => x.ten.toLowerCase().includes(lower) || lower.includes(x.ten.toLowerCase()));
-  return partial?.id ?? null;
-}
-
-function importRowToFormInput(
-  row: Record<string, unknown>,
-  resolved: { nhiem_ky_id: string; don_vi_id: string },
-): MttqKyHopFormInput {
-  return {
-    nhiem_ky_id: resolved.nhiem_ky_id,
-    don_vi_id: resolved.don_vi_id,
-    ky_thu: String(row.ky_thu ?? '').trim(),
-    ngay_hop: row.ngay_hop != null && String(row.ngay_hop).trim() !== '' ? String(row.ngay_hop) : '',
-    noi_dung_ky_hop:
-      row.noi_dung_ky_hop != null && String(row.noi_dung_ky_hop).trim() !== ''
-        ? String(row.noi_dung_ky_hop)
-        : undefined,
-    tai_lieu_hop:
-      row.tai_lieu_hop != null && String(row.tai_lieu_hop).trim() !== '' ? String(row.tai_lieu_hop) : undefined,
-    ghi_chu: row.ghi_chu != null && String(row.ghi_chu).trim() !== '' ? String(row.ghi_chu) : undefined,
-  };
-}
-
-/** Import nhiều kỳ họp (chỉ thêm mới). Cột: ten_nhiem_ky hoặc nhiem_ky_id; ten_don_vi hoặc don_vi_id; ky_thu; ngay_hop; ... */
-export async function importMttqKyHop(
-  rows: Record<string, unknown>[],
-  idNguoiTao: string,
-): Promise<{ created: number; errors: string[] }> {
-  const trimmedNv = idNguoiTao.trim();
-  if (!trimmedNv) throw new Error(txt('matTranKyHop.service.noEmployeeProfile'));
-
-  const errors: string[] = [];
-  let created = 0;
-
-  for (let i = 0; i < rows.length; i++) {
-    const raw = rows[i];
-    const nkRaw = String(raw.nhiem_ky_id ?? raw.ten_nhiem_ky ?? '').trim();
-    let nhiem_ky_id = nkRaw;
-    if (!/^\d+$/.test(nhiem_ky_id)) {
-      const resolvedNk = await resolveNhiemKyIdByTen(nkRaw);
-      if (!resolvedNk) {
-        errors.push(txt('matTranKyHop.import.rowError', { row: i + 2, message: txt('matTranKyHop.import.badNhiemKy') }));
-        continue;
-      }
-      nhiem_ky_id = resolvedNk;
-    }
-
-    const dvRaw = raw.don_vi_id != null && String(raw.don_vi_id).trim() !== '' ? String(raw.don_vi_id).trim() : '';
-    let don_vi_id: string;
-    if (dvRaw && /^\d+$/.test(dvRaw)) {
-      don_vi_id = dvRaw;
-    } else {
-      const tenDv = String(raw.ten_don_vi ?? '').trim();
-      don_vi_id = (await resolveDonViIdByTen(tenDv)) ?? '';
-    }
-
-    const input = importRowToFormInput(raw, { nhiem_ky_id, don_vi_id });
-
-    const parsed = mttqKyHopSchema.safeParse(input);
-    if (!parsed.success) {
-      const msg = parsed.error.flatten().formErrors[0] ?? parsed.error.message;
-      errors.push(txt('matTranKyHop.import.rowError', { row: i + 2, message: msg }));
-      continue;
-    }
-    const data = parsed.data as MttqKyHopFormValues;
-    try {
-      await createMttqKyHop(data, trimmedNv);
-      created++;
-    } catch (e: unknown) {
-      const msg = getErrorMessage(e);
-      errors.push(txt('matTranKyHop.import.rowError', { row: i + 2, message: msg }));
-    }
-  }
-
-  return { created, errors };
+/** Ghi đè MỘT PHẦN — `payload` chỉ gồm các cột có trong file. */
+export async function updateMttqKyHopPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  if (Object.keys(payload).length === 0) return;
+  await repo.update(
+    id,
+    { ...payload, tg_cap_nhat: new Date().toISOString() } as unknown as Partial<RepoRow>,
+    { returningSelect: 'id' },
+  );
 }

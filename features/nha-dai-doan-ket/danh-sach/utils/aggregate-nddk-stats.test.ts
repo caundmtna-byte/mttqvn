@@ -18,6 +18,7 @@ function nha(partial: Partial<NhaDaiDoanKet>): NhaDaiDoanKet {
     nam: 2026,
     nguon: 'Vì người nghèo',
     nguon_ho_tro: 'Cấp tỉnh',
+    ho_ngheo_id: null,
     ho_ten_chu_ho: 'Nguyễn Văn A',
     xa_phuong_id: null,
     ten_xa_phuong: null,

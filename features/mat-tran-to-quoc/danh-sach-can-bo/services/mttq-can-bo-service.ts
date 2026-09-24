@@ -290,6 +290,20 @@ export async function updateMttqCanBo(id: string, data: MttqCanBoFormValues): Pr
   return normalize(flattenMttqCanBoRow(updated as unknown as Record<string, unknown>, deptTenById, toChucById));
 }
 
+/**
+ * Ghi cho luồng nhập file (`mttq-can-bo-import.ts`): payload đã dựng sẵn, chỉ
+ * trả `id` — không kéo lại hồ sơ đầy đủ + bảng tên phòng ban cho mỗi dòng.
+ */
+export async function insertMttqCanBoForImport(payload: Record<string, unknown>): Promise<void> {
+  await repoFull.insert(payload as unknown as Omit<MttqCanBo, 'id'>, { returningSelect: 'id' });
+}
+
+/** Ghi đè MỘT PHẦN — `payload` chỉ gồm các cột có trong file. */
+export async function updateMttqCanBoPartial(id: string, payload: Record<string, unknown>): Promise<void> {
+  if (Object.keys(payload).length === 0) return;
+  await repoFull.update(id, payload as unknown as Partial<MttqCanBo>, { returningSelect: 'id' });
+}
+
 export async function deleteMttqCanBoMany(ids: string[]): Promise<void> {
   await repoFull.remove(ids);
 }

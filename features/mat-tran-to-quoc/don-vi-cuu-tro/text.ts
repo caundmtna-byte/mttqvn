@@ -10,12 +10,13 @@ export const matTranDonViCuuTro = {
     create: 'Đã tạo bản ghi.',
     update: 'Đã cập nhật bản ghi.',
     delete: 'Đã xóa {{count}} bản ghi.',
-    importSuccess: 'Đã nhập {{count}} đơn vị hỗ trợ',
+    importSuccess: 'Nhập đơn vị hỗ trợ từ Excel: thêm mới {{created}}, ghi đè {{updated}}.',
   },
   import: {
     templateName: 'don-vi-cuu-tro',
-    rowError: 'Dòng {{row}}: {{message}}',
-    errDonViGioiThieuNotFound: 'Không tìm thấy đơn vị giới thiệu «{{ten}}». Ghi "MTTQ tỉnh" hoặc đúng tên xã/phường.',
+    errDonViGioiThieuNotFound: 'không tìm thấy đơn vị giới thiệu « {{ten}} ». Ghi "MTTQ tỉnh" hoặc đúng tên/ID xã phường.',
+    errDonViGioiThieuTrungTen: 'có nhiều xã/phường cùng tên « {{ten}} ». Điền ID xã/phường thay cho tên.',
+    errLoai: 'Loại đối tượng « {{gia_tri}} » không có trong danh sách. Điền đúng tên loại như trên form.',
   },
   service: {
     notFound: 'Không tìm thấy bản ghi.',

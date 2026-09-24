@@ -27,7 +27,13 @@ import { useQuery } from '@tanstack/react-query';
 import { getXaPhuongAll } from '../danh-sach-tinh-thanh/services/dia-ban-service';
 import { geoDataQueryOptions } from '@/lib/supabase/query-config';
 import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
-import ImportDialog, { type ImportColumn, type ImportTemplateSheet } from '@/components/shared/ImportDialog';
+import ImportDialog, {
+  type ImportColumn,
+  type ImportRunOptions,
+  type ImportTemplateSheet,
+} from '@/components/shared/ImportDialog';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { dryRunEmployeeImport, type NhanVienImportContext } from './services/nhan-vien-import';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
@@ -492,9 +498,25 @@ const EmployeePage: React.FC = () => {
       { key: 'to_chuc_ids', label: txt('employee.import.colToChuc') },
       { key: 'don_vi_id', label: txt('employee.import.colDonVi') },
       { key: 'trang_thai', label: txt('employee.import.colTrangThai') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
   );
+
+  const { canEdit: canEditEmployees } = useResourcePermissions('employees');
+  const importMatchColumns = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten_tai_khoan', label: txt('employee.import.colTenTaiKhoan') },
+    ],
+    [],
+  );
+  /** Không có quyền sửa thì không bày chế độ ghi đè. */
+  const importWriteModes = useMemo(
+    () => (canEditEmployees ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEditEmployees],
+  );
+  const importCtx = useMemo<NhanVienImportContext>(() => ({ viewer: nhanVienViewer }), [nhanVienViewer]);
 
   const importTemplateSheets = useMemo<ImportTemplateSheet[]>(() => {
     if (!showImport) return [];
@@ -513,6 +535,7 @@ const EmployeePage: React.FC = () => {
           [txt('employee.import.hd6k'), txt('employee.import.hd6v')],
           [txt('employee.import.hd7k'), txt('employee.import.hd7v')],
           [txt('employee.import.hd8k'), txt('employee.import.hd8v')],
+          [txt('employee.import.hd9k'), txt('employee.import.hd9v')],
         ],
       },
       {
@@ -545,9 +568,15 @@ const EmployeePage: React.FC = () => {
     ];
   }, [showImport, departmentsForImport, positions, thietLapAll, xaListForImport]);
 
+  const handleImportDryRun = useCallback(
+    (rows: Record<string, unknown>[], options: ImportRunOptions) => dryRunEmployeeImport(rows, options, importCtx),
+    [importCtx],
+  );
+
   const handleImportData = useCallback(
-    (data: Record<string, unknown>[]) => importMutation.mutateAsync(data),
-    [importMutation],
+    (rows: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows, options, ctx: importCtx }),
+    [importMutation, importCtx],
   );
 
   if (!canView) {
@@ -647,6 +676,10 @@ const EmployeePage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ten_tai_khoan']}
             templateFileName={txt('employee.import.templateFileName')}
             templateSheets={importTemplateSheets}
           />

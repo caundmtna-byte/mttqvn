@@ -13,10 +13,14 @@ import {
   getThamHoiToChucByToChucId,
   getThamHoiToChucByDipId,
   getThamHoiToChucList,
-  importThamHoiToChuc,
   updateThamHoiToChuc,
   updateThamHoiToChucTienDo,
 } from '../services/tham-hoi-to-chuc-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import {
+  importThamHoiToChucRows,
+  type ThamHoiToChucImportContext,
+} from '../services/tham-hoi-to-chuc-import';
 
 const listKey = queryKeys.danTocThamHoiToChuc.all;
 
@@ -170,21 +174,33 @@ export function useDeleteThamHoiToChucMany() {
   });
 }
 
-export function useImportThamHoiToChuc(onSuccess?: () => void) {
+/**
+ * Không tự đóng hộp thoại khi xong: bước kết quả của `ImportDialog` cần ở lại để
+ * người dùng xem dòng lỗi / tải file lỗi.
+ */
+export function useImportThamHoiToChuc() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importThamHoiToChuc(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: ThamHoiToChucImportContext;
+    }) => importThamHoiToChucRows(rows, options, ctx),
     onSuccess: (result) => {
+      // Tiền tố `all` phủ cả trang server, chi tiết, by-to-chuc và by-dip.
       void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: ['dttg-tham-hoi-to-chuc', 'by-to-chuc'] });
-      if (result.created > 0) {
-        toast.success(txt('danTocThamHoiToChuc.toast.importSuccess', { count: result.created }));
+      if ((result.created ?? 0) + (result.updated ?? 0) > 0) {
+        toast.success(
+          txt('danTocThamHoiToChuc.import.toastDone', {
+            created: String(result.created ?? 0),
+            updated: String(result.updated ?? 0),
+          }),
+        );
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 }

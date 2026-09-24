@@ -22,7 +22,8 @@ import TabGroup, { type Tab } from '@/components/ui/TabGroup';
 import PageTabRow from '@/components/shared/PageTabRow';
 import type { Option } from '@/components/ui/Combobox';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog, { type ImportTemplateSheet } from '@/components/shared/ImportDialog';
+import ImportDialog, { type ImportRunOptions, type ImportTemplateSheet } from '@/components/shared/ImportDialog';
+import { dryRunTinhThanhImport, dryRunXaPhuongImport } from './services/dia-ban-import';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
@@ -89,7 +90,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
   const tab = searchParams.get('tab') === TAB_XA ? TAB_XA : TAB_TINH;
   const tinhIdFromUrl = searchParams.get('tinhId') ?? '';
 
-  const { canExport, canImport } = useResourcePermissions('provinces');
+  const { canExport, canImport, canEdit } = useResourcePermissions('provinces');
 
   const tinhStore = useTinhThanhStore();
   const xaStore = useXaPhuongStore();
@@ -141,8 +142,8 @@ const DanhSachTinhThanhPage: React.FC = () => {
 
   const deleteTinhMutation = useDeleteTinhThanh();
   const deleteXaMutation = useDeleteXaPhuong();
-  const importTinhMutation = useImportTinhThanhRows(() => setShowImport(false));
-  const importXaMutation = useImportXaPhuongRows(() => setShowImport(false));
+  const importTinhMutation = useImportTinhThanhRows();
+  const importXaMutation = useImportXaPhuongRows();
 
   useEffect(() => {
     return () => {
@@ -382,6 +383,7 @@ const DanhSachTinhThanhPage: React.FC = () => {
     () => [
       { key: 'ten', label: txt('diaBan.import.colTenTinh'), required: true },
       { key: 'thu_tu', label: txt('diaBan.import.colThuTuTinh') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
   );
@@ -392,8 +394,32 @@ const DanhSachTinhThanhPage: React.FC = () => {
       { key: 'thu_tu', label: txt('diaBan.import.colThuTuXa') },
       { key: 'id_tinh_thanh', label: txt('diaBan.colIdTinhThanh') },
       { key: 'ten_tinh', label: txt('diaBan.import.colTinhXa') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const IMPORT_TINH_MATCH = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten', label: txt('diaBan.import.colTenTinh') },
+    ],
+    [],
+  );
+
+  /** Tỉnh đọc từ cột id tỉnh hoặc tên tỉnh — parser báo lỗi từng dòng nếu thiếu cả hai. */
+  const IMPORT_XA_MATCH = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'tinh_ten', label: txt('diaBan.import.matchTinhTenXa'), columns: ['ten'] },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè. */
+  const importWriteModes = useMemo(
+    () => (canEdit ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEdit],
   );
 
   const exportMapTinh = useCallback(
@@ -453,14 +479,11 @@ const DanhSachTinhThanhPage: React.FC = () => {
   }, [tab, tinhList]);
 
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
-      if (tab === TAB_TINH) {
-        await importTinhMutation.mutateAsync(data);
-      } else {
-        await importXaMutation.mutateAsync({ rows: data, tinhList });
-      }
-    },
-    [tab, tinhList, importTinhMutation, importXaMutation],
+    (rows: Record<string, unknown>[], options: ImportRunOptions) =>
+      tab === TAB_TINH
+        ? importTinhMutation.mutateAsync({ rows, options })
+        : importXaMutation.mutateAsync({ rows, options }),
+    [tab, importTinhMutation, importXaMutation],
   );
 
   const handleExportOpen = () => {
@@ -777,6 +800,10 @@ const DanhSachTinhThanhPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={tab === TAB_TINH ? IMPORT_TINH_COLUMNS : IMPORT_XA_COLUMNS}
             onImport={handleImportData}
+            onDryRun={tab === TAB_TINH ? dryRunTinhThanhImport : dryRunXaPhuongImport}
+            writeModes={importWriteModes}
+            matchColumns={tab === TAB_TINH ? IMPORT_TINH_MATCH : IMPORT_XA_MATCH}
+            defaultMatchKeys={tab === TAB_TINH ? ['ten'] : ['tinh_ten']}
             templateFileName={
               tab === TAB_TINH ? txt('diaBan.import.templateTinh') : txt('diaBan.import.templateXa')
             }

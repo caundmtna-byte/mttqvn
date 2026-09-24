@@ -27,6 +27,18 @@ export const danTocThamHoiCaNhan = {
   import: {
     templateName: 'tham-hoi-ca-nhan',
     rowError: 'Dòng {{row}}: {{message}}',
+    toastDone: 'Đã nhập: {{created}} lượt thăm hỏi mới, {{updated}} lượt được ghi đè.',
+    errKhongThay: 'không tìm thấy {{cot}} “{{gia_tri}}”.',
+    errTrungTen: 'có nhiều {{cot}} tên “{{gia_tri}}”. Nhập mã (id) thay cho tên.',
+    cotCaNhan: 'cá nhân tiêu biểu',
+    cotPhongBan: 'phòng ban',
+    cotDip: 'dịp thăm hỏi',
+    cotDonViThamHoi: 'đơn vị thăm hỏi (xã, phường)',
+    cotXaPhuong: 'xã, phường',
+    errTrangThai: 'trạng thái “{{gia_tri}}” không hợp lệ — chỉ nhận: {{hop_le}}.',
+    errThoiGian: 'thời gian dự kiến “{{gia_tri}}” không hợp lệ — dùng mm/yyyy hoặc yyyy-mm.',
+    errNgoaiDonVi: 'bạn chỉ được nhập lượt thăm hỏi có đơn vị thăm hỏi hoặc xã, phường là đơn vị của mình.',
+    errChuaGanDonVi: 'Tài khoản cấp xã, phường chưa được gán đơn vị nên không nhập file được.',
   },
   validation: {
     caNhanRequired: 'Vui lòng chọn cá nhân tiêu biểu',

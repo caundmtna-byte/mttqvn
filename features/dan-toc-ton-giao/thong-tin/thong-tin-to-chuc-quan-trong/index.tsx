@@ -24,8 +24,12 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, { type ImportRunOptions } from '@/components/shared/ImportDialog';
 import ErrorState from '@/components/shared/ErrorState';
+import {
+  dryRunToChucQuanTrongImport,
+  type ToChucQuanTrongImportContext,
+} from './services/thong-tin-to-chuc-quan-trong-import';
 import {
   useThongTinToChucQuanTrongList,
   useThongTinToChucQuanTrongDetail,
@@ -126,8 +130,13 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
   const isListLoading = isLoading || waitingMatrixHydrate;
   const deleteMutation = useDeleteThongTinToChucQuanTrongMany();
   const statusMutation = useUpdateThongTinToChucQuanTrongStatus();
-  const importMutation = useImportThongTinToChucQuanTrong(() => setShowImport(false));
+  const importMutation = useImportThongTinToChucQuanTrong();
   const viewer = useDttgViewer('danTocToChucQuanTrong');
+  const canEdit = useCan('edit', 'danTocToChucQuanTrong');
+  const importCtx = useMemo<ToChucQuanTrongImportContext>(
+    () => ({ idNguoiTao: nhanVienId, viewer }),
+    [nhanVienId, viewer],
+  );
 
   const viewableRows = useMemo(
     () => rows.filter((r) => dttgRowVisibleByDonVi(viewer, [r.don_vi_id])),
@@ -184,8 +193,23 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
       { key: 'dia_chi', label: txt('danTocToChucQuanTrong.form.diaChi') },
       { key: 'so_dien_thoai', label: txt('danTocToChucQuanTrong.form.soDienThoai') },
       { key: 'trang_thai', label: txt('danTocToChucQuanTrong.form.trangThai') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten_co_so', label: txt('danTocToChucQuanTrong.form.tenCoSo') },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo(
+    () => (canEdit ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEdit],
   );
 
   const exportMapFn = useCallback(
@@ -361,15 +385,21 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const handleImportDryRun = useCallback(
+    (data: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunToChucQuanTrongImport(data, options, importCtx),
+    [importCtx],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
+    async (data: Record<string, unknown>[], options: ImportRunOptions) => {
       if (!nhanVienId) {
         toast.error(txt('danTocToChucQuanTrong.service.noEmployeeProfile'));
         return { created: 0, errors: [], errorRows: [] };
       }
-      return importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
+      return importMutation.mutateAsync({ rows: data, options, ctx: importCtx });
     },
-    [importMutation, nhanVienId],
+    [importMutation, nhanVienId, importCtx],
   );
 
   const handleCloseForm = () => {
@@ -474,6 +504,10 @@ const ThongTinToChucQuanTrongPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ten_co_so']}
             templateFileName={txt('danTocToChucQuanTrong.import.templateName')}
           />
         )}

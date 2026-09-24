@@ -137,6 +137,15 @@ const MttqKyHopForm: React.FC<Props> = ({ initialData, onClose, defaultNhiemKyId
   }, [initialData, defaultNhiemKyId, reset, lockDonViToViewer, viewerDonViId]);
 
   const onSubmit: SubmitHandler<MttqKyHopFormValues> = (data) => {
+    // Form khoá ô đơn vị về xã của cán bộ cấp xã, nhưng chỉ khi tài khoản đã
+    // được gán đơn vị — chốt lại ở đây để không lưu sang xã khác.
+    if (!viewer.canViewAll && viewer.chucVuCapQuanLy === 'Xã phường') {
+      const dv = String(data.don_vi_id ?? '').trim();
+      if (!viewer.viewerDonViId || dv !== viewer.viewerDonViId) {
+        toast.error(txt('matTranKyHop.noXaPhuongScopePermission'));
+        return;
+      }
+    }
     if (!isEdit) {
       if (!idNguoiTao) {
         toast.error(txt('matTranKyHop.service.noEmployeeProfile'));

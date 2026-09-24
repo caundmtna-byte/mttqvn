@@ -8,27 +8,21 @@ import {
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import type { ImportErrorRow } from '@/components/shared/ImportDialog';
-import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
-import { getDepartments } from '@/features/he-thong/phong-ban/services/phong-ban-service';
-import { getXaPhuongAll } from '@/features/he-thong/danh-sach-tinh-thanh/services/dia-ban-service';
-import { getDipTenById, getDipThamHoiList } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/services/dip-tham-hoi-service';
+import { getDipTenById } from '@/features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/services/dip-tham-hoi-service';
 import { getThongTinCaNhanTieuBieuList } from '@/features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/services/thong-tin-ca-nhan-tieu-bieu-service';
 import type { ThamHoiCaNhanFormValues } from '../core/schema';
-import { thamHoiCaNhanSchema } from '../core/schema';
 import type { ThamHoiCaNhan } from '../core/types';
 import type { TrangThaiThamHoi } from '../core/constants';
 import {
   DON_VI_THAM_HOI_CQMTTQ_LABEL,
   DON_VI_THAM_HOI_CQMTTQ_VALUE,
   TRANG_THAI_DEFAULT,
-  TRANG_THAI_VALUES,
 } from '../core/constants';
 import {
   DTTG_THAM_HOI_CA_NHAN_RETURNING,
   DTTG_THAM_HOI_CA_NHAN_SELECT,
 } from '../core/supabase-select';
-import { dbDateToMonthYear, monthYearToDbDate, parseThoiGianDuKienImport } from '../utils/thoi-gian-du-kien';
+import { monthYearToDbDate } from '../utils/thoi-gian-du-kien';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -125,27 +119,30 @@ async function denormFromCaNhan(caNhanId: string): Promise<{ doi_tuong: string |
   };
 }
 
-async function resolveXaPhuongIdByTen(ten: string): Promise<string | null> {
-  const t = ten.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const all = await getXaPhuongAll();
-  const exact = all.find((x) => x.ten.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find(
-    (x) => x.ten.toLowerCase().includes(lower) || lower.includes(x.ten.toLowerCase()),
-  );
-  return partial?.id ?? null;
-}
-
 async function buildPayload(
   data: ThamHoiCaNhanFormValues,
-  denorm?: { doi_tuong: string | null; chuc_vu_vi_tri: string | null },
+  denorm?: ThamHoiCaNhanDenorm,
 ): Promise<Record<string, unknown>> {
   const dipTen = await getDipTenById(data.dip_tham_hoi_id);
   if (!dipTen?.trim()) {
     throw new Error(txt('danTocThamHoiCaNhan.validation.dipThamHoiInvalid'));
   }
+  return thamHoiCaNhanPayload(data, denorm, dipTen);
+}
+
+/** Cột sao từ hồ sơ cá nhân tiêu biểu tại thời điểm lưu. */
+export type ThamHoiCaNhanDenorm = { doi_tuong: string | null; chuc_vu_vi_tri: string | null };
+
+/**
+ * Dựng payload ghi DB — đồng bộ, không gọi mạng. Tên dịp (`dip_tham_hoi`) và
+ * cột sao từ cá nhân do nơi gọi tra sẵn: form tra từng lần, nhập file tra một
+ * lần cho cả file.
+ */
+export function thamHoiCaNhanPayload(
+  data: ThamHoiCaNhanFormValues,
+  denorm: ThamHoiCaNhanDenorm | undefined,
+  dipTen: string,
+): Record<string, unknown> {
   const thoiGianDb =
     data.thoi_gian_du_kien != null && data.thoi_gian_du_kien !== ''
       ? monthYearToDbDate(data.thoi_gian_du_kien)
@@ -426,248 +423,29 @@ export async function deleteThamHoiCaNhanMany(ids: string[]): Promise<void> {
   await repo.remove(ids);
 }
 
-function importRowNum(raw: Record<string, unknown>, fallback: number): number {
-  const n = raw[IMPORT_ROW_NUM_KEY];
-  if (typeof n === 'number' && Number.isFinite(n)) return n;
-  const parsed = Number(n);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function resolveTrangThaiFromImport(raw: unknown): TrangThaiThamHoi {
-  const s = String(raw ?? '').trim();
-  if (!s) return TRANG_THAI_DEFAULT;
-  if (s.toLowerCase() === 'true' || s === '1') return 'Đã hoàn thành';
-  if (s.toLowerCase() === 'false' || s === '0') return 'Chưa thực hiện';
-  const exact = TRANG_THAI_VALUES.find((v) => v === s);
-  if (exact) return exact;
-  const lower = s.toLowerCase();
-  const match = TRANG_THAI_VALUES.find((v) => v.toLowerCase() === lower);
-  return match ?? TRANG_THAI_DEFAULT;
-}
-
-async function resolveCaNhanIdByHoTen(hoVaTen: string): Promise<string | null> {
-  const t = hoVaTen.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const all = await getThongTinCaNhanTieuBieuList();
-  const exact = all.find((x) => x.ho_va_ten.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find(
-    (x) =>
-      x.ho_va_ten.toLowerCase().includes(lower) || lower.includes(x.ho_va_ten.toLowerCase()),
-  );
-  return partial?.id ?? null;
-}
-
-async function resolvePhongBanIdByTen(tenPhongBan: string): Promise<string | null> {
-  const t = tenPhongBan.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const all = await getDepartments();
-  const exact = all.find((x) => x.ten_phong_ban.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find(
-    (x) =>
-      x.ten_phong_ban.toLowerCase().includes(lower) || lower.includes(x.ten_phong_ban.toLowerCase()),
-  );
-  return partial?.id ?? null;
-}
-
-async function resolveDipIdByTen(tenDip: string): Promise<string | null> {
-  const t = tenDip.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const all = await getDipThamHoiList();
-  const exact = all.find((x) => x.ten_dip.trim().toLowerCase() === lower);
-  if (exact) return exact.id;
-  const partial = all.find(
-    (x) => x.ten_dip.toLowerCase().includes(lower) || lower.includes(x.ten_dip.toLowerCase()),
-  );
-  return partial?.id ?? null;
-}
-
-function isCqmttqTinhLabel(raw: string): boolean {
-  const lower = raw.trim().toLowerCase();
-  return lower === '' || lower === 'cqmttq tỉnh' || lower === 'cqmttq tinh';
-}
-
-export async function importThamHoiCaNhan(
-  rows: Record<string, unknown>[],
+/** Thêm mới từ file nhập — chỉ trả `id`, không kéo embed về cho từng dòng. */
+export async function insertThamHoiCaNhanFromImport(
+  payload: Record<string, unknown>,
   idNguoiTao: string,
-): Promise<{ created: number; errors: string[]; errorRows: ImportErrorRow[] }> {
-  const trimmedNv = idNguoiTao.trim();
-  if (!trimmedNv) throw new Error(txt('danTocThamHoiCaNhan.service.noEmployeeProfile'));
+): Promise<void> {
+  const trimmed = idNguoiTao.trim();
+  if (!trimmed) throw new Error(txt('danTocThamHoiCaNhan.service.noEmployeeProfile'));
+  await repo.insert({ ...payload, id_nguoi_tao: Number(trimmed) }, { returningSelect: 'id' });
+}
 
-  const errors: string[] = [];
-  const errorRows: ImportErrorRow[] = [];
-  const validPayloads: Record<string, unknown>[] = [];
-
-  for (let i = 0; i < rows.length; i++) {
-    const raw = rows[i];
-    const rowNum = importRowNum(raw, i + 2);
-    const rowData = { ...raw };
-    delete rowData[IMPORT_ROW_NUM_KEY];
-
-    const cnRaw =
-      raw.ca_nhan_id != null && String(raw.ca_nhan_id).trim() !== '' ? String(raw.ca_nhan_id).trim() : '';
-    let ca_nhan_id: string | null = null;
-    if (cnRaw && /^\d+$/.test(cnRaw)) {
-      ca_nhan_id = cnRaw;
-    } else {
-      const hoVaTen = String(raw.ho_va_ten ?? '').trim();
-      if (hoVaTen) {
-        ca_nhan_id = (await resolveCaNhanIdByHoTen(hoVaTen)) ?? null;
-        if (!ca_nhan_id) {
-          const msg = txt('danTocThamHoiCaNhan.validation.caNhanInvalid');
-          const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
-          errors.push(errMsg);
-          errorRows.push({ rowNum, data: rowData, message: errMsg });
-          continue;
-        }
-      }
-    }
-
-    const pbRaw =
-      raw.phong_ban_tham_muu_id != null && String(raw.phong_ban_tham_muu_id).trim() !== ''
-        ? String(raw.phong_ban_tham_muu_id).trim()
-        : '';
-    let phong_ban_tham_muu_id: string | undefined;
-    if (pbRaw && /^\d+$/.test(pbRaw)) {
-      phong_ban_tham_muu_id = pbRaw;
-    } else {
-      const tenPb = String(raw.ten_phong_ban ?? '').trim();
-      if (tenPb) {
-        const resolved = (await resolvePhongBanIdByTen(tenPb)) ?? null;
-        if (!resolved) {
-          const msg = txt('danTocThamHoiCaNhan.validation.phongBanInvalid');
-          const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
-          errors.push(errMsg);
-          errorRows.push({ rowNum, data: rowData, message: errMsg });
-          continue;
-        }
-        phong_ban_tham_muu_id = resolved;
-      }
-    }
-
-    let don_vi_tham_hoi_id: string | undefined;
-    const dvRaw =
-      raw.don_vi_tham_hoi_id != null && String(raw.don_vi_tham_hoi_id).trim() !== ''
-        ? String(raw.don_vi_tham_hoi_id).trim()
-        : '';
-    if (dvRaw && /^\d+$/.test(dvRaw)) {
-      don_vi_tham_hoi_id = dvRaw;
-    } else {
-      const tenDv =
-        String(raw.ten_don_vi_tham_hoi ?? raw.don_vi_tham_hoi ?? '').trim();
-      if (tenDv && !isCqmttqTinhLabel(tenDv)) {
-        const resolved = (await resolveXaPhuongIdByTen(tenDv)) ?? null;
-        if (!resolved) {
-          const msg = txt('danTocThamHoiCaNhan.validation.donViThamHoiInvalid');
-          const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
-          errors.push(errMsg);
-          errorRows.push({ rowNum, data: rowData, message: errMsg });
-          continue;
-        }
-        don_vi_tham_hoi_id = resolved;
-      }
-    }
-
-    let xa_phuong_id: string | undefined;
-    const xpRaw =
-      raw.xa_phuong_id != null && String(raw.xa_phuong_id).trim() !== ''
-        ? String(raw.xa_phuong_id).trim()
-        : '';
-    if (xpRaw && /^\d+$/.test(xpRaw)) {
-      xa_phuong_id = xpRaw;
-    } else {
-      const tenXp = String(raw.ten_xa_phuong ?? raw.don_vi_xa_phuong ?? '').trim();
-      if (tenXp) {
-        const resolved = (await resolveXaPhuongIdByTen(tenXp)) ?? null;
-        if (!resolved) {
-          const msg = txt('danTocThamHoiCaNhan.validation.xaPhuongInvalid');
-          const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
-          errors.push(errMsg);
-          errorRows.push({ rowNum, data: rowData, message: errMsg });
-          continue;
-        }
-        xa_phuong_id = resolved;
-      }
-    }
-
-    const dipRaw =
-      raw.dip_tham_hoi_id != null && String(raw.dip_tham_hoi_id).trim() !== ''
-        ? String(raw.dip_tham_hoi_id).trim()
-        : '';
-    let dip_tham_hoi_id: string | null = null;
-    if (dipRaw && /^\d+$/.test(dipRaw)) {
-      dip_tham_hoi_id = dipRaw;
-    } else {
-      const tenDip = String(raw.dip_tham_hoi ?? raw.ten_dip ?? '').trim();
-      if (!tenDip) {
-        const msg = txt('danTocThamHoiCaNhan.validation.dipThamHoiRequired');
-        const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
-        errors.push(errMsg);
-        errorRows.push({ rowNum, data: rowData, message: errMsg });
-        continue;
-      }
-      dip_tham_hoi_id = (await resolveDipIdByTen(tenDip)) ?? null;
-      if (!dip_tham_hoi_id) {
-        const msg = txt('danTocThamHoiCaNhan.validation.dipThamHoiInvalid');
-        const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
-        errors.push(errMsg);
-        errorRows.push({ rowNum, data: rowData, message: errMsg });
-        continue;
-      }
-    }
-
-    const thoiGianParsed = parseThoiGianDuKienImport(raw.thoi_gian_du_kien);
-    const thoiGianForm =
-      thoiGianParsed != null ? dbDateToMonthYear(thoiGianParsed) : undefined;
-
-    const input = {
-      ca_nhan_id: ca_nhan_id ?? '',
-      phong_ban_tham_muu_id,
-      dip_tham_hoi_id: dip_tham_hoi_id ?? '',
-      thoi_gian_du_kien: thoiGianForm,
-      don_vi_tham_hoi_id,
-      qua_tang:
-        raw.qua_tang != null && String(raw.qua_tang).trim() !== '' ? String(raw.qua_tang) : undefined,
-      xa_phuong_id,
-      trang_thai: resolveTrangThaiFromImport(raw.trang_thai),
-      ket_qua_ghi_chu:
-        raw.ket_qua_ghi_chu != null && String(raw.ket_qua_ghi_chu).trim() !== ''
-          ? String(raw.ket_qua_ghi_chu)
-          : undefined,
-      link_ket_qua:
-        raw.link_ket_qua != null && String(raw.link_ket_qua).trim() !== ''
-          ? String(raw.link_ket_qua)
-          : undefined,
-    };
-
-    const parsed = thamHoiCaNhanSchema.safeParse(input);
-    if (!parsed.success) {
-      const msg = parsed.error.flatten().formErrors[0] ?? parsed.error.message;
-      const errMsg = txt('danTocThamHoiCaNhan.import.rowError', { row: rowNum, message: msg });
-      errors.push(errMsg);
-      errorRows.push({ rowNum, data: rowData, message: errMsg });
-      continue;
-    }
-
-    const denorm = await denormFromCaNhan(parsed.data.ca_nhan_id);
-    validPayloads.push({
-      ...(await buildPayload(parsed.data, denorm)),
-      id_nguoi_tao: Number(trimmedNv),
-    });
-  }
-
-  if (validPayloads.length > 0) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error(txt('danTocThamHoiCaNhan.service.notFound'));
-    const { error } = await supabase.from('dttg_tham_hoi_ca_nhan').insert(validPayloads);
-    if (error) handleSupabaseError(error);
-  }
-
-  return { created: validPayloads.length, errors, errorRows };
+/**
+ * Ghi đè từ file nhập: chỉ các cột có trong file (payload đã qua `pickMappedColumns`).
+ * Không kéo lại bản ghi đầy đủ sau khi ghi — trả `id` là đủ.
+ */
+export async function updateThamHoiCaNhanPartial(
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await repo.update(
+    id,
+    { ...payload, tg_cap_nhat: new Date().toISOString() } as unknown as Partial<RepoRow>,
+    { returningSelect: 'id' },
+  );
 }
 
 export { DON_VI_THAM_HOI_CQMTTQ_LABEL };

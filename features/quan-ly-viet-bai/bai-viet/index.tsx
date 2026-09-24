@@ -281,12 +281,14 @@ const BaiVietDanhSachPage: React.FC = () => {
       { key: 'id_trang_dang', label: txt('articleList.import.colTrangDang'), required: true },
       { key: 'link', label: txt('articleList.import.colLink'), required: true },
       { key: 'id_nguoi_tao', label: txt('articleList.import.colNguoiTao') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
   );
 
   const importMatchColumns = useMemo(
     () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
       { key: 'link', label: txt('articleList.import.colLink') },
       { key: 'ten_bai', label: txt('articleList.import.colTenBai') },
     ],

@@ -19,7 +19,12 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, {
+  type ImportColumn,
+  type ImportMatchColumn,
+  type ImportRunOptions,
+  type ImportWriteMode,
+} from '@/components/shared/ImportDialog';
 import Button from '@/components/ui/Button';
 import {
   useMttqUyVienUyBanList,
@@ -35,6 +40,7 @@ import { formatUyVienMaUvDisplay } from './utils/display-format';
 import { buildUyVienTrangThamGiaChipOptions } from './utils/trang-tham-gia-options';
 import { isUyVienTrangThamGia } from './core/constants';
 import { getMttqUyVienUyBanById } from './services/mttq-uy-vien-uy-ban-service';
+import { dryRunUyVienImport, type UyVienImportContext } from './services/uy-vien-import';
 import { canViewUyVienUyBanRow, useMttqUyVienUyBanViewer } from './hooks/use-mttq-uy-vien-uy-ban-viewer';
 import { CHIP_TRANG_THAI_NULL } from '../danh-sach-can-bo/core/constants';
 import MttqUyVienUyBanToolbar from './components/mttq-uy-vien-uy-ban-toolbar';
@@ -66,7 +72,7 @@ const UyVienUyBanPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranCommitteeMembers');
-  const { canCreate } = useResourcePermissions('matTranCommitteeMembers');
+  const { canCreate, canEdit } = useResourcePermissions('matTranCommitteeMembers');
   const tinhCapLabel = txt('matTranUyVienUyBan.tinhCap');
   // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
   // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
@@ -111,7 +117,7 @@ const UyVienUyBanPage: React.FC = () => {
   });
   const { data: viewingData } = useMttqUyVienUyBanDetail(viewingId);
   const deleteMutation = useDeleteMttqUyVienUyBanMany();
-  const importMutation = useImportMttqUyVienUyBan(() => setShowImport(false));
+  const importMutation = useImportMttqUyVienUyBan();
 
   /** Lọc theo viewer trước khi mọi tính toán hiển thị (chip / search / export / sort). */
   const viewableRows = useMemo(
@@ -265,7 +271,7 @@ const UyVienUyBanPage: React.FC = () => {
     [],
   );
 
-  const IMPORT_COLUMNS = useMemo(
+  const IMPORT_COLUMNS = useMemo<ImportColumn[]>(
     () => [
       { key: 'ten_nhiem_ky', label: txt('matTranUyVienUyBan.store.tenNhiemKyCol'), required: true },
       { key: 'ten_don_vi', label: txt('matTranUyVienUyBan.store.donViCol') },
@@ -274,8 +280,36 @@ const UyVienUyBanPage: React.FC = () => {
       { key: 'ngay_sinh', label: txt('matTranUyVienUyBan.form.ngaySinh') },
       { key: 'ma_uv', label: txt('matTranUyVienUyBan.store.maUvCol') },
       { key: 'trang_thai_tham_gia', label: txt('matTranUyVienUyBan.store.trangThamGiaCol') },
+      { key: 'ghi_chu', label: txt('matTranUyVienUyBan.import.ghiChuCol') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo<ImportMatchColumn[]>(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      // Cán bộ đến từ ô ID HOẶC ô họ tên — thiếu cả hai thì dòng lỗi riêng, nên
+      // chỉ bắt buộc map cột nhiệm kỳ.
+      { key: 'nhiem_ky_can_bo', label: txt('matTranUyVienUyBan.import.keyNhiemKyCanBo'), columns: ['ten_nhiem_ky'] },
+      {
+        key: 'nhiem_ky_ma_uv',
+        label: txt('matTranUyVienUyBan.import.keyNhiemKyMaUv'),
+        columns: ['ten_nhiem_ky', 'ma_uv'],
+      },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo<readonly ImportWriteMode[]>(
+    () => (canEdit ? ['insert', 'upsert', 'update'] : ['insert']),
+    [canEdit],
+  );
+
+  const importCtx = useMemo<UyVienImportContext>(
+    () => ({ idNguoiTao: nhanVienId, viewer }),
+    [nhanVienId, viewer],
   );
 
   const exportMapFn = useCallback(
@@ -304,15 +338,16 @@ const UyVienUyBanPage: React.FC = () => {
 
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
+  const handleImportDryRun = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunUyVienImport(rowsToImport, options, importCtx),
+    [importCtx],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
-      if (!nhanVienId) {
-        toast.error(txt('matTranUyVienUyBan.service.noEmployeeProfile'));
-        return;
-      }
-      await importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
-    },
-    [importMutation, nhanVienId],
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows: rowsToImport, options, ctx: importCtx }),
+    [importMutation, importCtx],
   );
 
   const handleEditFromList = async (item: MttqUyVienUyBanListRow) => {
@@ -523,6 +558,10 @@ const UyVienUyBanPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['nhiem_ky_can_bo']}
             templateFileName={txt('matTranUyVienUyBan.import.templateName')}
           />
         )}

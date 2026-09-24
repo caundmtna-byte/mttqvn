@@ -27,7 +27,9 @@ import { getJobLevels } from '../cap-bac/services/cap-bac-service';
 import PositionToolbar from './components/chuc-vu-toolbar';
 import PositionTable from './components/chuc-vu-table';
 import ExportDialog from '../../../components/shared/ExportDialog';
-import ImportDialog from '../../../components/shared/ImportDialog';
+import ImportDialog, { type ImportRunOptions } from '../../../components/shared/ImportDialog';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { dryRunChucVuImport } from './services/chuc-vu-import';
 
 import {
   usePositions,
@@ -101,7 +103,8 @@ const PositionPage: React.FC = () => {
   const { data: positions = [], isLoading, isError, refetch } = usePositions({ enabled: canView });
   const deleteMutation = useDeletePosition();
   const statusMutation = useUpdateStatusPosition();
-  const importMutation = useImportPositions(() => setShowImport(false));
+  const importMutation = useImportPositions();
+  const { canEdit } = useResourcePermissions('positions');
 
   const { deptCounts, statusCounts } = usePositionFilterCounts(positions, searchTerm, filters);
 
@@ -124,20 +127,34 @@ const PositionPage: React.FC = () => {
   const IMPORT_COLUMNS = useMemo(
     () => [
       { key: 'ten_chuc_vu', label: txt('position.form.name'), required: true },
-      { key: 'cap_bac', label: `${txt('position.form.level')} (id/số)`, required: true },
+      { key: 'cap_bac', label: `${txt('position.form.level')} (id/số)` },
       { key: 'ma_cap_bac', label: `${txt('position.form.level')} (mã)` },
       { key: 'ten_phong_ban', label: `${txt('position.form.department')} (tên)`, required: true },
       { key: 'mo_ta', label: txt('position.form.description') },
       { key: 'thu_tu', label: txt('position.store.orderCol') },
       { key: 'trang_thai', label: txt('common.status') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     []
   );
 
+  const importMatchColumns = useMemo(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten_chuc_vu', label: txt('position.form.name') },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè. */
+  const importWriteModes = useMemo(
+    () => (canEdit ? (['insert', 'upsert', 'update'] as const) : (['insert'] as const)),
+    [canEdit],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
-      await importMutation.mutateAsync(data);
-    },
+    (rows: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows, options }),
     [importMutation]
   );
 
@@ -388,6 +405,10 @@ const PositionPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={dryRunChucVuImport}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ten_chuc_vu']}
             templateFileName={txt('position.importTemplateName')}
           />
         )}

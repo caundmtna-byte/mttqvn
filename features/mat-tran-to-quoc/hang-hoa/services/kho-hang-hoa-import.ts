@@ -1,196 +1,169 @@
 /**
- * Nhập danh mục / hàng hóa cứu trợ từ Excel.
+ * Nhập danh mục / hàng hóa cứu trợ từ Excel — khai cho lõi chung
+ * `lib/data/import-runner.ts` (thêm mới / ghi đè / chỉ cập nhật + xem trước).
  *
- * Hình dạng file: MỘT SHEET PHẲNG, một dòng = một bản ghi — đúng bản chất bảng
- * danh mục (không có bảng con). Sheet đầu tiên là dữ liệu, các sheet sau chỉ là
- * hướng dẫn/tra cứu (engine `ImportDialog` chỉ đọc sheet đầu tiên).
+ * Hình dạng file: MỘT SHEET PHẲNG, một dòng = một bản ghi. Sheet đầu tiên là dữ
+ * liệu, các sheet sau chỉ là hướng dẫn/tra cứu (`ImportDialog` chỉ đọc sheet đầu).
  *
- * Kiểm tra chạy TRỌN VẸN trước khi ghi: dòng sai bị loại và báo theo số dòng
- * Excel, dòng đúng vẫn được ghi (nhập một phần, không all-or-nothing).
+ * Bản ghi đã có chỉ kéo cột khoá + thứ tự (xem `docs/supabase-egress.md`).
+ * Hai bảng này là danh mục, không có phạm vi dòng ⇒ không cần `canWrite`.
  */
-import { txt } from '@/lib/text';
+import type {
+  ImportBatchResult,
+  ImportDryRunResult,
+  ImportRunOptions,
+} from '@/components/shared/ImportDialog';
+import type { NamedRef } from '@/lib/data/import-cells';
+import { createImportRunner, pickMappedColumns } from '@/lib/data/import-runner';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
-import type { ImportErrorRow } from '@/components/shared/ImportDialog';
-import { IMPORT_ROW_NUM_KEY } from '@/components/shared/ImportDialog';
-import { khoDanhMucHangHoaSchema, khoDanhSachHangHoaSchema } from '../core/schema';
-import { getKhoDanhMucHangHoaList } from './kho-danh-muc-hang-hoa-service';
-import { getKhoDanhSachHangHoaList } from './kho-danh-sach-hang-hoa-service';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 import { nextThuTuDanhMuc, nextThuTuHangHoaTrongDanhMuc } from '../utils/next-thu-tu';
 import {
   HANG_HOA_IMPORT_MAX_ROWS,
-  hangHoaDedupKey,
-  normalizeMatchKey,
+  danhMucImportPayload,
+  hangHoaImportPayload,
   parseDanhMucImportRow,
   parseHangHoaImportRow,
+  type DanhMucImportRow,
+  type HangHoaImportRow,
+  type HangHoaImportRowCtx,
 } from '../utils/hang-hoa-import-row';
+import {
+  DANH_MUC_IMPORT_KEYS,
+  HANG_HOA_IMPORT_KEYS,
+  type DanhMucImportExisting,
+  type HangHoaImportExisting,
+} from '../utils/hang-hoa-import-keys';
+import { insertKhoDanhMucHangHoaForImport, updateKhoDanhMucHangHoaPartial } from './kho-danh-muc-hang-hoa-service';
+import { insertKhoDanhSachHangHoaForImport, updateKhoDanhSachHangHoaPartial } from './kho-danh-sach-hang-hoa-service';
 
-export type ImportResult = { created: number; errors: string[]; errorRows: ImportErrorRow[] };
-
-function importRowNum(raw: Record<string, unknown>, fallback: number): number {
-  const v = raw[IMPORT_ROW_NUM_KEY];
-  if (typeof v === 'number' && v > 0) return v;
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-}
-
-function stripRowNum(raw: Record<string, unknown>): Record<string, unknown> {
-  const data = { ...raw };
-  delete data[IMPORT_ROW_NUM_KEY];
-  return data;
-}
-
-/**
- * `ImportDialog` chỉ hiện 10 lỗi đầu. Khi nhiều hơn, chèn một câu tóm tắt lên
- * ĐẦU danh sách để cán bộ biết còn lỗi chưa thấy và phải tải file lỗi về.
- */
-function withErrorSummary(errors: string[]): string[] {
-  if (errors.length <= 10) return errors;
-  return [txt('matTranHangHoa.import.errSummary', { count: errors.length }), ...errors];
-}
-
-function tooManyRows(rows: unknown[]): ImportResult | null {
-  if (rows.length <= HANG_HOA_IMPORT_MAX_ROWS) return null;
-  return {
-    created: 0,
-    errors: [
-      txt('matTranHangHoa.import.errTooManyRows', {
-        count: rows.length,
-        max: HANG_HOA_IMPORT_MAX_ROWS,
-      }),
-    ],
-    errorRows: [],
-  };
-}
-
-export async function importKhoDanhMucHangHoaRows(
-  rows: Record<string, unknown>[],
-): Promise<ImportResult> {
-  const capped = tooManyRows(rows);
-  if (capped) return capped;
-
-  const existingRows = await getKhoDanhMucHangHoaList();
-  const existingTen = new Map(existingRows.map((r) => [normalizeMatchKey(r.ten_danh_muc), r.ten_danh_muc]));
-  const seenTen = new Map<string, number>();
-  let nextThuTu = nextThuTuDanhMuc(existingRows);
-
-  const errors: string[] = [];
-  const errorRows: ImportErrorRow[] = [];
-  const payloads: Record<string, unknown>[] = [];
-
-  for (let i = 0; i < rows.length; i++) {
-    const rowNum = importRowNum(rows[i], i + 2);
-    const rowData = stripRowNum(rows[i]);
-
-    const parsed = parseDanhMucImportRow(rowNum, rowData, { existingTen, seenTen, nextThuTu });
-    if (!parsed.ok) {
-      errors.push(parsed.message);
-      errorRows.push({ rowNum, data: rowData, message: parsed.message });
-      continue;
-    }
-
-    const checked = khoDanhMucHangHoaSchema.safeParse(parsed.data);
-    if (!checked.success) {
-      const msg =
-        txt('matTranHangHoa.import.rowPrefix', { row: rowNum }) +
-        (checked.error.issues[0]?.message ?? checked.error.message);
-      errors.push(msg);
-      errorRows.push({ rowNum, data: rowData, message: msg });
-      continue;
-    }
-
-    seenTen.set(normalizeMatchKey(checked.data.ten_danh_muc), rowNum);
-    nextThuTu = Math.max(nextThuTu, checked.data.thu_tu + 1);
-    const moTa = checked.data.mo_ta.trim();
-    payloads.push({
-      ten_danh_muc: checked.data.ten_danh_muc,
-      mo_ta: moTa === '' ? null : moTa,
-      thu_tu: checked.data.thu_tu,
-      trang_thai: checked.data.trang_thai,
-    });
-  }
-
-  if (payloads.length > 0) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error(txt('matTranHangHoa.service.notFoundDanhMuc'));
-    const { error } = await supabase.from('kho_danh_muc_hang_hoa').insert(payloads);
-    if (error) handleSupabaseError(error);
-  }
-
-  return { created: payloads.length, errors: withErrorSummary(errors), errorRows };
-}
-
-export async function importKhoDanhSachHangHoaRows(
-  rows: Record<string, unknown>[],
-): Promise<ImportResult> {
-  const capped = tooManyRows(rows);
-  if (capped) return capped;
-
-  const [danhMucRows, hangRows] = await Promise.all([
-    getKhoDanhMucHangHoaList(),
-    getKhoDanhSachHangHoaList(),
-  ]);
-
-  const danhMuc = danhMucRows.map((d) => ({ id: String(d.id), ten: d.ten_danh_muc }));
-  const existingHang = new Set(hangRows.map((h) => hangHoaDedupKey(h.id_danh_muc, h.ten_hang_hoa)));
-  const seenHang = new Map<string, number>();
-  const nextThuTuByDanhMuc = new Map<string, number>(
-    danhMuc.map((d) => [d.id, nextThuTuHangHoaTrongDanhMuc(hangRows, d.id)]),
+async function fetchKeyRows(table: 'kho_danh_muc_hang_hoa' | 'kho_danh_sach_hang_hoa', cols: string) {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  return fetchAllPages<Record<string, unknown>>(
+    async (from, to) => {
+      const { data, error } = await supabase
+        .from(table)
+        .select(cols)
+        .order('id', { ascending: true })
+        .range(from, to);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as unknown as Record<string, unknown>[];
+    },
+    { label: `${table} (khoá nhập file)` },
   );
+}
 
-  const errors: string[] = [];
-  const errorRows: ImportErrorRow[] = [];
-  const payloads: Record<string, unknown>[] = [];
+async function getDanhMucImportKeys(): Promise<DanhMucImportExisting[]> {
+  const rows = await fetchKeyRows('kho_danh_muc_hang_hoa', 'id,ten_danh_muc,thu_tu');
+  return rows.map((r) => ({
+    id: String(r.id ?? ''),
+    ten_danh_muc: String(r.ten_danh_muc ?? ''),
+    thu_tu: Number(r.thu_tu) || 0,
+  }));
+}
 
-  for (let i = 0; i < rows.length; i++) {
-    const rowNum = importRowNum(rows[i], i + 2);
-    const rowData = stripRowNum(rows[i]);
+async function getHangHoaImportKeys(): Promise<HangHoaImportExisting[]> {
+  const rows = await fetchKeyRows('kho_danh_sach_hang_hoa', 'id,id_danh_muc,ten_hang_hoa,thu_tu');
+  return rows.map((r) => ({
+    id: String(r.id ?? ''),
+    id_danh_muc: String(r.id_danh_muc ?? ''),
+    ten_hang_hoa: String(r.ten_hang_hoa ?? ''),
+    thu_tu: Number(r.thu_tu) || 0,
+  }));
+}
 
-    const parsed = parseHangHoaImportRow(rowNum, rowData, {
-      danhMuc,
-      existingHang,
-      seenHang,
-      nextThuTuByDanhMuc,
-    });
-    if (!parsed.ok) {
-      errors.push(parsed.message);
-      errorRows.push({ rowNum, data: rowData, message: parsed.message });
-      continue;
-    }
+// ---------------------------------------------------------------------------
+// Danh mục
+// ---------------------------------------------------------------------------
 
-    const checked = khoDanhSachHangHoaSchema.safeParse(parsed.data);
-    if (!checked.success) {
-      const msg =
-        txt('matTranHangHoa.import.rowPrefix', { row: rowNum }) +
-        (checked.error.issues[0]?.message ?? checked.error.message);
-      errors.push(msg);
-      errorRows.push({ rowNum, data: rowData, message: msg });
-      continue;
-    }
+/** Thứ tự kế tiếp khi cột Thứ tự trống — tăng dần theo từng dòng thêm mới. */
+interface DanhMucCtx {
+  nextThuTu: number;
+}
 
-    const dmId = checked.data.id_danh_muc;
-    seenHang.set(hangHoaDedupKey(dmId, checked.data.ten_hang_hoa), rowNum);
-    nextThuTuByDanhMuc.set(dmId, Math.max(nextThuTuByDanhMuc.get(dmId) ?? 0, checked.data.thu_tu + 1));
+const danhMucRunner = createImportRunner<DanhMucCtx, DanhMucImportExisting, DanhMucImportRow>({
+  maxRows: HANG_HOA_IMPORT_MAX_ROWS,
+  keys: DANH_MUC_IMPORT_KEYS,
+  async load() {
+    const existing = await getDanhMucImportKeys();
+    return { ctx: { nextThuTu: nextThuTuDanhMuc(existing) }, existing };
+  },
+  parseRow: (rowNum, raw) => parseDanhMucImportRow(rowNum, raw),
+  async create(row, ctx) {
+    const payload = danhMucImportPayload(row, { thuTuTiepTheo: ctx.nextThuTu });
+    await insertKhoDanhMucHangHoaForImport(payload);
+    ctx.nextThuTu = Math.max(ctx.nextThuTu, Number(payload.thu_tu) + 1);
+  },
+  update: (id, row, mapped) =>
+    updateKhoDanhMucHangHoaPartial(id, pickMappedColumns(danhMucImportPayload(row), mapped)),
+});
 
-    const moTa = checked.data.mo_ta.trim();
-    const quyCach = checked.data.quy_cach.trim();
-    payloads.push({
-      id_danh_muc: Number(dmId),
-      ten_hang_hoa: checked.data.ten_hang_hoa,
-      don_vi_tinh: checked.data.don_vi_tinh,
-      mo_ta: moTa === '' ? null : moTa,
-      quy_cach: quyCach === '' ? null : quyCach,
-      thu_tu: checked.data.thu_tu,
-      trang_thai: checked.data.trang_thai,
-    });
-  }
+export function dryRunKhoDanhMucHangHoaImport(
+  rows: Record<string, unknown>[],
+  options: ImportRunOptions,
+): Promise<ImportDryRunResult> {
+  return danhMucRunner.dryRun(rows, options);
+}
 
-  if (payloads.length > 0) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error(txt('matTranHangHoa.service.notFoundHang'));
-    const { error } = await supabase.from('kho_danh_sach_hang_hoa').insert(payloads);
-    if (error) handleSupabaseError(error);
-  }
+export function importKhoDanhMucHangHoaRows(
+  rows: Record<string, unknown>[],
+  options: ImportRunOptions,
+): Promise<ImportBatchResult> {
+  return danhMucRunner.run(rows, options);
+}
 
-  return { created: payloads.length, errors: withErrorSummary(errors), errorRows };
+// ---------------------------------------------------------------------------
+// Hàng hóa
+// ---------------------------------------------------------------------------
+
+interface HangHoaCtx extends HangHoaImportRowCtx {
+  /** Thứ tự kế tiếp theo từng danh mục — tăng dần theo từng dòng thêm mới. */
+  nextThuTuByDanhMuc: Map<string, number>;
+}
+
+const hangHoaRunner = createImportRunner<HangHoaCtx, HangHoaImportExisting, HangHoaImportRow>({
+  maxRows: HANG_HOA_IMPORT_MAX_ROWS,
+  keys: HANG_HOA_IMPORT_KEYS,
+  async load() {
+    const [danhMucRows, existing] = await Promise.all([
+      fetchKeyRows('kho_danh_muc_hang_hoa', 'id,ten_danh_muc'),
+      getHangHoaImportKeys(),
+    ]);
+    const danhMuc: NamedRef[] = danhMucRows.map((d) => ({
+      id: String(d.id ?? ''),
+      ten: String(d.ten_danh_muc ?? ''),
+    }));
+    return {
+      ctx: {
+        danhMuc,
+        nextThuTuByDanhMuc: new Map(danhMuc.map((d) => [d.id, nextThuTuHangHoaTrongDanhMuc(existing, d.id)])),
+      },
+      existing,
+    };
+  },
+  parseRow: parseHangHoaImportRow,
+  async create(row, ctx) {
+    const next = ctx.nextThuTuByDanhMuc.get(row.id_danh_muc) ?? 0;
+    const payload = hangHoaImportPayload(row, { thuTuTiepTheo: next });
+    await insertKhoDanhSachHangHoaForImport(payload);
+    ctx.nextThuTuByDanhMuc.set(row.id_danh_muc, Math.max(next, Number(payload.thu_tu) + 1));
+  },
+  update: (id, row, mapped) =>
+    updateKhoDanhSachHangHoaPartial(id, pickMappedColumns(hangHoaImportPayload(row), mapped)),
+});
+
+export function dryRunKhoDanhSachHangHoaImport(
+  rows: Record<string, unknown>[],
+  options: ImportRunOptions,
+): Promise<ImportDryRunResult> {
+  return hangHoaRunner.dryRun(rows, options);
+}
+
+export function importKhoDanhSachHangHoaRows(
+  rows: Record<string, unknown>[],
+  options: ImportRunOptions,
+): Promise<ImportBatchResult> {
+  return hangHoaRunner.run(rows, options);
 }

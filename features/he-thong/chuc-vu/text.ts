@@ -16,6 +16,15 @@ export const position = {
   "exportSuccess": "Xuất file thành công",
   "importDeveloping": "Chức năng Import đang phát triển",
   "importTemplateName": "Mau_Import_Chuc_Vu",
+  "import": {
+    "keyTen": "tên chức vụ",
+    "errTenEmpty": "chưa điền Tên chức vụ.",
+    "errCapBac": "không tìm thấy cấp bậc « {{gia_tri}} » (nhập id hoặc mã cấp bậc).",
+    "errPhongBan": "không tìm thấy phòng ban « {{gia_tri}} » (nhập id hoặc đúng tên phòng ban).",
+    "errThuTu": "thứ tự « {{gia_tri}} » phải là số nguyên không âm.",
+    "errTrangThai": "trạng thái « {{gia_tri}} » không hợp lệ — chỉ nhận « Đang hoạt động » hoặc « Ngừng hoạt động ».",
+    "toastDone": "Đã nhập: {{created}} chức vụ mới, {{updated}} chức vụ được ghi đè."
+  },
   "active": "Hoạt động",
   "inactive": "Ngừng",
   "noDescription": "Chưa định nghĩa",
@@ -76,8 +85,7 @@ export const position = {
     "createSuccess": "Tạo chức vụ thành công",
     "updateSuccess": "Cập nhật thành công",
     "statusUpdate": "Đã cập nhật trạng thái {{count}} bản ghi",
-    "deleteSuccess": "Đã xóa thành công {{count}} chức vụ",
-    "importSuccess": "Đã nhập {{count}} chức vụ"
+    "deleteSuccess": "Đã xóa thành công {{count}} chức vụ"
   },
   "service": {
     "notFound": "Chức vụ không tồn tại"

@@ -1,4 +1,5 @@
 export const matTranUyVienUyBan = {
+  noXaPhuongScopePermission: 'Bạn chỉ được lưu bản ghi thuộc xã/phường của mình.',
   noViewPermission: 'Bạn không có quyền xem danh sách ủy viên ủy ban.',
   noEmployeeBanner: 'Tài khoản chưa gắn hồ sơ nhân viên — không thể ghi nhận người tạo bản ghi.',
   tinhCap: 'MTTQ tỉnh',
@@ -16,13 +17,24 @@ export const matTranUyVienUyBan = {
     create: 'Đã thêm ủy viên.',
     update: 'Đã cập nhật ủy viên.',
     delete: 'Đã xóa {{count}} bản ghi.',
-    importSuccess: 'Đã nhập {{count}} ủy viên.',
+    importSuccess: 'Nhập ủy viên từ Excel: thêm mới {{created}}, ghi đè {{updated}}.',
   },
   import: {
-    rowError: 'Dòng {{row}}: {{message}}',
     templateName: 'mau-nhap-uy-vien-uy-ban',
-    badNhiemKy: 'Không tìm thấy nhiệm kỳ (ten_nhiem_ky / nhiem_ky_id).',
-    badCanBo: 'Không map được cán bộ (can_bo_id hoặc họ tên + ngày sinh khớp mttq_can_bo).',
+    badNhiemKy: 'không tìm thấy nhiệm kỳ « {{gia_tri}} ». Điền đúng tên nhiệm kỳ hoặc ID nhiệm kỳ.',
+    errNhiemKyTrungTen: 'có nhiều nhiệm kỳ cùng tên « {{gia_tri}} ». Điền ID nhiệm kỳ thay cho tên.',
+    errDonVi: 'không tìm thấy đơn vị « {{gia_tri}} ». Điền đúng tên xã/phường, hoặc « Tỉnh » / để trống cho cấp tỉnh.',
+    errDonViTrungTen: 'có nhiều xã/phường cùng tên « {{gia_tri}} ». Điền ID xã/phường thay cho tên.',
+    badCanBo: 'không tìm thấy cán bộ khớp họ tên (và ngày sinh) trong Danh sách cán bộ.',
+    errCanBoId: 'không có cán bộ nào mang ID « {{gia_tri}} ».',
+    errCanBoTrungTen:
+      'có nhiều cán bộ cùng họ tên. Điền thêm Ngày sinh hoặc ID cán bộ để phân biệt.',
+    errKhongConBanGhi: 'không tìm thấy ủy viên để cập nhật — có thể đã bị xoá.',
+    errTrangThamGia:
+      'Trạng thái tham gia « {{gia_tri}} » không hợp lệ. Chỉ điền « Đang tham gia » hoặc « Thôi tham gia », hoặc để trống.',
+    keyNhiemKyCanBo: 'Nhiệm kỳ + Cán bộ',
+    keyNhiemKyMaUv: 'Nhiệm kỳ + Mã UV',
+    ghiChuCol: 'Ghi chú',
   },
   validation: {
     nhiemKyRequired: 'Chọn nhiệm kỳ.',
@@ -30,7 +42,7 @@ export const matTranUyVienUyBan = {
     canBoRequired: 'Chọn cán bộ từ Danh sách cán bộ.',
     canBoDuplicateNhiemKy: 'Cán bộ này đã là ủy viên trong nhiệm kỳ đã chọn.',
     maUvDuplicateNhiemKy: 'Mã UV này đã được dùng trong nhiệm kỳ đã chọn.',
-    importCanBoRequired: 'Cần can_bo_id (số) hoặc cặp họ tên + ngày sinh khớp một cán bộ.',
+    importCanBoRequired: 'chưa điền ID cán bộ hoặc Họ và tên.',
     trangThamGiaInvalid: 'Chọn trạng thái tham gia: Đang tham gia hoặc Thôi tham gia.',
   },
   store: {

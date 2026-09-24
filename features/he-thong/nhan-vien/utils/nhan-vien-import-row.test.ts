@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  findRef,
+  kiemGhiDeNhanVien,
   parseImportTrangThaiNhanVien,
   parseNhanVienImportRow,
   splitMultiCell,
-  trimCell,
   type NhanVienImportCtx,
 } from './nhan-vien-import-row';
 
@@ -26,8 +25,7 @@ function ctx(over: Partial<NhanVienImportCtx> = {}): NhanVienImportCtx {
       { id: '900', ten: 'Xã Môn Sơn' },
       { id: '901', ten: 'Phường Trường Thi' },
     ],
-    existingUsernames: new Set<string>(),
-    seenUsernames: new Map<string, number>(),
+    taiKhoanTheoId: new Map<string, string>(),
     ...over,
   };
 }
@@ -39,28 +37,10 @@ const rowOk = {
   id_chuc_vu: 'Chuyên viên',
 };
 
-describe('trimCell', () => {
-  it('giữ nguyên id bigint lớn Excel trả về dạng số', () => {
-    expect(trimCell(1234567890123456)).toBe('1234567890123456');
-  });
-});
-
 describe('splitMultiCell', () => {
   it('tách theo phẩy, chấm phẩy, gạch đứng và bỏ khoảng trắng thừa', () => {
     expect(splitMultiCell(' Hội Nông dân , Hội Phụ nữ ; ')).toEqual(['Hội Nông dân', 'Hội Phụ nữ']);
     expect(splitMultiCell('')).toEqual([]);
-  });
-});
-
-describe('findRef', () => {
-  it('ưu tiên khớp ID rồi mới tới tên, tên không phân biệt hoa thường', () => {
-    const refs = [
-      { id: '1', ten: 'Ban Dân tộc' },
-      { id: '2', ten: '1' },
-    ];
-    expect(findRef(refs, '1')?.id).toBe('1');
-    expect(findRef(refs, 'ban dân TỘC')?.id).toBe('1');
-    expect(findRef(refs, 'không có')).toBeUndefined();
   });
 });
 
@@ -80,9 +60,8 @@ describe('parseImportTrangThaiNhanVien', () => {
 describe('parseNhanVienImportRow', () => {
   it('dòng tối thiểu hợp lệ ⇒ hạ chữ thường tên tài khoản, mặc định Hoạt động', () => {
     const r = parseNhanVienImportRow(2, { ...rowOk, ten_tai_khoan: 'NguyenVanA' }, ctx());
-    expect(r).toEqual({
-      ok: true,
-      data: {
+    expect(r.ok && r.data.idKey).toBeNull();
+    expect(r.ok && r.data.values).toEqual({
         ten_tai_khoan: 'nguyenvana',
         ho_va_ten: 'Nguyễn Văn A',
         hinh_anh: null,
@@ -93,7 +72,6 @@ describe('parseNhanVienImportRow', () => {
         to_chuc_ids: [],
         don_vi_id: '',
         trang_thai: 'Hoạt động',
-      },
     });
   });
 
@@ -104,7 +82,7 @@ describe('parseNhanVienImportRow', () => {
       ctx(),
     );
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.data.to_chuc_ids).toEqual(['101', '100']);
+    if (r.ok) expect(r.data.values.to_chuc_ids).toEqual(['101', '100']);
   });
 
   it('Cấp quản lý « Xã phường » mà thiếu Đơn vị ⇒ chặn với câu nói rõ việc', () => {
@@ -125,8 +103,8 @@ describe('parseNhanVienImportRow', () => {
     );
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.data.cap_quan_ly).toEqual(['Tỉnh', 'Xã phường']);
-      expect(r.data.don_vi_id).toBe('900');
+      expect(r.data.values.cap_quan_ly).toEqual(['Tỉnh', 'Xã phường']);
+      expect(r.data.values.don_vi_id).toBe('900');
     }
   });
 
@@ -151,23 +129,48 @@ describe('parseNhanVienImportRow', () => {
     if (!r.ok) expect(r.message).toContain('không tìm thấy chức vụ « Giám đốc »');
   });
 
-  it('trùng tài khoản với hệ thống ⇒ chặn trước khi gọi mạng', () => {
-    const r = parseNhanVienImportRow(4, rowOk, ctx({ existingUsernames: new Set(['nguyenvana']) }));
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.message).toBe('Dòng 4: tên tài khoản « nguyenvana » đã có người dùng, hãy đặt tên khác.');
+  it('ghi đè theo mã hệ thống không được đổi tên tài khoản (tài khoản đăng nhập giữ nguyên)', () => {
+    const c = ctx({ taiKhoanTheoId: new Map([['77', 'tranthib']]) });
+    const doi = parseNhanVienImportRow(4, { ...rowOk, id: '77' }, c);
+    expect(doi.ok).toBe(false);
+    if (!doi.ok) expect(doi.message).toContain('« tranthib »');
+    const giu = parseNhanVienImportRow(4, { ...rowOk, id: '77', ten_tai_khoan: 'TranThiB' }, c);
+    expect(giu.ok && giu.data.idKey).toBe('77');
   });
 
-  it('trùng tài khoản trong cùng file ⇒ chỉ ra dòng trước', () => {
-    const r = parseNhanVienImportRow(9, rowOk, ctx({ seenUsernames: new Map([['nguyenvana', 3]]) }));
+  it('xã phường trùng tên giữa hai tỉnh ⇒ không nhận bừa, bắt điền ID', () => {
+    const c = ctx({
+      xaPhuong: [
+        { id: '900', ten: 'Xã Môn Sơn' },
+        { id: '950', ten: 'Xã Môn Sơn' },
+      ],
+    });
+    const r = parseNhanVienImportRow(3, { ...rowOk, don_vi_id: 'Xã Môn Sơn' }, c);
     expect(r.ok).toBe(false);
-    if (!r.ok) {
-      expect(r.message).toBe('Dòng 9: tên tài khoản « nguyenvana » đã xuất hiện ở dòng 3 trong cùng file.');
-    }
+    if (!r.ok) expect(r.message).toContain('có nhiều xã/phường');
+    const byId = parseNhanVienImportRow(3, { ...rowOk, don_vi_id: '950' }, c);
+    expect(byId.ok && byId.data.values.don_vi_id).toBe('950');
   });
 
   it('bộ phận sai tên ⇒ báo riêng cho bộ phận', () => {
     const r = parseNhanVienImportRow(6, { ...rowOk, id_bo_phan: 'Tổ Văn thư' }, ctx());
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.message).toContain('không tìm thấy bộ phận « Tổ Văn thư »');
+  });
+});
+
+describe('kiemGhiDeNhanVien', () => {
+  const cu = (cap: string[]) => ({ id: '5', ten_tai_khoan: 'a', don_vi_id: '50', id_phong_ban: '1', cap_quan_ly: cap });
+  const dong = (don_vi_id: string | undefined) =>
+    ({ rowNum: 2, raw: {}, idKey: '5', values: { don_vi_id } }) as unknown as Parameters<typeof kiemGhiDeNhanVien>[1];
+
+  it('xoá đơn vị của hồ sơ cấp xã khi file không có cột Cấp quản lý → lỗi', () => {
+    expect(kiemGhiDeNhanVien(cu(['Xã phường']), dong(undefined), new Set(['don_vi_id']))).not.toBeNull();
+  });
+
+  it('có cột Cấp quản lý (bộ đọc dòng đã xét), hồ sơ cấp tỉnh, hoặc vẫn điền đơn vị → cho qua', () => {
+    expect(kiemGhiDeNhanVien(cu(['Xã phường']), dong(undefined), new Set(['don_vi_id', 'cap_quan_ly']))).toBeNull();
+    expect(kiemGhiDeNhanVien(cu(['Tỉnh']), dong(undefined), new Set(['don_vi_id']))).toBeNull();
+    expect(kiemGhiDeNhanVien(cu(['Xã phường']), dong('51'), new Set(['don_vi_id']))).toBeNull();
   });
 });

@@ -8,6 +8,7 @@ const LIST_COLS = [
   'nam',
   'nguon',
   'nguon_ho_tro',
+  'ho_ngheo_id',
   'ho_ten_chu_ho',
   'xa_phuong_id',
   'khoi_xom',

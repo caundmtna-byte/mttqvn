@@ -19,7 +19,12 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog from '@/components/shared/ImportDialog';
+import ImportDialog, {
+  type ImportColumn,
+  type ImportMatchColumn,
+  type ImportRunOptions,
+  type ImportWriteMode,
+} from '@/components/shared/ImportDialog';
 import Button from '@/components/ui/Button';
 import {
   useMttqNhiemKyList,
@@ -32,6 +37,7 @@ import type { MttqNhiemKy, MttqNhiemKyListRow } from './core/types';
 import { MTTQ_NHIEM_KY_SEARCHABLE_KEYS } from './utils/search-keys';
 import { mttqNhiemKyMatchesColumnSearch } from './utils/column-search';
 import { getMttqNhiemKyById } from './services/mttq-nhiem-ky-service';
+import { dryRunNhiemKyImport } from './services/nhiem-ky-import';
 import MttqNhiemKyToolbar from './components/mttq-nhiem-ky-toolbar';
 import MttqNhiemKyTable from './components/mttq-nhiem-ky-table';
 
@@ -59,7 +65,7 @@ const NhiemKyPage: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const canView = useCan('view', 'matTranTerm');
-  const { canCreate } = useResourcePermissions('matTranTerm');
+  const { canCreate, canEdit } = useResourcePermissions('matTranTerm');
   // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
   // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
   const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
@@ -96,7 +102,7 @@ const NhiemKyPage: React.FC = () => {
   const { data: rows = [], isLoading, isError, refetch } = useMttqNhiemKyList({ enabled: canView });
   const { data: viewingData } = useMttqNhiemKyDetail(viewingId);
   const deleteMutation = useDeleteMttqNhiemKyMany();
-  const importMutation = useImportMttqNhiemKy(() => setShowImport(false));
+  const importMutation = useImportMttqNhiemKy();
 
   useEffect(() => {
     return () => resetState();
@@ -199,7 +205,7 @@ const NhiemKyPage: React.FC = () => {
     [],
   );
 
-  const IMPORT_COLUMNS = useMemo(
+  const IMPORT_COLUMNS = useMemo<ImportColumn[]>(
     () => [
       { key: 'ten_nhiem_ky', label: txt('matTranNhiemKy.store.tenCol'), required: true },
       { key: 'tu_nam', label: txt('matTranNhiemKy.store.tuNamCol') },
@@ -211,8 +217,23 @@ const NhiemKyPage: React.FC = () => {
       { key: 'sl_can_bo_sung', label: txt('matTranNhiemKy.form.slCanBoSung') },
       { key: 'sl_thieu', label: txt('matTranNhiemKy.form.slThieu') },
       { key: 'ghi_chu', label: txt('matTranNhiemKy.form.ghiChu') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo<ImportMatchColumn[]>(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten_nhiem_ky', label: txt('matTranNhiemKy.store.tenCol') },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo<readonly ImportWriteMode[]>(
+    () => (canEdit ? ['insert', 'upsert', 'update'] : ['insert']),
+    [canEdit],
   );
 
   const exportMapFn = useCallback((item: MttqNhiemKyListRow) => {
@@ -242,14 +263,15 @@ const NhiemKyPage: React.FC = () => {
 
   const visibleColumnKeys = useMemo(() => columns.filter((c) => c.visible).map((c) => c.id), [columns]);
 
+  const handleImportDryRun = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunNhiemKyImport(rowsToImport, options, nhanVienId),
+    [nhanVienId],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
-      if (!nhanVienId) {
-        toast.error(txt('matTranNhiemKy.service.noEmployeeProfile'));
-        return;
-      }
-      await importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
-    },
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows: rowsToImport, options, idNguoiTao: nhanVienId }),
     [importMutation, nhanVienId],
   );
 
@@ -456,6 +478,10 @@ const NhiemKyPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ten_nhiem_ky']}
             templateFileName={txt('matTranNhiemKy.import.templateName')}
           />
         )}

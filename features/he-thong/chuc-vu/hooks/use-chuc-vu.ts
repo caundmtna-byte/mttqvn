@@ -7,11 +7,12 @@ import {
   updatePosition,
   deletePositions,
   updatePositionStatus,
-  importPositions,
 } from "../services/chuc-vu-service";
 import { PositionFormValues } from "../core/schema";
 import type { Position } from '../core/types';
 import { toast } from "sonner";
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importChucVuRows } from '../services/chuc-vu-import';
 import { txt } from '../../../../lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { masterDataQueryOptions } from '@/lib/supabase/query-config';
@@ -104,19 +105,18 @@ export const useDeletePosition = () => {
   });
 };
 
-export const useImportPositions = (onSuccess?: () => void) => {
+export const useImportPositions = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: importPositions,
+    mutationFn: ({ rows, options }: { rows: Record<string, unknown>[]; options: ImportRunOptions }) =>
+      importChucVuRows(rows, options),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: positionsQueryKey });
-      if (result.created > 0) {
-        toast.success(txt('position.toast.importSuccess', { count: result.created }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('position.import.toastDone', { created, updated }));
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      if (onSuccess) onSuccess();
     },
   });
 };

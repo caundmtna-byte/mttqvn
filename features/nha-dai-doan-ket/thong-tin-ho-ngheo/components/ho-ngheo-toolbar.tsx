@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, ListChecks, MapPin, Users, Church, Globe2 } from 'lucide-react';
+import { Plus, Download, Upload, ListChecks, MapPin, Users, Church, Globe2 } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -21,6 +21,7 @@ interface Props {
   onPageBack: () => void;
   onAdd: () => void;
   onExport: () => void;
+  onImport?: () => void;
   onDeleteMany: (ids: string[]) => void;
   /** Cán bộ cấp xã chỉ chọn được xã của mình. */
   scopedToXaPhuongId?: string | null;
@@ -30,10 +31,11 @@ const HoNgheoToolbar: React.FC<Props> = ({
   onPageBack,
   onAdd,
   onExport,
+  onImport,
   onDeleteMany,
   scopedToXaPhuongId,
 }) => {
-  const { canCreate, canExport, canDelete } = useResourcePermissions('hoNgheoList');
+  const { canCreate, canExport, canImport, canDelete } = useResourcePermissions('hoNgheoList');
 
   const {
     searchTerm,
@@ -209,15 +211,31 @@ const HoNgheoToolbar: React.FC<Props> = ({
   );
 
   const mobileActions = useMemo<ActionItem[]>(
-    () =>
-      canExport
+    () => [
+      ...(canImport && onImport
+        ? [{ key: 'import', label: txt('common.import'), icon: Upload, onClick: onImport, description: '' }]
+        : []),
+      ...(canExport
         ? [{ key: 'export', label: txt('common.export'), icon: Download, onClick: onExport, description: '' }]
-        : [],
-    [canExport, onExport],
+        : []),
+    ],
+    [canImport, onImport, canExport, onExport],
   );
 
   const renderActions = (
     <>
+      {canImport && onImport && (
+        <Tooltip content={txt('common.import')} placement="bottom">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onImport}
+            className="hidden sm:inline-flex h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+          >
+            <Upload className="w-4 h-4" />
+          </Button>
+        </Tooltip>
+      )}
       {canExport && (
         <Tooltip content={txt('common.export')} placement="bottom">
           <Button

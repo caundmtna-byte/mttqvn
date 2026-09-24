@@ -13,9 +13,10 @@ import {
   getMttqKyHopById,
   getMttqKyHopList,
   getMttqKyHopListForNhiemKyId,
-  importMttqKyHop,
   updateMttqKyHop,
 } from '../services/mttq-ky-hop-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importKyHopRows, type KyHopImportContext } from '../services/ky-hop-import';
 
 const listKey = queryKeys.mttqKyHop.all;
 
@@ -99,20 +100,25 @@ export const useDeleteMttqKyHopMany = () => {
   });
 };
 
-export const useImportMttqKyHop = (onSuccess?: () => void) => {
+export const useImportMttqKyHop = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importMttqKyHop(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: KyHopImportContext;
+    }) => importKyHopRows(rows, options, ctx),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: listKey });
-      if (result.created > 0) {
-        toast.success(txt('matTranKyHop.toast.importSuccess', { count: result.created }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('matTranKyHop.toast.importSuccess', { created, updated }));
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 };

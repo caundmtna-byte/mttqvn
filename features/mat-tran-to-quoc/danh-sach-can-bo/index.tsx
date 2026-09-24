@@ -23,7 +23,14 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog, { type ImportTemplateSheet } from '@/components/shared/ImportDialog';
+import ImportDialog, {
+  type ImportColumn,
+  type ImportMatchColumn,
+  type ImportRunOptions,
+  type ImportTemplateSheet,
+  type ImportWriteMode,
+} from '@/components/shared/ImportDialog';
+import { dryRunCanBoImport, type CanBoImportContext } from './services/mttq-can-bo-import';
 import { useMttqThietLapAll } from '@/features/mat-tran-to-quoc/thiet-lap-cai-dat/hooks/use-mttq-thiet-lap';
 import { usePositions } from '@/features/he-thong/chuc-vu/hooks/use-chuc-vu';
 import { normalizeCapQuanLyInput } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
@@ -470,7 +477,7 @@ const DanhSachCanBoPage: React.FC = () => {
     keyExtractor: (r) => r.id,
   });
 
-  const IMPORT_COLUMNS = useMemo(
+  const IMPORT_COLUMNS = useMemo<ImportColumn[]>(
     () => [
       { key: 'id_phong_ban', label: txt('matTranCanBo.import.colPhongBan'), required: true },
       { key: 'to_chuc_ids', label: txt('matTranCanBo.import.colToChuc'), required: true },
@@ -494,8 +501,27 @@ const DanhSachCanBoPage: React.FC = () => {
       { key: 'ngay_vao_dang', label: txt('matTranCanBo.import.colNgayVaoDang'), required: false },
       { key: 'que_quan', label: txt('matTranCanBo.import.colQueQuan'), required: false },
       { key: 'noi_o_hien_nay', label: txt('matTranCanBo.import.colNoiOHienNay'), required: false },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const importMatchColumns = useMemo<ImportMatchColumn[]>(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      {
+        key: 'ho_ten_ngay_sinh',
+        label: txt('matTranCanBo.import.keyHoTenNgaySinh'),
+        columns: ['ho_ten', 'ngay_sinh'],
+      },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo<readonly ImportWriteMode[]>(
+    () => (canEditCanBo ? ['insert', 'upsert', 'update'] : ['insert']),
+    [canEditCanBo],
   );
 
   const templateSheets = useMemo((): ImportTemplateSheet[] => {
@@ -513,6 +539,7 @@ const DanhSachCanBoPage: React.FC = () => {
         [txt('matTranCanBo.import.huongR6k'), txt('matTranCanBo.import.huongR6v')],
         [txt('matTranCanBo.import.huongR7k'), txt('matTranCanBo.import.huongR7v')],
         [txt('matTranCanBo.import.huongR8k'), txt('matTranCanBo.import.huongR8v')],
+        [txt('matTranCanBo.import.huongR9k'), txt('matTranCanBo.import.huongR9v')],
       ],
     };
 
@@ -648,14 +675,21 @@ const DanhSachCanBoPage: React.FC = () => {
 
   const canImportWithProfile = canImport && Boolean(nhanVienId);
 
+  const importCtx = useMemo<CanBoImportContext>(
+    () => ({ idNguoiTao: nhanVienId, viewer }),
+    [nhanVienId, viewer],
+  );
+
+  const handleImportDryRun = useCallback(
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      dryRunCanBoImport(rowsToImport, options, importCtx),
+    [importCtx],
+  );
+
   const handleImportData = useCallback(
-    async (data: Record<string, unknown>[]) => {
-      if (!nhanVienId) {
-        throw new Error(txt('matTranCanBo.service.noEmployeeProfile'));
-      }
-      return importMutation.mutateAsync({ rows: data, idNguoiTao: nhanVienId });
-    },
-    [importMutation, nhanVienId],
+    (rowsToImport: Record<string, unknown>[], options: ImportRunOptions) =>
+      importMutation.mutateAsync({ rows: rowsToImport, options, ctx: importCtx }),
+    [importMutation, importCtx],
   );
 
   const handleCloseForm = () => {
@@ -767,6 +801,10 @@ const DanhSachCanBoPage: React.FC = () => {
             onClose={() => setShowImport(false)}
             columns={IMPORT_COLUMNS}
             onImport={handleImportData}
+            onDryRun={handleImportDryRun}
+            writeModes={importWriteModes}
+            matchColumns={importMatchColumns}
+            defaultMatchKeys={['ho_ten_ngay_sinh']}
             templateFileName={txt('matTranCanBo.import.templateFileName')}
             templateSheets={templateSheets}
           />

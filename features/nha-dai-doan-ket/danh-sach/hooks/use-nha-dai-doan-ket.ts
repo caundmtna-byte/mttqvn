@@ -48,6 +48,8 @@ export function useNhaDaiDoanKetDetail(id: string | null, options?: { enabled?: 
  */
 function invalidateNddkPages(queryClient: ReturnType<typeof useQueryClient>): void {
   void queryClient.invalidateQueries({ queryKey: [...queryKeys.nhaDaiDoanKet.all, 'page'] });
+  // Section "Nhà đại đoàn kết" trong chi tiết hộ nghèo đọc key riêng.
+  void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'nha-ddk'] });
 }
 
 export function useCreateNhaDaiDoanKet(onSuccess?: () => void) {

@@ -7,8 +7,9 @@ import { describe, expect, it } from 'vitest';
 import { chuanHoaSoCccd, soCccdCoGiaTri } from './so-cccd';
 
 describe('chuanHoaSoCccd', () => {
-  it('cắt khoảng trắng hai đầu', () => {
+  it('bóc mọi khoảng trắng, kể cả ở giữa — như trigger DB', () => {
     expect(chuanHoaSoCccd('  040012345678  ')).toBe('040012345678');
+    expect(chuanHoaSoCccd('040 012\t345 678')).toBe('040012345678');
   });
 
   it('null / undefined / rỗng đều về chuỗi rỗng', () => {

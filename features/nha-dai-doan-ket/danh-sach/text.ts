@@ -20,6 +20,8 @@ export const nhaDaiDoanKet = {
     actionChangeStatus: 'Chuyển trạng thái',
     actionEdit: 'Sửa hồ sơ',
     actionDelete: 'Xóa hồ sơ',
+    moHoNgheo: 'Mở hồ sơ hộ nghèo',
+    chuaGanHo: 'Chưa gắn hộ — sửa hồ sơ để chọn hộ',
   },
   statusChangeModal: {
     title: 'Chuyển trạng thái',
@@ -57,6 +59,9 @@ export const nhaDaiDoanKet = {
     sectionTrangThai: 'Trạng thái',
     soTienPlaceholder: 'Để trống nếu chưa chốt mức hỗ trợ',
     ghiChuHint: 'Ghi chú cũng được lưu làm lý do cho lần đổi trạng thái này.',
+    hoNgheoLabel: 'Hộ nghèo',
+    hoNgheoPlaceholder: 'Tìm theo tên hoặc số căn cước…',
+    hoNgheoHint: 'Họ tên, xã phường, khối xóm, đối tượng lấy theo hồ sơ hộ. Chưa có hộ thì thêm ở Thông tin hộ nghèo trước.',
   },
   toast: {
     create: 'Đã thêm hồ sơ',
@@ -71,6 +76,7 @@ export const nhaDaiDoanKet = {
   validation: {
     noiDungRequired: 'Nhập nội dung hỗ trợ',
     chuHoRequired: 'Nhập họ tên chủ hộ',
+    hoNgheoRequired: 'Chọn hộ trong Thông tin hộ nghèo',
     namInvalid: 'Năm phải từ 2000 đến 2100',
     nguonInvalid: 'Chọn nguồn hợp lệ',
     nguonHoTroInvalid: 'Chọn nguồn hỗ trợ hợp lệ',

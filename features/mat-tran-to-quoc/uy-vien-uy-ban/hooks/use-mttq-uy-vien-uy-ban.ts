@@ -14,10 +14,11 @@ import {
   getMttqUyVienUyBanList,
   getMttqUyVienUyBanListForNhiemKyId,
   getMttqUyVienUyBanStatsList,
-  importMttqUyVienUyBan,
   updateMttqUyVienUyBan,
   UyVienUyBanConflictError,
 } from '../services/mttq-uy-vien-uy-ban-service';
+import type { ImportRunOptions } from '@/components/shared/ImportDialog';
+import { importUyVienRows, type UyVienImportContext } from '../services/uy-vien-import';
 
 function uyVienMutationErrorMessage(e: unknown): string {
   if (e instanceof UyVienUyBanConflictError) return e.message;
@@ -121,21 +122,26 @@ export const useDeleteMttqUyVienUyBanMany = () => {
   });
 };
 
-export const useImportMttqUyVienUyBan = (onSuccess?: () => void) => {
+export const useImportMttqUyVienUyBan = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ rows, idNguoiTao }: { rows: Record<string, unknown>[]; idNguoiTao: string }) =>
-      importMttqUyVienUyBan(rows, idNguoiTao),
+    mutationFn: ({
+      rows,
+      options,
+      ctx,
+    }: {
+      rows: Record<string, unknown>[];
+      options: ImportRunOptions;
+      ctx: UyVienImportContext;
+    }) => importUyVienRows(rows, options, ctx),
     onSuccess: (result) => {
+      // `all` là tiền tố của cả danh sách, thống kê, chi tiết và theo-nhiệm-kỳ.
       void queryClient.invalidateQueries({ queryKey: listKey });
-      void queryClient.invalidateQueries({ queryKey: statsListKey });
-      if (result.created > 0) {
-        toast.success(txt('matTranUyVienUyBan.toast.importSuccess', { count: result.created }));
+      const created = result.created ?? 0;
+      const updated = result.updated ?? 0;
+      if (created + updated > 0) {
+        toast.success(txt('matTranUyVienUyBan.toast.importSuccess', { created, updated }));
       }
-      if (result.errors.length > 0) {
-        toast.warning(result.errors.slice(0, 3).join('; '));
-      }
-      onSuccess?.();
     },
   });
 };

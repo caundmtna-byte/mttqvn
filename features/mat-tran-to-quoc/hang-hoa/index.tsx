@@ -25,7 +25,13 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import ExportDialog from '@/components/shared/ExportDialog';
-import ImportDialog, { type ImportColumn, type ImportTemplateSheet } from '@/components/shared/ImportDialog';
+import ImportDialog, {
+  type ImportColumn,
+  type ImportMatchColumn,
+  type ImportRunOptions,
+  type ImportTemplateSheet,
+  type ImportWriteMode,
+} from '@/components/shared/ImportDialog';
 import TabGroup from '@/components/ui/TabGroup';
 import PageTabRow from '@/components/shared/PageTabRow';
 import {
@@ -40,6 +46,7 @@ import {
   useDeleteKhoDanhSachHangHoaMany,
   useImportKhoDanhSachHangHoa,
 } from './hooks/use-kho-danh-sach-hang-hoa';
+import { dryRunKhoDanhMucHangHoaImport, dryRunKhoDanhSachHangHoaImport } from './services/kho-hang-hoa-import';
 import { useKhoDanhMucHangHoaStore } from './store/useKhoDanhMucHangHoaStore';
 import { useKhoDanhSachHangHoaStore } from './store/useKhoDanhSachHangHoaStore';
 import type { KhoDanhMucHangHoaListRow, KhoDanhSachHangHoaListRow } from './core/types';
@@ -86,6 +93,7 @@ const HangHoaPage: React.FC = () => {
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
   const canView = useCan('view', 'matTranReliefGoods');
+  const canEdit = useCan('edit', 'matTranReliefGoods');
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
@@ -374,6 +382,7 @@ const HangHoaPage: React.FC = () => {
       { key: 'mo_ta', label: txt('matTranHangHoa.import.colMoTa') },
       { key: 'thu_tu', label: txt('matTranHangHoa.import.colThuTu') },
       { key: 'trang_thai', label: txt('matTranHangHoa.import.colTrangThai') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
   );
@@ -387,8 +396,35 @@ const HangHoaPage: React.FC = () => {
       { key: 'mo_ta', label: txt('matTranHangHoa.import.colMoTa') },
       { key: 'thu_tu', label: txt('matTranHangHoa.import.colThuTu') },
       { key: 'trang_thai', label: txt('matTranHangHoa.import.colTrangThai') },
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
     ],
     [],
+  );
+
+  const DM_IMPORT_MATCH_COLUMNS = useMemo<ImportMatchColumn[]>(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      { key: 'ten_danh_muc', label: txt('matTranHangHoa.import.colTenDanhMuc') },
+    ],
+    [],
+  );
+
+  const HH_IMPORT_MATCH_COLUMNS = useMemo<ImportMatchColumn[]>(
+    () => [
+      { key: 'id', label: txt('shared.import.colMaHeThong') },
+      {
+        key: 'danh_muc_ten_hang',
+        label: txt('matTranHangHoa.import.keyDanhMucTenHang'),
+        columns: ['id_danh_muc', 'ten_hang_hoa'],
+      },
+    ],
+    [],
+  );
+
+  /** Không có quyền sửa thì không bày chế độ ghi đè — bấm vào cũng không ghi được. */
+  const importWriteModes = useMemo<readonly ImportWriteMode[]>(
+    () => (canEdit ? ['insert', 'upsert', 'update'] : ['insert']),
+    [canEdit],
   );
 
   const dmTemplateSheets = useMemo<ImportTemplateSheet[]>(
@@ -401,6 +437,8 @@ const HangHoaPage: React.FC = () => {
           [txt('matTranHangHoa.import.hdDanhMuc2k'), txt('matTranHangHoa.import.hdDanhMuc2v')],
           [txt('matTranHangHoa.import.hdDanhMuc3k'), txt('matTranHangHoa.import.hdDanhMuc3v')],
           [txt('matTranHangHoa.import.hdDanhMuc4k'), txt('matTranHangHoa.import.hdDanhMuc4v')],
+          [txt('matTranHangHoa.import.hdDanhMuc5k'), txt('matTranHangHoa.import.hdDanhMuc5v')],
+          [txt('matTranHangHoa.import.hdDanhMuc6k'), txt('matTranHangHoa.import.hdDanhMuc6v')],
         ],
       },
     ],
@@ -419,6 +457,8 @@ const HangHoaPage: React.FC = () => {
           [txt('matTranHangHoa.import.hdHang4k'), txt('matTranHangHoa.import.hdHang4v')],
           [txt('matTranHangHoa.import.hdHang5k'), txt('matTranHangHoa.import.hdHang5v')],
           [txt('matTranHangHoa.import.hdHang6k'), txt('matTranHangHoa.import.hdHang6v')],
+          [txt('matTranHangHoa.import.hdHang7k'), txt('matTranHangHoa.import.hdHang7v')],
+          [txt('matTranHangHoa.import.hdHang8k'), txt('matTranHangHoa.import.hdHang8v')],
         ],
       },
       {
@@ -434,12 +474,12 @@ const HangHoaPage: React.FC = () => {
   );
 
   const handleImportDm = useCallback(
-    (data: Record<string, unknown>[]) => importDm.mutateAsync(data),
+    (rows: Record<string, unknown>[], options: ImportRunOptions) => importDm.mutateAsync({ rows, options }),
     [importDm],
   );
 
   const handleImportHh = useCallback(
-    (data: Record<string, unknown>[]) => importHh.mutateAsync(data),
+    (rows: Record<string, unknown>[], options: ImportRunOptions) => importHh.mutateAsync({ rows, options }),
     [importHh],
   );
 
@@ -783,6 +823,10 @@ const HangHoaPage: React.FC = () => {
             onClose={() => setDmShowImport(false)}
             columns={DM_IMPORT_COLUMNS}
             onImport={handleImportDm}
+            onDryRun={dryRunKhoDanhMucHangHoaImport}
+            writeModes={importWriteModes}
+            matchColumns={DM_IMPORT_MATCH_COLUMNS}
+            defaultMatchKeys={['ten_danh_muc']}
             templateFileName={txt('matTranHangHoa.import.templateFileNameDanhMuc')}
             templateSheets={dmTemplateSheets}
           />
@@ -796,6 +840,10 @@ const HangHoaPage: React.FC = () => {
             onClose={() => setHhShowImport(false)}
             columns={HH_IMPORT_COLUMNS}
             onImport={handleImportHh}
+            onDryRun={dryRunKhoDanhSachHangHoaImport}
+            writeModes={importWriteModes}
+            matchColumns={HH_IMPORT_MATCH_COLUMNS}
+            defaultMatchKeys={['danh_muc_ten_hang']}
             templateFileName={txt('matTranHangHoa.import.templateFileNameHangHoa')}
             templateSheets={hhTemplateSheets}
           />
