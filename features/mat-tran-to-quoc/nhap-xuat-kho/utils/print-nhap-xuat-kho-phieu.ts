@@ -152,7 +152,10 @@ export function printNhapXuatKhoPhieuDocument(
   rootEl: HTMLElement,
   documentTitle: string,
 ): boolean {
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
+  // KHÔNG thêm `noopener`: theo đặc tả HTML, `window.open` có `noopener` luôn trả
+  // về `null` ⇒ không ghi được nội dung vào cửa sổ và hàm luôn báo "bị chặn popup".
+  // Cửa sổ là trang trống do chính app ghi nội dung nên không cần cách ly opener.
+  const printWindow = window.open('', '_blank', 'width=900,height=700');
   if (!printWindow) return false;
 
   const html = `<!DOCTYPE html>
