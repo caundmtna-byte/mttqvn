@@ -8,6 +8,7 @@ import {
   HNGH_TRANG_THAI_VALUES,
 } from './constants';
 import type { HoNgheo } from './types';
+import { chuanHoaSoCccd, soCccdHopLe } from '../utils/so-cccd';
 
 const optionalText = z
   .string()
@@ -21,13 +22,20 @@ const optionalFk = z
   .optional()
   .transform((s) => (s === '' || s === undefined ? undefined : s));
 
+/** Bóc khoảng trắng như trigger DB, rỗng ⇒ bỏ trống; đã nhập thì đủ 12 chữ số. */
+const soCccd = z
+  .string()
+  .optional()
+  .transform((s) => chuanHoaSoCccd(s) || undefined)
+  .refine((s) => soCccdHopLe(s), { message: txt('hoNgheo.validation.soCccdKhongHopLe') });
+
 /* ------------------------------------------------------------------ *
  * Hộ
  * ------------------------------------------------------------------ */
 
 export const hoNgheoSchema = z.object({
   ho_ten_dai_dien: z.string().trim().min(1, txt('hoNgheo.validation.hoTenRequired')),
-  so_cccd: optionalText,
+  so_cccd: soCccd,
   xa_phuong_id: optionalFk,
   khoi_xom: optionalText,
   doi_tuong: z

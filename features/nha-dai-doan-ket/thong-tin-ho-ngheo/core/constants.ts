@@ -24,3 +24,7 @@ export const HNGH_TON_GIAO_DEFAULT: HnghTonGiao = 'Không';
 export const HNGH_TRANG_THAI_VALUES = ['Đang khó khăn', 'Hết khó khăn'] as const;
 export type HnghTrangThai = (typeof HNGH_TRANG_THAI_VALUES)[number];
 export const HNGH_TRANG_THAI_DEFAULT: HnghTrangThai = 'Đang khó khăn';
+
+/** Tab của trang — hằng ở mức module để memo trong `useTabSearchParam` ổn định. */
+export type HnghMainTab = 'danh_sach' | 'thong_ke';
+export const HNGH_MAIN_TABS: readonly HnghMainTab[] = ['danh_sach', 'thong_ke'] as const;

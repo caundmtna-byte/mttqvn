@@ -13,3 +13,15 @@ export function chuanHoaSoCccd(raw: string | null | undefined): string {
 export function soCccdCoGiaTri(raw: string | null | undefined): boolean {
   return chuanHoaSoCccd(raw) !== '';
 }
+
+/**
+ * Căn cước công dân gắn chip: đúng 12 chữ số. Khớp CHECK `hngh_so_cccd_chk`
+ * dưới DB (so trên giá trị đã chuẩn hoá, nên gõ cách quãng vẫn hợp lệ).
+ */
+export const SO_CCCD_REGEX = /^\d{12}$/;
+
+/** Rỗng ⇒ hợp lệ (hộ chưa có giấy tờ); đã nhập thì phải đủ 12 chữ số. */
+export function soCccdHopLe(raw: string | null | undefined): boolean {
+  const v = chuanHoaSoCccd(raw);
+  return v === '' || SO_CCCD_REGEX.test(v);
+}

@@ -41,6 +41,14 @@ describe('hoNgheoSchema', () => {
     expect(hoNgheoSchema.safeParse({ ...hoHopLe, trang_thai: 'Thoát nghèo' }).success).toBe(false);
   });
 
+  it('số căn cước: trống được, đã nhập thì đủ 12 chữ số', () => {
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, so_cccd: '040 012 345 678' }).data?.so_cccd).toBe(
+      '040012345678',
+    );
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, so_cccd: '   ' }).data?.so_cccd).toBeUndefined();
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, so_cccd: '04001234567' }).success).toBe(false);
+  });
+
   it('đối tượng để trống được, giá trị lạ thì không', () => {
     expect(hoNgheoSchema.safeParse({ ...hoHopLe, doi_tuong: 'Hộ nghèo' }).success).toBe(true);
     expect(hoNgheoSchema.safeParse({ ...hoHopLe, doi_tuong: 'Hộ khá' }).success).toBe(false);

@@ -1,8 +1,11 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
+import { isConstraintFieldError } from '@/lib/supabase/constraint-field-error';
+import { getErrorMessage } from '@/lib/utils';
 import type {
   HoNgheoFormValues,
   HoNgheoStatusChangeValues,
@@ -10,10 +13,13 @@ import type {
 import type { HoNgheo } from '../core/types';
 import type { ImportRunOptions } from '@/components/shared/ImportDialog';
 import { importHoNgheoRows, type HoNgheoImportContext } from '../services/ho-ngheo-import';
+import { canViewHoNgheoRow, isHoNgheoScopedToXaPhuong, useHoNgheoViewer } from './use-ho-ngheo-viewer';
 import {
   createHoNgheo,
   deleteHoNgheoMany,
   getHoNgheoById,
+  getHoNgheoThongKeRows,
+  type HoNgheoThongKeScope,
   updateHoNgheo,
   updateHoNgheoTrangThai,
 } from '../services/ho-ngheo-service';
@@ -36,6 +42,39 @@ export function useHoNgheoDetail(id: string | null, options?: { enabled?: boolea
  */
 function invalidateHoNgheoPages(queryClient: ReturnType<typeof useQueryClient>): void {
   void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'page'] });
+  // Tab Thống kê cũng đếm trên cùng bảng — thêm/sửa/xoá/nhập xong phải ra số mới.
+  void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'thong-ke'] });
+}
+
+/**
+ * Dữ liệu tab Thống kê, ĐÃ áp phạm vi xem.
+ *
+ * Lọc hai lớp như trang danh sách: máy chủ chỉ trả xã của cán bộ xã, rồi
+ * `canViewHoNgheoRow` gác lại ở client. Thiếu bước này thì số tổng là số toàn tỉnh.
+ */
+export function useHoNgheoThongKe(options: { enabled: boolean }) {
+  const viewer = useHoNgheoViewer();
+  const scope = useMemo<HoNgheoThongKeScope>(
+    () =>
+      isHoNgheoScopedToXaPhuong(viewer)
+        ? { viewAll: false, xaPhuongId: viewer.viewerDonViId }
+        : { viewAll: true },
+    [viewer],
+  );
+
+  const query = useQuery({
+    queryKey: queryKeys.hoNgheo.thongKe(scope),
+    queryFn: () => getHoNgheoThongKeRows(scope),
+    enabled: options.enabled,
+    ...transactionalCrudListQueryOptions,
+  });
+
+  const rows = useMemo(
+    () => (query.data ?? []).filter((r) => canViewHoNgheoRow(viewer, r)),
+    [query.data, viewer],
+  );
+
+  return { ...query, rows };
 }
 
 export function useCreateHoNgheo(onSuccess?: () => void) {
@@ -49,6 +88,11 @@ export function useCreateHoNgheo(onSuccess?: () => void) {
       toast.success(txt('hoNgheo.toast.create'));
       onSuccess?.();
     },
+    onError: (err: unknown) => {
+      // Trùng / sai định dạng số căn cước ⇒ form gắn chữ đỏ dưới ô, không toast.
+      if (isConstraintFieldError(err)) return;
+      toast.error(getErrorMessage(err));
+    },
   });
 }
 
@@ -61,6 +105,10 @@ export function useUpdateHoNgheo(onSuccess?: () => void) {
       invalidateHoNgheoPages(queryClient);
       toast.success(txt('hoNgheo.toast.update'));
       onSuccess?.();
+    },
+    onError: (err: unknown) => {
+      if (isConstraintFieldError(err)) return;
+      toast.error(getErrorMessage(err));
     },
   });
 }

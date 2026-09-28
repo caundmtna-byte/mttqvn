@@ -38,6 +38,7 @@ const BY_CONSTRAINT: Record<string, string> = {
   uq_var_phan_quyen_chuc_vu_module: 'Chức vụ này đã được phân quyền cho phần này rồi.',
   uq_luong_thiet_lap_ngach_luong_ten_lower: 'Ngạch lương này đã tồn tại.',
   uq_luong_thiet_lap_ngach_luong_ma_lower: 'Mã ngạch lương này đã được dùng.',
+  uq_hngh_so_cccd: 'Số căn cước này đã có ở một hộ khác.',
   luong_thiet_lap_bac_luong_ngach_ma_uq: 'Bậc lương này đã có trong ngạch đã chọn.',
   uq_mttq_tang_luong_can_bo_ngay:
     'Cán bộ này đã có một lần nâng lương đúng ngày đã chọn. Kiểm tra lại ngày nâng lương.',
@@ -46,6 +47,7 @@ const BY_CONSTRAINT: Record<string, string> = {
   chk_chuong_trinh_nam_dates: 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.',
   chk_kho_nxk_consistency:
     'Thông tin phiếu chưa khớp với loại phiếu. Kiểm tra lại kho nhập, kho xuất, đơn vị cứu trợ và đợt cứu trợ.',
+  hngh_so_cccd_chk: 'Số căn cước phải gồm đúng 12 chữ số.',
   mttq_nhiem_ky_tu_den_nam_chk: 'Năm kết thúc nhiệm kỳ phải bằng hoặc sau năm bắt đầu.',
   mttq_tang_luong_luong_chk: 'Mức lương không được là số âm.',
   mttq_tang_luong_truoc_han_thang_chk:

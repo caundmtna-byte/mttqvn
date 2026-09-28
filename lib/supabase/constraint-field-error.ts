@@ -28,6 +28,8 @@ const CONSTRAINT_TO_FIELD: Record<string, string> = {
   uq_luong_thiet_lap_ngach_luong_ma_lower: 'ma',
   uq_mttq_uy_vien_uy_ban_nhiem_ky_can_bo: 'can_bo_id',
   uq_mttq_uy_vien_uy_ban_nhiem_ky_ma_uv: 'ma_uv',
+  uq_hngh_so_cccd: 'so_cccd',
+  hngh_so_cccd_chk: 'so_cccd',
 };
 
 /** Lỗi này có ô nhập tương ứng để gắn thông báo không? */

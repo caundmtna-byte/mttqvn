@@ -39,3 +39,15 @@ export interface HoNgheo {
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
 }
+
+/** Một hộ ở tab Thống kê — chỉ cột phân loại (xem `HNGH_SELECT_THONG_KE`). */
+export interface HoNgheoThongKeRow {
+  id: string;
+  xa_phuong_id: string | null;
+  ten_xa_phuong: string | null;
+  doi_tuong: HnghDoiTuong | null;
+  dan_toc_id: string | null;
+  ten_dan_toc: string | null;
+  ton_giao: HnghTonGiao;
+  trang_thai: HnghTrangThai;
+}

@@ -285,6 +285,8 @@ export const queryKeys = {
     detail: (id: string) => ['thong-tin-ho-ngheo', 'detail', id] as const,
     page: (args: unknown) => ['thong-tin-ho-ngheo', 'page', args] as const,
     nhaDaiDoanKet: (hoId: string) => ['thong-tin-ho-ngheo', 'nha-ddk', hoId] as const,
+    /** Tab Thống kê — toàn bộ hộ trong phạm vi xem, chỉ cột phân loại. */
+    thongKe: (scope: unknown) => ['thong-tin-ho-ngheo', 'thong-ke', scope] as const,
   },
   nhaDaiDoanKet: {
     all: ['nha-dai-doan-ket'] as const,

@@ -25,6 +25,7 @@ import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
+import { applyConstraintErrorToForm } from '@/lib/supabase/constraint-field-error';
 import {
   hoNgheoSchema,
   hoNgheoToFormInput,
@@ -79,6 +80,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
+    setError,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<HoNgheoFormInput, unknown, HoNgheoFormValues>({
     defaultValues: hoNgheoToFormInput(null),
@@ -100,7 +102,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
     reset(base);
   }, [initialData, reset, scopedToXa, viewer.viewerDonViId]);
 
-  const onSubmit: SubmitHandler<HoNgheoFormValues> = (parsed) => {
+  const onSubmit: SubmitHandler<HoNgheoFormValues> = async (parsed) => {
     if (scopedToXa) {
       const xa = parsed.xa_phuong_id?.trim() ?? '';
       if (!viewer.viewerDonViId || xa !== viewer.viewerDonViId) {
@@ -108,10 +110,15 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
         return;
       }
     }
-    if (isEdit && initialData) {
-      updateMutation.mutate({ id: initialData.id, data: parsed });
-    } else {
-      createMutation.mutate({ data: parsed, idNguoiTao: nhanVienId });
+    // Trùng / sai định dạng số căn cước ⇒ chữ đỏ dưới đúng ô, không phải toast ở góc.
+    try {
+      if (isEdit && initialData) {
+        await updateMutation.mutateAsync({ id: initialData.id, data: parsed });
+      } else {
+        await createMutation.mutateAsync({ data: parsed, idNguoiTao: nhanVienId });
+      }
+    } catch (e) {
+      applyConstraintErrorToForm(e, setError);
     }
   };
 
@@ -156,6 +163,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 label={txt('hoNgheo.store.soCccdCol')}
                 icon={IdCard}
                 inputMode="numeric"
+                maxLength={15}
                 placeholder={txt('hoNgheo.form.soCccdPlaceholder')}
                 {...register('so_cccd')}
                 error={errors.so_cccd?.message}

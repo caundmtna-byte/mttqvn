@@ -1,4 +1,8 @@
 export const hoNgheo = {
+  tabs: {
+    danhSach: 'Danh sách',
+    thongKe: 'Thống kê',
+  },
   noViewPermission: 'Bạn không có quyền xem module Thông tin hộ nghèo.',
   noViewRowPermission: 'Bạn không có quyền xem bản ghi này.',
   noXaPhuongScopePermission: 'Bạn chỉ được nhập hộ thuộc xã/phường của mình.',
@@ -79,7 +83,7 @@ export const hoNgheo = {
     sectionLienHe: 'Liên hệ & tài khoản',
     sectionTrangThai: 'Trạng thái',
     soCccdPlaceholder: 'Để trống nếu chưa có giấy tờ',
-    soCccdHint: 'Đã nhập thì không được trùng với hộ khác.',
+    soCccdHint: 'Đủ 12 chữ số, không trùng với hộ khác.',
     xaPhuongPlaceholder: 'Chọn xã/phường',
     danTocPlaceholder: 'Chọn dân tộc',
     doiTuongPlaceholder: 'Chọn đối tượng',
@@ -96,6 +100,7 @@ export const hoNgheo = {
   },
   validation: {
     hoTenRequired: 'Nhập họ và tên đại diện hộ.',
+    soCccdKhongHopLe: 'Số căn cước phải gồm đúng 12 chữ số.',
     doiTuongInvalid: 'Đối tượng chưa hợp lệ.',
     tonGiaoInvalid: 'Tôn giáo chỉ nhận Có hoặc Không.',
     trangThaiInvalid: 'Trạng thái chưa hợp lệ.',

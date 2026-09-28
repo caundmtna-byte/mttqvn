@@ -4,7 +4,7 @@
  * nhau còn DB báo trùng khoá — lỗi gần như không chẩn đoán được từ màn hình.
  */
 import { describe, expect, it } from 'vitest';
-import { chuanHoaSoCccd, soCccdCoGiaTri } from './so-cccd';
+import { chuanHoaSoCccd, soCccdCoGiaTri, soCccdHopLe } from './so-cccd';
 
 describe('chuanHoaSoCccd', () => {
   it('bóc mọi khoảng trắng, kể cả ở giữa — như trigger DB', () => {
@@ -25,5 +25,24 @@ describe('soCccdCoGiaTri', () => {
     expect(soCccdCoGiaTri('')).toBe(false);
     expect(soCccdCoGiaTri('   ')).toBe(false);
     expect(soCccdCoGiaTri(null)).toBe(false);
+  });
+});
+
+describe('soCccdHopLe', () => {
+  it('đúng 12 chữ số thì hợp lệ, kể cả gõ cách quãng', () => {
+    expect(soCccdHopLe('040012345678')).toBe(true);
+    expect(soCccdHopLe('040 012 345 678')).toBe(true);
+  });
+
+  it('thiếu / thừa số hoặc lẫn ký tự khác đều bị chặn', () => {
+    expect(soCccdHopLe('04001234567')).toBe(false);
+    expect(soCccdHopLe('0400123456789')).toBe(false);
+    expect(soCccdHopLe('04001234567a')).toBe(false);
+    expect(soCccdHopLe('040-012-345-678')).toBe(false);
+  });
+
+  it('để trống vẫn hợp lệ — hộ chưa có giấy tờ', () => {
+    expect(soCccdHopLe('')).toBe(true);
+    expect(soCccdHopLe(null)).toBe(true);
   });
 });

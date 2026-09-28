@@ -12,7 +12,7 @@ import type {
   HoNgheoFormValues,
   HoNgheoStatusChangeValues,
 } from '../core/schema';
-import type { HoNgheo } from '../core/types';
+import type { HoNgheo, HoNgheoThongKeRow } from '../core/types';
 import type {
   HnghDoiTuong,
   HnghTonGiao,
@@ -22,7 +22,8 @@ import {
   HNGH_TON_GIAO_DEFAULT,
   HNGH_TRANG_THAI_DEFAULT,
 } from '../core/constants';
-import { HNGH_RETURNING, HNGH_SELECT } from '../core/supabase-select';
+import { HNGH_RETURNING, HNGH_SELECT, HNGH_SELECT_THONG_KE } from '../core/supabase-select';
+import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -235,6 +236,55 @@ export function getHoNgheoAllForExport(
   q: Omit<HnghPageQuery, 'page' | 'pageSize'>,
 ): Promise<HoNgheo[]> {
   return fetchAllServerPages(q, getHoNgheoPage);
+}
+
+/* ------------------------------------------------------------------ *
+ * Tab Thống kê
+ * ------------------------------------------------------------------ */
+
+/**
+ * Phạm vi đọc của tab Thống kê — cùng cách suy như tham số `p_view_all` /
+ * `p_viewer_xa_phuong_id` của `get_hngh_page`.
+ */
+export type HoNgheoThongKeScope = { viewAll: true } | { viewAll: false; xaPhuongId: string | null };
+
+/**
+ * Kéo ĐỦ các hộ trong phạm vi xem (lặp 1000 dòng/lần, không cắt ngầm), chỉ cột
+ * phân loại. Cán bộ xã lọc ngay ở máy chủ; chưa gán đơn vị ⇒ rỗng, giống RPC.
+ */
+export async function getHoNgheoThongKeRows(
+  scope: HoNgheoThongKeScope,
+): Promise<HoNgheoThongKeRow[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  if (!scope.viewAll && !scope.xaPhuongId) return [];
+
+  const rows = await fetchAllPages<Record<string, unknown>>(
+    async (from, to) => {
+      let q = supabase.from('hngh_thong_tin_ho_ngheo').select(HNGH_SELECT_THONG_KE);
+      if (!scope.viewAll) q = q.eq('xa_phuong_id', scope.xaPhuongId!);
+      // Phải có thứ tự ổn định, nếu không `.range` giữa hai lô có thể trùng/sót dòng.
+      const { data, error } = await q.order('id', { ascending: true }).range(from, to);
+      if (error) handleSupabaseError(error);
+      return (data ?? []) as unknown as Record<string, unknown>[];
+    },
+    { label: 'hngh_thong_tin_ho_ngheo (thống kê)' },
+  );
+
+  return rows.map((r) => {
+    const xp = pickEmbedded<{ ten?: string }>(r.xa_phuong);
+    const dt = pickEmbedded<{ ten?: string }>(r.dan_toc);
+    return {
+      id: String(r.id ?? ''),
+      xa_phuong_id: nullableStr(r.xa_phuong_id),
+      ten_xa_phuong: embeddedName(xp?.ten),
+      doi_tuong: (nullableStr(r.doi_tuong) as HnghDoiTuong | null) ?? null,
+      dan_toc_id: nullableStr(r.dan_toc_id),
+      ten_dan_toc: embeddedName(dt?.ten),
+      ton_giao: (nullableStr(r.ton_giao) as HnghTonGiao | null) ?? HNGH_TON_GIAO_DEFAULT,
+      trang_thai: (nullableStr(r.trang_thai) as HnghTrangThai | null) ?? HNGH_TRANG_THAI_DEFAULT,
+    };
+  });
 }
 
 /* ------------------------------------------------------------------ *

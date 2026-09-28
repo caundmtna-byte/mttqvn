@@ -48,6 +48,7 @@ import { pbxhThongKe } from '../../features/phan-bien-xa-hoi/thong-ke-phan-bien-
 import { nhaDaiDoanKet } from '../../features/nha-dai-doan-ket/danh-sach/text';
 import { nhaDaiDoanKetThongKe } from '../../features/nha-dai-doan-ket/danh-sach/text-thong-ke';
 import { hoNgheo } from '../../features/nha-dai-doan-ket/thong-tin-ho-ngheo/text';
+import { hoNgheoThongKe } from '../../features/nha-dai-doan-ket/thong-tin-ho-ngheo/text-thong-ke';
 import { khenThuongNhaTaiTro } from '../../features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/text';
 import { khenThuongNhaTaiTroThongKe } from '../../features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/text-thong-ke';
 import { viNguoiNgheo } from '../../features/nha-dai-doan-ket/vi-nguoi-ngheo/text';
@@ -116,6 +117,7 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('nhaDaiDoanKet', nhaDaiDoanKet),
   ...flatten('nhaDaiDoanKetThongKe', nhaDaiDoanKetThongKe),
   ...flatten('hoNgheo', hoNgheo),
+  ...flatten('hoNgheoThongKe', hoNgheoThongKe),
   ...flatten('viNguoiNgheo', viNguoiNgheo),
   ...flatten('khenThuongNhaTaiTro', khenThuongNhaTaiTro),
   ...flatten('khenThuongNhaTaiTroThongKe', khenThuongNhaTaiTroThongKe),
@@ -186,6 +188,7 @@ export {
   nhaDaiDoanKet,
   nhaDaiDoanKetThongKe,
   hoNgheo,
+  hoNgheoThongKe,
   viNguoiNgheo,
   khenThuongNhaTaiTro,
   khenThuongNhaTaiTroThongKe,

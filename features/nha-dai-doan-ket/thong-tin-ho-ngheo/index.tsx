@@ -22,6 +22,10 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useServerPagedList } from '@/hooks/use-server-paged-list';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
+import { BarChart3, List } from 'lucide-react';
+import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog, {
   type ImportRunOptions,
@@ -35,6 +39,7 @@ import { useNddkXaPhuongOptions } from '../danh-sach/hooks/use-nddk-xa-phuong-op
 import { dryRunHoNgheoImport, type HoNgheoImportContext } from './services/ho-ngheo-import';
 import {
   HNGH_DOI_TUONG_VALUES,
+  HNGH_MAIN_TABS,
   HNGH_TON_GIAO_VALUES,
   HNGH_TRANG_THAI_VALUES,
 } from './core/constants';
@@ -51,6 +56,7 @@ import { countHnghColumnSearchActive } from './utils/column-search';
 import { getHnghColumnDisplayValue } from './utils/column-display';
 import HoNgheoToolbar from './components/ho-ngheo-toolbar';
 import HoNgheoTable from './components/ho-ngheo-table';
+import HoNgheoThongKePanel from './components/ho-ngheo-thong-ke-panel';
 
 const HoNgheoForm = lazy(() => import('./components/ho-ngheo-form'));
 const HoNgheoDetail = lazy(() => import('./components/ho-ngheo-detail'));
@@ -79,6 +85,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
   const didRedirect = useRef(false);
 
   const listQueryEnabled = Boolean(user && (user.role === 'admin' || (matrixActive && canView)));
+  const [mainTab, setMainTab] = useTabSearchParam(HNGH_MAIN_TABS, 'danh_sach');
 
   const chucVuKey = user
     ? Array.isArray(user.id_chuc_vu)
@@ -346,7 +353,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
     setShowExport(true);
   };
 
-  const { canImport, canEdit } = useResourcePermissions('hoNgheoList');
+  const { canImport, canEdit, canExport } = useResourcePermissions('hoNgheoList');
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
   const importMutation = useImportHoNgheo();
   const importXaOptions = useNddkXaPhuongOptions(scopedToXa ? viewer.viewerDonViId : null);
@@ -445,6 +452,18 @@ const ThongTinHoNgheoPage: React.FC = () => {
 
   const handlePageBack = () => navigate('/an-sinh-xa-hoi');
 
+  const tabsSlot = (
+    <TabGroup
+      tabs={[
+        { id: 'danh_sach', label: txt('hoNgheo.tabs.danhSach'), icon: List },
+        { id: 'thong_ke', label: txt('hoNgheo.tabs.thongKe'), icon: BarChart3 },
+      ]}
+      activeTab={mainTab}
+      onChange={setMainTab}
+      className="shrink-0"
+    />
+  );
+
   if (!canView) {
     return (
       <div
@@ -459,6 +478,14 @@ const ThongTinHoNgheoPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative">
+      <PageTabRow>{tabsSlot}</PageTabRow>
+      {mainTab === 'thong_ke' ? (
+        <HoNgheoThongKePanel
+          onPageBack={handlePageBack}
+          canExport={canExport}
+          queryEnabled={listQueryEnabled}
+        />
+      ) : (
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <HoNgheoToolbar
           onPageBack={handlePageBack}
@@ -501,6 +528,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       <AnimatePresence>
         {showForm && (
