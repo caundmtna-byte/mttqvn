@@ -9,12 +9,20 @@ import {
   NDDK_NGUON_DEFAULT,
   NDDK_NGUON_HO_TRO_DEFAULT,
   NDDK_NGUON_HO_TRO_VALUES,
+  NDDK_NGUON_KHAC_MAX,
   NDDK_NGUON_VALUES,
+  NDDK_NHU_CAU_HO_TRO_VALUES,
+  NDDK_THON_KIEM_TRA_MAX,
   NDDK_TRANG_THAI_DEFAULT,
   NDDK_TRANG_THAI_VALUES,
 } from './constants';
-import type { NhaDaiDoanKet } from './types';
+import type { NddkNguoiThamGia, NddkNguonKhac, NhaDaiDoanKet } from './types';
 import { parseSoInput } from '@/lib/number';
+import {
+  emptyThanhPhanKiemTra,
+  isNguoiThamGiaEmpty,
+  isThanhPhanKiemTraEmpty,
+} from '../utils/bien-ban-json';
 
 const optionalText = z
   .string()
@@ -49,6 +57,68 @@ const optionalSoTien = z.preprocess(
     .optional(),
 );
 
+/* ------------------------------------------------------------------ *
+ * Biên bản (khảo sát / kiểm tra hoàn thành / bàn giao) — mọi ô đều không bắt buộc
+ * ------------------------------------------------------------------ */
+
+const optionalDate = z
+  .string()
+  .trim()
+  .optional()
+  .transform((s) => (s ? s : undefined))
+  .refine((s) => s === undefined || /^\d{4}-\d{2}-\d{2}$/.test(s), {
+    message: txt('nhaDaiDoanKet.validation.ngayInvalid'),
+  });
+
+/** m², cho phép phần lẻ; chấp nhận cả dấu phẩy thập phân ("45,5"). */
+const optionalDienTich = z.preprocess(
+  (val) => {
+    if (val == null) return undefined;
+    const s = String(val).trim().replace(',', '.');
+    if (s === '') return undefined;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : Number.NaN;
+  },
+  z
+    .number({ message: txt('nhaDaiDoanKet.validation.dienTichInvalid') })
+    .min(0, txt('nhaDaiDoanKet.validation.dienTichInvalid'))
+    .optional(),
+);
+
+const trimmedString = z
+  .string()
+  .optional()
+  .transform((s) => (s ?? '').trim());
+
+const nguoiThamGiaSchema = z.object({ ho_ten: trimmedString, chuc_vu: trimmedString });
+
+/** Cả khối rỗng ⇒ `undefined` (lưu NULL), dòng thôn rỗng bị bỏ. */
+const thanhPhanKiemTraSchema = z
+  .object({
+    bcd: nguoiThamGiaSchema,
+    ubnd: nguoiThamGiaSchema,
+    mttq: nguoiThamGiaSchema,
+    thon: z.array(nguoiThamGiaSchema).max(NDDK_THON_KIEM_TRA_MAX),
+  })
+  .optional()
+  .transform((tp) => {
+    if (!tp) return undefined;
+    const cleaned = { ...tp, thon: tp.thon.filter((p: NddkNguoiThamGia) => !isNguoiThamGiaEmpty(p)) };
+    return isThanhPhanKiemTraEmpty(cleaned) ? undefined : cleaned;
+  });
+
+/** Dòng không tên, không tiền bị bỏ; không còn dòng nào ⇒ `undefined` (NULL). */
+const nguonKhacSchema = z
+  .array(z.object({ ten: trimmedString, so_tien: optionalSoTien }))
+  .max(NDDK_NGUON_KHAC_MAX)
+  .optional()
+  .transform((list): NddkNguonKhac[] | undefined => {
+    const rows = (list ?? [])
+      .filter((x) => x.ten !== '' || x.so_tien != null)
+      .map((x) => ({ ten: x.ten, so_tien: x.so_tien ?? null }));
+    return rows.length > 0 ? rows : undefined;
+  });
+
 export const nhaDaiDoanKetSchema = z.object({
   noi_dung_ho_tro: z.string().trim().min(1, txt('nhaDaiDoanKet.validation.noiDungRequired')),
   nam: z.coerce
@@ -76,6 +146,33 @@ export const nhaDaiDoanKetSchema = z.object({
     message: txt('nhaDaiDoanKet.validation.trangThaiInvalid'),
   }),
   ghi_chu: optionalText,
+  // Phiếu khảo sát
+  ngay_khao_sat: optionalDate,
+  hien_trang_nha: optionalText,
+  hoan_canh_gia_dinh: optionalText,
+  nhu_cau_ho_tro: z
+    .union([z.enum(NDDK_NHU_CAU_HO_TRO_VALUES), z.literal('')])
+    .optional()
+    .transform((s) => (s === '' || s === undefined ? undefined : s)),
+  ghi_chu_khao_sat: optionalText,
+  // Biên bản kiểm tra hoàn thành
+  ngay_kiem_tra_hoan_thanh: optionalDate,
+  thanh_phan_kiem_tra: thanhPhanKiemTraSchema,
+  dien_tich_san: optionalDienTich,
+  phan_nen: optionalText,
+  phan_mai: optionalText,
+  phan_khung_tuong: optionalText,
+  tong_gia_tri: optionalSoTien,
+  nguon_khac: nguonKhacSchema,
+  // Biên bản bàn giao
+  ngay_ban_giao: optionalDate,
+  dia_diem_ban_giao: optionalText,
+  ban_giao_ho_ten: optionalText,
+  ban_giao_chuc_vu: optionalText,
+  lam_chung_ho_ten: optionalText,
+  lam_chung_chuc_vu: optionalText,
+  so_quyet_dinh: optionalText,
+  ngay_quyet_dinh: optionalDate,
 });
 
 export type NhaDaiDoanKetFormValues = z.infer<typeof nhaDaiDoanKetSchema>;
@@ -119,7 +216,85 @@ export type NhaDaiDoanKetFormInput = {
   so_tien?: string;
   trang_thai: string;
   ghi_chu?: string;
+  ngay_khao_sat?: string;
+  hien_trang_nha?: string;
+  hoan_canh_gia_dinh?: string;
+  nhu_cau_ho_tro?: string;
+  ghi_chu_khao_sat?: string;
+  ngay_kiem_tra_hoan_thanh?: string;
+  thanh_phan_kiem_tra: {
+    bcd: NddkNguoiThamGia;
+    ubnd: NddkNguoiThamGia;
+    mttq: NddkNguoiThamGia;
+    thon: NddkNguoiThamGia[];
+  };
+  dien_tich_san?: string;
+  phan_nen?: string;
+  phan_mai?: string;
+  phan_khung_tuong?: string;
+  tong_gia_tri?: string;
+  nguon_khac: { ten: string; so_tien: string }[];
+  ngay_ban_giao?: string;
+  dia_diem_ban_giao?: string;
+  ban_giao_ho_ten?: string;
+  ban_giao_chuc_vu?: string;
+  lam_chung_ho_ten?: string;
+  lam_chung_chuc_vu?: string;
+  so_quyet_dinh?: string;
+  ngay_quyet_dinh?: string;
 };
+
+type BienBanFormInput = Omit<
+  NhaDaiDoanKetFormInput,
+  | 'noi_dung_ho_tro'
+  | 'nam'
+  | 'nguon'
+  | 'nguon_ho_tro'
+  | 'ho_ngheo_id'
+  | 'ho_ten_chu_ho'
+  | 'xa_phuong_id'
+  | 'khoi_xom'
+  | 'doi_tuong'
+  | 'loai_hinh_ho_tro'
+  | 'so_tien'
+  | 'trang_thai'
+  | 'ghi_chu'
+>;
+
+const numToInput = (n: number | null | undefined): string => (n == null ? '' : String(n));
+
+function bienBanToFormInput(row: NhaDaiDoanKet | null): BienBanFormInput {
+  const b = row?.bien_ban;
+  const tp = b?.thanh_phan_kiem_tra ?? emptyThanhPhanKiemTra();
+  return {
+    ngay_khao_sat: b?.ngay_khao_sat ?? '',
+    hien_trang_nha: b?.hien_trang_nha ?? '',
+    hoan_canh_gia_dinh: b?.hoan_canh_gia_dinh ?? '',
+    nhu_cau_ho_tro: b?.nhu_cau_ho_tro ?? '',
+    ghi_chu_khao_sat: b?.ghi_chu_khao_sat ?? '',
+    ngay_kiem_tra_hoan_thanh: b?.ngay_kiem_tra_hoan_thanh ?? '',
+    thanh_phan_kiem_tra: {
+      bcd: { ...tp.bcd },
+      ubnd: { ...tp.ubnd },
+      mttq: { ...tp.mttq },
+      thon: tp.thon.map((p) => ({ ...p })),
+    },
+    dien_tich_san: numToInput(b?.dien_tich_san),
+    phan_nen: b?.phan_nen ?? '',
+    phan_mai: b?.phan_mai ?? '',
+    phan_khung_tuong: b?.phan_khung_tuong ?? '',
+    tong_gia_tri: numToInput(b?.tong_gia_tri),
+    nguon_khac: (b?.nguon_khac ?? []).map((x) => ({ ten: x.ten, so_tien: numToInput(x.so_tien) })),
+    ngay_ban_giao: b?.ngay_ban_giao ?? '',
+    dia_diem_ban_giao: b?.dia_diem_ban_giao ?? '',
+    ban_giao_ho_ten: b?.ban_giao_ho_ten ?? '',
+    ban_giao_chuc_vu: b?.ban_giao_chuc_vu ?? '',
+    lam_chung_ho_ten: b?.lam_chung_ho_ten ?? '',
+    lam_chung_chuc_vu: b?.lam_chung_chuc_vu ?? '',
+    so_quyet_dinh: b?.so_quyet_dinh ?? '',
+    ngay_quyet_dinh: b?.ngay_quyet_dinh ?? '',
+  };
+}
 
 export function nhaDaiDoanKetToFormInput(row: NhaDaiDoanKet | null): NhaDaiDoanKetFormInput {
   if (!row) {
@@ -137,6 +312,7 @@ export function nhaDaiDoanKetToFormInput(row: NhaDaiDoanKet | null): NhaDaiDoanK
       so_tien: '',
       trang_thai: NDDK_TRANG_THAI_DEFAULT,
       ghi_chu: '',
+      ...bienBanToFormInput(null),
     };
   }
   return {
@@ -153,5 +329,6 @@ export function nhaDaiDoanKetToFormInput(row: NhaDaiDoanKet | null): NhaDaiDoanK
     so_tien: row.so_tien == null ? '' : String(row.so_tien),
     trang_thai: row.trang_thai ?? NDDK_TRANG_THAI_DEFAULT,
     ghi_chu: row.ghi_chu ?? '',
+    ...bienBanToFormInput(row),
   };
 }

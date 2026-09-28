@@ -80,6 +80,9 @@ const DtTgThongKeToChucCaNhanPage = lazy(() => import('./features/dan-toc-ton-gi
 // Nhà đại đoàn kết — hai trang thật, thay cho nhóm placeholder cũ.
 const KhenThuongNhaTaiTroPage = lazy(() => import('./features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/index'));
 const NhaDaiDoanKetPage = lazy(() => import('./features/nha-dai-doan-ket/danh-sach/index'));
+const NddkInBienBanPage = lazy(
+  () => import('./features/nha-dai-doan-ket/danh-sach/pages/nddk-in-bien-ban-page'),
+);
 const ViNguoiNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/vi-nguoi-ngheo/index'));
 const ThongTinHoNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/thong-tin-ho-ngheo/index'));
 
@@ -261,6 +264,10 @@ const App = () => {
           */}
           <Route path="/an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach" element={<KhenThuongNhaTaiTroPage />} />
           <Route path="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach" element={<NhaDaiDoanKetPage />} />
+          <Route
+            path="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach/:nddkId/in/:loaiPhieu"
+            element={<NddkInBienBanPage />}
+          />
           <Route path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach" element={<ViNguoiNgheoPage />} />
           <Route path="/an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach" element={<ThongTinHoNgheoPage />} />
           {/* Thống kê nay là một tab của Danh sách — giữ link cũ khỏi chết. */}

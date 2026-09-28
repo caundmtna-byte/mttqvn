@@ -17,6 +17,7 @@ import {
   User,
   Users,
   ExternalLink,
+  Printer,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -38,6 +39,8 @@ import {
 } from '../core/display-badges';
 import { useUpdateNhaDaiDoanKetTrangThai } from '../hooks/use-nha-dai-doan-ket';
 import NddkChuyenTrangThaiDialog from './nddk-chuyen-trang-thai-dialog';
+import NddkChonPhieuInDialog from './nddk-chon-phieu-in-dialog';
+import NddkBienBanDetailSections from './nddk-bien-ban-detail-sections';
 import type { NhaDaiDoanKetStatusChangeValues } from '../core/schema';
 import {
   formatNddkDateTimeDisplay,
@@ -61,6 +64,7 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const soTienLabel = formatNddkSoTienDisplay(data.so_tien);
 
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
   const statusMutation = useUpdateNhaDaiDoanKetTrangThai();
 
   /**
@@ -71,17 +75,26 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
    * liệu phải tự đẩy hồ sơ qua các bước khảo sát → thực hiện → bàn giao. Riêng
    * "Đã phê duyệt" bị lọc khỏi danh sách bên trong hộp thoại khi thiếu quyền
    * Duyệt, và DB chặn lần nữa bằng trigger `fn_nddk_kiem_quyen_phe_duyet`.
+   *
+   * Nút In chỉ cần quyền xem — đã mở được màn chi tiết là đã có quyền đó.
    */
   const toolbarActions: DetailToolbarAction[] = useMemo(() => {
-    if (!canEdit) return [];
-    return [
-      {
+    const actions: DetailToolbarAction[] = [];
+    if (canEdit) {
+      actions.push({
         label: txt('nhaDaiDoanKet.detail.actionChangeStatus'),
         icon: <ArrowRightLeft size={16} />,
         variant: 'info' as const,
         onClick: () => setStatusModalOpen(true),
-      },
-    ];
+      });
+    }
+    actions.push({
+      label: txt('nhaDaiDoanKet.printPreview.actionPrint'),
+      icon: <Printer size={16} />,
+      variant: 'info' as const,
+      onClick: () => setPrintOpen(true),
+    });
+    return actions;
   }, [canEdit]);
 
   const statusInitial: NhaDaiDoanKetStatusChangeValues = useMemo(
@@ -332,6 +345,8 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
           </DetailFieldGrid>
         </DetailSection>
 
+        <NddkBienBanDetailSections nddkId={data.id} />
+
         <DetailSection
           title={txt('nhaDaiDoanKet.form.sectionTrangThai')}
           icon={<ListChecks size={14} />}
@@ -414,6 +429,13 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
         canApprove={canApprove}
         isSubmitting={statusMutation.isPending}
         onSave={handleStatusSave}
+      />
+
+      <NddkChonPhieuInDialog
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        nddkId={data.id}
+        hoTenChuHo={data.ho_ten_chu_ho}
       />
     </GenericDrawer>
   );

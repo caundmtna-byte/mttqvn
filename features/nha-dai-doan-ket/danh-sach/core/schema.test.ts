@@ -51,3 +51,60 @@ describe('số tiền hồ sơ Nhà đại đoàn kết', () => {
     expect(soTien('năm trăm triệu').success).toBe(false);
   });
 });
+
+describe('dữ liệu biên bản', () => {
+  const rong = { ho_ten: '', chuc_vu: '' };
+
+  it('thành phần kiểm tra toàn rỗng ⇒ lưu NULL; dòng thôn rỗng bị bỏ', () => {
+    const tatCaRong = nhaDaiDoanKetSchema.safeParse({
+      ...HO_SO_HOP_LE,
+      thanh_phan_kiem_tra: { bcd: rong, ubnd: rong, mttq: rong, thon: [rong] },
+    });
+    expect(tatCaRong.data?.thanh_phan_kiem_tra).toBeUndefined();
+
+    const coNguoi = nhaDaiDoanKetSchema.safeParse({
+      ...HO_SO_HOP_LE,
+      thanh_phan_kiem_tra: {
+        bcd: { ho_ten: ' Lê Văn A ', chuc_vu: '' },
+        ubnd: rong,
+        mttq: rong,
+        thon: [rong, { ho_ten: 'Lò Văn B', chuc_vu: 'Xóm trưởng' }],
+      },
+    });
+    expect(coNguoi.data?.thanh_phan_kiem_tra?.bcd.ho_ten).toBe('Lê Văn A');
+    expect(coNguoi.data?.thanh_phan_kiem_tra?.thon).toEqual([
+      { ho_ten: 'Lò Văn B', chuc_vu: 'Xóm trưởng' },
+    ]);
+  });
+
+  it('nguồn khác: bỏ dòng rỗng, tiền âm bị chặn, quá 3 dòng bị chặn (CHECK ≤ 3)', () => {
+    const r = nhaDaiDoanKetSchema.safeParse({
+      ...HO_SO_HOP_LE,
+      nguon_khac: [
+        { ten: '', so_tien: '' },
+        { ten: 'Gia đình', so_tien: '30.000.000' },
+      ],
+    });
+    expect(r.data?.nguon_khac).toEqual([{ ten: 'Gia đình', so_tien: 30_000_000 }]);
+    expect(
+      nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, nguon_khac: [{ ten: '', so_tien: '' }] }).data
+        ?.nguon_khac,
+    ).toBeUndefined();
+    expect(
+      nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, nguon_khac: [{ ten: 'X', so_tien: '-5' }] })
+        .success,
+    ).toBe(false);
+    const bon = Array.from({ length: 4 }, () => ({ ten: 'X', so_tien: '1' }));
+    expect(nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, nguon_khac: bon }).success).toBe(false);
+  });
+
+  it('diện tích nhận dấu phẩy thập phân; ngày sai định dạng bị chặn', () => {
+    expect(
+      nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, dien_tich_san: '45,5' }).data?.dien_tich_san,
+    ).toBe(45.5);
+    expect(nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, dien_tich_san: '-1' }).success).toBe(false);
+    expect(nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, ngay_ban_giao: '05/10/2026' }).success).toBe(
+      false,
+    );
+  });
+});

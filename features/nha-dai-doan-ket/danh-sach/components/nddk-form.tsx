@@ -41,7 +41,12 @@ import {
 } from '../core/constants';
 import { nddkTrangThaiChonDuoc } from '../core/quyen-trang-thai';
 import type { NhaDaiDoanKet } from '../core/types';
-import { useCreateNhaDaiDoanKet, useUpdateNhaDaiDoanKet } from '../hooks/use-nha-dai-doan-ket';
+import {
+  useCreateNhaDaiDoanKet,
+  useNhaDaiDoanKetFull,
+  useUpdateNhaDaiDoanKet,
+} from '../hooks/use-nha-dai-doan-ket';
+import NddkBienBanFormSections from './nddk-bien-ban-form-sections';
 import { isNddkScopedToXaPhuong, useNddkViewer } from '../hooks/use-nddk-viewer';
 import { useNddkXaPhuongOptions } from '../hooks/use-nddk-xa-phuong-options';
 import { useVnnHoNgheoOptions } from '../../vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
@@ -57,6 +62,15 @@ interface Props {
 
 const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
   const isEdit = Boolean(initialData);
+  /**
+   * `initialData` thường là dòng của bảng (RPC phân trang) — thiếu dữ liệu biên
+   * bản. Sửa thì phải có bản đầy đủ trước: lưu từ dòng thiếu sẽ ghi rỗng đè lên
+   * dữ liệu thật. Chưa tải xong thì khoá nút Lưu.
+   */
+  const needsFull = isEdit && initialData?.bien_ban === undefined;
+  const { data: fullRow } = useNhaDaiDoanKetFull(initialData?.id, { enabled: needsFull });
+  const sourceRow = needsFull ? (fullRow ?? null) : (initialData ?? null);
+  const waitingFull = needsFull && !fullRow;
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
 
@@ -131,9 +145,14 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
   });
 
   useEffect(() => {
-    const base = nhaDaiDoanKetToFormInput(initialData ?? null);
-    reset(initialData ? base : { ...base, ...prefill });
-  }, [initialData, prefill, reset]);
+    if (isEdit) {
+      if (!sourceRow) return;
+      // Bản đầy đủ về sau khi người dùng đã gõ: giữ các ô họ đã sửa.
+      reset(nhaDaiDoanKetToFormInput(sourceRow), { keepDirtyValues: true });
+      return;
+    }
+    reset({ ...nhaDaiDoanKetToFormInput(null), ...prefill });
+  }, [isEdit, sourceRow, prefill, reset]);
 
   /**
    * Chọn hộ ⇒ điền họ tên / xã / khối xóm / đối tượng theo hộ. Bốn ô đó khoá
@@ -152,6 +171,7 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
   };
 
   const onSubmit: SubmitHandler<NhaDaiDoanKetFormValues> = (parsed) => {
+    if (waitingFull) return;
     if (scopedToXa) {
       const xa = parsed.xa_phuong_id?.trim() ?? '';
       if (!viewer.viewerDonViId || xa !== viewer.viewerDonViId) {
@@ -166,7 +186,8 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
     }
   };
 
-  const pending = isSubmitting || createMutation.isPending || updateMutation.isPending;
+  const pending =
+    isSubmitting || createMutation.isPending || updateMutation.isPending || waitingFull;
 
   return (
     <GenericDrawer
@@ -357,6 +378,13 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
             />
           </FormGrid>
         </FormSection>
+
+        <NddkBienBanFormSections
+          control={control}
+          register={register}
+          setValue={setValue}
+          errors={errors}
+        />
 
         <FormSection
           title={txt('nhaDaiDoanKet.form.sectionTrangThai')}

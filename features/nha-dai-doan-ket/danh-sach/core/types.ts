@@ -3,6 +3,7 @@ import type {
   NddkLoaiHinh,
   NddkNguon,
   NddkNguonHoTro,
+  NddkNhuCauHoTro,
   NddkTrangThai,
 } from './constants';
 
@@ -45,4 +46,61 @@ export interface NhaDaiDoanKet {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /**
+   * Dữ liệu 3 biên bản — CHỈ có khi dòng được đọc bằng `NDDK_SELECT_FULL`
+   * (chi tiết / sửa / in). Dòng từ RPC phân trang không có ⇒ `undefined`,
+   * nghĩa là "chưa tải", KHÔNG phải "trống".
+   */
+  bien_ban?: NddkBienBan;
+}
+
+/** Một người trong biên bản: họ tên + chức vụ, gõ tự do hoặc chọn từ cán bộ MTTQ. */
+export interface NddkNguoiThamGia {
+  ho_ten: string;
+  chuc_vu: string;
+}
+
+/** Mục I "Thành phần kiểm tra" của biên bản hoàn thành (cột jsonb). */
+export interface NddkThanhPhanKiemTra {
+  bcd: NddkNguoiThamGia;
+  ubnd: NddkNguoiThamGia;
+  mttq: NddkNguoiThamGia;
+  /** Đại diện thôn/khối/xóm/bản — tối đa 3. */
+  thon: NddkNguoiThamGia[];
+}
+
+/** Một nguồn ngoài Chương trình trong mục "Tổng giá trị" (cột jsonb). */
+export interface NddkNguonKhac {
+  ten: string;
+  so_tien: number | null;
+}
+
+export interface NddkBienBan {
+  // Phiếu khảo sát
+  /** `YYYY-MM-DD` */
+  ngay_khao_sat: string | null;
+  hien_trang_nha: string | null;
+  hoan_canh_gia_dinh: string | null;
+  nhu_cau_ho_tro: NddkNhuCauHoTro | null;
+  ghi_chu_khao_sat: string | null;
+  // Biên bản kiểm tra hoàn thành
+  ngay_kiem_tra_hoan_thanh: string | null;
+  thanh_phan_kiem_tra: NddkThanhPhanKiemTra | null;
+  /** m² */
+  dien_tich_san: number | null;
+  phan_nen: string | null;
+  phan_mai: string | null;
+  phan_khung_tuong: string | null;
+  /** VND — tổng giá trị công trình, gồm cả phần Chương trình (`so_tien`). */
+  tong_gia_tri: number | null;
+  nguon_khac: NddkNguonKhac[];
+  // Biên bản bàn giao
+  ngay_ban_giao: string | null;
+  dia_diem_ban_giao: string | null;
+  ban_giao_ho_ten: string | null;
+  ban_giao_chuc_vu: string | null;
+  lam_chung_ho_ten: string | null;
+  lam_chung_chuc_vu: string | null;
+  so_quyet_dinh: string | null;
+  ngay_quyet_dinh: string | null;
 }

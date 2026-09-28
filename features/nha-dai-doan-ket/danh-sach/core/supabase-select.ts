@@ -24,4 +24,36 @@ const LIST_COLS = [
 ].join(',');
 
 export const NDDK_SELECT = `${LIST_COLS},${XA_PHUONG},${NGUOI_TAO}`;
-export const NDDK_RETURNING = NDDK_SELECT;
+
+/** Dữ liệu 3 biên bản — chỉ màn chi tiết / sửa / in mới cần. */
+export const NDDK_BIEN_BAN_COLS = [
+  'ngay_khao_sat',
+  'hien_trang_nha',
+  'hoan_canh_gia_dinh',
+  'nhu_cau_ho_tro',
+  'ghi_chu_khao_sat',
+  'ngay_kiem_tra_hoan_thanh',
+  'thanh_phan_kiem_tra',
+  'dien_tich_san',
+  'phan_nen',
+  'phan_mai',
+  'phan_khung_tuong',
+  'tong_gia_tri',
+  'nguon_khac',
+  'ngay_ban_giao',
+  'dia_diem_ban_giao',
+  'ban_giao_ho_ten',
+  'ban_giao_chuc_vu',
+  'lam_chung_ho_ten',
+  'lam_chung_chuc_vu',
+  'so_quyet_dinh',
+  'ngay_quyet_dinh',
+] as const;
+
+/** Một hồ sơ đầy đủ — `getNhaDaiDoanKetById` và `returning` của thêm/sửa. */
+export const NDDK_SELECT_FULL = `${NDDK_SELECT},${NDDK_BIEN_BAN_COLS.join(',')}`;
+/**
+ * Trả về bản ĐẦY ĐỦ: mutation ghi thẳng kết quả vào cache chi tiết, trả thiếu
+ * cột thì màn chi tiết mất dữ liệu biên bản cho tới khi tải lại.
+ */
+export const NDDK_RETURNING = NDDK_SELECT_FULL;

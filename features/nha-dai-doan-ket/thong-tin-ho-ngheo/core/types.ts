@@ -1,7 +1,10 @@
 import type {
   HnghDoiTuong,
+  HnghGioiTinh,
+  HnghTinhTrangDat,
   HnghTonGiao,
   HnghTrangThai,
+  HnghViecLam,
 } from './constants';
 
 export interface HoNgheoFilters {
@@ -38,6 +41,28 @@ export interface HoNgheo {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /**
+   * Nhân khẩu & đời sống — CHỈ có khi dòng được đọc bằng `HNGH_SELECT_FULL`
+   * (chi tiết / sửa / in). Dòng từ RPC phân trang không có ⇒ `undefined`,
+   * nghĩa là "chưa tải", KHÔNG phải "trống".
+   */
+  nhan_khau?: HnghNhanKhau;
+}
+
+/** Thông tin cá nhân chủ hộ in ở phiếu khảo sát / biên bản bàn giao nhà. */
+export interface HnghNhanKhau {
+  gioi_tinh: HnghGioiTinh | null;
+  nam_sinh: number | null;
+  /** `YYYY-MM-DD` */
+  ngay_cap_cccd: string | null;
+  noi_cap_cccd: string | null;
+  ho_ten_vo_chong: string | null;
+  so_nhan_khau: number | null;
+  nghe_nghiep: string | null;
+  trinh_do_hoc_van: string | null;
+  tinh_trang_viec_lam: HnghViecLam | null;
+  doi_tuong_uu_tien: string | null;
+  tinh_trang_dat: HnghTinhTrangDat | null;
 }
 
 /** Một hộ ở tab Thống kê — chỉ cột phân loại (xem `HNGH_SELECT_THONG_KE`). */

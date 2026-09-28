@@ -12,12 +12,13 @@ import type {
   NhaDaiDoanKetFormValues,
   NhaDaiDoanKetStatusChangeValues,
 } from '../core/schema';
-import type { NhaDaiDoanKet } from '../core/types';
+import type { NddkBienBan, NhaDaiDoanKet } from '../core/types';
 import type {
   NddkDoiTuong,
   NddkLoaiHinh,
   NddkNguon,
   NddkNguonHoTro,
+  NddkNhuCauHoTro,
   NddkTrangThai,
 } from '../core/constants';
 import {
@@ -26,7 +27,8 @@ import {
   NDDK_NGUON_HO_TRO_DEFAULT,
   NDDK_TRANG_THAI_DEFAULT,
 } from '../core/constants';
-import { NDDK_RETURNING, NDDK_SELECT } from '../core/supabase-select';
+import { NDDK_RETURNING, NDDK_SELECT, NDDK_SELECT_FULL } from '../core/supabase-select';
+import { parseNguonKhac, parseThanhPhanKiemTra } from '../utils/bien-ban-json';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -63,6 +65,38 @@ function embeddedName(v: unknown): string | null {
   return s === '' ? null : s;
 }
 
+/** Cột `date` về đúng `YYYY-MM-DD`. */
+function nullableDate(v: unknown): string | null {
+  const s = nullableStr(v);
+  return s ? s.slice(0, 10) : null;
+}
+
+function flattenBienBan(r: Record<string, unknown>): NddkBienBan {
+  return {
+    ngay_khao_sat: nullableDate(r.ngay_khao_sat),
+    hien_trang_nha: nullableStr(r.hien_trang_nha),
+    hoan_canh_gia_dinh: nullableStr(r.hoan_canh_gia_dinh),
+    nhu_cau_ho_tro: nullableStr(r.nhu_cau_ho_tro) as NddkNhuCauHoTro | null,
+    ghi_chu_khao_sat: nullableStr(r.ghi_chu_khao_sat),
+    ngay_kiem_tra_hoan_thanh: nullableDate(r.ngay_kiem_tra_hoan_thanh),
+    thanh_phan_kiem_tra: parseThanhPhanKiemTra(r.thanh_phan_kiem_tra),
+    dien_tich_san: nullableNum(r.dien_tich_san),
+    phan_nen: nullableStr(r.phan_nen),
+    phan_mai: nullableStr(r.phan_mai),
+    phan_khung_tuong: nullableStr(r.phan_khung_tuong),
+    tong_gia_tri: nullableNum(r.tong_gia_tri),
+    nguon_khac: parseNguonKhac(r.nguon_khac),
+    ngay_ban_giao: nullableDate(r.ngay_ban_giao),
+    dia_diem_ban_giao: nullableStr(r.dia_diem_ban_giao),
+    ban_giao_ho_ten: nullableStr(r.ban_giao_ho_ten),
+    ban_giao_chuc_vu: nullableStr(r.ban_giao_chuc_vu),
+    lam_chung_ho_ten: nullableStr(r.lam_chung_ho_ten),
+    lam_chung_chuc_vu: nullableStr(r.lam_chung_chuc_vu),
+    so_quyet_dinh: nullableStr(r.so_quyet_dinh),
+    ngay_quyet_dinh: nullableDate(r.ngay_quyet_dinh),
+  };
+}
+
 export function flattenNhaDaiDoanKetRow(row: Record<string, unknown>): NhaDaiDoanKet {
   const xp = pickEmbedded<{ ten?: string }>(row.xa_phuong);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
@@ -93,6 +127,9 @@ export function flattenNhaDaiDoanKetRow(row: Record<string, unknown>): NhaDaiDoa
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    // Dòng từ RPC phân trang / select gọn không có các cột này ⇒ `undefined`
+    // ("chưa tải"). Gán rỗng ở đây thì form sửa sẽ lưu đè rỗng lên dữ liệu thật.
+    bien_ban: 'ngay_khao_sat' in r ? flattenBienBan(r) : undefined,
   };
 }
 
@@ -117,6 +154,28 @@ function formToPayload(data: NhaDaiDoanKetFormValues): Record<string, unknown> {
     so_tien: data.so_tien ?? null,
     trang_thai: data.trang_thai,
     ghi_chu: data.ghi_chu ?? null,
+    // Biên bản — schema đã quy dòng rỗng về undefined.
+    ngay_khao_sat: data.ngay_khao_sat ?? null,
+    hien_trang_nha: data.hien_trang_nha ?? null,
+    hoan_canh_gia_dinh: data.hoan_canh_gia_dinh ?? null,
+    nhu_cau_ho_tro: data.nhu_cau_ho_tro ?? null,
+    ghi_chu_khao_sat: data.ghi_chu_khao_sat ?? null,
+    ngay_kiem_tra_hoan_thanh: data.ngay_kiem_tra_hoan_thanh ?? null,
+    thanh_phan_kiem_tra: data.thanh_phan_kiem_tra ?? null,
+    dien_tich_san: data.dien_tich_san ?? null,
+    phan_nen: data.phan_nen ?? null,
+    phan_mai: data.phan_mai ?? null,
+    phan_khung_tuong: data.phan_khung_tuong ?? null,
+    tong_gia_tri: data.tong_gia_tri ?? null,
+    nguon_khac: data.nguon_khac ?? null,
+    ngay_ban_giao: data.ngay_ban_giao ?? null,
+    dia_diem_ban_giao: data.dia_diem_ban_giao ?? null,
+    ban_giao_ho_ten: data.ban_giao_ho_ten ?? null,
+    ban_giao_chuc_vu: data.ban_giao_chuc_vu ?? null,
+    lam_chung_ho_ten: data.lam_chung_ho_ten ?? null,
+    lam_chung_chuc_vu: data.lam_chung_chuc_vu ?? null,
+    so_quyet_dinh: data.so_quyet_dinh ?? null,
+    ngay_quyet_dinh: data.ngay_quyet_dinh ?? null,
   };
 }
 
@@ -277,7 +336,7 @@ export async function getNhaDaiDoanKetById(id: string): Promise<NhaDaiDoanKet | 
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('nddk_nha_dai_doan_ket')
-    .select(NDDK_SELECT)
+    .select(NDDK_SELECT_FULL)
     .eq('id', id)
     .maybeSingle();
   if (error) handleSupabaseError(error);

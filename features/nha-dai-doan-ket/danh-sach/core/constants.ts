@@ -57,3 +57,25 @@ export const NDDK_NAM_MAX = 2100;
 /** Hai tab của module — giữ mảng ở đây để `useTabSearchParam` memo ổn định. */
 export type NddkMainTab = 'danh_sach' | 'thong_ke';
 export const NDDK_MAIN_TABS = ['danh_sach', 'thong_ke'] as const satisfies readonly NddkMainTab[];
+
+/** Mục 18 phiếu khảo sát — bản sao CHECK `nddk_nhu_cau_ho_tro_chk`. */
+export const NDDK_NHU_CAU_HO_TRO_VALUES = [
+  'Xây dựng nhà lắp ghép',
+  'Gia đình tự xây mới',
+  'Gia đình tự sửa chữa',
+] as const;
+export type NddkNhuCauHoTro = (typeof NDDK_NHU_CAU_HO_TRO_VALUES)[number];
+
+/** Tối đa số dòng — khớp `jsonb_array_length(...) <= 3` dưới DB. */
+export const NDDK_THON_KIEM_TRA_MAX = 3;
+export const NDDK_NGUON_KHAC_MAX = 3;
+
+/** Ba biên bản in được — segment cuối của route `/:id/in/:loaiPhieu`. */
+export const NDDK_LOAI_PHIEU_IN = ['khao-sat', 'hoan-thanh', 'ban-giao'] as const;
+export type NddkLoaiPhieuIn = (typeof NDDK_LOAI_PHIEU_IN)[number];
+
+export function isNddkLoaiPhieuIn(v: unknown): v is NddkLoaiPhieuIn {
+  return typeof v === 'string' && (NDDK_LOAI_PHIEU_IN as readonly string[]).includes(v);
+}
+
+export const NDDK_LIST_PATH = '/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach';

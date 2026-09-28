@@ -40,6 +40,31 @@ export function useNhaDaiDoanKetDetail(id: string | null, options?: { enabled?: 
 }
 
 /**
+ * Một hồ sơ ĐẦY ĐỦ, có dữ liệu 3 biên bản — form sửa, màn chi tiết, trang in.
+ *
+ * Không dùng `useNhaDaiDoanKetDetail`: cache `detail` được mồi bằng dòng của
+ * bảng (RPC phân trang), thiếu các cột biên bản ⇒ `bien_ban === undefined`.
+ */
+export function useNhaDaiDoanKetFull(
+  id: string | null | undefined,
+  options?: { enabled?: boolean },
+) {
+  const key = id?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.nhaDaiDoanKet.full(key || '__'),
+    queryFn: () => getNhaDaiDoanKetById(key),
+    enabled: key !== '' && options?.enabled !== false,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
+/** Kết quả mutation đã là bản đầy đủ (`NDDK_RETURNING`) — ghi vào cả hai cache. */
+function setNddkRowCaches(queryClient: ReturnType<typeof useQueryClient>, row: NhaDaiDoanKet): void {
+  queryClient.setQueryData(queryKeys.nhaDaiDoanKet.detail(row.id), row);
+  queryClient.setQueryData(queryKeys.nhaDaiDoanKet.full(row.id), row);
+}
+
+/**
  * Làm mới các trang đang phân trang phía máy chủ.
  *
  * Mutation chỉ `setQueryData` vào mảng phẳng `listKey`, còn trang danh sách đọc
@@ -62,7 +87,7 @@ export function useCreateNhaDaiDoanKet(onSuccess?: () => void) {
         if (!old) return [created];
         return [created, ...old.filter((r) => r.id !== created.id)];
       });
-      queryClient.setQueryData(queryKeys.nhaDaiDoanKet.detail(created.id), created);
+      setNddkRowCaches(queryClient, created);
       invalidateNddkPages(queryClient);
       toast.success(txt('nhaDaiDoanKet.toast.create'));
       onSuccess?.();
@@ -79,7 +104,7 @@ export function useUpdateNhaDaiDoanKet(onSuccess?: () => void) {
       queryClient.setQueryData<NhaDaiDoanKet[]>(listKey, (old) =>
         old?.map((r) => (r.id === updated.id ? updated : r)),
       );
-      queryClient.setQueryData(queryKeys.nhaDaiDoanKet.detail(updated.id), updated);
+      setNddkRowCaches(queryClient, updated);
       invalidateNddkPages(queryClient);
       toast.success(txt('nhaDaiDoanKet.toast.update'));
       onSuccess?.();
@@ -102,7 +127,7 @@ export function useUpdateNhaDaiDoanKetTrangThai(onSuccess?: () => void) {
       queryClient.setQueryData<NhaDaiDoanKet[]>(listKey, (old) =>
         old?.map((r) => (r.id === updated.id ? updated : r)),
       );
-      queryClient.setQueryData(queryKeys.nhaDaiDoanKet.detail(updated.id), updated);
+      setNddkRowCaches(queryClient, updated);
       invalidateNddkPages(queryClient);
       toast.success(txt('nhaDaiDoanKet.toast.statusChange'));
       onSuccess?.();
@@ -120,6 +145,7 @@ export function useDeleteNhaDaiDoanKetMany() {
       );
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.nhaDaiDoanKet.detail(id) });
+        queryClient.removeQueries({ queryKey: queryKeys.nhaDaiDoanKet.full(id) });
       }
       invalidateNddkPages(queryClient);
       toast.success(txt('nhaDaiDoanKet.toast.delete', { count: ids.length }));

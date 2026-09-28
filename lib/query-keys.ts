@@ -283,6 +283,11 @@ export const queryKeys = {
   hoNgheo: {
     all: ['thong-tin-ho-ngheo'] as const,
     detail: (id: string) => ['thong-tin-ho-ngheo', 'detail', id] as const,
+    /**
+     * Một hộ ĐẦY ĐỦ (có nhân khẩu). Tách khỏi `detail` vì `detail` được mồi
+     * bằng dòng của RPC phân trang — dòng đó thiếu các cột nhân khẩu.
+     */
+    full: (id: string) => ['thong-tin-ho-ngheo', 'full', id] as const,
     page: (args: unknown) => ['thong-tin-ho-ngheo', 'page', args] as const,
     nhaDaiDoanKet: (hoId: string) => ['thong-tin-ho-ngheo', 'nha-ddk', hoId] as const,
     /** Tab Thống kê — toàn bộ hộ trong phạm vi xem, chỉ cột phân loại. */
@@ -291,6 +296,11 @@ export const queryKeys = {
   nhaDaiDoanKet: {
     all: ['nha-dai-doan-ket'] as const,
     detail: (id: string) => ['nha-dai-doan-ket', 'detail', id] as const,
+    /**
+     * Một hồ sơ ĐẦY ĐỦ (có dữ liệu 3 biên bản). Tách khỏi `detail` vì `detail`
+     * được mồi bằng dòng của RPC phân trang — dòng đó thiếu các cột biên bản.
+     */
+    full: (id: string) => ['nha-dai-doan-ket', 'full', id] as const,
     /** Một trang từ RPC `get_nddk_page`. */
     page: (args: unknown) => ['nha-dai-doan-ket', 'page', args] as const,
   },

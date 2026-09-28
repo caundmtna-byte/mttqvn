@@ -35,6 +35,28 @@ export function useHoNgheoDetail(id: string | null, options?: { enabled?: boolea
 }
 
 /**
+ * Một hộ ĐẦY ĐỦ, có nhân khẩu & đời sống — form sửa, màn chi tiết, trang in.
+ *
+ * Không dùng `useHoNgheoDetail`: cache `detail` được mồi bằng dòng của bảng
+ * (RPC phân trang), thiếu các cột nhân khẩu ⇒ `nhan_khau === undefined`.
+ */
+export function useHoNgheoFull(id: string | null | undefined, options?: { enabled?: boolean }) {
+  const key = id?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.hoNgheo.full(key || '__'),
+    queryFn: () => getHoNgheoById(key),
+    enabled: key !== '' && options?.enabled !== false,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
+/** Ghi kết quả mutation (đã là bản đầy đủ — `HNGH_RETURNING`) vào cả hai cache. */
+function setHoNgheoCaches(queryClient: ReturnType<typeof useQueryClient>, row: HoNgheo): void {
+  queryClient.setQueryData(queryKeys.hoNgheo.detail(row.id), row);
+  queryClient.setQueryData(queryKeys.hoNgheo.full(row.id), row);
+}
+
+/**
  * Làm mới các trang đang phân trang phía máy chủ.
  *
  * Trang danh sách đọc key `['thong-tin-ho-ngheo','page',…]` — không invalidate
@@ -83,7 +105,7 @@ export function useCreateHoNgheo(onSuccess?: () => void) {
     mutationFn: ({ data, idNguoiTao }: { data: HoNgheoFormValues; idNguoiTao: string }) =>
       createHoNgheo(data, idNguoiTao),
     onSuccess: (created) => {
-      queryClient.setQueryData(queryKeys.hoNgheo.detail(created.id), created);
+      setHoNgheoCaches(queryClient, created);
       invalidateHoNgheoPages(queryClient);
       toast.success(txt('hoNgheo.toast.create'));
       onSuccess?.();
@@ -101,7 +123,7 @@ export function useUpdateHoNgheo(onSuccess?: () => void) {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: HoNgheoFormValues }) => updateHoNgheo(id, data),
     onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.hoNgheo.detail(updated.id), updated);
+      setHoNgheoCaches(queryClient, updated);
       invalidateHoNgheoPages(queryClient);
       toast.success(txt('hoNgheo.toast.update'));
       onSuccess?.();
@@ -125,7 +147,7 @@ export function useUpdateHoNgheoTrangThai(onSuccess?: () => void) {
     mutationFn: ({ id, data }: { id: string; data: HoNgheoStatusChangeValues }) =>
       updateHoNgheoTrangThai(id, data),
     onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.hoNgheo.detail(updated.id), updated);
+      setHoNgheoCaches(queryClient, updated);
       invalidateHoNgheoPages(queryClient);
       toast.success(txt('hoNgheo.toast.statusChange'));
       onSuccess?.();
@@ -140,6 +162,7 @@ export function useDeleteHoNgheoMany() {
     onSuccess: (_, ids) => {
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.hoNgheo.detail(id) });
+        queryClient.removeQueries({ queryKey: queryKeys.hoNgheo.full(id) });
         queryClient.removeQueries({ queryKey: queryKeys.viNguoiNgheo.byHoNgheo(id) });
       }
       invalidateHoNgheoPages(queryClient);
@@ -179,6 +202,7 @@ export function useImportHoNgheo() {
     onSuccess: (result) => {
       invalidateHoNgheoPages(queryClient);
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'detail'] });
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'full'] });
       // Ô chọn hộ ở form Vì người nghèo / Nhà đại đoàn kết đọc danh sách hộ riêng.
       void queryClient.invalidateQueries({ queryKey: queryKeys.viNguoiNgheo.all });
       if ((result.created ?? 0) + (result.updated ?? 0) > 0) {

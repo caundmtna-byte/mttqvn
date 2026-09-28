@@ -31,6 +31,7 @@ interface Props {
   onEdit: (item: NhaDaiDoanKet) => void;
   onDelete: (id: string) => void;
   onView?: (item: NhaDaiDoanKet) => void;
+  onPrint?: (item: NhaDaiDoanKet) => void;
   emptyTitle?: string;
   emptyDescription?: string;
   serverSidePagination?: boolean;
@@ -46,6 +47,7 @@ const NddkTable = memo(function NddkTable({
   onEdit,
   onDelete,
   onView,
+  onPrint,
   emptyTitle,
   emptyDescription,
   serverSidePagination,
@@ -233,13 +235,14 @@ const NddkTable = memo(function NddkTable({
               onMenuOpenChange={setRowMenuOpenId}
               onEdit={onEdit}
               onDelete={onDelete}
+              onPrint={onPrint}
             />
           );
         default:
           return null;
       }
     },
-    [onEdit, onDelete, rowMenuOpenId],
+    [onEdit, onDelete, onPrint, rowMenuOpenId],
   );
 
   const handleRowClick = useCallback(
@@ -306,12 +309,13 @@ const NddkTable = memo(function NddkTable({
             onMenuOpenChange={setRowMenuOpenId}
             onEdit={onEdit}
             onDelete={onDelete}
+            onPrint={onPrint}
             compact
           />
         </div>
       </div>
     ),
-    [onEdit, onDelete, rowMenuOpenId],
+    [onEdit, onDelete, onPrint, rowMenuOpenId],
   );
 
   return (

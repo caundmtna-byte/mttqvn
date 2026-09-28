@@ -29,7 +29,29 @@ const LIST_COLS = [
 ].join(',');
 
 export const HNGH_SELECT = `${LIST_COLS},${XA_PHUONG},${DAN_TOC},${NGUOI_TAO}`;
-export const HNGH_RETURNING = HNGH_SELECT;
+
+/** Nhân khẩu & đời sống — chỉ màn chi tiết / sửa / in biên bản mới cần. */
+export const HNGH_NHAN_KHAU_COLS = [
+  'gioi_tinh',
+  'nam_sinh',
+  'ngay_cap_cccd',
+  'noi_cap_cccd',
+  'ho_ten_vo_chong',
+  'so_nhan_khau',
+  'nghe_nghiep',
+  'trinh_do_hoc_van',
+  'tinh_trang_viec_lam',
+  'doi_tuong_uu_tien',
+  'tinh_trang_dat',
+] as const;
+
+/** Một hộ đầy đủ — `getHoNgheoById` và `returning` của thêm/sửa. */
+export const HNGH_SELECT_FULL = `${HNGH_SELECT},${HNGH_NHAN_KHAU_COLS.join(',')}`;
+/**
+ * Trả về bản ĐẦY ĐỦ: mutation ghi thẳng kết quả vào cache chi tiết, trả thiếu
+ * cột thì màn chi tiết mất nhân khẩu cho tới khi tải lại.
+ */
+export const HNGH_RETURNING = HNGH_SELECT_FULL;
 
 /**
  * Tab Thống kê: chỉ các cột phân loại. Cố ý KHÔNG kéo số căn cước, số tài khoản,

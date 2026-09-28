@@ -13,6 +13,13 @@ import {
   Landmark,
   CreditCard,
   StickyNote,
+  UserRound,
+  Cake,
+  Calendar,
+  Briefcase,
+  GraduationCap,
+  HeartHandshake,
+  LandPlot,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { toast } from 'sonner';
@@ -34,11 +41,17 @@ import {
 } from '../core/schema';
 import {
   HNGH_DOI_TUONG_VALUES,
+  HNGH_GIOI_TINH_VALUES,
+  HNGH_NAM_SINH_MAX,
+  HNGH_NAM_SINH_MIN,
+  HNGH_SO_NHAN_KHAU_MAX,
+  HNGH_TINH_TRANG_DAT_VALUES,
   HNGH_TON_GIAO_VALUES,
   HNGH_TRANG_THAI_VALUES,
+  HNGH_VIEC_LAM_VALUES,
 } from '../core/constants';
 import type { HoNgheo } from '../core/types';
-import { useCreateHoNgheo, useUpdateHoNgheo } from '../hooks/use-ho-ngheo';
+import { useCreateHoNgheo, useHoNgheoFull, useUpdateHoNgheo } from '../hooks/use-ho-ngheo';
 import { isHoNgheoScopedToXaPhuong, useHoNgheoViewer } from '../hooks/use-ho-ngheo-viewer';
 import { useDanTocOptions } from '../hooks/use-dan-toc-options';
 import { useNddkXaPhuongOptions } from '../../danh-sach/hooks/use-nddk-xa-phuong-options';
@@ -50,8 +63,19 @@ interface Props {
   onClose: () => void;
 }
 
+const toOptions = (values: readonly string[]) => values.map((v) => ({ label: v, value: v }));
+
 const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
   const isEdit = Boolean(initialData);
+  /**
+   * `initialData` thường là dòng của bảng (RPC phân trang) — thiếu nhân khẩu.
+   * Sửa thì phải có bản đầy đủ trước: lưu từ dòng thiếu sẽ ghi rỗng đè lên dữ
+   * liệu thật. Chưa tải xong thì khoá nút Lưu.
+   */
+  const needsFull = isEdit && initialData?.nhan_khau === undefined;
+  const { data: fullRow } = useHoNgheoFull(initialData?.id, { enabled: needsFull });
+  const sourceRow = needsFull ? (fullRow ?? null) : (initialData ?? null);
+  const waitingFull = needsFull && !fullRow;
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
 
@@ -74,6 +98,9 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
     () => HNGH_TRANG_THAI_VALUES.map((v) => ({ label: v, value: v })),
     [],
   );
+  const gioiTinhOptions = useMemo(() => toOptions(HNGH_GIOI_TINH_VALUES), []);
+  const viecLamOptions = useMemo(() => toOptions(HNGH_VIEC_LAM_VALUES), []);
+  const tinhTrangDatOptions = useMemo(() => toOptions(HNGH_TINH_TRANG_DAT_VALUES), []);
 
   const {
     register,
@@ -88,11 +115,13 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   useEffect(() => {
-    const base = hoNgheoToFormInput(initialData ?? null);
-    if (initialData) {
-      reset(base);
+    if (isEdit) {
+      if (!sourceRow) return;
+      // Bản đầy đủ về sau khi người dùng đã gõ: giữ các ô họ đã sửa.
+      reset(hoNgheoToFormInput(sourceRow), { keepDirtyValues: true });
       return;
     }
+    const base = hoNgheoToFormInput(null);
     // Tạo mới: cán bộ cấp xã nhập hộ của chính xã mình — điền sẵn để khỏi phải
     // chọn lại, và combobox cũng chỉ còn đúng xã đó.
     if (scopedToXa && viewer.viewerDonViId) {
@@ -100,9 +129,10 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
       return;
     }
     reset(base);
-  }, [initialData, reset, scopedToXa, viewer.viewerDonViId]);
+  }, [isEdit, sourceRow, reset, scopedToXa, viewer.viewerDonViId]);
 
   const onSubmit: SubmitHandler<HoNgheoFormValues> = async (parsed) => {
+    if (waitingFull) return;
     if (scopedToXa) {
       const xa = parsed.xa_phuong_id?.trim() ?? '';
       if (!viewer.viewerDonViId || xa !== viewer.viewerDonViId) {
@@ -122,7 +152,8 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
     }
   };
 
-  const pending = isSubmitting || createMutation.isPending || updateMutation.isPending;
+  const pending =
+    isSubmitting || createMutation.isPending || updateMutation.isPending || waitingFull;
 
   return (
     <GenericDrawer
@@ -275,6 +306,122 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
               {...register('ngan_hang')}
               error={errors.ngan_hang?.message}
             />
+          </FormGrid>
+        </FormSection>
+
+        <FormSection title={txt('hoNgheo.form.sectionNhanKhau')} icon={<UserRound size={14} />}>
+          <p className="-mt-1 mb-3 text-xs text-muted-foreground">
+            {txt('hoNgheo.form.sectionNhanKhauHint')}
+          </p>
+          <FormGrid cols={2}>
+            <Controller
+              name="gioi_tinh"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={gioiTinhOptions}
+                  value={field.value === '' ? null : (field.value ?? null)}
+                  onChange={(v) => field.onChange(v == null ? '' : String(v))}
+                  label={txt('hoNgheo.store.gioiTinhCol')}
+                  placeholder={txt('hoNgheo.form.chonPlaceholder')}
+                  error={errors.gioi_tinh?.message}
+                  icon={<UserRound size={14} />}
+                  dropdownInPortal
+                />
+              )}
+            />
+            <Input
+              label={txt('hoNgheo.store.namSinhCol')}
+              icon={Cake}
+              type="number"
+              inputMode="numeric"
+              min={HNGH_NAM_SINH_MIN}
+              max={HNGH_NAM_SINH_MAX}
+              {...register('nam_sinh')}
+              error={errors.nam_sinh?.message}
+            />
+            <Input
+              label={txt('hoNgheo.store.ngayCapCccdCol')}
+              icon={Calendar}
+              type="date"
+              {...register('ngay_cap_cccd')}
+              error={errors.ngay_cap_cccd?.message}
+            />
+            <Input
+              label={txt('hoNgheo.store.noiCapCccdCol')}
+              icon={IdCard}
+              {...register('noi_cap_cccd')}
+              error={errors.noi_cap_cccd?.message}
+            />
+            <Input
+              label={txt('hoNgheo.store.hoTenVoChongCol')}
+              icon={HeartHandshake}
+              {...register('ho_ten_vo_chong')}
+              error={errors.ho_ten_vo_chong?.message}
+            />
+            <Input
+              label={txt('hoNgheo.store.soNhanKhauCol')}
+              icon={Users}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={HNGH_SO_NHAN_KHAU_MAX}
+              {...register('so_nhan_khau')}
+              error={errors.so_nhan_khau?.message}
+            />
+            <Input
+              label={txt('hoNgheo.store.ngheNghiepCol')}
+              icon={Briefcase}
+              {...register('nghe_nghiep')}
+              error={errors.nghe_nghiep?.message}
+            />
+            <Input
+              label={txt('hoNgheo.store.trinhDoHocVanCol')}
+              icon={GraduationCap}
+              {...register('trinh_do_hoc_van')}
+              error={errors.trinh_do_hoc_van?.message}
+            />
+            <Controller
+              name="tinh_trang_viec_lam"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={viecLamOptions}
+                  value={field.value === '' ? null : (field.value ?? null)}
+                  onChange={(v) => field.onChange(v == null ? '' : String(v))}
+                  label={txt('hoNgheo.store.viecLamCol')}
+                  placeholder={txt('hoNgheo.form.chonPlaceholder')}
+                  error={errors.tinh_trang_viec_lam?.message}
+                  icon={<Briefcase size={14} />}
+                  dropdownInPortal
+                />
+              )}
+            />
+            <Controller
+              name="tinh_trang_dat"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={tinhTrangDatOptions}
+                  value={field.value === '' ? null : (field.value ?? null)}
+                  onChange={(v) => field.onChange(v == null ? '' : String(v))}
+                  label={txt('hoNgheo.store.tinhTrangDatCol')}
+                  placeholder={txt('hoNgheo.form.chonPlaceholder')}
+                  error={errors.tinh_trang_dat?.message}
+                  icon={<LandPlot size={14} />}
+                  dropdownInPortal
+                />
+              )}
+            />
+            <div className={FORM_GRID_SPAN_FULL}>
+              <Input
+                label={txt('hoNgheo.store.doiTuongUuTienCol')}
+                icon={ListChecks}
+                placeholder={txt('hoNgheo.form.doiTuongUuTienPlaceholder')}
+                {...register('doi_tuong_uu_tien')}
+                error={errors.doi_tuong_uu_tien?.message}
+              />
+            </div>
           </FormGrid>
         </FormSection>
 

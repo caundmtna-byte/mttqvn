@@ -36,6 +36,7 @@ import { useUpdateHoNgheoTrangThai } from '../hooks/use-ho-ngheo';
 import HoNgheoChuyenTrangThaiDialog from './ho-ngheo-chuyen-trang-thai-dialog';
 import HoNgheoHoTroSection from './ho-ngheo-ho-tro-section';
 import HoNgheoNhaSection from './ho-ngheo-nha-section';
+import HoNgheoNhanKhauSection from './ho-ngheo-nhan-khau-section';
 import {
   formatHnghDateTimeDisplay,
   formatHnghDienThoaiDisplay,
@@ -223,6 +224,8 @@ const HoNgheoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
             />
           </DetailFieldGrid>
         </DetailSection>
+
+        <HoNgheoNhanKhauSection hoNgheoId={data.id} />
 
         <HoNgheoHoTroSection hoNgheo={data} />
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Printer, Trash2 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import {
   DataTableRowActions,
@@ -15,6 +15,8 @@ export interface NddkTableRowActionsProps {
   onMenuOpenChange: (id: string | null) => void;
   onEdit: (item: NhaDaiDoanKet) => void;
   onDelete: (id: string) => void;
+  /** Mở popup chọn biên bản in — chỉ cần quyền xem. */
+  onPrint?: (item: NhaDaiDoanKet) => void;
   compact?: boolean;
 }
 
@@ -24,6 +26,7 @@ export function NddkTableRowActions({
   onMenuOpenChange,
   onEdit,
   onDelete,
+  onPrint,
   compact = false,
 }: NddkTableRowActionsProps) {
   const close = () => onMenuOpenChange(null);
@@ -31,6 +34,19 @@ export function NddkTableRowActions({
   const canDelete = useCan('delete', 'nhaDaiDoanKetList');
 
   const overflowItems: RowOverflowMenuItem[] = [
+    ...(onPrint
+      ? [
+          {
+            key: 'print',
+            label: txt('nhaDaiDoanKet.printPreview.actionPrint'),
+            icon: <Printer size={14} />,
+            onClick: () => {
+              onPrint(item);
+              close();
+            },
+          },
+        ]
+      : []),
     ...(canDelete
       ? [
           {

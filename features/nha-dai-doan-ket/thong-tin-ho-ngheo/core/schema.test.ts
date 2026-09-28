@@ -53,6 +53,19 @@ describe('hoNgheoSchema', () => {
     expect(hoNgheoSchema.safeParse({ ...hoHopLe, doi_tuong: 'Hộ nghèo' }).success).toBe(true);
     expect(hoNgheoSchema.safeParse({ ...hoHopLe, doi_tuong: 'Hộ khá' }).success).toBe(false);
   });
+
+  // Khớp CHECK trong 20260928110000_nddk_bien_ban_in.sql.
+  it('nhân khẩu: ô trống ⇒ undefined, số ngoài khoảng CHECK bị chặn', () => {
+    const r = hoNgheoSchema.safeParse({ ...hoHopLe, nam_sinh: '', so_nhan_khau: ' ', gioi_tinh: '' });
+    expect(r.data?.nam_sinh).toBeUndefined();
+    expect(r.data?.so_nhan_khau).toBeUndefined();
+    expect(r.data?.gioi_tinh).toBeUndefined();
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, nam_sinh: '1965' }).data?.nam_sinh).toBe(1965);
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, nam_sinh: '1850' }).success).toBe(false);
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, so_nhan_khau: '-1' }).success).toBe(false);
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, so_nhan_khau: '2.5' }).success).toBe(false);
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, tinh_trang_dat: 'Đất thuê' }).success).toBe(false);
+  });
 });
 
 describe('hoNgheoToFormInput', () => {

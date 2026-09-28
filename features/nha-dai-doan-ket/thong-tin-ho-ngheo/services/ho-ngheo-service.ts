@@ -12,17 +12,25 @@ import type {
   HoNgheoFormValues,
   HoNgheoStatusChangeValues,
 } from '../core/schema';
-import type { HoNgheo, HoNgheoThongKeRow } from '../core/types';
+import type { HnghNhanKhau, HoNgheo, HoNgheoThongKeRow } from '../core/types';
 import type {
   HnghDoiTuong,
+  HnghGioiTinh,
+  HnghTinhTrangDat,
   HnghTonGiao,
   HnghTrangThai,
+  HnghViecLam,
 } from '../core/constants';
 import {
   HNGH_TON_GIAO_DEFAULT,
   HNGH_TRANG_THAI_DEFAULT,
 } from '../core/constants';
-import { HNGH_RETURNING, HNGH_SELECT, HNGH_SELECT_THONG_KE } from '../core/supabase-select';
+import {
+  HNGH_RETURNING,
+  HNGH_SELECT,
+  HNGH_SELECT_FULL,
+  HNGH_SELECT_THONG_KE,
+} from '../core/supabase-select';
 import { fetchAllPages } from '@/lib/supabase/fetch-all-pages';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -43,6 +51,11 @@ function nullableStr(v: unknown): string | null {
   return String(v);
 }
 
+function nullableNum(v: unknown): number | null {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 function nullableFk(v: unknown): number | null {
   if (v == null || v === '') return null;
@@ -53,6 +66,28 @@ function nullableFk(v: unknown): number | null {
 function embeddedName(v: unknown): string | null {
   const s = v == null ? '' : String(v).trim();
   return s === '' ? null : s;
+}
+
+/** Cột `date` về đúng `YYYY-MM-DD` (PostgREST có thể trả kèm giờ nếu cột đổi kiểu). */
+function nullableDate(v: unknown): string | null {
+  const s = nullableStr(v);
+  return s ? s.slice(0, 10) : null;
+}
+
+function flattenNhanKhau(r: Record<string, unknown>): HnghNhanKhau {
+  return {
+    gioi_tinh: nullableStr(r.gioi_tinh) as HnghGioiTinh | null,
+    nam_sinh: nullableNum(r.nam_sinh),
+    ngay_cap_cccd: nullableDate(r.ngay_cap_cccd),
+    noi_cap_cccd: nullableStr(r.noi_cap_cccd),
+    ho_ten_vo_chong: nullableStr(r.ho_ten_vo_chong),
+    so_nhan_khau: nullableNum(r.so_nhan_khau),
+    nghe_nghiep: nullableStr(r.nghe_nghiep),
+    trinh_do_hoc_van: nullableStr(r.trinh_do_hoc_van),
+    tinh_trang_viec_lam: nullableStr(r.tinh_trang_viec_lam) as HnghViecLam | null,
+    doi_tuong_uu_tien: nullableStr(r.doi_tuong_uu_tien),
+    tinh_trang_dat: nullableStr(r.tinh_trang_dat) as HnghTinhTrangDat | null,
+  };
 }
 
 export function flattenHoNgheoRow(row: Record<string, unknown>): HoNgheo {
@@ -82,6 +117,9 @@ export function flattenHoNgheoRow(row: Record<string, unknown>): HoNgheo {
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: embeddedName(nv?.ho_va_ten),
     ten_tai_khoan_nguoi_tao: embeddedName(nv?.ten_tai_khoan),
+    // Dòng từ RPC phân trang / select gọn không có các cột này ⇒ để `undefined`
+    // ("chưa tải"). Gán null ở đây thì form sửa sẽ lưu đè rỗng lên dữ liệu thật.
+    nhan_khau: 'gioi_tinh' in r ? flattenNhanKhau(r) : undefined,
   };
 }
 
@@ -100,6 +138,17 @@ export function formToPayload(data: HoNgheoFormValues): Record<string, unknown> 
     ngan_hang: data.ngan_hang ?? null,
     trang_thai: data.trang_thai,
     ghi_chu: data.ghi_chu ?? null,
+    gioi_tinh: data.gioi_tinh ?? null,
+    nam_sinh: data.nam_sinh ?? null,
+    ngay_cap_cccd: data.ngay_cap_cccd ?? null,
+    noi_cap_cccd: data.noi_cap_cccd ?? null,
+    ho_ten_vo_chong: data.ho_ten_vo_chong ?? null,
+    so_nhan_khau: data.so_nhan_khau ?? null,
+    nghe_nghiep: data.nghe_nghiep ?? null,
+    trinh_do_hoc_van: data.trinh_do_hoc_van ?? null,
+    tinh_trang_viec_lam: data.tinh_trang_viec_lam ?? null,
+    doi_tuong_uu_tien: data.doi_tuong_uu_tien ?? null,
+    tinh_trang_dat: data.tinh_trang_dat ?? null,
   };
 }
 
@@ -296,7 +345,7 @@ export async function getHoNgheoById(id: string): Promise<HoNgheo | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('hngh_thong_tin_ho_ngheo')
-    .select(HNGH_SELECT)
+    .select(HNGH_SELECT_FULL)
     .eq('id', id)
     .maybeSingle();
   if (error) handleSupabaseError(error);

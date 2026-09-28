@@ -46,6 +46,7 @@ import NddkToolbar from './components/nddk-toolbar';
 import NddkThongKePanel from './components/nddk-thong-ke-panel';
 import { NDDK_MAIN_TABS } from './core/constants';
 import NddkTable from './components/nddk-table';
+import NddkChonPhieuInDialog from './components/nddk-chon-phieu-in-dialog';
 
 const NddkForm = lazy(() => import('./components/nddk-form'));
 const NddkDetail = lazy(() => import('./components/nddk-detail'));
@@ -99,6 +100,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
   const [editing, setEditing] = useState<NhaDaiDoanKet | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
+  const [printingRow, setPrintingRow] = useState<NhaDaiDoanKet | null>(null);
 
   const {
     searchTerm,
@@ -419,6 +421,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
               onEdit={handleEditFromList}
               onDelete={handleDelete}
               onView={handleView}
+              onPrint={setPrintingRow}
               emptyTitle={emptyTitleResolved}
               serverSidePagination
               serverTotalRecords={listTotal}
@@ -447,6 +450,17 @@ const NhaDaiDoanKetPage: React.FC = () => {
               onDelete={handleDelete}
             />
           </Suspense>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {printingRow && (
+          <NddkChonPhieuInDialog
+            open
+            onClose={() => setPrintingRow(null)}
+            nddkId={printingRow.id}
+            hoTenChuHo={printingRow.ho_ten_chu_ho}
+          />
         )}
       </AnimatePresence>
 
