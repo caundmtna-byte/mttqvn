@@ -24,6 +24,7 @@ import {
   Ruler,
   StickyNote,
   Tag,
+  Target,
   Trash2,
   User,
   Warehouse,
@@ -52,7 +53,14 @@ import { useKhoDanhSachHangHoaList } from '@/features/mat-tran-to-quoc/hang-hoa/
 import { nhapXuatKhoFormSchema, type NhapXuatKhoCtLineFormValues, type NhapXuatKhoFormValues } from '../core/schema';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 import type { NhapXuatKhoDetail } from '../core/types';
-import { useCreateNhapXuatKho, useUpdateNhapXuatKho, useTonKhoByKho, useLastDonGiaMap } from '../hooks/use-kho-nhap-xuat-kho';
+import {
+  useCreateNhapXuatKho,
+  useUpdateNhapXuatKho,
+  useTonKhoByKho,
+  useLastDonGiaMap,
+  useNhapXuatKhoMucDichGoiY,
+} from '../hooks/use-kho-nhap-xuat-kho';
+import { buildMucDichOptions } from '../utils/muc-dich-goi-y';
 import NhapXuatKhoCtLineDrawer, {
   NHAP_XUAT_KHO_CT_EMPTY_LINE,
   type NhapXuatKhoLineHangHoaOption,
@@ -71,6 +79,7 @@ const DEFAULT_VALUES: NhapXuatKhoFormValues = {
   nguoi_giao_nhan: undefined,
   bo_phan: undefined,
   chung_tu_goc: undefined,
+  muc_dich: undefined,
   chi_tiet: [],
 };
 
@@ -148,6 +157,14 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
     }
   }, [watchedLoaiPhieu, setValue]);
 
+  const watchedMucDich = useWatch({ control, name: 'muc_dich' });
+  const { data: mucDichDaDung } = useNhapXuatKhoMucDichGoiY(watchedLoaiPhieu);
+  const mucDichOpts = useMemo(
+    () =>
+      buildMucDichOptions(watchedLoaiPhieu, mucDichDaDung, watchedMucDich).map((m) => ({ label: m, value: m })),
+    [watchedLoaiPhieu, mucDichDaDung, watchedMucDich],
+  );
+
   const needCheckTonKho = watchedLoaiPhieu === 'xuat_ngoai' || watchedLoaiPhieu === 'chuyen_kho';
   const tonKhoQuery = useTonKhoByKho(watchedKhoXuatId ?? null, { enabled: needCheckTonKho });
   const tonKhoMap = useMemo(() => {
@@ -169,6 +186,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
         nguoi_giao_nhan: initialData.nguoi_giao_nhan ?? undefined,
         bo_phan: initialData.bo_phan ?? undefined,
         chung_tu_goc: initialData.chung_tu_goc ?? undefined,
+        muc_dich: initialData.muc_dich ?? undefined,
         chi_tiet: initialData.chi_tiet.map((c) => ({
           id: c.id,
           hang_hoa_id: c.hang_hoa_id,
@@ -395,6 +413,26 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 error={errors.ngay_phieu?.message}
                 required
               />
+              <div className={FORM_GRID_SPAN_FULL}>
+                <Controller
+                  name="muc_dich"
+                  control={control}
+                  render={({ field }) => (
+                    <Combobox
+                      label={txt('matTranNhapXuatKho.form.mucDich')}
+                      options={mucDichOpts}
+                      value={field.value ?? ''}
+                      onChange={(v) => field.onChange(v == null || v === '' ? undefined : String(v))}
+                      placeholder={txt('matTranNhapXuatKho.form.mucDichPlaceholder')}
+                      error={errors.muc_dich?.message}
+                      icon={<Target size={12} />}
+                      creatable
+                      creatableActionLabel={(s) => txt('matTranNhapXuatKho.form.mucDichThem', { ten: s })}
+                      dropdownInPortal
+                    />
+                  )}
+                />
+              </div>
               <div className={FORM_GRID_SPAN_FULL}>
                 <p className="text-xs text-muted-foreground">
                   <EnumBadge value={watchedLoaiPhieu} config={loaiBadge} shape="pill" />{' '}

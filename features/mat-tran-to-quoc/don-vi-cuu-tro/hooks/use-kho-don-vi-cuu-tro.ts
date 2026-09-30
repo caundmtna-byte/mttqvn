@@ -40,7 +40,9 @@ export function useCreateKhoDonViCuuTro(onSuccess?: () => void) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: KhoDonViCuuTroFormValues) => createKhoDonViCuuTro(data),
-    onSuccess: (created) => {
+    onSuccess: (inserted) => {
+      // Đơn vị mới chưa có khoản ủng hộ nào.
+      const created: KhoDonViCuuTroListRow = { ...inserted, ket_qua_ung_ho: 0 };
       queryClient.setQueryData<KhoDonViCuuTroListRow[]>(listKey, (old) => {
         if (!old) return [created];
         const rest = old.filter((r) => r.id !== created.id);
@@ -62,14 +64,21 @@ export function useUpdateKhoDonViCuuTro(onSuccess?: () => void) {
     onSuccess: (updated) => {
       const prev = queryClient.getQueryData<KhoDonViCuuTroListRow[]>(listKey);
       if (prev) {
+        // RETURNING không có tổng ủng hộ — giữ số cũ, sửa hồ sơ không làm đổi tổng.
         queryClient.setQueryData<KhoDonViCuuTroListRow[]>(
           listKey,
-          prev.map((r) => (r.id === updated.id ? updated : r)),
+          prev.map((r) => (r.id === updated.id ? { ...updated, ket_qua_ung_ho: r.ket_qua_ung_ho } : r)),
         );
       } else {
         void queryClient.invalidateQueries({ queryKey: listKey });
       }
-      queryClient.setQueryData(queryKeys.khoDonViCuuTro.detail(updated.id), updated);
+      queryClient.setQueryData<KhoDonViCuuTroListRow | null>(
+        queryKeys.khoDonViCuuTro.detail(updated.id),
+        (old) => ({
+          ...updated,
+          ket_qua_ung_ho: old?.ket_qua_ung_ho ?? prev?.find((r) => r.id === updated.id)?.ket_qua_ung_ho ?? null,
+        }),
+      );
       toast.success(txt('matTranDonViCuuTro.toast.update'));
       onSuccess?.();
     },

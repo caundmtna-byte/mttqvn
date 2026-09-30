@@ -34,6 +34,7 @@ export function parentToFormValues(
     nguoi_giao_nhan: d.nguoi_giao_nhan ?? undefined,
     bo_phan: d.bo_phan ?? undefined,
     chung_tu_goc: d.chung_tu_goc ?? undefined,
+    muc_dich: d.muc_dich ?? undefined,
     chi_tiet: chiLines,
   };
 }

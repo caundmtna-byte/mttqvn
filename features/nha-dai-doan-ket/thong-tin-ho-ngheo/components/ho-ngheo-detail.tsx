@@ -29,6 +29,7 @@ import DetailToolbar, { type DetailToolbarAction } from '@/components/shared/Det
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
+import { formatDetailDate } from '@/lib/display-format';
 import type { HoNgheo } from '../core/types';
 import type { HoNgheoStatusChangeValues } from '../core/schema';
 import { hnghDoiTuongBadge, hnghTonGiaoBadge, hnghTrangThaiBadge } from '../core/display-badges';
@@ -40,7 +41,6 @@ import HoNgheoNhanKhauSection from './ho-ngheo-nhan-khau-section';
 import {
   formatHnghDateTimeDisplay,
   formatHnghDienThoaiDisplay,
-  formatHnghNgayDisplay,
   formatHnghNguoiTaoDisplay,
   trimmedHnghDisplay,
 } from '../utils/display-format';
@@ -199,6 +199,33 @@ const HoNgheoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
           </DetailFieldGrid>
         </DetailSection>
 
+        <DetailSection title={txt('hoNgheo.form.sectionTrangThai')} icon={<ListChecks size={14} />}>
+          <DetailFieldGrid>
+            <DetailField
+              label={txt('hoNgheo.store.trangThaiCol')}
+              icon={<ListChecks size={12} />}
+              value={
+                data.trang_thai?.trim() ? (
+                  <EnumBadge value={data.trang_thai.trim()} config={hnghTrangThaiBadge} shape="pill" truncate />
+                ) : (
+                  emptyCell
+                )
+              }
+            />
+            <DetailField
+              label={txt('hoNgheo.form.ngayTrangThaiLabel')}
+              icon={<CalendarClock size={12} />}
+              value={
+                formatDetailDate(data.ngay_cap_nhat_trang_thai) ? (
+                  <span className="tabular-nums">{formatDetailDate(data.ngay_cap_nhat_trang_thai)}</span>
+                ) : (
+                  emptyCell
+                )
+              }
+            />
+          </DetailFieldGrid>
+        </DetailSection>
+
         <DetailSection title={txt('hoNgheo.detail.sectionLienHe')} icon={<Phone size={14} />}>
           <DetailFieldGrid>
             <DetailField
@@ -233,11 +260,6 @@ const HoNgheoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
 
         <DetailSection title={txt('hoNgheo.detail.systemInfo')} icon={<Clock size={14} />}>
           <DetailFieldGrid>
-            <DetailField
-              label={txt('hoNgheo.store.ngayTrangThaiCol')}
-              icon={<CalendarClock size={12} />}
-              value={formatHnghNgayDisplay(data.ngay_cap_nhat_trang_thai) || emptyCell}
-            />
             <DetailField
               label={txt('hoNgheo.store.nguoiTaoCol')}
               icon={<User size={12} />}

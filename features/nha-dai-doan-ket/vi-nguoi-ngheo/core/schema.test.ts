@@ -35,10 +35,41 @@ describe('viNguoiNgheoSchema', () => {
     expect(parse({ so_tien: '500,000' }).data?.so_tien).toBe(500_000);
   });
 
-  it('để trống số tiền là hợp lệ — khoản chỉ có quà', () => {
-    const r = parse({ so_tien: '', hinh_thuc_ho_tro: 'Quà' });
+  it('để trống số tiền là hợp lệ — khoản chỉ có hiện vật', () => {
+    const r = parse({ so_tien: '', hinh_thuc_ho_tro: 'Hiện vật' });
     expect(r.success).toBe(true);
     expect(r.data!.so_tien).toBeUndefined();
+  });
+
+  it('"Quà" cũ không còn là hình thức hợp lệ — đã đổi thành "Hiện vật"', () => {
+    expect(parse({ hinh_thuc_ho_tro: 'Quà' }).success).toBe(false);
+    expect(parse({ hinh_thuc_ho_tro: 'Quà và Tiền' }).success).toBe(false);
+  });
+
+  it('hình thức có hiện vật giữ số lượng + hai tổng tiền', () => {
+    for (const hinh_thuc_ho_tro of ['Hiện vật', 'Hiện vật và Tiền']) {
+      const r = parse({
+        hinh_thuc_ho_tro,
+        so_luong: '10',
+        tong_tien_quy_doi: '2.000.000',
+        tong_tien_ban_giao: '1.800.000',
+      });
+      expect(r.success).toBe(true);
+      expect(r.data).toMatchObject({ so_luong: 10, tong_tien_quy_doi: 2_000_000, tong_tien_ban_giao: 1_800_000 });
+    }
+  });
+
+  it('tiền mặt ⇒ bỏ số hiện vật còn sót (ô đã ẩn), gửi NULL', () => {
+    const r = parse({ hinh_thuc_ho_tro: 'Tiền mặt', so_luong: '10', tong_tien_quy_doi: '2000000' });
+    expect(r.success).toBe(true);
+    expect(r.data!.so_luong).toBeUndefined();
+    expect(r.data!.tong_tien_quy_doi).toBeUndefined();
+    expect(r.data!.tong_tien_ban_giao).toBeUndefined();
+  });
+
+  it('số lượng lẻ hoặc âm bị từ chối', () => {
+    expect(parse({ hinh_thuc_ho_tro: 'Hiện vật', so_luong: '1,5' }).success).toBe(false);
+    expect(parse({ hinh_thuc_ho_tro: 'Hiện vật', so_luong: '-2' }).success).toBe(false);
   });
 
   it('số âm và chữ bị từ chối', () => {
@@ -71,13 +102,17 @@ describe('viNguoiNgheoSchema', () => {
  * chọn một giá trị mà DB từ chối — test này giữ hai bên khớp.
  */
 describe('danh mục khớp CHECK trong migration', () => {
-  const sql = readFileSync(
-    resolve(__dirname, '../../../../supabase/migrations/20260923100000_vnn_chuong_trinh_vi_nguoi_ngheo.sql'),
-    'utf8',
-  );
+  // Theo thứ tự thời gian — CHECK đặt lại ở migration sau thắng.
+  const sql = [
+    '20260923100000_vnn_chuong_trinh_vi_nguoi_ngheo.sql',
+    '20260930101000_vnn_hien_vat.sql',
+  ]
+    .map((f) => readFileSync(resolve(__dirname, '../../../../supabase/migrations', f), 'utf8'))
+    .join('\n');
 
   function checkValues(col: string): string[] {
-    const m = sql.match(new RegExp(`CHECK \\((?:${col} IS NULL OR )?${col} IN \\(([^)]*)\\)`));
+    const all = [...sql.matchAll(new RegExp(`CHECK \\((?:${col} IS NULL OR )?${col} IN \\(([^)]*)\\)`, 'g'))];
+    const m = all.at(-1);
     if (!m) throw new Error(`Không thấy CHECK của cột ${col}`);
     return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
   }

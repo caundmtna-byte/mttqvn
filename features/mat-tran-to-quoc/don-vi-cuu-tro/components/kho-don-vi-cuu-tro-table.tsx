@@ -6,7 +6,7 @@ import { buildKhoDonViCuuTroLoaiBadgeConfig, isKhoDonViCuuTroCaNhan } from '../c
 import type { KhoDonViCuuTroListRow } from '../core/types';
 import { useKhoDonViCuuTroStore } from '../store/useKhoDonViCuuTroStore';
 import GenericTable from '@/components/shared/GenericTable';
-import { formatDateTimeShort } from '@/lib/utils';
+import { formatDateTimeShort, formatDecimal } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { KhoDonViCuuTroTableRowActions } from './kho-don-vi-cuu-tro-table-row-actions';
@@ -135,6 +135,12 @@ const KhoDonViCuuTroTable = memo(function KhoDonViCuuTroTable({
           return (
             <span className="text-body-sm text-muted-foreground truncate" title={item.dia_chi ?? undefined}>
               {item.dia_chi ?? txt('common.emptyCell')}
+            </span>
+          );
+        case 'ket_qua_ung_ho':
+          return (
+            <span className="block w-full text-right text-body-sm tabular-nums">
+              {item.ket_qua_ung_ho == null ? txt('common.emptyCell') : formatDecimal(item.ket_qua_ung_ho, 0)}
             </span>
           );
         case 'dien_thoai':

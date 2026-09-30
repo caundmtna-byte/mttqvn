@@ -2,15 +2,13 @@ import { txt } from '@/lib/text';
 import { findRefStrict, type NamedRef } from '@/lib/data/import-cells';
 
 /**
- * "Đơn vị giới thiệu" — MỘT ô chọn trên form, HAI cột dưới DB.
- *
- * DB tách hai cột để phân biệt rõ ba trạng thái; một khoá ngoại nullable đơn độc
- * sẽ trộn "MTTQ tỉnh giới thiệu" với "chưa ai nhập":
- *   (null, null)          → chưa nhập
- *   ('tinh', null)        → MTTQ tỉnh
+ * "Đơn vị giới thiệu" — MỘT ô chọn trên form, HAI cột dưới DB. Bắt buộc:
+ * không chọn xã/phường nào thì là MTTQ tỉnh.
+ *   ('tinh', null)        → MTTQ tỉnh (mặc định)
  *   ('xa_phuong', <id>)   → một xã/phường cụ thể
  *
- * Trên form chỉ có một chuỗi: '' | DON_VI_GIOI_THIEU_TINH | '<id xã/phường>'.
+ * Trên form chỉ có một chuỗi: DON_VI_GIOI_THIEU_TINH | '<id xã/phường>'
+ * ('' — ô trống từ file nhập — cũng quy về MTTQ tỉnh).
  */
 
 export const DON_VI_GIOI_THIEU_LOAI = ['tinh', 'xa_phuong'] as const;
@@ -20,19 +18,17 @@ export type DonViGioiThieuLoai = (typeof DON_VI_GIOI_THIEU_LOAI)[number];
 export const DON_VI_GIOI_THIEU_TINH = '__tinh_cap__';
 
 export interface DonViGioiThieuPayload {
-  don_vi_gioi_thieu_loai: DonViGioiThieuLoai | null;
+  don_vi_gioi_thieu_loai: DonViGioiThieuLoai;
   don_vi_gioi_thieu_id: number | null;
 }
 
 /** Giá trị ô chọn trên form → hai cột gửi lên DB. */
 export function donViGioiThieuToPayload(value: string | null | undefined): DonViGioiThieuPayload {
+  const tinh: DonViGioiThieuPayload = { don_vi_gioi_thieu_loai: 'tinh', don_vi_gioi_thieu_id: null };
   const v = String(value ?? '').trim();
-  if (v === '') return { don_vi_gioi_thieu_loai: null, don_vi_gioi_thieu_id: null };
-  if (v === DON_VI_GIOI_THIEU_TINH) return { don_vi_gioi_thieu_loai: 'tinh', don_vi_gioi_thieu_id: null };
+  if (v === '' || v === DON_VI_GIOI_THIEU_TINH) return tinh;
   const id = Number(v);
-  if (!Number.isFinite(id) || id <= 0) {
-    return { don_vi_gioi_thieu_loai: null, don_vi_gioi_thieu_id: null };
-  }
+  if (!Number.isFinite(id) || id <= 0) return tinh;
   return { don_vi_gioi_thieu_loai: 'xa_phuong', don_vi_gioi_thieu_id: id };
 }
 
@@ -41,9 +37,8 @@ export function donViGioiThieuToFormValue(
   loai: string | null | undefined,
   id: string | number | null | undefined,
 ): string {
-  if (loai === 'tinh') return DON_VI_GIOI_THIEU_TINH;
   if (loai === 'xa_phuong' && id != null && String(id) !== '') return String(id);
-  return '';
+  return DON_VI_GIOI_THIEU_TINH;
 }
 
 /** Chuẩn hoá giá trị `don_vi_gioi_thieu_loai` đọc từ DB. */
@@ -61,9 +56,9 @@ export function donViGioiThieuLabel(
   loai: DonViGioiThieuLoai | null,
   tenXaPhuong: string | null | undefined,
 ): string {
-  if (loai === 'tinh') return txt('matTranDonViCuuTro.tinhCap');
   if (loai === 'xa_phuong') return (tenXaPhuong ?? '').trim();
-  return '';
+  // NULL chỉ còn ở dữ liệu trước migration bắt buộc — cũng là MTTQ tỉnh.
+  return txt('matTranDonViCuuTro.tinhCap');
 }
 
 /* ------------------------------------------------------------------ *
@@ -99,7 +94,7 @@ export function resolveDonViGioiThieuImport(
   xaPhuong: readonly NamedRef[],
 ): DonViGioiThieuImportResult {
   const ten = String(raw ?? '').trim();
-  if (ten === '') return { ok: true, value: '' };
+  if (ten === '') return { ok: true, value: DON_VI_GIOI_THIEU_TINH };
 
   if (TEN_CAP_TINH.has(chuanHoaTenDonVi(ten))) return { ok: true, value: DON_VI_GIOI_THIEU_TINH };
 

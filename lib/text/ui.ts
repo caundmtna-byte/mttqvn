@@ -245,7 +245,7 @@ export const ui = {
       "usernameRequired": "Vui lòng nhập tên tài khoản",
       "usernameMin": "Tên tài khoản phải có ít nhất 2 ký tự",
       "username": "Tên tài khoản",
-      "usernamePlaceholder": "VD: admin",
+      "usernamePlaceholder": "Nhập tài khoản",
       "passwordMin": "Mật khẩu phải có ít nhất 6 ký tự",
       "mockUserName": "Lê Minh Công",
       "loginSuccess": "Đăng nhập thành công!",

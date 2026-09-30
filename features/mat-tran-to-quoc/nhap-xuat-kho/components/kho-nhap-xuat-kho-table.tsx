@@ -167,6 +167,14 @@ const NhapXuatKhoTable = memo(function NhapXuatKhoTable({
           ) : (
             <span className="text-body-sm text-muted-foreground">{txt('common.emptyCell')}</span>
           );
+        case 'muc_dich':
+          return item.muc_dich ? (
+            <span className="truncate text-sm text-foreground" title={item.muc_dich}>
+              {item.muc_dich}
+            </span>
+          ) : (
+            <span className="text-body-sm text-muted-foreground">{txt('common.emptyCell')}</span>
+          );
         case 'ten_dot_cuu_tro':
           return item.ten_dot_cuu_tro ? (
             <div className="flex min-w-0 items-center gap-2">

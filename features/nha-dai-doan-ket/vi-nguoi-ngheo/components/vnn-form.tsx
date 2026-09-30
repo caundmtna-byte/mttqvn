@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   HandHeart,
@@ -7,6 +7,7 @@ import {
   CalendarRange,
   Coins,
   Gift,
+  Package,
   Layers,
   ListChecks,
   MapPin,
@@ -36,6 +37,7 @@ import {
 import {
   VNN_DOI_TUONG_VALUES,
   VNN_HINH_THUC_VALUES,
+  vnnCoHienVat,
   VNN_LINH_VUC_VALUES,
   VNN_NAM_MAX,
   VNN_NAM_MIN,
@@ -119,6 +121,31 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
       ViNguoiNgheoFormValues
     >,
   });
+
+  const coHienVat = vnnCoHienVat(useWatch({ control, name: 'hinh_thuc_ho_tro' }));
+
+  /** Ô tiền để trống là hợp lệ — giữ '' chứ không quy về 0. */
+  const tienInput = (
+    name: 'tong_tien_quy_doi' | 'tong_tien_ban_giao',
+    label: string,
+  ) => (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => (
+        <CurrencyInput
+          label={label}
+          icon={Coins}
+          suffix="đ"
+          value={field.value === '' || field.value == null ? null : field.value}
+          onChange={(n) => field.onChange(n == null ? '' : String(n))}
+          onBlur={field.onBlur}
+          min={0}
+          error={errors[name]?.message}
+        />
+      )}
+    />
+  );
 
   useEffect(() => {
     const base = viNguoiNgheoToFormInput(initialData ?? null);
@@ -317,7 +344,7 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                   icon={Coins}
                   suffix="đ"
                   placeholder={txt('viNguoiNgheo.form.soTienPlaceholder')}
-                  // Ô trống là hợp lệ (khoản chỉ có quà) nên giữ '' chứ không quy về 0.
+                  // Ô trống là hợp lệ (khoản chỉ có hiện vật) nên giữ '' chứ không quy về 0.
                   value={field.value === '' || field.value == null ? null : field.value}
                   onChange={(n) => field.onChange(n == null ? '' : String(n))}
                   onBlur={field.onBlur}
@@ -326,6 +353,19 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                 />
               )}
             />
+            {coHienVat ? (
+              <>
+                <Input
+                  label={txt('viNguoiNgheo.store.soLuongCol')}
+                  icon={Package}
+                  inputMode="numeric"
+                  {...register('so_luong')}
+                  error={errors.so_luong?.message}
+                />
+                {tienInput('tong_tien_quy_doi', txt('viNguoiNgheo.store.tongTienQuyDoiCol'))}
+                {tienInput('tong_tien_ban_giao', txt('viNguoiNgheo.store.tongTienBanGiaoCol'))}
+              </>
+            ) : null}
             <div className={FORM_GRID_SPAN_FULL}>
               <Controller
                 name="don_vi_ho_tro_id"

@@ -39,7 +39,7 @@ function pickEmbedded<T extends Record<string, unknown>>(v: unknown): T | undefi
 export function flattenKhoDonViCuuTroRow(row: Record<string, unknown>): KhoDonViCuuTroListRow {
   const r = row as Record<string, unknown>;
   const loai = parseKhoDonViCuuTroLoai(r.loai);
-  const dvGioiThieuLoai = parseDonViGioiThieuLoai(r.don_vi_gioi_thieu_loai);
+  const dvGioiThieuLoai = parseDonViGioiThieuLoai(r.don_vi_gioi_thieu_loai) ?? 'tinh';
   const xa = pickEmbedded<{ ten?: string }>(r.don_vi_gioi_thieu);
   const tenDonViGioiThieu = nullableStr(xa?.ten);
   return {
@@ -61,6 +61,7 @@ export function flattenKhoDonViCuuTroRow(row: Record<string, unknown>): KhoDonVi
     ghi_chu: nullableStr(r.ghi_chu),
     tg_tao: String(r.tg_tao ?? ''),
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
+    ket_qua_ung_ho: null,
   };
 }
 
@@ -84,9 +85,34 @@ export function khoDonViCuuTroFormToPayload(data: KhoDonViCuuTroFormValues): Rec
   };
 }
 
+/**
+ * "Kết quả ủng hộ (đồng)" theo đơn vị — RPC `get_kho_don_vi_cuu_tro_ket_qua` cộng
+ * giá trị hàng nhập kho + tiền/hiện vật quy đổi ở Chương trình vì hộ nghèo.
+ */
+async function getKhoDonViCuuTroKetQua(donViId?: string): Promise<Map<string, number>> {
+  const supabase = getSupabase();
+  const out = new Map<string, number>();
+  if (!supabase) return out;
+  const { data, error } = await supabase.rpc('get_kho_don_vi_cuu_tro_ket_qua', {
+    p_don_vi_id: donViId ? Number(donViId) : null,
+  });
+  if (error) handleSupabaseError(error);
+  for (const r of (data ?? []) as { don_vi_id: unknown; ket_qua_ung_ho: unknown }[]) {
+    const n = Number(r.ket_qua_ung_ho);
+    out.set(String(r.don_vi_id), Number.isFinite(n) ? n : 0);
+  }
+  return out;
+}
+
 export async function getKhoDonViCuuTroList(): Promise<KhoDonViCuuTroListRow[]> {
-  const list = await repo.getAll({ orderBy: 'tt', ascending: true });
-  return list.map((row) => flattenKhoDonViCuuTroRow(row as unknown as Record<string, unknown>));
+  const [list, ketQua] = await Promise.all([
+    repo.getAll({ orderBy: 'tt', ascending: true }),
+    getKhoDonViCuuTroKetQua(),
+  ]);
+  return list.map((row) => {
+    const flat = flattenKhoDonViCuuTroRow(row as unknown as Record<string, unknown>);
+    return { ...flat, ket_qua_ung_ho: ketQua.get(flat.id) ?? 0 };
+  });
 }
 
 export async function getKhoDonViCuuTroById(id: string): Promise<KhoDonViCuuTroDetail | null> {
@@ -99,7 +125,9 @@ export async function getKhoDonViCuuTroById(id: string): Promise<KhoDonViCuuTroD
     .maybeSingle();
   if (error) handleSupabaseError(error);
   if (!data) return null;
-  return flattenKhoDonViCuuTroRow(data as unknown as Record<string, unknown>);
+  const flat = flattenKhoDonViCuuTroRow(data as unknown as Record<string, unknown>);
+  const ketQua = await getKhoDonViCuuTroKetQua(flat.id);
+  return { ...flat, ket_qua_ung_ho: ketQua.get(flat.id) ?? 0 };
 }
 
 export async function createKhoDonViCuuTro(data: KhoDonViCuuTroFormValues): Promise<KhoDonViCuuTroListRow> {

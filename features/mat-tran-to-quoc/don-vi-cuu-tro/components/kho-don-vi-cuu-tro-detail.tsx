@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BadgeCheck, Building2, Calendar, Edit, FileText, Landmark, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User, Users, UserRound } from 'lucide-react';
+import { BadgeCheck, Building2, Calendar, Edit, FileText, HandCoins, Landmark, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User, Users, UserRound } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -7,7 +7,7 @@ import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/De
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
-import { formatDateTimeShort } from '@/lib/utils';
+import { formatDateTimeShort, formatDecimal } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
@@ -110,6 +110,17 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
             <DetailField label={txt('matTranDonViCuuTro.form.chucVu')} value={data.chuc_vu} icon={<BadgeCheck size={12} />} />
             <DetailField label={txt('matTranDonViCuuTro.form.dienThoai')} value={data.dien_thoai} icon={<Phone size={12} />} />
             <DetailField label={txt('matTranDonViCuuTro.form.diaChi')} value={data.dia_chi} icon={<MapPin size={12} />} />
+            <DetailField
+              label={txt('matTranDonViCuuTro.form.ketQuaUngHo')}
+              value={
+                data.ket_qua_ung_ho == null ? null : (
+                  <span className="tabular-nums" title={txt('matTranDonViCuuTro.form.ketQuaUngHoHint')}>
+                    {formatDecimal(data.ket_qua_ung_ho, 0)}
+                  </span>
+                )
+              }
+              icon={<HandCoins size={12} />}
+            />
             <DetailField
               label={txt('matTranDonViCuuTro.form.donViGioiThieu')}
               value={data.don_vi_gioi_thieu_label || null}

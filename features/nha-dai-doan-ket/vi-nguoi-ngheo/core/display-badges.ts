@@ -26,6 +26,6 @@ export const vnnNguonBadge: BadgeConfig = {
 
 export const vnnHinhThucBadge: BadgeConfig = {
   'Tiền mặt': { label: 'Tiền mặt', color: 'emerald' },
-  'Quà và Tiền': { label: 'Quà và Tiền', color: 'sky' },
-  'Quà': { label: 'Quà', color: 'amber' },
+  'Hiện vật và Tiền': { label: 'Hiện vật và Tiền', color: 'sky' },
+  'Hiện vật': { label: 'Hiện vật', color: 'amber' },
 };

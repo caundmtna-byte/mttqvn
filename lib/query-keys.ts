@@ -246,6 +246,8 @@ export const queryKeys = {
     tonKhoByKho: (khoId: string) => ['kho-nhap-xuat-kho', 'ton-kho-by-kho', khoId] as const,
     /** Đơn giá gần nhất theo hang_hoa_id (lần nhập gần nhất). */
     lastDonGia: ['kho-nhap-xuat-kho', 'last-don-gia'] as const,
+    /** Gợi ý ô "Mục đích" theo loại phiếu (RPC get_kho_nxk_muc_dich_goi_y). */
+    mucDichGoiY: (loaiPhieu: string) => ['kho-nhap-xuat-kho', 'muc-dich-goi-y', loaiPhieu] as const,
   },
   khoTonKho: {
     all: ['kho-ton-kho'] as const,

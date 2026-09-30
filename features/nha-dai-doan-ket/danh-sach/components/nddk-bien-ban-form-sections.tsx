@@ -8,6 +8,7 @@ import {
   type UseFormSetValue,
 } from 'react-hook-form';
 import {
+  BadgeCheck,
   Calendar,
   ClipboardCheck,
   ClipboardList,
@@ -20,6 +21,7 @@ import {
   Ruler,
   StickyNote,
   Trash2,
+  UserRound,
   Users,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -165,11 +167,17 @@ const NddkBienBanFormSections: React.FC<Props> = ({ control, register, setValue,
             chucVuName="thanh_phan_kiem_tra.bcd.chuc_vu"
             {...nguoi}
           />
-          <NddkNguoiThamGiaInput
+          {/* Đại diện UBND không nằm trong danh sách cán bộ MTTQ — gõ tự do. */}
+          <Input
             label={txt('nhaDaiDoanKet.bienBan.daiDienUbnd')}
-            hoTenName="thanh_phan_kiem_tra.ubnd.ho_ten"
-            chucVuName="thanh_phan_kiem_tra.ubnd.chuc_vu"
-            {...nguoi}
+            icon={UserRound}
+            placeholder={txt('nhaDaiDoanKet.bienBan.daiDienUbndPlaceholder')}
+            {...register('thanh_phan_kiem_tra.ubnd.ho_ten')}
+          />
+          <Input
+            label={txt('nhaDaiDoanKet.form.chucVuLabel')}
+            icon={BadgeCheck}
+            {...register('thanh_phan_kiem_tra.ubnd.chuc_vu')}
           />
           <NddkNguoiThamGiaInput
             label={txt('nhaDaiDoanKet.bienBan.daiDienMttq')}

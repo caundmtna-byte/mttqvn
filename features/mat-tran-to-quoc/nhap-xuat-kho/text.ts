@@ -35,6 +35,7 @@ export const matTranNhapXuatKho = {
   },
   store: {
     ttCol: 'TT',
+    mucDichCol: 'Mục đích',
     soPhieuCol: 'Số phiếu',
     loaiPhieuCol: 'Loại phiếu',
     ngayPhieuCol: 'Ngày phiếu',
@@ -79,6 +80,9 @@ export const matTranNhapXuatKho = {
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',
   form: {
     sectionLoai: 'Loại phiếu',
+    mucDich: 'Mục đích',
+    mucDichPlaceholder: 'Chọn hoặc gõ mục đích mới',
+    mucDichThem: 'Thêm « {{ten}} »',
     sectionMain: 'Thông tin phiếu',
     sectionChiTiet: 'Chi tiết hàng hoá',
     sectionGhiChu: 'Ghi chú',
@@ -118,6 +122,7 @@ export const matTranNhapXuatKho = {
   },
   detail: {
     title: 'Chi tiết phiếu',
+    mucDich: 'Mục đích',
     sectionMain: 'Thông tin chung',
     sectionChiTiet: 'Chi tiết hàng hoá',
     soPhieu: 'Số phiếu',

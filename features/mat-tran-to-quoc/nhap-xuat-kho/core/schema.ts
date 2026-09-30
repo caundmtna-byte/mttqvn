@@ -40,6 +40,7 @@ const baseFormSchema = z.object({
   nguoi_giao_nhan: z.string().max(500).optional(),
   bo_phan: z.string().max(500).optional(),
   chung_tu_goc: z.string().max(2000).optional(),
+  muc_dich: z.string().trim().max(500).optional(),
   chi_tiet: z
     .array(nhapXuatKhoCtLineSchema)
     .min(1, txt('matTranNhapXuatKho.validation.chiTietMin')),

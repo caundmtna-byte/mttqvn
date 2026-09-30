@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Users,
@@ -20,6 +20,7 @@ import {
   GraduationCap,
   HeartHandshake,
   LandPlot,
+  CalendarClock,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { toast } from 'sonner';
@@ -51,6 +52,7 @@ import {
   HNGH_VIEC_LAM_VALUES,
 } from '../core/constants';
 import type { HoNgheo } from '../core/types';
+import { formatDetailDate } from '@/lib/display-format';
 import { useCreateHoNgheo, useHoNgheoFull, useUpdateHoNgheo } from '../hooks/use-ho-ngheo';
 import { isHoNgheoScopedToXaPhuong, useHoNgheoViewer } from '../hooks/use-ho-ngheo-viewer';
 import { useDanTocOptions } from '../hooks/use-dan-toc-options';
@@ -113,6 +115,8 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
     defaultValues: hoNgheoToFormInput(null),
     resolver: zodResolver(hoNgheoSchema) as Resolver<HoNgheoFormInput, unknown, HoNgheoFormValues>,
   });
+
+  const trangThaiHienTai = useWatch({ control, name: 'trang_thai' });
 
   useEffect(() => {
     if (isEdit) {
@@ -444,6 +448,22 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 />
               )}
             />
+            {/* Ngày trạng thái do trigger `fn_hngh_set_ngay_trang_thai` gán — chỉ hiển thị. */}
+            <div>
+              <Input
+                label={txt('hoNgheo.form.ngayTrangThaiLabel')}
+                icon={CalendarClock}
+                value={formatDetailDate(sourceRow?.ngay_cap_nhat_trang_thai) ?? ''}
+                placeholder={txt('hoNgheo.form.ngayTrangThaiTuGhi')}
+                readOnly
+                disabled
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {isEdit && sourceRow && trangThaiHienTai !== sourceRow.trang_thai
+                  ? txt('hoNgheo.form.ngayTrangThaiSeCapNhat')
+                  : txt('hoNgheo.detail.ngayTrangThaiHint')}
+              </p>
+            </div>
             <div className={FORM_GRID_SPAN_FULL}>
               <Textarea
                 label={txt('hoNgheo.store.ghiChuCol')}

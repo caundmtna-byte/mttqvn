@@ -472,6 +472,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
           // đầy đủ ngay sau đó, đây chỉ là dữ liệu mồi để mở nhanh.
           id_nguoi_tao: null,
           ho_va_ten_nguoi_tao: null,
+          muc_dich: null,
           kho_xuat_id: listRow.kho_xuat_id,
           ten_kho_xuat: listRow.ten_kho_xuat,
           kho_xuat_don_vi_id: listRow.kho_xuat_don_vi_id,

@@ -104,6 +104,7 @@ export function flattenListRow(row: Record<string, unknown>): NhapXuatKhoListRow
     ten_don_vi_cuu_tro: nameFromEmbed(row.don_vi, 'ten'),
     dot_cuu_tro_id: nullableStr(row.dot_cuu_tro_id),
     ten_dot_cuu_tro: nameFromEmbed(row.dot, 'ten'),
+    muc_dich: nullableStr(row.muc_dich),
     so_dong: countFromCtAggregate(row.kho_nhap_xuat_kho_ct),
     id_nguoi_tao: nullableStr(row.id_nguoi_tao),
     ho_va_ten_nguoi_tao: nameFromEmbed(row.nguoi_tao, 'ho_va_ten'),
@@ -219,6 +220,7 @@ export const NHAP_XUAT_KHO_SERVER_SORT_COLUMNS = [
   'ten_kho_nhap',
   'ten_don_vi_cuu_tro',
   'ten_dot_cuu_tro',
+  'muc_dich',
   'so_dong',
   'tg_tao',
   'tg_cap_nhat',
@@ -296,6 +298,7 @@ function rpcRowToListRow(r: Record<string, unknown>): NhapXuatKhoListRow {
     ten_don_vi_cuu_tro: nullableStr(r.ten_don_vi_cuu_tro),
     dot_cuu_tro_id: nullableStr(r.dot_cuu_tro_id),
     ten_dot_cuu_tro: nullableStr(r.ten_dot_cuu_tro),
+    muc_dich: nullableStr(r.muc_dich),
     so_dong: toNumber(r.so_dong),
     id_nguoi_tao: nullableStr(r.id_nguoi_tao),
     ho_va_ten_nguoi_tao: nullableStr(r.ho_va_ten_nguoi_tao),
@@ -523,6 +526,7 @@ export async function createNhapXuatKho(data: NhapXuatKhoFormValues): Promise<Nh
       p_nguoi_giao_nhan: data.nguoi_giao_nhan?.trim() ?? null,
       p_bo_phan: data.bo_phan?.trim() ?? null,
       p_chung_tu_goc: data.chung_tu_goc?.trim() ?? null,
+      p_muc_dich: data.muc_dich?.trim() || null,
       p_chi_tiet: buildChiTietPayload(data),
     });
     if (error) handleSupabaseError(error);
@@ -554,6 +558,7 @@ export async function updateNhapXuatKho(
       p_nguoi_giao_nhan: data.nguoi_giao_nhan?.trim() ?? null,
       p_bo_phan: data.bo_phan?.trim() ?? null,
       p_chung_tu_goc: data.chung_tu_goc?.trim() ?? null,
+      p_muc_dich: data.muc_dich?.trim() || null,
       p_chi_tiet: buildChiTietPayload(data),
     });
     if (error) handleSupabaseError(error);
@@ -580,4 +585,13 @@ export async function deleteNhapXuatKhoMany(ids: string[]): Promise<void> {
       rethrowMapped(err);
     }
   }
+}
+
+/** Mục đích đã dùng của một loại phiếu — gợi ý cho ô "Mục đích" (DISTINCT ở DB). */
+export async function getNhapXuatKhoMucDichGoiY(loaiPhieu: NhapXuatKhoLoaiPhieu): Promise<string[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('get_kho_nxk_muc_dich_goi_y', { p_loai_phieu: loaiPhieu });
+  if (error) handleSupabaseError(error);
+  return ((data ?? []) as unknown[]).map((v) => String(v ?? '')).filter((v) => v.trim() !== '');
 }

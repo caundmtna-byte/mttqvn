@@ -90,6 +90,9 @@ export const hoNgheo = {
     trangThaiCol: 'Trạng thái',
   },
   form: {
+    ngayTrangThaiLabel: 'Ngày trạng thái',
+    ngayTrangThaiTuGhi: 'Tự ghi khi lưu',
+    ngayTrangThaiSeCapNhat: 'Trạng thái vừa đổi — ngày sẽ cập nhật khi lưu.',
     createSubtitle: 'Thêm hồ sơ hộ nghèo',
     editSubtitle: 'Cập nhật hồ sơ hộ',
     sectionHoDan: 'Thông tin hộ',

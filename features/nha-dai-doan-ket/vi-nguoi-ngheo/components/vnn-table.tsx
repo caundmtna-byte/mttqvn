@@ -6,6 +6,7 @@ import type { ViNguoiNgheo } from '../core/types';
 import { useViNguoiNgheoStore } from '../store/useViNguoiNgheoStore';
 import GenericTable from '@/components/shared/GenericTable';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
+import { getVnnColumnDisplayValue } from '../utils/column-display';
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import {
   vnnDoiTuongBadge,
@@ -155,6 +156,14 @@ const VnnTable = memo(function VnnTable({
             <span className="text-body-sm font-medium tabular-nums text-foreground whitespace-nowrap">
               {label || empty}
             </span>
+          );
+        }
+        case 'so_luong':
+        case 'tong_tien_quy_doi':
+        case 'tong_tien_ban_giao': {
+          const label = getVnnColumnDisplayValue(item, colId);
+          return (
+            <span className="text-body-sm tabular-nums text-foreground whitespace-nowrap">{label || empty}</span>
           );
         }
         case 'ngay_cap_nhat_trang_thai': {

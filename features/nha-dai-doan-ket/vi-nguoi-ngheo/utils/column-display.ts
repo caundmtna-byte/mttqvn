@@ -20,6 +20,11 @@ export function getVnnColumnDisplayValue(item: ViNguoiNgheo, colId: string): str
       return trimmedVnnDisplay(item[colId]) ?? '';
     case 'so_tien':
       return formatVnnSoTienDisplay(item.so_tien);
+    case 'tong_tien_quy_doi':
+    case 'tong_tien_ban_giao':
+      return formatVnnSoTienDisplay(item[colId]);
+    case 'so_luong':
+      return item.so_luong == null ? '' : String(item.so_luong);
     case 'ngay_cap_nhat_trang_thai':
       return formatVnnNgayDisplay(item.ngay_cap_nhat_trang_thai);
     case 'ho_va_ten_nguoi_tao':

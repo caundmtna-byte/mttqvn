@@ -16,7 +16,7 @@ import {
   khoDonViCuuTroLoaiComboboxOptions,
 } from '../core/loai';
 import { khoDonViCuuTroSchema, type KhoDonViCuuTroFormValues } from '../core/schema';
-import { donViGioiThieuToFormValue } from '../utils/don-vi-gioi-thieu';
+import { DON_VI_GIOI_THIEU_TINH, donViGioiThieuToFormValue } from '../utils/don-vi-gioi-thieu';
 import { useDonViGioiThieuOptions } from '../hooks/use-don-vi-gioi-thieu-options';
 import type { KhoDonViCuuTroListRow } from '../core/types';
 import { useCreateKhoDonViCuuTro, useUpdateKhoDonViCuuTro } from '../hooks/use-kho-don-vi-cuu-tro';
@@ -31,7 +31,8 @@ const DEFAULT_VALUES: KhoDonViCuuTroFormValues = {
   chuc_vu: '',
   dia_chi: '',
   dien_thoai: '',
-  don_vi_gioi_thieu: '',
+  // Bắt buộc — không chọn xã/phường thì là MTTQ tỉnh.
+  don_vi_gioi_thieu: DON_VI_GIOI_THIEU_TINH,
   email: '',
   ghi_chu: '',
 };
@@ -199,9 +200,11 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
                 render={({ field }) => (
                   <Combobox
                     options={donViGioiThieuOptions}
-                    value={field.value === '' ? null : field.value}
-                    onChange={(v) => field.onChange(v === '' || v == null ? '' : String(v))}
+                    value={field.value === '' ? DON_VI_GIOI_THIEU_TINH : field.value}
+                    onChange={(v) => field.onChange(v === '' || v == null ? DON_VI_GIOI_THIEU_TINH : String(v))}
                     label={txt('matTranDonViCuuTro.form.donViGioiThieu')}
+                    required
+                    clearable={false}
                     placeholder={txt('matTranDonViCuuTro.form.donViGioiThieuPlaceholder')}
                     error={errors.don_vi_gioi_thieu?.message}
                     icon={<Landmark size={14} />}

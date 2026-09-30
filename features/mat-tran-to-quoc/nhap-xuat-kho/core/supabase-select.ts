@@ -21,6 +21,7 @@ const BASE_COLS_LIST = [
   'kho_nhap_id',
   'don_vi_cuu_tro_id',
   'dot_cuu_tro_id',
+  'muc_dich',
   'tg_tao',
   'tg_cap_nhat',
 ].join(',');

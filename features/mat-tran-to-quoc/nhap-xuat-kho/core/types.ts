@@ -36,6 +36,8 @@ export interface NhapXuatKhoListRow {
   ten_don_vi_cuu_tro: string | null;
   dot_cuu_tro_id: string | null;
   ten_dot_cuu_tro: string | null;
+  /** Mục đích nhập/xuất — chữ tự do, có gợi ý theo loại phiếu. */
+  muc_dich: string | null;
   /** Số dòng chi tiết (PostgREST aggregate `(count)`). */
   so_dong: number;
   /** Người LẬP phiếu — gán phía máy chủ từ phiên đăng nhập. */

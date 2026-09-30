@@ -42,6 +42,9 @@ export const viNguoiNgheo = {
     doiTuongCol: 'Đối tượng',
     hinhThucCol: 'Hình thức hỗ trợ',
     soTienCol: 'Số tiền hỗ trợ',
+    soLuongCol: 'Số lượng',
+    tongTienQuyDoiCol: 'Tổng tiền quy đổi',
+    tongTienBanGiaoCol: 'Tổng tiền khi bàn giao',
     trangThaiCol: 'Trạng thái',
     ngayTrangThaiCol: 'Ngày cập nhật trạng thái',
     donViHoTroCol: 'Đơn vị, cá nhân hỗ trợ',
@@ -59,7 +62,7 @@ export const viNguoiNgheo = {
     hoNgheoHint: 'Chọn hộ để tự điền họ tên, xã phường, khối xóm, đối tượng. Không có trong danh sách thì bỏ trống và nhập tay.',
     hoNgheoPlaceholder: 'Tìm theo tên hoặc số căn cước…',
     donViHoTroPlaceholder: 'Chọn từ danh mục Đơn vị cứu trợ',
-    soTienPlaceholder: 'Để trống nếu chỉ hỗ trợ bằng quà',
+    soTienPlaceholder: 'Để trống nếu chỉ hỗ trợ bằng hiện vật',
     ghiChuHint: 'Ghi chú cũng được lưu làm lý do cho lần đổi trạng thái này.',
   },
   toast: {
@@ -82,5 +85,6 @@ export const viNguoiNgheo = {
     trangThaiInvalid: 'Chọn trạng thái hợp lệ',
     soTienInvalid: 'Số tiền không hợp lệ',
     soTienMin: 'Số tiền không được âm',
+    soLuongInvalid: 'Số lượng phải là số nguyên không âm',
   },
 };

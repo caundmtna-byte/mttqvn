@@ -15,6 +15,7 @@ import {
   VNN_NGUON_VALUES,
   VNN_TRANG_THAI_DEFAULT,
   VNN_TRANG_THAI_VALUES,
+  vnnCoHienVat,
 } from './constants';
 import type { ViNguoiNgheo } from './types';
 
@@ -46,6 +47,23 @@ const optionalSoTien = z.preprocess(
     .optional(),
 );
 
+/** Số lượng hiện vật: để trống hợp lệ; có nhập thì là số nguyên không âm. */
+const optionalSoLuong = z.preprocess(
+  (val) => {
+    if (val == null) return undefined;
+    if (typeof val === 'number') return Number.isFinite(val) ? val : undefined;
+    const s = String(val).trim();
+    if (s === '') return undefined;
+    const n = parseSoInput(s);
+    return n ?? Number.NaN;
+  },
+  z
+    .number({ message: txt('viNguoiNgheo.validation.soLuongInvalid') })
+    .int(txt('viNguoiNgheo.validation.soLuongInvalid'))
+    .min(0, txt('viNguoiNgheo.validation.soLuongInvalid'))
+    .optional(),
+);
+
 export const viNguoiNgheoSchema = z.object({
   noi_dung_ho_tro: z.string().trim().min(1, txt('viNguoiNgheo.validation.noiDungRequired')),
   nam: z.coerce
@@ -72,12 +90,20 @@ export const viNguoiNgheoSchema = z.object({
     message: txt('viNguoiNgheo.validation.hinhThucInvalid'),
   }),
   so_tien: optionalSoTien,
+  so_luong: optionalSoLuong,
+  tong_tien_quy_doi: optionalSoTien,
+  tong_tien_ban_giao: optionalSoTien,
   trang_thai: z.enum(VNN_TRANG_THAI_VALUES, {
     message: txt('viNguoiNgheo.validation.trangThaiInvalid'),
   }),
   don_vi_ho_tro_id: optionalFk,
   ghi_chu: optionalText,
-});
+}).transform((v) =>
+  // Đổi từ "Hiện vật" về "Tiền mặt" thì bỏ số hiện vật cũ — ô đã ẩn, không để số rác.
+  vnnCoHienVat(v.hinh_thuc_ho_tro)
+    ? v
+    : { ...v, so_luong: undefined, tong_tien_quy_doi: undefined, tong_tien_ban_giao: undefined },
+);
 
 export type ViNguoiNgheoFormValues = z.infer<typeof viNguoiNgheoSchema>;
 
@@ -111,6 +137,9 @@ export type ViNguoiNgheoFormInput = {
   doi_tuong?: string;
   hinh_thuc_ho_tro: string;
   so_tien?: string;
+  so_luong?: string;
+  tong_tien_quy_doi?: string;
+  tong_tien_ban_giao?: string;
   trang_thai: string;
   don_vi_ho_tro_id?: string;
   ghi_chu?: string;
@@ -131,6 +160,9 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
       doi_tuong: '',
       hinh_thuc_ho_tro: VNN_HINH_THUC_DEFAULT,
       so_tien: '',
+      so_luong: '',
+      tong_tien_quy_doi: '',
+      tong_tien_ban_giao: '',
       trang_thai: VNN_TRANG_THAI_DEFAULT,
       don_vi_ho_tro_id: '',
       ghi_chu: '',
@@ -149,6 +181,9 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
     doi_tuong: row.doi_tuong ?? '',
     hinh_thuc_ho_tro: row.hinh_thuc_ho_tro ?? VNN_HINH_THUC_DEFAULT,
     so_tien: row.so_tien == null ? '' : String(row.so_tien),
+    so_luong: row.so_luong == null ? '' : String(row.so_luong),
+    tong_tien_quy_doi: row.tong_tien_quy_doi == null ? '' : String(row.tong_tien_quy_doi),
+    tong_tien_ban_giao: row.tong_tien_ban_giao == null ? '' : String(row.tong_tien_ban_giao),
     trang_thai: row.trang_thai ?? VNN_TRANG_THAI_DEFAULT,
     don_vi_ho_tro_id: row.don_vi_ho_tro_id ?? '',
     ghi_chu: row.ghi_chu ?? '',

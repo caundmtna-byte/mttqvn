@@ -39,9 +39,15 @@ export const VNN_NGUON_HO_TRO_DEFAULT: VnnNguonHoTro = 'Cấp tỉnh';
 export const VNN_DOI_TUONG_VALUES = NDDK_DOI_TUONG_VALUES;
 export type VnnDoiTuong = (typeof VNN_DOI_TUONG_VALUES)[number];
 
-export const VNN_HINH_THUC_VALUES = ['Tiền mặt', 'Quà và Tiền', 'Quà'] as const;
+/** Khớp 1-1 CHECK `vnn_chuong_trinh_hinh_thuc_check`. */
+export const VNN_HINH_THUC_VALUES = ['Tiền mặt', 'Hiện vật và Tiền', 'Hiện vật'] as const;
 export type VnnHinhThuc = (typeof VNN_HINH_THUC_VALUES)[number];
 export const VNN_HINH_THUC_DEFAULT: VnnHinhThuc = 'Tiền mặt';
+
+/** Hình thức có hiện vật ⇒ form mở ô Số lượng / Tổng tiền quy đổi / Tổng tiền khi bàn giao. */
+export function vnnCoHienVat(hinhThuc: string | null | undefined): boolean {
+  return hinhThuc === 'Hiện vật' || hinhThuc === 'Hiện vật và Tiền';
+}
 
 /**
  * Hai trạng thái, hai chiều đều hợp lệ và KHÔNG đòi quyền Duyệt: "Đã nhận"

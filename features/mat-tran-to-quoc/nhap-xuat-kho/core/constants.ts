@@ -18,3 +18,6 @@ export function loaiPhieuLabel(loai: NhapXuatKhoLoaiPhieu): string {
       return 'Chuyển kho';
   }
 }
+
+/** Mục đích gợi ý sẵn cho phiếu xuất — vẫn cho gõ mục đích khác. */
+export const NXK_MUC_DICH_XUAT_MAC_DINH = ['Để tại kho dùng khi cần', 'Xuất cho hộ nghèo'] as const;

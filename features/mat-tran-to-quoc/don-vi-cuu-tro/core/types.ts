@@ -33,6 +33,11 @@ export interface KhoDonViCuuTroListRow {
   ghi_chu: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
+  /**
+   * Kết quả ủng hộ (đồng) — máy chủ tự tính. `null` = chưa tải (dòng vừa tạo/sửa
+   * trả về từ RETURNING, chưa qua RPC tổng).
+   */
+  ket_qua_ung_ho: number | null;
 }
 
 export type KhoDonViCuuTroDetail = KhoDonViCuuTroListRow;

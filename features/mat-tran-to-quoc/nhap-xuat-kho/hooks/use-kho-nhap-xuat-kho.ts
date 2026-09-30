@@ -5,6 +5,7 @@ import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions, masterDataQueryOptions } from '@/lib/supabase/query-config';
 import type { NhapXuatKhoFormValues } from '../core/schema';
 import type { NhapXuatKhoCtFlatRow, NhapXuatKhoDetail, NhapXuatKhoListRow } from '../core/types';
+import type { NhapXuatKhoLoaiPhieu } from '../core/constants';
 import {
   createNhapXuatKho,
   deleteNhapXuatKhoMany,
@@ -12,6 +13,7 @@ import {
   getLastDonGiaMap,
   getNhapXuatKhoById,
   getNhapXuatKhoCtFlatList,
+  getNhapXuatKhoMucDichGoiY,
   updateNhapXuatKho,
 } from '../services/kho-nhap-xuat-kho-service';
 import { importNhapXuatKhoRows } from '../services/kho-nhap-xuat-kho-import';
@@ -61,6 +63,14 @@ export function useLastDonGiaMap(options?: { enabled?: boolean }) {
   });
 }
 
+export function useNhapXuatKhoMucDichGoiY(loaiPhieu: NhapXuatKhoLoaiPhieu) {
+  return useQuery({
+    queryKey: queryKeys.khoNhapXuatKho.mucDichGoiY(loaiPhieu),
+    queryFn: () => getNhapXuatKhoMucDichGoiY(loaiPhieu),
+    ...masterDataQueryOptions,
+  });
+}
+
 function listRowFromDetail(d: NhapXuatKhoDetail): NhapXuatKhoListRow {
   return {
     id: d.id,
@@ -80,6 +90,7 @@ function listRowFromDetail(d: NhapXuatKhoDetail): NhapXuatKhoListRow {
     ten_don_vi_cuu_tro: d.ten_don_vi_cuu_tro,
     dot_cuu_tro_id: d.dot_cuu_tro_id,
     ten_dot_cuu_tro: d.ten_dot_cuu_tro,
+    muc_dich: d.muc_dich,
     so_dong: d.so_dong,
     tg_tao: d.tg_tao,
     tg_cap_nhat: d.tg_cap_nhat,
@@ -100,6 +111,7 @@ function patchListAfterMutation(
   queryClient.setQueryData<NhapXuatKhoDetail>(queryKeys.khoNhapXuatKho.detail(full.id), full);
   void queryClient.invalidateQueries({ queryKey: ctFlatKey, refetchType: 'none' });
   void queryClient.invalidateQueries({ queryKey: lastDonGiaKey, refetchType: 'none' });
+  void queryClient.invalidateQueries({ queryKey: ['kho-nhap-xuat-kho', 'muc-dich-goi-y'] });
   void queryClient.invalidateQueries({
     queryKey: ['kho-nhap-xuat-kho', 'ton-kho-by-kho'],
     refetchType: 'active',

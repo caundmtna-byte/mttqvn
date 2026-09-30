@@ -59,12 +59,20 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 7,
   },
   {
+    id: 'muc_dich',
+    label: txt('matTranNhapXuatKho.store.mucDichCol'),
+    visible: true,
+    minWidth: 160,
+    maxWidth: 260,
+    order: 8,
+  },
+  {
     id: 'so_dong',
     label: txt('matTranNhapXuatKho.store.soDongCol'),
     visible: true,
     minWidth: 84,
     maxWidth: 112,
-    order: 8,
+    order: 9,
   },
   {
     // Người LẬP phiếu — do máy chủ gán từ phiên đăng nhập, khác hẳn ô
@@ -74,14 +82,14 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 120,
     maxWidth: 200,
-    order: 9,
+    order: 10,
   },
   {
     id: 'tg_cap_nhat',
     label: txt('matTranNhapXuatKho.store.tgCapNhatCol'),
     visible: false,
     ...P.datetime,
-    order: 10,
+    order: 11,
   },
   {
     id: 'actions',
@@ -89,7 +97,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 96,
     maxWidth: 120,
-    order: 10,
+    order: 11,
   },
 ];
 

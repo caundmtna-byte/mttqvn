@@ -35,8 +35,12 @@ export interface ViNguoiNgheo {
   khoi_xom: string | null;
   doi_tuong: VnnDoiTuong | null;
   hinh_thuc_ho_tro: VnnHinhThuc;
-  /** VND, không phần lẻ. `null` khi chỉ có quà hoặc chưa chốt mức. */
+  /** VND, không phần lẻ. `null` khi chỉ có hiện vật hoặc chưa chốt mức. */
   so_tien: number | null;
+  /** Ba cột hiện vật — chỉ có giá trị khi `vnnCoHienVat(hinh_thuc_ho_tro)`. */
+  so_luong: number | null;
+  tong_tien_quy_doi: number | null;
+  tong_tien_ban_giao: number | null;
   trang_thai: VnnTrangThai;
   /** Máy chủ gán khi `trang_thai` đổi — không có ô nhập trên form. */
   ngay_cap_nhat_trang_thai: string;

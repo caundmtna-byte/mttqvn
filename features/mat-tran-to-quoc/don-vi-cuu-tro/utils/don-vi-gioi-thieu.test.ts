@@ -9,13 +9,13 @@ import {
 } from './don-vi-gioi-thieu';
 
 describe('donViGioiThieuToPayload', () => {
-  it('ô để trống ⇒ cả hai cột NULL (chưa nhập)', () => {
+  it('ô để trống ⇒ MTTQ tỉnh (trường bắt buộc, không có trạng thái "chưa nhập")', () => {
     expect(donViGioiThieuToPayload('')).toEqual({
-      don_vi_gioi_thieu_loai: null,
+      don_vi_gioi_thieu_loai: 'tinh',
       don_vi_gioi_thieu_id: null,
     });
     expect(donViGioiThieuToPayload(null)).toEqual({
-      don_vi_gioi_thieu_loai: null,
+      don_vi_gioi_thieu_loai: 'tinh',
       don_vi_gioi_thieu_id: null,
     });
   });
@@ -36,10 +36,10 @@ describe('donViGioiThieuToPayload', () => {
 
   // Trả nửa vời ('xa_phuong' mà id NULL) sẽ bị CHECK dưới DB từ chối, người dùng
   // nhận một toast khó hiểu thay vì ô trống.
-  it('id không đọc được ⇒ trả về chưa nhập, không trả trạng thái lai', () => {
+  it('id không đọc được ⇒ về MTTQ tỉnh, không trả trạng thái lai', () => {
     for (const bad of ['abc', '0', '-3', ' ']) {
       expect(donViGioiThieuToPayload(bad)).toEqual({
-        don_vi_gioi_thieu_loai: null,
+        don_vi_gioi_thieu_loai: 'tinh',
         don_vi_gioi_thieu_id: null,
       });
     }
@@ -47,16 +47,16 @@ describe('donViGioiThieuToPayload', () => {
 });
 
 describe('donViGioiThieuToFormValue', () => {
-  it('khứ hồi đủ ba trạng thái', () => {
-    expect(donViGioiThieuToFormValue(null, null)).toBe('');
+  it('khứ hồi hai trạng thái; NULL cũ ⇒ MTTQ tỉnh', () => {
+    expect(donViGioiThieuToFormValue(null, null)).toBe(DON_VI_GIOI_THIEU_TINH);
     expect(donViGioiThieuToFormValue('tinh', null)).toBe(DON_VI_GIOI_THIEU_TINH);
     expect(donViGioiThieuToFormValue('xa_phuong', 245)).toBe('245');
     expect(donViGioiThieuToFormValue('xa_phuong', '245')).toBe('245');
   });
 
-  it('xa_phuong mà thiếu id ⇒ coi như chưa nhập', () => {
-    expect(donViGioiThieuToFormValue('xa_phuong', null)).toBe('');
-    expect(donViGioiThieuToFormValue('xa_phuong', '')).toBe('');
+  it('xa_phuong mà thiếu id ⇒ về MTTQ tỉnh', () => {
+    expect(donViGioiThieuToFormValue('xa_phuong', null)).toBe(DON_VI_GIOI_THIEU_TINH);
+    expect(donViGioiThieuToFormValue('xa_phuong', '')).toBe(DON_VI_GIOI_THIEU_TINH);
   });
 });
 
@@ -70,8 +70,8 @@ describe('parseDonViGioiThieuLoai', () => {
 });
 
 describe('donViGioiThieuLabel', () => {
-  it('chưa nhập ⇒ chuỗi rỗng', () => {
-    expect(donViGioiThieuLabel(null, null)).toBe('');
+  it('NULL (dữ liệu cũ) ⇒ MTTQ tỉnh', () => {
+    expect(donViGioiThieuLabel(null, null)).toBe('MTTQ tỉnh');
   });
 
   it('cấp tỉnh ⇒ MTTQ tỉnh', () => {
@@ -95,8 +95,8 @@ describe('resolveDonViGioiThieuImport', () => {
     { id: '301', ten: 'Xã Hưng Lộc' },
   ];
 
-  it('ô trống ⇒ chưa nhập', () => {
-    expect(resolveDonViGioiThieuImport('', xa)).toEqual({ ok: true, value: '' });
+  it('ô trống ⇒ MTTQ tỉnh', () => {
+    expect(resolveDonViGioiThieuImport('', xa)).toEqual({ ok: true, value: DON_VI_GIOI_THIEU_TINH });
   });
 
   it('nhận nhiều cách gõ cấp tỉnh', () => {

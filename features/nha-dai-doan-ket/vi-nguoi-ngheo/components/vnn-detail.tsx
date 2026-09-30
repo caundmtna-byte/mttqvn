@@ -18,6 +18,7 @@ import {
   User,
   Users,
   Building2,
+  Package,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -31,6 +32,7 @@ import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import type { ViNguoiNgheo } from '../core/types';
+import { vnnCoHienVat } from '../core/constants';
 import {
   vnnDoiTuongBadge,
   vnnHinhThucBadge,
@@ -268,6 +270,28 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
               }
               emptyText={emptyCell}
             />
+            {vnnCoHienVat(data.hinh_thuc_ho_tro) ? (
+              <>
+                <DetailField
+                  label={txt('viNguoiNgheo.store.soLuongCol')}
+                  icon={<Package size={12} />}
+                  value={data.so_luong == null ? undefined : <span className="tabular-nums">{data.so_luong}</span>}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('viNguoiNgheo.store.tongTienQuyDoiCol')}
+                  icon={<Coins size={12} />}
+                  value={formatVnnSoTienDisplay(data.tong_tien_quy_doi) || undefined}
+                  emptyText={emptyCell}
+                />
+                <DetailField
+                  label={txt('viNguoiNgheo.store.tongTienBanGiaoCol')}
+                  icon={<Coins size={12} />}
+                  value={formatVnnSoTienDisplay(data.tong_tien_ban_giao) || undefined}
+                  emptyText={emptyCell}
+                />
+              </>
+            ) : null}
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('viNguoiNgheo.store.donViHoTroCol')}

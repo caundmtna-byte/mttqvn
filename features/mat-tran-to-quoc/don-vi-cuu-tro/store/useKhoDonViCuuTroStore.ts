@@ -72,12 +72,20 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 7,
   },
   {
+    id: 'ket_qua_ung_ho',
+    label: txt('matTranDonViCuuTro.store.ketQuaUngHoCol'),
+    visible: true,
+    minWidth: 130,
+    maxWidth: 180,
+    order: 8,
+  },
+  {
     id: 'don_vi_gioi_thieu',
     label: txt('matTranDonViCuuTro.store.donViGioiThieuCol'),
     visible: true,
     minWidth: 150,
     maxWidth: 240,
-    order: 8,
+    order: 9,
   },
   {
     id: 'email',
@@ -85,7 +93,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 160,
     maxWidth: 240,
-    order: 9,
+    order: 10,
   },
   {
     id: 'ghi_chu',
@@ -93,21 +101,21 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 140,
     maxWidth: 320,
-    order: 10,
+    order: 11,
   },
   {
     id: 'tg_tao',
     label: txt('matTranDonViCuuTro.store.tgTaoCol'),
     visible: false,
     ...P.datetime,
-    order: 11,
+    order: 12,
   },
   {
     id: 'tg_cap_nhat',
     label: txt('matTranDonViCuuTro.store.tgCapNhatCol'),
     visible: true,
     ...P.datetime,
-    order: 12,
+    order: 13,
   },
   {
     id: 'actions',
@@ -115,7 +123,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 96,
     maxWidth: 120,
-    order: 13,
+    order: 14,
   },
 ];
 

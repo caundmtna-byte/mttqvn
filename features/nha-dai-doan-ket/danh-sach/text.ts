@@ -101,6 +101,7 @@ export const nhaDaiDoanKet = {
     thanhPhanKiemTra: 'Thành phần kiểm tra',
     daiDienBcd: 'Đại diện Ban Chỉ đạo xã/phường',
     daiDienUbnd: 'Đại diện UBND xã/phường',
+    daiDienUbndPlaceholder: 'Nhập họ tên đại diện UBND',
     daiDienMttq: 'Đại diện MTTQ xã/phường',
     daiDienThonN: 'Đại diện thôn/xóm {{n}}',
     phanNen: 'Phần nền',

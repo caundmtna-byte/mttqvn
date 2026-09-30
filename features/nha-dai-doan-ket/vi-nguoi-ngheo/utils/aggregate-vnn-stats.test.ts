@@ -30,6 +30,9 @@ function row(over: Partial<ViNguoiNgheo> = {}): ViNguoiNgheo {
     doi_tuong: 'Hộ nghèo',
     hinh_thuc_ho_tro: 'Tiền mặt',
     so_tien: 1_000_000,
+    so_luong: null,
+    tong_tien_quy_doi: null,
+    tong_tien_ban_giao: null,
     trang_thai: 'Đang khảo sát',
     ngay_cap_nhat_trang_thai: '',
     don_vi_ho_tro_id: null,
@@ -43,10 +46,10 @@ function row(over: Partial<ViNguoiNgheo> = {}): ViNguoiNgheo {
 }
 
 describe('computeVnnKpis', () => {
-  it('khoản chỉ có quà (so_tien null) không cộng vào tổng tiền nhưng vẫn đếm khoản', () => {
+  it('khoản chỉ có hiện vật (so_tien null) không cộng vào tổng tiền nhưng vẫn đếm khoản', () => {
     const k = computeVnnKpis([
       row({ so_tien: 500_000, trang_thai: 'Đã nhận' }),
-      row({ so_tien: null, hinh_thuc_ho_tro: 'Quà' }),
+      row({ so_tien: null, hinh_thuc_ho_tro: 'Hiện vật' }),
     ]);
     expect(k.tongSoKhoan).toBe(2);
     expect(k.tongSoTien).toBe(500_000);

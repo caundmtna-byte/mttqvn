@@ -22,6 +22,7 @@ import {
   Trash2,
   User,
   Warehouse,
+  Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -438,6 +439,12 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
                   ) : undefined
                 }
                 icon={<Calculator size={12} />}
+                emptyText={txt('common.emptyCell')}
+              />
+              <DetailField
+                label={txt('matTranNhapXuatKho.detail.mucDich')}
+                value={data.muc_dich ?? undefined}
+                icon={<Target size={12} />}
                 emptyText={txt('common.emptyCell')}
               />
               <DetailField
