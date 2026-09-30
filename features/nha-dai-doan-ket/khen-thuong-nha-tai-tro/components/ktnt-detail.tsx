@@ -82,7 +82,7 @@ const KtntDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const statusMutation = useUpdateKhenThuongNhaTaiTroTrangThai();
 
   /**
-   * Thành tích đọc từ Chương trình vì người nghèo — cùng điều kiện với cột tổng
+   * Thành tích đọc từ Chương trình hỗ trợ — cùng điều kiện với cột tổng
    * hợp trong RPC `get_ktnt_page`, nên số ở đây khớp số trên bảng danh sách.
    */
   const { data: khoanRows = [], isLoading: khoanLoading } = useViNguoiNgheoByDonVi(

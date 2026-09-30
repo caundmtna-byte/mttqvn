@@ -394,9 +394,9 @@ export const ui = {
       "khenThuongNhaTaiTro": "Khen thưởng nhà tài trợ",
       "khenThuongNhaTaiTroDesc": "Quyết định khen nhà tài trợ, kèm thành tích hỗ trợ người nghèo.",
       "danhSachNhaDaiDoanKet": "Danh sách nhà đại đoàn kết",
-      "viNguoiNgheo": "Chương trình vì người nghèo",
+      "viNguoiNgheo": "Chương trình hỗ trợ",
       "viNguoiNgheoDesc": "Các khoản hỗ trợ Tết, cứu trợ, sinh kế, học sinh nghèo, chữa bệnh…",
-      "thongTinHoNgheo": "Thông tin hộ nghèo",
+      "thongTinHoNgheo": "Thông tin đối tượng hỗ trợ",
       "thongTinHoNgheoDesc": "Hồ sơ từng hộ và các khoản hỗ trợ đã nhận.",
       "danhSachNhaDaiDoanKetDesc": "Hồ sơ hỗ trợ xây mới và sửa chữa nhà đại đoàn kết.",
       /**

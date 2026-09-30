@@ -1,11 +1,11 @@
 /**
- * Danh mục nghiệp vụ của Thông tin hộ nghèo.
+ * Danh mục nghiệp vụ của Thông tin đối tượng hỗ trợ.
  *
  * Đây là nguồn sự thật phía client, đối chiếu 1-1 với CHECK trong
  * `supabase/migrations/20260921150000_hngh_thong_tin_ho_ngheo.sql`. Sửa một bên phải sửa cả bên kia.
  *
  * Các khoản hỗ trợ của hộ KHÔNG còn ở module này: bảng con `hngh_ho_tro_ct`
- * đã gộp vào Chương trình vì người nghèo (`vnn_chuong_trinh.ho_ngheo_id`).
+ * đã gộp vào Chương trình hỗ trợ (`vnn_chuong_trinh.ho_ngheo_id`).
  *
  * Riêng DÂN TỘC không nằm ở đây: nó là danh mục cơ quan tự quản trên màn
  * Thiết lập MTTQ (`mttq_thiet_lap`, `loai='dan_toc'`).

@@ -25,7 +25,7 @@ export interface NhaDaiDoanKet {
   nguon: NddkNguon;
   nguon_ho_tro: NddkNguonHoTro;
   /**
-   * Hộ trong Thông tin hộ nghèo. Bắt buộc với hồ sơ mới; hồ sơ cũ có thể `null`.
+   * Hộ trong Thông tin đối tượng hỗ trợ. Bắt buộc với hồ sơ mới; hồ sơ cũ có thể `null`.
    * Họ tên / xã / khối xóm / đối tượng do trigger DB chép từ hộ.
    */
   ho_ngheo_id: string | null;

@@ -139,14 +139,14 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
    */
   nhaDaiDoanKetList: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
   /**
-   * Thông tin hộ nghèo. Segment cuối ('danh-sach') đụng module trên, nên
+   * Thông tin đối tượng hỗ trợ. Segment cuối ('danh-sach') đụng module trên, nên
    * `storageKey: 'thong-tin-ho-ngheo'` khai tường minh trong
    * `permission-modules-config.ts`. RLS của `hngh_thong_tin_ho_ngheo` và
    * `hngh_ho_tro_ct` gọi `fn_co_quyen('thong-tin-ho-ngheo', …)` đúng khoá đó.
    */
   hoNgheoList: 'an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach',
   /**
-   * Chương trình vì người nghèo — một module, hai tab. `storageKey:
+   * Chương trình hỗ trợ — một module, hai tab. `storageKey:
    * 'vi-nguoi-ngheo'` khai tường minh trong `permission-modules-config.ts`; RLS
    * của `vnn_chuong_trinh` gọi `fn_co_quyen('vi-nguoi-ngheo', …)` đúng khoá đó.
    */

@@ -1,7 +1,7 @@
 import { NDDK_DOI_TUONG_VALUES, NDDK_NGUON_HO_TRO_VALUES } from '../../danh-sach/core/constants';
 
 /**
- * Danh mục nghiệp vụ của Chương trình vì người nghèo.
+ * Danh mục nghiệp vụ của Chương trình hỗ trợ.
  *
  * Nguồn sự thật phía client, đối chiếu 1-1 với CHECK trong
  * `supabase/migrations/20260923100000_vnn_chuong_trinh_vi_nguoi_ngheo.sql`.

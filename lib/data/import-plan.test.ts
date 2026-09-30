@@ -74,6 +74,28 @@ describe('buildImportPlan', () => {
     expect(p.errors[0].message).toContain('dòng 2');
   });
 
+  it('trùng họ tên + xã trong file nhưng khác CCCD → thêm cả hai', () => {
+    const p = plan(
+      [row(2, { cccd: '777', ten: 'Lê C', xa: 'x1' }), row(3, { cccd: '888', ten: 'Lê C', xa: 'x1' })],
+      'upsert',
+      ['cccd', 'ten_xa'],
+    );
+    expect(p.errors).toEqual([]);
+    expect(p.creates.map((c) => c.rowNum)).toEqual([2, 3]);
+  });
+
+  it('họ tên + xã khớp bản ghi cũ nhưng khác CCCD → thêm mới, không ghi đè', () => {
+    const p = plan([row(2, { cccd: '999', ten: 'Nguyễn A', xa: 'x1' })], 'upsert', ['cccd', 'ten_xa']);
+    expect(p.updates).toEqual([]);
+    expect(p.creates.map((c) => c.rowNum)).toEqual([2]);
+  });
+
+  it('hai dòng không CCCD cùng khớp họ tên + xã một bản ghi → dòng sau lỗi', () => {
+    const p = plan([row(2, { ten: 'Nguyễn A', xa: 'x1' }), row(3, { ten: 'Nguyễn A', xa: 'x1' })], 'upsert', ['ten_xa']);
+    expect(p.updates).toEqual([expect.objectContaining({ rowNum: 2, existingId: '1' })]);
+    expect(p.errors.map((e) => e.rowNum)).toEqual([3]);
+  });
+
   it('hai dòng cùng trỏ một bản ghi → dòng sau lỗi', () => {
     const p = plan([row(2, { id: '1' }), row(3, { cccd: '001' })], 'upsert', ['id', 'cccd']);
     expect(p.updates.map((u) => u.rowNum)).toEqual([2]);

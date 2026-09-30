@@ -39,7 +39,7 @@ export function useViNguoiNgheoDetail(id: string | null, options?: { enabled?: b
   });
 }
 
-/** Các khoản của một hộ — mục "Chương trình vì người nghèo" trong chi tiết hộ nghèo. */
+/** Các khoản của một hộ — mục "Chương trình hỗ trợ" trong chi tiết hộ nghèo. */
 export function useViNguoiNgheoByHoNgheo(hoNgheoId: string | null, options?: { enabled?: boolean }) {
   const enabled = Boolean(hoNgheoId?.trim()) && options?.enabled !== false;
   return useQuery({

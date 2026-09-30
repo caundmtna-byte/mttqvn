@@ -1,12 +1,12 @@
 /**
- * Chuỗi của TAB Thống kê trong module Thông tin hộ nghèo.
+ * Chuỗi của TAB Thống kê trong module Thông tin đối tượng hỗ trợ.
  *
  * Namespace riêng như `nhaDaiDoanKetThongKe`. Quyền xem và tiêu đề trang do
  * tab Danh sách lo, nên ở đây không có `noViewPermission` / `title`.
  */
 export const hoNgheoThongKe = {
   listLoadErrorHint: 'Không tải được dữ liệu thống kê. Thử tải lại.',
-  exportFileName: 'Thong_Ke_Ho_Ngheo',
+  exportFileName: 'Thong_Ke_Doi_Tuong_Ho_Tro',
   kpi: {
     tongSoHo: 'Tổng số hộ',
     dangKhoKhan: 'Đang khó khăn',

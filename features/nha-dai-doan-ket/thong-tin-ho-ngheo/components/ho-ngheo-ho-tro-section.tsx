@@ -29,7 +29,7 @@ interface Props {
 }
 
 /**
- * Các khoản hỗ trợ của hộ — dữ liệu của module **Chương trình vì người nghèo**
+ * Các khoản hỗ trợ của hộ — dữ liệu của module **Chương trình hỗ trợ**
  * (`vnn_chuong_trinh.ho_ngheo_id`), không còn bảng con riêng ở đây.
  *
  * Thêm/sửa/xoá tại chỗ dùng đúng form và quyền của module đó: hai màn cùng ghi

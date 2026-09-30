@@ -1,7 +1,7 @@
 /** Chuỗi của TAB Thống kê — quyền xem và tiêu đề trang do tab Danh sách lo. */
 export const viNguoiNgheoThongKe = {
   listLoadErrorHint: 'Không tải được dữ liệu thống kê. Thử tải lại.',
-  exportFileName: 'Thong_Ke_Vi_Nguoi_Ngheo',
+  exportFileName: 'Thong_Ke_Chuong_Trinh_Ho_Tro',
   kpi: {
     tongSoKhoan: 'Tổng số khoản',
     tongSoTien: 'Tổng số tiền',

@@ -74,7 +74,7 @@ export const nhaDaiDoanKet = {
     ghiChuHint: 'Ghi chú cũng được lưu làm lý do cho lần đổi trạng thái này.',
     hoNgheoLabel: 'Hộ nghèo',
     hoNgheoPlaceholder: 'Tìm theo tên hoặc số căn cước…',
-    hoNgheoHint: 'Họ tên, xã phường, khối xóm, đối tượng lấy theo hồ sơ hộ. Chưa có hộ thì thêm ở Thông tin hộ nghèo trước.',
+    hoNgheoHint: 'Họ tên, xã phường, khối xóm, đối tượng lấy theo hồ sơ hộ. Chưa có hộ thì thêm ở Thông tin đối tượng hỗ trợ trước.',
     sectionKhaoSat: 'Biên bản khảo sát',
     sectionHoanThanh: 'Biên bản kiểm tra hoàn thành',
     sectionBanGiao: 'Biên bản bàn giao',
@@ -129,7 +129,7 @@ export const nhaDaiDoanKet = {
   validation: {
     noiDungRequired: 'Nhập nội dung hỗ trợ',
     chuHoRequired: 'Nhập họ tên chủ hộ',
-    hoNgheoRequired: 'Chọn hộ trong Thông tin hộ nghèo',
+    hoNgheoRequired: 'Chọn hộ trong Thông tin đối tượng hỗ trợ',
     namInvalid: 'Năm phải từ 2000 đến 2100',
     nguonInvalid: 'Chọn nguồn hợp lệ',
     nguonHoTroInvalid: 'Chọn nguồn hỗ trợ hợp lệ',

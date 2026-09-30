@@ -18,7 +18,7 @@ export type VnnRowForViewGate = {
 };
 
 /**
- * Phạm vi xem của Chương trình vì người nghèo — dùng chung cho tab Danh sách,
+ * Phạm vi xem của Chương trình hỗ trợ — dùng chung cho tab Danh sách,
  * tab Thống kê (con số tổng cũng phải lọc, nếu không là lộ dữ liệu toàn hệ
  * thống) và RPC `get_vnn_page`.
  *

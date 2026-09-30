@@ -278,7 +278,7 @@ export const queryKeys = {
    * sẽ dùng chung một ô cache.
    */
   /**
-   * Thông tin hộ nghèo — bảng giao dịch, danh sách phân trang phía máy chủ.
+   * Thông tin đối tượng hỗ trợ — bảng giao dịch, danh sách phân trang phía máy chủ.
    * `nhaDaiDoanKet` là quan hệ con của MỘT hộ đang mở ở màn chi tiết; các khoản
    * hỗ trợ của hộ nằm ở `viNguoiNgheo.byHoNgheo`.
    */

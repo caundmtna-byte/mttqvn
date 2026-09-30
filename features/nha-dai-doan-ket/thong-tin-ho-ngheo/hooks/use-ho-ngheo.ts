@@ -203,7 +203,7 @@ export function useImportHoNgheo() {
       invalidateHoNgheoPages(queryClient);
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'detail'] });
       void queryClient.invalidateQueries({ queryKey: [...queryKeys.hoNgheo.all, 'full'] });
-      // Ô chọn hộ ở form Vì người nghèo / Nhà đại đoàn kết đọc danh sách hộ riêng.
+      // Ô chọn hộ ở form Chương trình hỗ trợ / Nhà đại đoàn kết đọc danh sách hộ riêng.
       void queryClient.invalidateQueries({ queryKey: queryKeys.viNguoiNgheo.all });
       if ((result.created ?? 0) + (result.updated ?? 0) > 0) {
         toast.success(

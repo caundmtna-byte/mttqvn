@@ -18,7 +18,7 @@ export type HoNgheoRowForViewGate = {
 };
 
 /**
- * Phạm vi xem của module Thông tin hộ nghèo.
+ * Phạm vi xem của module Thông tin đối tượng hỗ trợ.
  *
  * - `canViewAll` hoặc `cap_quan_ly` = **Tỉnh** → mọi hộ
  * - `cap_quan_ly` = **Xã phường** → chỉ hộ có `xa_phuong_id` trùng đơn vị mình

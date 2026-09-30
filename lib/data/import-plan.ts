@@ -7,11 +7,13 @@
  * Mỗi module chỉ khai danh sách khoá (`ImportKeySpec`): khoá nào là unique dưới
  * DB, cách chuẩn hoá giá trị ở bản ghi cũ và ở dòng trong file. Luật chung:
  *
- * - Trùng khoá unique (hoặc khoá tham chiếu đang chọn) ngay trong file → lỗi.
+ * - Trùng khoá unique ngay trong file → lỗi. Khoá không unique (họ tên + xã…)
+ *   trùng trong file là chuyện có thật, không chặn.
  * - `insert`: đụng khoá unique của bản ghi đã có → bỏ qua (DB sẽ chặn).
  * - `update`: không khớp bản ghi nào theo khoá đang chọn → bỏ qua.
  * - `upsert`: không khớp khoá đang chọn nhưng đụng unique ở khoá KHÁC → lỗi.
- * - Khoá không unique khớp từ hai bản ghi trở lên → lỗi, không đoán.
+ * - Khoá không unique chỉ là gợi ý: bỏ qua bản ghi cũ mang khoá unique khác
+ *   dòng (khác CCCD ⇒ khác người); còn khớp từ hai bản ghi trở lên → lỗi.
  * - Khớp được nhưng đụng unique của một bản ghi KHÁC → lỗi (DB sẽ trả 23505).
  * - Hai dòng cùng trỏ một bản ghi → dòng sau lỗi.
  * - Bản ghi ngoài phạm vi ghi của người dùng (`canWrite`) → lỗi.
@@ -89,7 +91,6 @@ export function buildImportPlan<E extends { id: string }, R extends { rowNum: nu
 ): ImportPlan<R> {
   const plan: ImportPlan<R> = { creates: [], updates: [], skips: [], errors: [] };
   const selected = input.keys.filter((k) => input.matchKeys.includes(k.key));
-  const selectedSet = new Set(selected.map((k) => k.key));
 
   /** Khoá → mọi bản ghi mang khoá đó (khoá không unique có thể nhiều bản ghi). */
   const index = new Map<string, Map<string, E[]>>();
@@ -109,12 +110,19 @@ export function buildImportPlan<E extends { id: string }, R extends { rowNum: nu
     return v == null ? [] : (index.get(spec.key)?.get(v) ?? []);
   };
 
-  /** Khoá cần soi trùng trong file: mọi khoá unique + khoá đang chọn. */
-  const fileCheckKeys = input.keys.filter((k) => k.unique || selectedSet.has(k.key));
+  /** Khoá cần soi trùng trong file: chỉ khoá unique. */
+  const fileCheckKeys = input.keys.filter((k) => k.unique);
   const seen = new Map<string, Map<string, number>>(fileCheckKeys.map((k) => [k.key, new Map()]));
   /** Bản ghi đã bị một dòng nhận — chặn hai dòng cùng ghi đè một bản ghi. */
   const claimed = new Map<string, number>();
   const uniqueKeys = input.keys.filter((k) => k.unique);
+  /** Hai bên cùng có giá trị ở một khoá unique mà khác nhau ⇒ chắc chắn khác bản ghi. */
+  const khacDanhTinh = (e: E, row: R): boolean =>
+    uniqueKeys.some((u) => {
+      const a = u.ofExisting(e);
+      const b = u.ofRow(row);
+      return a != null && b != null && a !== b;
+    });
 
   rowLoop: for (const row of input.rows) {
     const err = (message: string) =>
@@ -153,7 +161,7 @@ export function buildImportPlan<E extends { id: string }, R extends { rowNum: nu
 
     let matched: E | undefined;
     for (const spec of selected) {
-      const hits = lookup(spec, row);
+      const hits = spec.unique ? lookup(spec, row) : lookup(spec, row).filter((e) => !khacDanhTinh(e, row));
       if (hits.length > 1) {
         err(txt('shared.import.errKhopNhieu', { cot: spec.label, count: hits.length }));
         continue rowLoop;
