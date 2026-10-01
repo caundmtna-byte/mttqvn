@@ -15,6 +15,7 @@ export const matTranNhapXuatKho = {
   service: {
     notFound: 'Không tìm thấy phiếu.',
     chiTietRong: 'Phiếu phải có ít nhất 1 dòng chi tiết.',
+    hoNgheoKhongHopLe: 'Phiếu xuất cho hộ nghèo phải chọn đối tượng hỗ trợ (và chỉ phiếu xuất mới gắn đối tượng).',
     /** Mặc định khi parse lỗi PG `TON_KHO_KHONG_DU:` từ trigger. */
     tonKhoKhongDu: 'Tồn kho không đủ để xuất. Vui lòng kiểm tra lại số lượng.',
     /** Mặc định khi parse lỗi PG `LOAI_PHIEU_KHONG_DOI_DUOC:` từ trigger. */
@@ -32,6 +33,7 @@ export const matTranNhapXuatKho = {
     soLuongInvalid: 'Số lượng phải là số dương.',
     donGiaInvalid: 'Đơn giá phải là số không âm.',
     hangHoaRequired: 'Chọn hàng hóa.',
+    hoNgheoRequired: 'Chọn đối tượng hỗ trợ nhận hàng.',
   },
   store: {
     ttCol: 'TT',
@@ -95,6 +97,9 @@ export const matTranNhapXuatKho = {
     khoNhap: 'Kho nhập',
     donViCuuTro: 'Đơn vị cứu trợ',
     dotCuuTro: 'Đợt cứu trợ',
+    doiTuongHoTro: 'Đối tượng hỗ trợ',
+    doiTuongHoTroPlaceholder: 'Tìm theo họ tên chủ hộ…',
+    doiTuongHoTroHint: 'Chọn từ Thông tin đối tượng hỗ trợ — tự điền người nhận hàng.',
     ghiChu: 'Ghi chú',
     addLine: 'Thêm dòng',
     chiTietEmptyHint: 'Chưa có dòng chi tiết — bấm “Thêm dòng” để thêm hàng hoá.',
@@ -132,6 +137,7 @@ export const matTranNhapXuatKho = {
     khoNhap: 'Kho nhập',
     donViCuuTro: 'Đơn vị cứu trợ',
     dotCuuTro: 'Đợt cứu trợ',
+    doiTuongHoTro: 'Đối tượng hỗ trợ',
     ghiChu: 'Ghi chú',
     nguoiGiaoHang: 'Người giao hàng',
     nguoiNhanHang: 'Người nhận hàng',

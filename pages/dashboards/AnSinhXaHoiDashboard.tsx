@@ -20,7 +20,7 @@ import { useAuthStore } from '../../store/useStore';
 import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
 import { can, type AppResource } from '../../lib/permissions';
 import { appResourceForDashboardNavigatePath } from '../../lib/nav-module-visibility';
-import { AN_SINH_PLACEHOLDER_GROUPS } from '../../lib/an-sinh-hanh-chinh-module-config';
+import { AN_SINH_PLACEHOLDER_GROUPS } from '../../lib/an-sinh-module-config';
 
 const AnSinhXaHoiDashboard: React.FC = () => {
   const navigate = useNavigate();

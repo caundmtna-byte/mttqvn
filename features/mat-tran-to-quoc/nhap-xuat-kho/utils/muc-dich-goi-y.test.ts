@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMucDichOptions } from './muc-dich-goi-y';
+import { buildMucDichOptions, laMucDichXuatHoNgheo } from './muc-dich-goi-y';
 
 describe('buildMucDichOptions', () => {
   it('phiếu xuất: hai mục đích mặc định đứng đầu, đúng thứ tự', () => {
@@ -23,5 +23,23 @@ describe('buildMucDichOptions', () => {
 
   it('giá trị đang chọn luôn có mặt dù chưa có trong DB', () => {
     expect(buildMucDichOptions('chuyen_kho', ['A'], 'Điều chuyển')).toEqual(['A', 'Điều chuyển']);
+  });
+});
+
+describe('laMucDichXuatHoNgheo', () => {
+  it('nhận đúng mục đích, không phân biệt hoa thường và khoảng trắng thừa', () => {
+    expect(laMucDichXuatHoNgheo('xuat_ngoai', 'Xuất cho hộ nghèo')).toBe(true);
+    expect(laMucDichXuatHoNgheo('xuat_ngoai', '  xuất CHO   hộ nghèo ')).toBe(true);
+  });
+
+  it('mục đích khác hoặc để trống thì không bắt chọn hộ', () => {
+    expect(laMucDichXuatHoNgheo('xuat_ngoai', 'Để tại kho dùng khi cần')).toBe(false);
+    expect(laMucDichXuatHoNgheo('xuat_ngoai', 'Xuất cho hộ nghèo khó')).toBe(false);
+    expect(laMucDichXuatHoNgheo('xuat_ngoai', undefined)).toBe(false);
+  });
+
+  it('chỉ phiếu xuất ra ngoài mới tính — nhập / chuyển kho thì không', () => {
+    expect(laMucDichXuatHoNgheo('nhap_ngoai', 'Xuất cho hộ nghèo')).toBe(false);
+    expect(laMucDichXuatHoNgheo('chuyen_kho', 'Xuất cho hộ nghèo')).toBe(false);
   });
 });

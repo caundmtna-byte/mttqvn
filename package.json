@@ -21,7 +21,8 @@
     "typecheck:mttq": "tsc --noEmit -p tsconfig.typecheck-mttq.json",
     "types:supabase": "supabase gen types typescript --linked > lib/supabase/database.types.ts",
     "storage:create-avatars": "npx tsx scripts/create-avatars-bucket.ts",
-    "db:backup": "bash scripts/backup-db.sh"
+    "db:backup": "bash scripts/backup-db.sh",
+    "db:schema": "bash scripts/dump-schema.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

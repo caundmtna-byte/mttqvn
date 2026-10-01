@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { thanHamTrongSchema } from '@/lib/db-schema-snapshot';
 import {
   KTNT_BUOC_CHUYEN,
   ktntTrangThaiChonDuoc,
@@ -53,14 +52,11 @@ describe('ktntTrangThaiChonDuoc — quyền Duyệt', () => {
 });
 
 /**
- * Bảng bước chuyển ở client phải khớp đúng nhánh trong trigger. Đọc thẳng file
- * migration: sửa luật ở một bên mà quên bên kia thì test này đỏ.
+ * Bảng bước chuyển ở client phải khớp đúng nhánh trong trigger. Đọc bản chụp
+ * DB `supabase/schema.sql`: sửa luật ở một bên mà quên bên kia thì test này đỏ.
  */
 describe('khớp trigger fn_kiem_luat_trang_thai', () => {
-  const sql = readFileSync(
-    resolve(__dirname, '../../../../supabase/migrations/20260923111000_ktnt_luat_trang_thai.sql'),
-    'utf8',
-  );
+  const sql = thanHamTrongSchema('fn_kiem_luat_trang_thai');
   const nhanh = sql.slice(sql.indexOf("TG_TABLE_NAME = 'ktnt_khen_thuong_nha_tai_tro'"));
 
   function buocTrongSql(tu: string): string[] {

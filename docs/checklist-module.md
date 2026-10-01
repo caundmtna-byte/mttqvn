@@ -15,7 +15,7 @@ Dùng checklist này khi tạo một module mới để tránh sót bước và 
 
 ## 1. Cấu trúc thư mục & core
 
-- [ ] Tạo thư mục `features/<nhóm>/<module>/` (vd: `features/hanh-chinh/du-an/`).
+- [ ] Tạo thư mục `features/<nhóm>/<module>/` (vd: `features/nha-dai-doan-ket/danh-sach/`).
 - [ ] **core/types.ts**: Định nghĩa type entity (id, các trường hiển thị, quan hệ); type cho filters nếu phức tạp.
 - [ ] **core/schema.ts**: Zod schema cho form (`XxxFormValues`); rule khớp với message validation trong i18n.
 - [ ] **core/constants.ts** (nếu cần): Options trạng thái, enum hiển thị, map value → label.

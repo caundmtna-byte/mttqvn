@@ -13,6 +13,7 @@ npm run typecheck:mttq   # phạm vi MTTQ + hệ thống
 npm run lint             # eslint
 npm test                 # toàn bộ vitest
 npm run test:changed     # chỉ test liên quan file đã đổi
+npm run db:schema        # chụp lại cấu trúc DB → supabase/schema.sql (sau mỗi lần đổi DB)
 npx vitest run <path>    # một file/thư mục
 ```
 
@@ -30,7 +31,7 @@ Cần `.env.local` (chép từ `.env.example`): `VITE_SUPABASE_URL`, `VITE_SUPAB
 | `lib/` | Tiện ích chung: `permissions.ts`, `query-keys.ts`, `date-range-presets.ts`, `text/`, `supabase/`, `data/` |
 | `store/` | Zustand: `useStore` (auth), `usePermissionGrantStore` (ma trận quyền), `createGenericStore` (state list) |
 | `hooks/` | Hook chung: `use-can`, `use-resource-permissions`, `use-tab-search-param` |
-| `supabase/migrations/` | Migration SQL (đặt tên `<timestamp>_<mô tả>.sql`) |
+| `supabase/migrations/` | Migration SQL **mới** (đặt tên `<timestamp>_<mô tả>.sql`). Toàn bộ migration cũ (157 file, đến `20261001100000`) đã chạy trên DB và được **xoá khỏi repo ngày 2026-10-01** (tra lịch sử git). Cấu trúc DB hiện tại chụp ở `supabase/schema.sql` — **đổi DB xong phải chạy `npm run db:schema`** rồi commit kèm, vì test đối chiếu CHECK/trigger đọc file này. |
 | `docs/` | Quy ước — đọc trước khi làm module mới |
 
 ## Quy ước module
@@ -79,8 +80,8 @@ người nhập liệu tự ban hành quyết định khen thưởng của chín
   trigger `fn_kiem_luat_trang_thai` dưới DB — DB mới là nơi chặn thật. Sửa một bên
   phải sửa cả bên kia; `luat-trang-thai.test.ts` giữ hai bên khớp nhau.
 - Khi thêm module có phê duyệt: nhớ rằng **không chức vụ nào có sẵn `phe_duyet`**.
-  Siết quyền mà không seed = chỉ còn `cap_bac = 1` duyệt được. Xem
-  `supabase/migrations/20260731100000_seed_quyen_phe_duyet_khen_thuong.sql` —
+  Siết quyền mà không seed = chỉ còn `cap_bac = 1` duyệt được. Xem migration
+  `20260731100000_seed_quyen_phe_duyet_khen_thuong.sql` (đã xoá khỏi repo, tra lịch sử git) —
   seed đúng những chức vụ đang có `sua` để giữ nguyên hành vi, rồi để cơ quan tự bỏ tích.
 
 > ⚠️ Các bảng còn lại vẫn `USING (true)` cho cả đọc lẫn ghi — chặn dữ liệu vẫn đang nằm ở client.

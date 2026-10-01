@@ -1,8 +1,9 @@
+import dayjs from 'dayjs';
+import { isDateInStandardRange, type StandardResolvedDateRange } from '@/lib/date-range-presets';
 import type { ViNguoiNgheo } from '../core/types';
 import { VNN_TRANG_THAI_DA_NHAN } from '../core/constants';
 
 export interface VnnThongKeDimensionFilters {
-  nam: string[];
   linh_vuc: string[];
   nguon: string[];
   nguon_ho_tro: string[];
@@ -13,7 +14,6 @@ export interface VnnThongKeDimensionFilters {
 }
 
 export const VNN_THONG_KE_INITIAL_DIMS: VnnThongKeDimensionFilters = {
-  nam: [],
   linh_vuc: [],
   nguon: [],
   nguon_ho_tro: [],
@@ -33,13 +33,26 @@ function matches(selected: readonly string[], value: string | null | undefined):
   return selected.includes(v);
 }
 
+/** `tg_tao` là timestamptz — quy về ngày theo giờ địa phương, không cắt chuỗi UTC. */
+function ngayTaoLocal(r: ViNguoiNgheo): string {
+  return r.tg_tao ? dayjs(r.tg_tao).format('YYYY-MM-DD') : '';
+}
+
+/** Không truyền `range` = không lọc theo thời gian (preset «Tất cả»). */
+const VNN_ALL_TIME: StandardResolvedDateRange = { start: '', end: '', allTime: true };
+
+/**
+ * `range` lọc theo **ngày tạo hồ sơ** (`tg_tao`), không theo cột `nam`: người
+ * dùng chọn tuần / quý / khoảng tự do nên cần một mốc ngày thật.
+ */
 export function filterRowsForVnnThongKe(
   rows: readonly ViNguoiNgheo[],
   dims: VnnThongKeDimensionFilters,
+  range: StandardResolvedDateRange = VNN_ALL_TIME,
 ): ViNguoiNgheo[] {
   return rows.filter(
     (r) =>
-      matches(dims.nam, String(r.nam ?? '')) &&
+      isDateInStandardRange(ngayTaoLocal(r), range) &&
       matches(dims.linh_vuc, r.linh_vuc_ho_tro) &&
       matches(dims.nguon, r.nguon) &&
       matches(dims.nguon_ho_tro, r.nguon_ho_tro) &&

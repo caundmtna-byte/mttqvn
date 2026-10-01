@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { applyZodVietnameseErrors } from '@/lib/validation/zod-vi';
 import { viNguoiNgheoSchema } from './schema';
+import { checkValuesTrongSchema } from '@/lib/db-schema-snapshot';
 import {
   VNN_DOI_TUONG_VALUES,
   VNN_HINH_THUC_VALUES,
@@ -101,21 +100,8 @@ describe('viNguoiNgheoSchema', () => {
  * Danh mục ở client là BẢN SAO của CHECK dưới DB. Lệch nhau thì giao diện cho
  * chọn một giá trị mà DB từ chối — test này giữ hai bên khớp.
  */
-describe('danh mục khớp CHECK trong migration', () => {
-  // Theo thứ tự thời gian — CHECK đặt lại ở migration sau thắng.
-  const sql = [
-    '20260923100000_vnn_chuong_trinh_vi_nguoi_ngheo.sql',
-    '20260930101000_vnn_hien_vat.sql',
-  ]
-    .map((f) => readFileSync(resolve(__dirname, '../../../../supabase/migrations', f), 'utf8'))
-    .join('\n');
-
-  function checkValues(col: string): string[] {
-    const all = [...sql.matchAll(new RegExp(`CHECK \\((?:${col} IS NULL OR )?${col} IN \\(([^)]*)\\)`, 'g'))];
-    const m = all.at(-1);
-    if (!m) throw new Error(`Không thấy CHECK của cột ${col}`);
-    return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
-  }
+describe('danh mục khớp CHECK dưới DB (supabase/schema.sql)', () => {
+  const checkValues = (col: string) => checkValuesTrongSchema('vnn_chuong_trinh', col);
 
   it.each([
     ['linh_vuc_ho_tro', VNN_LINH_VUC_VALUES],

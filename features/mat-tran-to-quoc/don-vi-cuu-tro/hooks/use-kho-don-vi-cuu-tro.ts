@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
@@ -10,6 +10,7 @@ import {
   deleteKhoDonViCuuTroMany,
   getKhoDonViCuuTroById,
   getKhoDonViCuuTroList,
+  getKhoDonViCuuTroUngHoTheoKy,
   updateKhoDonViCuuTro,
 } from '../services/kho-don-vi-cuu-tro-service';
 import type { ImportRunOptions } from '@/components/shared/ImportDialog';
@@ -23,6 +24,22 @@ export function useKhoDonViCuuTroList(options?: { enabled?: boolean }) {
     queryFn: getKhoDonViCuuTroList,
     enabled: options?.enabled !== false,
     ...transactionalCrudListQueryOptions,
+  });
+}
+
+/** `tuNgay` / `denNgay` rỗng = toàn thời gian (preset «Tất cả»). */
+export function useKhoDonViCuuTroUngHoTheoKy(
+  tuNgay: string,
+  denNgay: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: queryKeys.khoDonViCuuTro.ungHoTheoKy(tuNgay, denNgay),
+    queryFn: () => getKhoDonViCuuTroUngHoTheoKy(tuNgay, denNgay),
+    enabled: options?.enabled !== false,
+    ...transactionalCrudListQueryOptions,
+    // Đổi kỳ: giữ số kỳ trước trong lúc tải, khỏi nháy khung xương cả trang.
+    placeholderData: keepPreviousData,
   });
 }
 

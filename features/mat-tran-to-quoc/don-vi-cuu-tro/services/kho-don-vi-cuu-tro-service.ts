@@ -104,6 +104,48 @@ async function getKhoDonViCuuTroKetQua(donViId?: string): Promise<Map<string, nu
   return out;
 }
 
+export interface DonViCuuTroUngHoKy {
+  tienKho: number;
+  tienChuongTrinh: number;
+  soLuot: number;
+}
+
+function toSo(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Kết quả ủng hộ trong khoảng ngày `[tuNgay, denNgay]` (`YYYY-MM-DD`, chuỗi rỗng =
+ * không chặn đầu đó). Chỉ có đơn vị phát sinh trong kỳ — vắng mặt nghĩa là 0.
+ */
+export async function getKhoDonViCuuTroUngHoTheoKy(
+  tuNgay: string,
+  denNgay: string,
+): Promise<Map<string, DonViCuuTroUngHoKy>> {
+  const supabase = getSupabase();
+  const out = new Map<string, DonViCuuTroUngHoKy>();
+  if (!supabase) return out;
+  const { data, error } = await supabase.rpc('get_kho_don_vi_cuu_tro_ung_ho_theo_ky', {
+    p_tu_ngay: tuNgay || null,
+    p_den_ngay: denNgay || null,
+  });
+  if (error) handleSupabaseError(error);
+  for (const r of (data ?? []) as {
+    don_vi_id: unknown;
+    tien_kho: unknown;
+    tien_chuong_trinh: unknown;
+    so_luot: unknown;
+  }[]) {
+    out.set(String(r.don_vi_id), {
+      tienKho: toSo(r.tien_kho),
+      tienChuongTrinh: toSo(r.tien_chuong_trinh),
+      soLuot: toSo(r.so_luot),
+    });
+  }
+  return out;
+}
+
 export async function getKhoDonViCuuTroList(): Promise<KhoDonViCuuTroListRow[]> {
   const [list, ketQua] = await Promise.all([
     repo.getAll({ orderBy: 'tt', ascending: true }),

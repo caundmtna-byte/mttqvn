@@ -146,10 +146,33 @@ describe('filterRowsForNddkThongKe', () => {
   it('lọc giao nhau giữa nhiều chiều', () => {
     const out = filterRowsForNddkThongKe(rows, {
       ...NDDK_THONG_KE_INITIAL_DIMS,
-      nam: ['2026'],
       trang_thai: ['Đã bàn giao'],
+      xa_phuong: ['5'],
     });
-    expect(out.map((r) => r.id)).toEqual(['3']);
+    expect(out.map((r) => r.id)).toEqual(['1']);
+  });
+
+  it('khoảng thời gian lọc theo ngày tạo hồ sơ, tính cả hai đầu mút', () => {
+    const theoNgay = [
+      nha({ id: 'a', tg_tao: '2026-03-31T06:00:00Z' }),
+      nha({ id: 'b', tg_tao: '2026-04-01T06:00:00Z' }),
+      nha({ id: 'c', tg_tao: '2026-06-30T06:00:00Z' }),
+      nha({ id: 'd', tg_tao: '2026-07-01T06:00:00Z' }),
+    ];
+    const out = filterRowsForNddkThongKe(theoNgay, NDDK_THONG_KE_INITIAL_DIMS, {
+      start: '2026-04-01',
+      end: '2026-06-30',
+    });
+    expect(out.map((r) => r.id)).toEqual(['b', 'c']);
+  });
+
+  it('preset «Tất cả» không loại dòng nào', () => {
+    const out = filterRowsForNddkThongKe(rows, NDDK_THONG_KE_INITIAL_DIMS, {
+      start: '',
+      end: '',
+      allTime: true,
+    });
+    expect(out).toHaveLength(3);
   });
 
   it('chọn "chưa xác định" bắt đúng dòng có giá trị rỗng', () => {

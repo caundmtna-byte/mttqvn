@@ -1,7 +1,7 @@
 /**
- * Bảng map giá trị cũ dưới đây PHẢI khớp từng dòng với khối `CASE` trong
- * `supabase/migrations/20260921100000_kho_don_vi_cuu_tro_mo_rong.sql`.
- * Sửa một bên mà quên bên kia = dữ liệu cũ hiển thị sai loại.
+ * Bảng map giá trị cũ dưới đây khớp từng dòng với khối `CASE` của migration
+ * `20260921100000_kho_don_vi_cuu_tro_mo_rong.sql` (đã chạy, đã xoá khỏi repo —
+ * tra lịch sử git). Dữ liệu DB đã đổi xong; bảng này chỉ còn đỡ cache / file nhập cũ.
  */
 import { describe, expect, it } from 'vitest';
 import {

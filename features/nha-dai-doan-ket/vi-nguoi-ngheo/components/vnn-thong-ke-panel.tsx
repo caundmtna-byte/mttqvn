@@ -13,7 +13,6 @@ import {
 import {
   HandHeart,
   Coins,
-  CalendarRange,
   CheckCircle2,
   Hourglass,
   Percent,
@@ -36,6 +35,12 @@ import Tooltip from '@/components/ui/Tooltip';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import ErrorState from '@/components/shared/ErrorState';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
+import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import {
+  buildStandardDateRangePresets,
+  isStandardDateRangeNonDefault,
+  resolveStandardDateRange,
+} from '@/lib/date-range-presets';
 import type { BadgeConfig } from '@/components/ui/EnumBadge';
 import {
   ReportSkeleton,
@@ -65,7 +70,6 @@ import {
   vnnNguonBadge,
 } from '../core/display-badges';
 import { useNddkXaPhuongOptions } from '../../danh-sach/hooks/use-nddk-xa-phuong-options';
-import { buildNddkNamOptions } from '../../danh-sach/utils/nam-options';
 import {
   VNN_KHONG_XAC_DINH,
   VNN_THONG_KE_INITIAL_DIMS,
@@ -81,6 +85,9 @@ import {
 import { exportVnnThongKeReportToExcel } from '../utils/export-vnn-report';
 
 const TOP_DON_VI_LIMIT = 10;
+
+/** Mặc định «Tất cả» — không lọc thời gian cho tới khi người dùng chọn. */
+const INITIAL_DATE_RANGE: DateRangeValue = { preset: 'all', customStart: '', customEnd: '' };
 
 /** Triệu đồng — trục tiền trên biểu đồ, để nhãn không tràn. */
 function toTrieu(value: number): number {
@@ -141,17 +148,33 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
     [allRows, viewer],
   );
 
-  // Không có bộ chọn khoảng ngày: trục thời gian của nghiệp vụ là cột `nam`.
+  /** Khoảng thời gian lọc theo ngày tạo hồ sơ — xem `filterRowsForVnnThongKe`. */
+  const [dateRange, setDateRange] = useState<DateRangeValue>(INITIAL_DATE_RANGE);
+  const datePresets = useMemo(() => buildStandardDateRangePresets(), []);
+  const resolvedRange = useMemo(
+    () => resolveStandardDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
+    [dateRange.preset, dateRange.customStart, dateRange.customEnd],
+  );
+
   const [dims, setDims] = useState<VnnThongKeDimensionFilters>(VNN_THONG_KE_INITIAL_DIMS);
-  const activeFilterCount = useMemo(() => countActiveStatsFilters(dims, false), [dims]);
-  const clearFilters = useCallback(() => setDims(VNN_THONG_KE_INITIAL_DIMS), []);
+  const activeFilterCount = useMemo(
+    () => countActiveStatsFilters(dims, isStandardDateRangeNonDefault(dateRange, 'all')),
+    [dims, dateRange],
+  );
+  const clearFilters = useCallback(() => {
+    setDims(VNN_THONG_KE_INITIAL_DIMS);
+    setDateRange(INITIAL_DATE_RANGE);
+  }, []);
   const setDim = useCallback(
     (key: keyof VnnThongKeDimensionFilters, vals: string[]) =>
       setDims((cur) => ({ ...cur, [key]: vals })),
     [],
   );
 
-  const rows = useMemo(() => filterRowsForVnnThongKe(viewableRows, dims), [viewableRows, dims]);
+  const rows = useMemo(
+    () => filterRowsForVnnThongKe(viewableRows, dims, resolvedRange),
+    [viewableRows, dims, resolvedRange],
+  );
   const kpis = useMemo(() => computeVnnKpis(rows), [rows]);
   const namSeries = useMemo(() => buildVnnNamSeries(rows), [rows]);
   const linhVucRows = useMemo(() => buildVnnBarData(rows, 'linh_vuc_ho_tro', VNN_LINH_VUC_VALUES), [rows]);
@@ -186,29 +209,28 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
     [kpis],
   );
 
-  const namOptions = useMemo(() => buildNddkNamOptions(), []);
   const xaPhuongOptions = useNddkXaPhuongOptions();
 
   const specs = useMemo(
     (): { key: keyof VnnThongKeDimensionFilters; label: string; icon: LucideIcon; options: { value: string; label: string }[]; inline?: boolean }[] => [
-      { key: 'nam', label: txt('viNguoiNgheo.store.namCol'), icon: CalendarRange, options: namOptions, inline: true },
       { key: 'trang_thai', label: txt('viNguoiNgheo.store.trangThaiCol'), icon: ListChecks, options: toOptions(VNN_TRANG_THAI_VALUES), inline: true },
       { key: 'linh_vuc', label: txt('viNguoiNgheo.store.linhVucCol'), icon: Layers, options: toOptions(VNN_LINH_VUC_VALUES), inline: true },
       { key: 'hinh_thuc', label: txt('viNguoiNgheo.store.hinhThucCol'), icon: Gift, options: toOptions(VNN_HINH_THUC_VALUES), inline: true },
       { key: 'nguon', label: txt('viNguoiNgheo.store.nguonCol'), icon: Coins, options: toOptions(VNN_NGUON_VALUES) },
-      { key: 'nguon_ho_tro', label: txt('viNguoiNgheo.store.nguonHoTroCol'), icon: Coins, options: toOptions(VNN_NGUON_HO_TRO_VALUES) },
+      { key: 'nguon_ho_tro', label: txt('viNguoiNgheo.store.nguonHoTroCol'), icon: Coins, options: toOptions(VNN_NGUON_HO_TRO_VALUES), inline: true },
       { key: 'doi_tuong', label: txt('viNguoiNgheo.store.doiTuongCol'), icon: Users, options: toOptions(VNN_DOI_TUONG_VALUES) },
       {
         key: 'xa_phuong',
         label: txt('viNguoiNgheo.store.xaPhuongCol'),
         icon: MapPin,
+        inline: true,
         options: [
           { value: VNN_KHONG_XAC_DINH, label: khongGanXa },
           ...xaPhuongOptions.map((o) => ({ value: o.value, label: o.label })),
         ],
       },
     ],
-    [namOptions, xaPhuongOptions, khongGanXa],
+    [xaPhuongOptions, khongGanXa],
   );
 
   const filterGroups = useMemo(
@@ -224,8 +246,21 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
     [specs, dims, setDim],
   );
 
+  const dateRangePicker = (
+    <DateRangePicker
+      presets={datePresets}
+      value={dateRange}
+      onChange={setDateRange}
+      placeholder={txt('viNguoiNgheoThongKe.filter.thoiGianLabel')}
+      customPresetId="custom"
+      className="shrink-0"
+    />
+  );
+
   const filtersSlot = (
-    <div className="flex flex-wrap items-center gap-2 min-w-0">
+    <>
+      {dateRangePicker}
+      <div className="hidden h-6 w-px shrink-0 self-center bg-border sm:block" aria-hidden />
       {specs
         .filter((s) => s.inline)
         .map((s) => (
@@ -239,7 +274,7 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
             className="shrink-0"
           />
         ))}
-    </div>
+    </>
   );
 
   const handleExport = useCallback(() => {
@@ -288,6 +323,9 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
         onClearFilters={clearFilters}
         onBack={onPageBack}
         tabSlot={tabsSlot}
+        mobileRow2Content={
+          <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangePicker}</div>
+        }
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-3 space-y-3">

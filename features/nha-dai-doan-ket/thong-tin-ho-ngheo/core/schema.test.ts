@@ -1,7 +1,7 @@
 /**
  * Schema form phải chặn ĐÚNG những gì CHECK dưới DB chặn — nếu không, người
  * dùng bấm Lưu rồi mới nhận lỗi Postgres thay vì thấy câu tiếng Việt tại ô.
- * Đối chiếu: `supabase/migrations/20260921150000_hngh_thong_tin_ho_ngheo.sql`.
+ * Đối chiếu: bảng `hngh_thong_tin_ho_ngheo` trong `supabase/schema.sql` (`npm run db:schema`).
  */
 import { describe, expect, it } from 'vitest';
 import { hoNgheoSchema, hoNgheoToFormInput } from './schema';

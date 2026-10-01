@@ -20,7 +20,6 @@ const ThietLapDanhMucPbxhPage = lazy(() => import('./features/phan-bien-xa-hoi/t
 const ThongKePhanBienXaHoiPage = lazy(() => import('./features/phan-bien-xa-hoi/thong-ke-phan-bien-xa-hoi/index'));
 const DanTocTonGiaoDashboard = lazy(() => import('./pages/dashboards/DanTocTonGiaoDashboard'));
 const AnSinhXaHoiDashboard = lazy(() => import('./pages/dashboards/AnSinhXaHoiDashboard'));
-const HanhChinhDashboard = lazy(() => import('./pages/dashboards/HanhChinhDashboard'));
 const DashboardModulePlaceholder = lazy(() => import('./pages/DashboardModulePlaceholder'));
 const ThietLapBaiVietPage = lazy(() => import('./features/quan-ly-viet-bai/thiet-lap-bai-viet/index'));
 const BaiVietDanhSachPage = lazy(() => import('./features/quan-ly-viet-bai/bai-viet/index'));
@@ -283,7 +282,6 @@ const App = () => {
           {PLACEHOLDER_MODULE_PATHS.map((path) => (
             <Route key={path} path={path} element={<DashboardModulePlaceholder />} />
           ))}
-          <Route path="/hanh-chinh" element={<HanhChinhDashboard />} />
           <Route path="/trang-thong-tin-khac" element={<TrangThongTinKhacDashboard />} />
 
           <Route path="/he-thong" element={<SystemDashboard />} />

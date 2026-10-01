@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { txt } from '@/lib/text';
 import { NHAP_XUAT_KHO_LOAI_PHIEU } from './constants';
+import { laMucDichXuatHoNgheo } from '../utils/muc-dich-goi-y';
 
 const idStr = z.string().trim().min(1);
 
@@ -41,6 +42,8 @@ const baseFormSchema = z.object({
   bo_phan: z.string().max(500).optional(),
   chung_tu_goc: z.string().max(2000).optional(),
   muc_dich: z.string().trim().max(500).optional(),
+  /** Đối tượng hỗ trợ nhận hàng — chỉ dùng khi phiếu là "xuất cho hộ nghèo". */
+  ho_ngheo_id: z.string().trim().optional(),
   chi_tiet: z
     .array(nhapXuatKhoCtLineSchema)
     .min(1, txt('matTranNhapXuatKho.validation.chiTietMin')),
@@ -78,6 +81,13 @@ export const nhapXuatKhoFormSchema = baseFormSchema.superRefine((data, ctx) => {
           code: z.ZodIssueCode.custom,
           path: ['dot_cuu_tro_id'],
           message: txt('matTranNhapXuatKho.validation.dotCuuTroRequired'),
+        });
+      }
+      if (laMucDichXuatHoNgheo(data.loai_phieu, data.muc_dich) && !data.ho_ngheo_id?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['ho_ngheo_id'],
+          message: txt('matTranNhapXuatKho.validation.hoNgheoRequired'),
         });
       }
       break;

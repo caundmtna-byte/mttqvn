@@ -87,14 +87,37 @@ describe('filterRowsForVnnThongKe', () => {
 
   it('nhiều chiều lọc cùng lúc là AND', () => {
     const rows = [
-      row({ nam: 2025, linh_vuc_ho_tro: 'Cứu trợ' }),
-      row({ nam: 2026, linh_vuc_ho_tro: 'Cứu trợ' }),
-      row({ nam: 2026, linh_vuc_ho_tro: 'Chữa bệnh' }),
+      row({ xa_phuong_id: '2', linh_vuc_ho_tro: 'Cứu trợ' }),
+      row({ xa_phuong_id: '1', linh_vuc_ho_tro: 'Cứu trợ' }),
+      row({ xa_phuong_id: '1', linh_vuc_ho_tro: 'Chữa bệnh' }),
     ];
     const out = filterRowsForVnnThongKe(rows, {
       ...VNN_THONG_KE_INITIAL_DIMS,
-      nam: ['2026'],
+      xa_phuong: ['1'],
       linh_vuc: ['Cứu trợ'],
+    });
+    expect(out).toHaveLength(1);
+  });
+
+  it('khoảng thời gian lọc theo ngày tạo hồ sơ, tính cả hai đầu mút', () => {
+    const rows = [
+      row({ id: 'a', tg_tao: '2026-03-31T06:00:00Z' }),
+      row({ id: 'b', tg_tao: '2026-04-01T06:00:00Z' }),
+      row({ id: 'c', tg_tao: '2026-06-30T06:00:00Z' }),
+      row({ id: 'd', tg_tao: '2026-07-01T06:00:00Z' }),
+    ];
+    const out = filterRowsForVnnThongKe(rows, VNN_THONG_KE_INITIAL_DIMS, {
+      start: '2026-04-01',
+      end: '2026-06-30',
+    });
+    expect(out.map((r) => r.id)).toEqual(['b', 'c']);
+  });
+
+  it('preset «Tất cả» giữ cả dòng chưa có ngày tạo', () => {
+    const out = filterRowsForVnnThongKe([row({ tg_tao: '' })], VNN_THONG_KE_INITIAL_DIMS, {
+      start: '',
+      end: '',
+      allTime: true,
     });
     expect(out).toHaveLength(1);
   });

@@ -25,7 +25,6 @@ các module con; route khai báo tập trung trong `App.tsx`.
 | **Kiểm tra, giám sát, phản biện xã hội** | `/phan-bien-xa-hoi` | Thực hiện phản biện xã hội · Thiết lập danh mục · Thống kê phản biện xã hội | `features/phan-bien-xa-hoi/` |
 | **Dân tộc, tôn giáo** | `/dan-toc-ton-giao` | Thăm hỏi (dịp thăm hỏi, thăm hỏi tổ chức, thăm hỏi cá nhân, thống kê thăm hỏi) · Thông tin (tổ chức quan trọng, cá nhân tiêu biểu, thống kê tổ chức — cá nhân) | `features/dan-toc-ton-giao/` |
 | **An sinh xã hội** | `/an-sinh-xa-hoi` | Kho cứu trợ: danh sách kho, hàng hoá, đợt cứu trợ, đơn vị cứu trợ, nhập xuất kho (có in phiếu), tồn kho, báo cáo hỗ trợ | `features/mat-tran-to-quoc/` (nhóm `kho-*`, `dot-cuu-tro`, `don-vi-cuu-tro`, `hang-hoa`, `ton-kho`, `nhap-xuat-kho`, `bao-cao-ho-tro`) |
-| **Hành chính** | `/hanh-chinh` | Quản lý tài sản · Quản lý xe — **chưa triển khai**, đang là trang placeholder | `lib/an-sinh-hanh-chinh-module-config.ts` |
 | **Trang thông tin khác** | `/trang-thong-tin-khac` | Liên kết truy cập | `pages/dashboards/` |
 | **Hệ thống** | `/he-thong` | Nhân viên · Phòng ban · Chức vụ · Thông tin tổ chức · Phân quyền · Danh sách tỉnh thành (xã/phường) | `features/he-thong/` |
 
@@ -34,8 +33,7 @@ Hai lưu ý về sơ đồ trên, đối chiếu trực tiếp từ `App.tsx`:
 - **Kho cứu trợ đã dời sang An sinh xã hội.** Các đường dẫn cũ `/mat-tran-to-quoc/kho-cuu-tro/*` vẫn
   còn nhưng chỉ `<Navigate>` sang `/an-sinh-xa-hoi/kho-cuu-tro/*`. Mã nguồn vẫn nằm trong
   `features/mat-tran-to-quoc/`.
-- **Hành chính** hiện là **module placeholder**: route sinh tự động từ `PLACEHOLDER_MODULE_PATHS`
-  và render `DashboardModulePlaceholder`, chưa có bảng dữ liệu. Nhà đại đoàn kết đã là module thật.
+- Nhà đại đoàn kết đã là module thật (`features/nha-dai-doan-ket/`).
 
 Ngoài menu còn có: Trang chủ (`/`), Hồ sơ (`/ho-so`), Thông báo (`/thong-bao`), Đăng nhập
 (`/dang-nhap`).
@@ -123,7 +121,7 @@ typecheck riêng cho phạm vi MTTQ.
 | `lib/` | `permissions.ts`, `query-keys.ts`, `sidebar-menu.tsx`, `date-range-presets.ts`, `text/` (chuỗi UI), `supabase/`, `data/` (repository + phân trang server) |
 | `store/` | Zustand: `useStore` (auth), `usePermissionGrantStore` (ma trận quyền), `createGenericStore` |
 | `hooks/` | `use-can`, `use-hydrate-position-permissions`, `use-resource-permissions`, `use-server-paged-list`… |
-| `supabase/migrations/` | Migration SQL, đặt tên `<timestamp>_<mô tả>.sql` |
+| `supabase/migrations/` | Migration SQL mới, đặt tên `<timestamp>_<mô tả>.sql` — migration cũ đã chạy và được xoá khỏi repo ngày 2026-10-01 (tra lịch sử git) |
 | `supabase/functions/admin-user/` | Edge Function tạo/sửa/xoá tài khoản Auth |
 | `supabase/scripts/` | Script SQL chạy tay: seed, repair dữ liệu |
 | `scripts/` | Script Node/Bash: deploy Edge Function, tạo bucket, migrate ảnh (`archive/`) |

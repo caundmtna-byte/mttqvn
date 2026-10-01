@@ -220,6 +220,9 @@ export const queryKeys = {
   khoDonViCuuTro: {
     all: ['kho-don-vi-cuu-tro'] as const,
     detail: (id: string) => ['kho-don-vi-cuu-tro', 'detail', id] as const,
+    /** Cùng tiền tố `all` — invalidate danh sách là kéo luôn số liệu thống kê. */
+    ungHoTheoKy: (tuNgay: string, denNgay: string) =>
+      ['kho-don-vi-cuu-tro', 'ung-ho-theo-ky', tuNgay, denNgay] as const,
   },
   khoDotCuuTro: {
     all: ['kho-dot-cuu-tro'] as const,

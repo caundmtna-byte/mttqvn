@@ -32,5 +32,8 @@ export const viNguoiNgheoThongKe = {
     khongDonVi: 'Chưa gán đơn vị',
     empty: 'Chưa có dữ liệu',
   },
+  filter: {
+    thoiGianLabel: 'Thời gian tạo hồ sơ',
+  },
   noExportData: 'Không có dữ liệu để xuất.',
 };

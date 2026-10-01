@@ -68,6 +68,10 @@ export interface NhapXuatKhoDetail extends NhapXuatKhoListRow {
   nguoi_giao_nhan: string | null;
   bo_phan: string | null;
   chung_tu_goc: string | null;
+  /** Đối tượng hỗ trợ nhận hàng (phiếu "xuất cho hộ nghèo"). */
+  ho_ngheo_id: string | null;
+  ten_ho_ngheo: string | null;
+  so_cccd_ho_ngheo: string | null;
   chi_tiet: NhapXuatKhoCtRow[];
 }
 

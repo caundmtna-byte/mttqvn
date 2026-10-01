@@ -28,7 +28,7 @@ const optionalFk = z
   .optional()
   .transform((s) => (s === '' || s === undefined ? undefined : s));
 
-/** Bóc khoảng trắng như trigger DB, rỗng ⇒ bỏ trống; đã nhập thì đủ 12 chữ số. */
+/** Bóc khoảng trắng như trigger DB, rỗng ⇒ bỏ trống; đã nhập thì đủ 9 (CMND) hoặc 12 (CCCD) chữ số. */
 const soCccd = z
   .string()
   .optional()

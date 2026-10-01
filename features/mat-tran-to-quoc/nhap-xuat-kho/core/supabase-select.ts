@@ -10,6 +10,8 @@ const KHO_XUAT = 'kho_xuat:kho_danh_sach_kho!kho_nhap_xuat_kho_kho_xuat_id_fkey(
 const KHO_NHAP = 'kho_nhap:kho_danh_sach_kho!kho_nhap_xuat_kho_kho_nhap_id_fkey(id,ten_kho,don_vi_id)';
 const DON_VI = 'don_vi:kho_don_vi_cuu_tro!kho_nhap_xuat_kho_don_vi_cuu_tro_id_fkey(id,ten)';
 const DOT = 'dot:kho_dot_cuu_tro!kho_nhap_xuat_kho_dot_cuu_tro_id_fkey(id,ten)';
+const HO_NGHEO =
+  'ho_ngheo:hngh_thong_tin_ho_ngheo!kho_nhap_xuat_kho_ho_ngheo_id_fkey(id,ho_ten_dai_dien,so_cccd)';
 
 const BASE_COLS_LIST = [
   'id',
@@ -56,10 +58,12 @@ export const NHAP_XUAT_KHO_SELECT_FULL = [
   'nguoi_giao_nhan',
   'bo_phan',
   'chung_tu_goc',
+  'ho_ngheo_id',
   KHO_XUAT,
   KHO_NHAP,
   DON_VI,
   DOT,
+  HO_NGHEO,
   `kho_nhap_xuat_kho_ct(${CT_COLS_FULL},${HANG_HOA_FOR_CT})`,
 ].join(',');
 

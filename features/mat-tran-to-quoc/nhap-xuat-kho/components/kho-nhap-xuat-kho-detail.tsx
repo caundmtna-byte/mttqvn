@@ -21,6 +21,7 @@ import {
   StickyNote,
   Trash2,
   User,
+  UserSearch,
   Warehouse,
   Target,
 } from 'lucide-react';
@@ -428,6 +429,16 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
                   label={txt('matTranNhapXuatKho.detail.dotCuuTro')}
                   value={data.ten_dot_cuu_tro ?? (data.dot_cuu_tro_id ? `#${data.dot_cuu_tro_id}` : undefined)}
                   icon={<HandHeart size={12} />}
+                  emptyText={txt('common.emptyCell')}
+                />
+              ) : null}
+              {data.ho_ngheo_id ? (
+                <DetailField
+                  label={txt('matTranNhapXuatKho.detail.doiTuongHoTro')}
+                  value={[data.ten_ho_ngheo ?? `#${data.ho_ngheo_id}`, data.so_cccd_ho_ngheo]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  icon={<UserSearch size={12} />}
                   emptyText={txt('common.emptyCell')}
                 />
               ) : null}

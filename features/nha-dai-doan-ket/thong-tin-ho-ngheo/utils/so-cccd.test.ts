@@ -1,6 +1,6 @@
 /**
  * Chuẩn hoá số căn cước phải khớp ĐÚNG cách trigger `fn_hngh_chuan_hoa()` làm
- * dưới DB (migration 20260921150600). Lệch nhau thì giao diện bảo hai số khác
+ * dưới DB. Lệch nhau thì giao diện bảo hai số khác
  * nhau còn DB báo trùng khoá — lỗi gần như không chẩn đoán được từ màn hình.
  */
 import { describe, expect, it } from 'vitest';
@@ -34,7 +34,14 @@ describe('soCccdHopLe', () => {
     expect(soCccdHopLe('040 012 345 678')).toBe(true);
   });
 
-  it('thiếu / thừa số hoặc lẫn ký tự khác đều bị chặn', () => {
+  it('CMND cũ 9 chữ số vẫn hợp lệ', () => {
+    expect(soCccdHopLe('186123456')).toBe(true);
+    expect(soCccdHopLe('186 123 456')).toBe(true);
+  });
+
+  it('độ dài khác 9 và 12, hoặc lẫn ký tự khác, đều bị chặn', () => {
+    expect(soCccdHopLe('18612345')).toBe(false);
+    expect(soCccdHopLe('1861234567')).toBe(false);
     expect(soCccdHopLe('04001234567')).toBe(false);
     expect(soCccdHopLe('0400123456789')).toBe(false);
     expect(soCccdHopLe('04001234567a')).toBe(false);

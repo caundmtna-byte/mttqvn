@@ -28,7 +28,6 @@ export const ui = {
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
     "anSinhXaHoi": "An sinh xã hội",
-    "hanhChinh": "Hành chính",
     "trangThongTinKhac": "Trang thông tin khác",
     "system": "Hệ thống",
     "skipToMain": "Chuyển đến nội dung chính",
@@ -61,8 +60,7 @@ export const ui = {
       "groupTaskMgmt": "Quản lý giao việc",
       "groupMatTranToQuoc": "Mặt trận tổ quốc",
       "groupPhanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
-      "groupAnSinhXaHoi": "An sinh xã hội",
-      "groupHanhChinh": "Hành chính"
+      "groupAnSinhXaHoi": "An sinh xã hội"
     }
   },
   "shared": {
@@ -191,7 +189,6 @@ export const ui = {
       "phanBienModuleDesc": "Thực hiện phản biện, thiết lập danh mục và thống kê.",
       "danTocModuleDesc": "Thông tin tôn giáo, thăm hồi và thống kê dân tộc.",
       "anSinhXaHoiModuleDesc": "Chính sách an sinh và phúc lợi xã hội.",
-      "hanhChinhModuleDesc": "Quy trình hành chính và thủ tục nội bộ.",
       "trangThongTinKhacModuleDesc": "Trang thông tin và nội dung bổ sung.",
       "taskMgmtModuleDesc": "Công việc, giao việc và báo cáo tiến độ.",
       "matTranModuleDesc": "Tập huấn, khen thưởng, ủy viên ủy ban và thiết lập cán bộ.",
@@ -404,25 +401,6 @@ export const ui = {
        * Loại hình hỗ trợ trong chính bảng dữ liệu, không phải một module riêng.
        */
       "backToParent": "Quay lại An sinh xã hội"
-    },
-    "hanhChinhDashboard": {
-      "groupQuanLyTaiSan": "Quản lý tài sản",
-      "groupQuanLyXe": "Quản lý xe",
-      "danhSachTaiSan": "Danh sách tài sản",
-      "danhSachTaiSanDesc": "Quản lý hồ sơ và thông tin tài sản công.",
-      "capPhatThuHoiLuanChuyen": "Cấp phát thu hồi luân chuyển",
-      "capPhatThuHoiLuanChuyenDesc": "Theo dõi cấp phát, thu hồi và luân chuyển tài sản.",
-      "chiPhiTaiSan": "Chi phí tài sản",
-      "chiPhiTaiSanDesc": "Ghi nhận và thống kê chi phí bảo dưỡng, sửa chữa tài sản.",
-      "thietLapDanhMuc": "Thiết lập danh mục",
-      "thietLapDanhMucDesc": "Cấu hình danh mục và thiết lập cho module.",
-      "danhSachXe": "Danh sách xe",
-      "danhSachXeDesc": "Quản lý thông tin xe và trạng thái sử dụng.",
-      "lichSuSuDung": "Lịch sử sử dụng",
-      "lichSuSuDungDesc": "Theo dõi lịch sử điều động và sử dụng xe.",
-      "chiPhiXe": "Chi phí xe",
-      "chiPhiXeDesc": "Ghi nhận chi phí nhiên liệu, bảo dưỡng và sửa chữa xe.",
-      "backToParent": "Quay lại Hành chính"
     },
     "phanBienXaHoiDashboard": {
       "groupMain": "Kiểm tra, giám sát, phản biện xã hội",
@@ -643,7 +621,6 @@ export const ui = {
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
     "anSinhXaHoi": "An sinh xã hội",
-    "hanhChinh": "Hành chính",
     "trangThongTinKhac": "Trang thông tin khác",
     "systemAdmin": "Hệ thống",
     "employee": "Nhân sự",

@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { applyZodVietnameseErrors } from '@/lib/validation/zod-vi';
 import { khenThuongNhaTaiTroSchema } from './schema';
 import { KTNT_CAP_KHEN_VALUES, KTNT_TRANG_THAI_VALUES } from './constants';
+import { checkValuesTrongSchema } from '@/lib/db-schema-snapshot';
 
 beforeAll(() => applyZodVietnameseErrors());
 
@@ -47,16 +46,8 @@ describe('khenThuongNhaTaiTroSchema', () => {
   });
 });
 
-describe('danh mục khớp CHECK trong migration', () => {
-  const sql = readFileSync(
-    resolve(__dirname, '../../../../supabase/migrations/20260923110000_ktnt_khen_thuong_nha_tai_tro.sql'),
-    'utf8',
-  );
-  const check = (col: string) => {
-    const m = sql.match(new RegExp(`CHECK \\(${col} IN \\(([^)]*)\\)`));
-    if (!m) throw new Error(`Không thấy CHECK của ${col}`);
-    return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
-  };
+describe('danh mục khớp CHECK dưới DB (supabase/schema.sql)', () => {
+  const check = (col: string) => checkValuesTrongSchema('ktnt_khen_thuong_nha_tai_tro', col);
 
   it('cap_khen', () => expect(check('cap_khen')).toEqual([...KTNT_CAP_KHEN_VALUES]));
   it('trang_thai', () => expect(check('trang_thai')).toEqual([...KTNT_TRANG_THAI_VALUES]));

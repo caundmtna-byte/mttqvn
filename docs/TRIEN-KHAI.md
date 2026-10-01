@@ -104,6 +104,12 @@ tab rồi mở lại.
 
 ## 4. Migration cơ sở dữ liệu
 
+> **2026-10-01:** toàn bộ 157 migration cũ đã chạy trên DB và được xoá khỏi repo (tra lịch sử git);
+> bảng `supabase_migrations.schema_migrations` trên DB vẫn giữ đủ lịch sử. Thay vào đó repo có
+> **`supabase/schema.sql`** — bản chụp cấu trúc DB (`npm run db:schema`, chỉ đọc DB). Đổi DB xong phải
+> chạy lại lệnh này và commit kèm: test đối chiếu CHECK / trigger đọc file đó. Muốn dựng DB trống
+> (staging) thì nạp `supabase/schema.sql` thay cho việc chạy lại cả chuỗi migration như các mục dưới.
+
 Migration nằm ở `supabase/migrations/`, đặt tên **`<timestamp>_<mô tả>.sql`**
 (ví dụ `20260726101000_get_kho_nhap_xuat_kho_page.sql`). Timestamp quyết định thứ tự áp — đặt tên sai
 thứ tự là áp sai thứ tự.

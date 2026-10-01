@@ -17,6 +17,7 @@ import type {
 } from '../core/types';
 import type { NhapXuatKhoLoaiPhieu } from '../core/constants';
 import type { NhapXuatKhoFormValues } from '../core/schema';
+import { laMucDichXuatHoNgheo } from '../utils/muc-dich-goi-y';
 import {
   NHAP_XUAT_KHO_CT_SELECT_FLAT_LIST,
   NHAP_XUAT_KHO_SELECT_FULL,
@@ -70,7 +71,10 @@ function countFromCtAggregate(raw: unknown): number {
   return raw.length;
 }
 
-function nameFromEmbed(v: unknown, key: 'ten_kho' | 'ten' | 'ten_hang_hoa' | 'ho_va_ten'): string | null {
+function nameFromEmbed(
+  v: unknown,
+  key: 'ten_kho' | 'ten' | 'ten_hang_hoa' | 'ho_va_ten' | 'ho_ten_dai_dien' | 'so_cccd',
+): string | null {
   const o = pickEmbedded<Record<string, unknown>>(v);
   if (!o) return null;
   const t = o[key];
@@ -145,6 +149,9 @@ export function flattenFullRow(row: Record<string, unknown>): NhapXuatKhoDetail 
     nguoi_giao_nhan: nullableStr(row.nguoi_giao_nhan),
     bo_phan: nullableStr(row.bo_phan),
     chung_tu_goc: nullableStr(row.chung_tu_goc),
+    ho_ngheo_id: nullableStr(row.ho_ngheo_id),
+    ten_ho_ngheo: nameFromEmbed(row.ho_ngheo, 'ho_ten_dai_dien'),
+    so_cccd_ho_ngheo: nameFromEmbed(row.ho_ngheo, 'so_cccd'),
     chi_tiet,
   };
 }
@@ -193,6 +200,9 @@ function rethrowMapped(err: unknown): never {
   }
   if (/CHI_TIET_RONG/i.test(message)) {
     throw new Error(txt('matTranNhapXuatKho.service.chiTietRong'));
+  }
+  if (/kho_nxk_ho_ngheo_chk/i.test(message)) {
+    throw new Error(txt('matTranNhapXuatKho.service.hoNgheoKhongHopLe'));
   }
   if (/PHIEU_KHONG_TON_TAI/i.test(message)) {
     throw new Error(txt('matTranNhapXuatKho.service.notFound'));
@@ -528,6 +538,10 @@ export async function createNhapXuatKho(data: NhapXuatKhoFormValues): Promise<Nh
       p_chung_tu_goc: data.chung_tu_goc?.trim() ?? null,
       p_muc_dich: data.muc_dich?.trim() || null,
       p_chi_tiet: buildChiTietPayload(data),
+      // Chỉ phiếu "xuất cho hộ nghèo" mới gắn hộ — còn lại luôn null (CHECK dưới DB).
+      p_ho_ngheo_id: laMucDichXuatHoNgheo(data.loai_phieu, data.muc_dich)
+        ? toNullableId(data.ho_ngheo_id)
+        : null,
     });
     if (error) handleSupabaseError(error);
     const newId = String(rpcData ?? '');
@@ -560,6 +574,10 @@ export async function updateNhapXuatKho(
       p_chung_tu_goc: data.chung_tu_goc?.trim() ?? null,
       p_muc_dich: data.muc_dich?.trim() || null,
       p_chi_tiet: buildChiTietPayload(data),
+      // Chỉ phiếu "xuất cho hộ nghèo" mới gắn hộ — còn lại luôn null (CHECK dưới DB).
+      p_ho_ngheo_id: laMucDichXuatHoNgheo(data.loai_phieu, data.muc_dich)
+        ? toNullableId(data.ho_ngheo_id)
+        : null,
     });
     if (error) handleSupabaseError(error);
     const full = await getNhapXuatKhoById(id);

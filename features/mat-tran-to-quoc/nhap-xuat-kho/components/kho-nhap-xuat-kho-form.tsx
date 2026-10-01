@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useForm,
   Controller,
@@ -27,6 +27,7 @@ import {
   Target,
   Trash2,
   User,
+  UserSearch,
   Warehouse,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,7 +61,10 @@ import {
   useLastDonGiaMap,
   useNhapXuatKhoMucDichGoiY,
 } from '../hooks/use-kho-nhap-xuat-kho';
-import { buildMucDichOptions } from '../utils/muc-dich-goi-y';
+import { buildMucDichOptions, laMucDichXuatHoNgheo } from '../utils/muc-dich-goi-y';
+import { isNhapXuatKhoViewUnrestricted, useKhoNhapXuatKhoViewer } from '../hooks/use-kho-nhap-xuat-kho-viewer';
+import { useVnnHoNgheoOptions } from '@/features/nha-dai-doan-ket/vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
+import { useNddkXaPhuongOptions } from '@/features/nha-dai-doan-ket/danh-sach/hooks/use-nddk-xa-phuong-options';
 import NhapXuatKhoCtLineDrawer, {
   NHAP_XUAT_KHO_CT_EMPTY_LINE,
   type NhapXuatKhoLineHangHoaOption,
@@ -80,6 +84,7 @@ const DEFAULT_VALUES: NhapXuatKhoFormValues = {
   bo_phan: undefined,
   chung_tu_goc: undefined,
   muc_dich: undefined,
+  ho_ngheo_id: undefined,
   chi_tiet: [],
 };
 
@@ -128,6 +133,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     reset,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<NhapXuatKhoFormValues>({
     resolver: zodResolver(nhapXuatKhoFormSchema) as Resolver<NhapXuatKhoFormValues>,
@@ -165,6 +171,52 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
     [watchedLoaiPhieu, mucDichDaDung, watchedMucDich],
   );
 
+  /**
+   * "Xuất cho hộ nghèo" ⇒ bắt buộc chọn một đối tượng hỗ trợ. Danh sách hộ chỉ
+   * tải khi cần (vài nghìn dòng). Cán bộ cấp xã chỉ chọn được hộ của xã mình;
+   * chưa được gán đơn vị thì danh sách rỗng chứ không lọt hộ của mọi xã.
+   */
+  const laXuatHoNgheo = laMucDichXuatHoNgheo(watchedLoaiPhieu, watchedMucDich);
+  const viewer = useKhoNhapXuatKhoViewer();
+  const scopedToXa = !isNhapXuatKhoViewUnrestricted(viewer) && viewer.chucVuCapQuanLy === 'Xã phường';
+  const scopedXaId = scopedToXa ? viewer.viewerDonViId : null;
+  const { data: hoNgheoRows = [], isLoading: hoNgheoLoading } = useVnnHoNgheoOptions(scopedXaId, {
+    enabled: laXuatHoNgheo && (!scopedToXa || Boolean(scopedXaId)),
+  });
+  const xaPhuongOptions = useNddkXaPhuongOptions();
+  const hoNgheoOpts = useMemo(() => {
+    const tenXa = new Map(xaPhuongOptions.map((o) => [o.value, o.label]));
+    const opts = hoNgheoRows.map((h) => ({
+      value: h.id,
+      label: h.ho_ten_dai_dien,
+      subLabel: [h.so_cccd, h.xa_phuong_id ? tenXa.get(h.xa_phuong_id) : null].filter(Boolean).join(' · '),
+    }));
+    // Sửa phiếu cũ mà hộ nằm ngoài danh sách đang thấy: vẫn hiện đúng tên, không để ô trống.
+    const cu = initialData?.ho_ngheo_id;
+    if (cu && initialData?.ten_ho_ngheo && !opts.some((o) => o.value === cu)) {
+      opts.unshift({ value: cu, label: initialData.ten_ho_ngheo, subLabel: initialData.so_cccd_ho_ngheo ?? '' });
+    }
+    return opts;
+  }, [hoNgheoRows, xaPhuongOptions, initialData]);
+
+  /** Tên hộ vừa tự điền vào ô người nhận — đổi hộ thì thay, người dùng gõ tay thì giữ. */
+  const tenHoDaTuDien = useRef<string | null>(initialData?.ten_ho_ngheo ?? null);
+  const handlePickHoNgheo = (id: string) => {
+    setValue('ho_ngheo_id', id, { shouldDirty: true, shouldValidate: true });
+    const ten = hoNgheoOpts.find((o) => o.value === id)?.label;
+    if (!ten) return;
+    const hienTai = getValues('nguoi_giao_nhan')?.trim() ?? '';
+    if (!hienTai || hienTai === tenHoDaTuDien.current) {
+      setValue('nguoi_giao_nhan', ten, { shouldDirty: true });
+    }
+    tenHoDaTuDien.current = ten;
+  };
+
+  // Bỏ mục đích hộ nghèo / đổi loại phiếu ⇒ gỡ hộ (DB cũng chặn hộ trên phiếu khác).
+  useEffect(() => {
+    if (!laXuatHoNgheo && getValues('ho_ngheo_id')) setValue('ho_ngheo_id', undefined);
+  }, [laXuatHoNgheo, getValues, setValue]);
+
   const needCheckTonKho = watchedLoaiPhieu === 'xuat_ngoai' || watchedLoaiPhieu === 'chuyen_kho';
   const tonKhoQuery = useTonKhoByKho(watchedKhoXuatId ?? null, { enabled: needCheckTonKho });
   const tonKhoMap = useMemo(() => {
@@ -187,6 +239,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
         bo_phan: initialData.bo_phan ?? undefined,
         chung_tu_goc: initialData.chung_tu_goc ?? undefined,
         muc_dich: initialData.muc_dich ?? undefined,
+        ho_ngheo_id: initialData.ho_ngheo_id ?? undefined,
         chi_tiet: initialData.chi_tiet.map((c) => ({
           id: c.id,
           hang_hoa_id: c.hang_hoa_id,
@@ -522,6 +575,36 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                     />
                   )}
                 />
+              )}
+              {laXuatHoNgheo && (
+                <div className={FORM_GRID_SPAN_FULL}>
+                  <Controller
+                    name="ho_ngheo_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Combobox
+                        label={txt('matTranNhapXuatKho.form.doiTuongHoTro')}
+                        options={hoNgheoOpts}
+                        value={field.value ?? ''}
+                        onChange={(v) => {
+                          const id = v == null ? '' : String(v);
+                          if (id) handlePickHoNgheo(id);
+                          else field.onChange(undefined);
+                        }}
+                        placeholder={
+                          hoNgheoLoading
+                            ? txt('common.loading')
+                            : txt('matTranNhapXuatKho.form.doiTuongHoTroPlaceholder')
+                        }
+                        hint={txt('matTranNhapXuatKho.form.doiTuongHoTroHint')}
+                        error={errors.ho_ngheo_id?.message}
+                        icon={<UserSearch size={12} />}
+                        required
+                        dropdownInPortal
+                      />
+                    )}
+                  />
+                </div>
               )}
             </FormGrid>
           </FormSection>

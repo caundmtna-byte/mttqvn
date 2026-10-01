@@ -40,7 +40,7 @@ export const nhaDaiDoanKetThongKe = {
     empty: 'Chưa có dữ liệu',
   },
   filter: {
-    namLabel: 'Năm',
+    thoiGianLabel: 'Thời gian tạo hồ sơ',
     nguonLabel: 'Nguồn',
     nguonHoTroLabel: 'Nguồn hỗ trợ',
     loaiHinhLabel: 'Loại hình hỗ trợ',

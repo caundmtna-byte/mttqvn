@@ -9,6 +9,7 @@ import React, {
   startTransition,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart3, List } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,6 +24,10 @@ import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
+import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ImportDialog, {
   type ImportColumn,
@@ -45,6 +50,8 @@ import { countKhoDonViCuuTroColumnSearchActive, khoDonViCuuTroMatchesColumnSearc
 import { sortKhoDonViCuuTroList } from './utils/sort';
 import KhoDonViCuuTroToolbar from './components/kho-don-vi-cuu-tro-toolbar';
 import KhoDonViCuuTroTable from './components/kho-don-vi-cuu-tro-table';
+import DonViCuuTroThongKePanel from './components/don-vi-cuu-tro-thong-ke-panel';
+import { DON_VI_CUU_TRO_MAIN_TABS } from './core/constants';
 
 const KhoDonViCuuTroForm = lazy(() => import('./components/kho-don-vi-cuu-tro-form'));
 const KhoDonViCuuTroDetail = lazy(() => import('./components/kho-don-vi-cuu-tro-detail'));
@@ -73,6 +80,9 @@ const KhoDonViCuuTroPage: React.FC = () => {
   const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
+
+  const { canExport } = useResourcePermissions('matTranReliefSupportUnits');
+  const [mainTab, setMainTab] = useTabSearchParam(DON_VI_CUU_TRO_MAIN_TABS, 'danh_sach');
 
   /** Tránh bật query khi `matrixActive` còn false rồi tắt ngay khi hydrate (legacy `canView` → ma trận): request có thể bị hủy và danh sách trống dù RLS/DB có dữ liệu. */
   const listQueryEnabled = Boolean(
@@ -348,6 +358,20 @@ const KhoDonViCuuTroPage: React.FC = () => {
     [queryClient],
   );
 
+  const handlePageBack = () => navigate('/an-sinh-xa-hoi');
+
+  const tabsSlot = (
+    <TabGroup
+      tabs={[
+        { id: 'danh_sach', label: txt('matTranDonViCuuTro.tabs.danhSach'), icon: List },
+        { id: 'thong_ke', label: txt('matTranDonViCuuTro.tabs.thongKe'), icon: BarChart3 },
+      ]}
+      activeTab={mainTab}
+      onChange={setMainTab}
+      className="shrink-0"
+    />
+  );
+
   if (!canView) {
     return (
       <div
@@ -362,9 +386,17 @@ const KhoDonViCuuTroPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative">
+      <PageTabRow>{tabsSlot}</PageTabRow>
+      {mainTab === 'thong_ke' ? (
+        <DonViCuuTroThongKePanel
+          onPageBack={handlePageBack}
+          canExport={canExport}
+          queryEnabled={listQueryEnabled}
+        />
+      ) : (
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <KhoDonViCuuTroToolbar
-          onPageBack={() => navigate('/an-sinh-xa-hoi')}
+          onPageBack={handlePageBack}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');
@@ -401,6 +433,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       <AnimatePresence>
         {showForm && (

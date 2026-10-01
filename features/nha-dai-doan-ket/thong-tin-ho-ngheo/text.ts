@@ -103,7 +103,7 @@ export const hoNgheo = {
     chonPlaceholder: 'Chọn',
     doiTuongUuTienPlaceholder: 'Người có công, dân tộc thiểu số…',
     soCccdPlaceholder: 'Để trống nếu chưa có giấy tờ',
-    soCccdHint: 'Đủ 12 chữ số, không trùng với hộ khác.',
+    soCccdHint: 'CCCD 12 chữ số hoặc CMND cũ 9 chữ số, không trùng với hộ khác.',
     xaPhuongPlaceholder: 'Chọn xã/phường',
     danTocPlaceholder: 'Chọn dân tộc',
     doiTuongPlaceholder: 'Chọn đối tượng',
@@ -120,7 +120,7 @@ export const hoNgheo = {
   },
   validation: {
     hoTenRequired: 'Nhập họ và tên đại diện hộ.',
-    soCccdKhongHopLe: 'Số căn cước phải gồm đúng 12 chữ số.',
+    soCccdKhongHopLe: 'Số căn cước phải gồm 12 chữ số (hoặc CMND cũ 9 chữ số).',
     doiTuongInvalid: 'Đối tượng chưa hợp lệ.',
     tonGiaoInvalid: 'Tôn giáo chỉ nhận Có hoặc Không.',
     trangThaiInvalid: 'Trạng thái chưa hợp lệ.',

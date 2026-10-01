@@ -14,7 +14,6 @@ import {
   Home,
   Hammer,
   Coins,
-  CalendarRange,
   CheckCircle2,
   Activity,
   Percent,
@@ -35,6 +34,12 @@ import Tooltip from '@/components/ui/Tooltip';
 import ChartTooltip from '@/components/ui/ChartTooltip';
 import ErrorState from '@/components/shared/ErrorState';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
+import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
+import {
+  buildStandardDateRangePresets,
+  isStandardDateRangeNonDefault,
+  resolveStandardDateRange,
+} from '@/lib/date-range-presets';
 import {
   ReportSkeleton,
   StatsKpiGrid,
@@ -62,7 +67,6 @@ import {
   nddkTrangThaiBadge,
 } from '../core/display-badges';
 import { useNddkXaPhuongOptions } from '../hooks/use-nddk-xa-phuong-options';
-import { buildNddkNamOptions } from '../utils/nam-options';
 import {
   NDDK_KHONG_XAC_DINH,
   NDDK_THONG_KE_INITIAL_DIMS,
@@ -75,6 +79,9 @@ import {
   type NddkThongKeDimensionFilters,
 } from '../utils/aggregate-nddk-stats';
 import { exportNddkThongKeReportToExcel } from '../utils/export-nddk-report';
+
+/** Mặc định «Tất cả» — không lọc thời gian cho tới khi người dùng chọn. */
+const INITIAL_DATE_RANGE: DateRangeValue = { preset: 'all', customStart: '', customEnd: '' };
 
 /** Số xã/phường hiện trong bảng "Top theo số tiền". */
 const TOP_XA_PHUONG_LIMIT = 10;
@@ -119,22 +126,33 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
     [allRows, viewer],
   );
 
-  /**
-   * Trang này KHÔNG có bộ chọn khoảng ngày: trục thời gian của nghiệp vụ là cột
-   * `nam` (số nguyên), lọc theo ngày sẽ không khớp với cách cơ quan đọc báo cáo.
-   * Vì vậy chỉ có chip dimension, và `countActiveStatsFilters` được gọi trực
-   * tiếp với `isNonDefaultDateRange = false`.
-   */
+  /** Khoảng thời gian lọc theo ngày tạo hồ sơ — xem `filterRowsForNddkThongKe`. */
+  const [dateRange, setDateRange] = useState<DateRangeValue>(INITIAL_DATE_RANGE);
+  const datePresets = useMemo(() => buildStandardDateRangePresets(), []);
+  const resolvedRange = useMemo(
+    () => resolveStandardDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
+    [dateRange.preset, dateRange.customStart, dateRange.customEnd],
+  );
+
   const [dims, setDims] = useState<NddkThongKeDimensionFilters>(NDDK_THONG_KE_INITIAL_DIMS);
-  const activeFilterCount = useMemo(() => countActiveStatsFilters(dims, false), [dims]);
-  const clearFilters = useCallback(() => setDims(NDDK_THONG_KE_INITIAL_DIMS), []);
+  const activeFilterCount = useMemo(
+    () => countActiveStatsFilters(dims, isStandardDateRangeNonDefault(dateRange, 'all')),
+    [dims, dateRange],
+  );
+  const clearFilters = useCallback(() => {
+    setDims(NDDK_THONG_KE_INITIAL_DIMS);
+    setDateRange(INITIAL_DATE_RANGE);
+  }, []);
   const setDim = useCallback(
     (key: keyof NddkThongKeDimensionFilters, vals: string[]) =>
       setDims((cur) => ({ ...cur, [key]: vals })),
     [],
   );
 
-  const rows = useMemo(() => filterRowsForNddkThongKe(viewableRows, dims), [viewableRows, dims]);
+  const rows = useMemo(
+    () => filterRowsForNddkThongKe(viewableRows, dims, resolvedRange),
+    [viewableRows, dims, resolvedRange],
+  );
 
   const kpis = useMemo(() => computeNddkKpis(rows), [rows]);
   const namSeries = useMemo(() => buildNddkNamSeries(rows), [rows]);
@@ -225,7 +243,6 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
     [kpis],
   );
 
-  const namOptions = useMemo(() => buildNddkNamOptions(), []);
   const xaPhuongOptions = useNddkXaPhuongOptions();
   const xaPhuongFilterOptions = useMemo(
     () => [
@@ -237,14 +254,6 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
 
   const filterGroups = useMemo(
     () => [
-      {
-        key: 'nam',
-        label: txt('nhaDaiDoanKetThongKe.filter.namLabel'),
-        icon: CalendarRange,
-        options: namOptions,
-        value: dims.nam,
-        onChange: (vals: string[]) => setDim('nam', vals),
-      },
       {
         key: 'trang_thai',
         label: txt('nhaDaiDoanKetThongKe.filter.trangThaiLabel'),
@@ -294,19 +303,24 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
         onChange: (vals: string[]) => setDim('xa_phuong', vals),
       },
     ],
-    [namOptions, xaPhuongFilterOptions, dims, setDim],
+    [xaPhuongFilterOptions, dims, setDim],
+  );
+
+  const dateRangePicker = (
+    <DateRangePicker
+      presets={datePresets}
+      value={dateRange}
+      onChange={setDateRange}
+      placeholder={txt('nhaDaiDoanKetThongKe.filter.thoiGianLabel')}
+      customPresetId="custom"
+      className="shrink-0"
+    />
   );
 
   const filtersSlot = (
-    <div className="flex flex-wrap items-center gap-2 min-w-0">
-      <FilterChipMultiSelect
-        options={namOptions}
-        value={dims.nam}
-        onChange={(vals) => setDim('nam', vals)}
-        placeholder={txt('nhaDaiDoanKetThongKe.filter.namLabel')}
-        icon={CalendarRange}
-        className="shrink-0"
-      />
+    <>
+      {dateRangePicker}
+      <div className="hidden h-6 w-px shrink-0 self-center bg-border sm:block" aria-hidden />
       <FilterChipMultiSelect
         options={NDDK_TRANG_THAI_VALUES.map((v) => ({ value: v, label: v }))}
         value={dims.trang_thai}
@@ -331,7 +345,23 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
         icon={Coins}
         className="shrink-0"
       />
-    </div>
+      <FilterChipMultiSelect
+        options={NDDK_NGUON_HO_TRO_VALUES.map((v) => ({ value: v, label: v }))}
+        value={dims.nguon_ho_tro}
+        onChange={(vals) => setDim('nguon_ho_tro', vals)}
+        placeholder={txt('nhaDaiDoanKetThongKe.filter.nguonHoTroLabel')}
+        icon={Coins}
+        className="shrink-0"
+      />
+      <FilterChipMultiSelect
+        options={xaPhuongFilterOptions}
+        value={dims.xa_phuong}
+        onChange={(vals) => setDim('xa_phuong', vals)}
+        placeholder={txt('nhaDaiDoanKet.store.xaPhuongCol')}
+        icon={MapPin}
+        className="shrink-0"
+      />
+    </>
   );
 
   const handleExport = useCallback(() => {
@@ -387,6 +417,9 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
         onClearFilters={clearFilters}
         onBack={onPageBack}
         tabSlot={tabsSlot}
+        mobileRow2Content={
+          <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangePicker}</div>
+        }
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-3 space-y-3">

@@ -1,4 +1,23 @@
-import { NXK_MUC_DICH_XUAT_MAC_DINH, type NhapXuatKhoLoaiPhieu } from '../core/constants';
+import {
+  NXK_MUC_DICH_XUAT_HO_NGHEO,
+  NXK_MUC_DICH_XUAT_MAC_DINH,
+  type NhapXuatKhoLoaiPhieu,
+} from '../core/constants';
+
+const chuanHoa = (s: string | null | undefined) => (s ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * Phiếu này có phải "xuất cho hộ nghèo" — khi đó BẮT BUỘC chọn đối tượng hỗ trợ.
+ * So sau khi cắt hai đầu + gộp khoảng trắng + chữ thường, vì ô mục đích cho gõ tự
+ * do. Bản sao của CHECK `kho_nxk_ho_ngheo_chk` dưới DB — sửa một bên phải sửa cả
+ * bên kia.
+ */
+export function laMucDichXuatHoNgheo(
+  loaiPhieu: NhapXuatKhoLoaiPhieu | null | undefined,
+  mucDich: string | null | undefined,
+): boolean {
+  return loaiPhieu === 'xuat_ngoai' && chuanHoa(mucDich) === chuanHoa(NXK_MUC_DICH_XUAT_HO_NGHEO);
+}
 
 /**
  * Danh sách gợi ý cho ô "Mục đích" (combobox cho gõ mới).

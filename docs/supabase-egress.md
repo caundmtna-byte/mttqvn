@@ -89,7 +89,7 @@ KHÔNG lưu base64 `data:image/...` trong cột `var_nhan_vien.hinh_anh`. Upload
 | Pagination + filter server-side cho list lớn        | RPC `get_bai_viet_page` / `get_cong_viec_page`      |
 | Lookup xã/phường nhẹ                                | View `v_xa_phuong_min`                              |
 
-Migration: `supabase/migrations/<timestamp>_egress_optimizations.sql`.
+Migration gốc: `<timestamp>_egress_optimizations.sql` (đã chạy, đã xoá khỏi repo — tra lịch sử git).
 
 ### 7. TanStack Query: `setQueryData` thay `invalidateQueries`
 

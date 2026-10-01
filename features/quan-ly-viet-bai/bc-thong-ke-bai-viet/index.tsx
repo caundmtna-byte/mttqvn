@@ -13,7 +13,6 @@ import {
 import {
   FileText,
   Users,
-  User,
   Layers,
   Download,
   Share2,
@@ -281,15 +280,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
     () => buildDimOptions(rows, (r) => ({ id: String(r.id_trang_dang), label: r.ten_trang_dang?.trim() || '' })),
     [rows],
   );
-  const nguoiOptions = useMemo(
-    () =>
-      buildDimOptions(rows, (r) => ({
-        id: String(r.id_nguoi_tao),
-        label: r.ho_va_ten_nguoi_tao?.trim() || r.ten_tai_khoan_nguoi_tao?.trim() || '',
-      })),
-    [rows],
-  );
-
   const donViOptions = useMemo(
     () =>
       buildDimOptions(rows, (r) => {
@@ -329,14 +319,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
         onChange: (v) => setDims((d) => ({ ...d, idTrangDang: v })),
       },
       {
-        key: 'nguoi',
-        label: txt('articleStats.filterNguoiTao'),
-        icon: User,
-        options: nguoiOptions.map((o) => ({ label: o.label, value: o.value, count: o.count })),
-        value: dims.idNguoiTao,
-        onChange: (v) => setDims((d) => ({ ...d, idNguoiTao: v })),
-      },
-      {
         key: 'don_vi',
         label: txt('articleStats.filterDonVi'),
         icon: MapPin,
@@ -346,7 +328,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
       },
     ],
     // `setDims` đến từ `useStatsPageFilters` nên linter không biết nó ổn định như setter của useState.
-    [setDims, theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, donViOptions, dims.idTheLoai, dims.idNguonDang, dims.idTrangDang, dims.idNguoiTao, dims.idDonVi],
+    [setDims, theLoaiOptions, nguonOptions, trangOptions, donViOptions, dims.idTheLoai, dims.idNguonDang, dims.idTrangDang, dims.idDonVi],
   );
 
   /**
@@ -363,12 +345,10 @@ const BcThongKeBaiVietPage: React.FC = () => {
       out.push({ label: txt('articleStats.filterNguon'), value: labelsOf(nguonOptions, dims.idNguonDang) });
     if (dims.idTrangDang.length)
       out.push({ label: txt('articleStats.filterTrang'), value: labelsOf(trangOptions, dims.idTrangDang) });
-    if (dims.idNguoiTao.length)
-      out.push({ label: txt('articleStats.filterNguoiTao'), value: labelsOf(nguoiOptions, dims.idNguoiTao) });
     if (dims.idDonVi.length)
       out.push({ label: txt('articleStats.filterDonVi'), value: labelsOf(donViOptions, dims.idDonVi) });
     return out;
-  }, [dims, theLoaiOptions, nguonOptions, trangOptions, nguoiOptions, donViOptions]);
+  }, [dims, theLoaiOptions, nguonOptions, trangOptions, donViOptions]);
 
   const kpiItems = useMemo(
     () => [
@@ -515,14 +495,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
         onChange={(v) => setDims((d) => ({ ...d, idTrangDang: v }))}
         placeholder={txt('articleStats.filterTrang')}
         className="shrink-0 w-[150px]"
-      />
-      <FilterChipMultiSelect
-        icon={User}
-        options={nguoiOptions}
-        value={dims.idNguoiTao}
-        onChange={(v) => setDims((d) => ({ ...d, idNguoiTao: v }))}
-        placeholder={txt('articleStats.filterNguoiTao')}
-        className="shrink-0 w-[160px]"
       />
       <FilterChipMultiSelect
         icon={MapPin}

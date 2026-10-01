@@ -19,5 +19,8 @@ export function loaiPhieuLabel(loai: NhapXuatKhoLoaiPhieu): string {
   }
 }
 
+/** Mục đích bắt buộc gắn một đối tượng hỗ trợ (`ho_ngheo_id`) — xem `laMucDichXuatHoNgheo`. */
+export const NXK_MUC_DICH_XUAT_HO_NGHEO = 'Xuất cho hộ nghèo';
+
 /** Mục đích gợi ý sẵn cho phiếu xuất — vẫn cho gõ mục đích khác. */
-export const NXK_MUC_DICH_XUAT_MAC_DINH = ['Để tại kho dùng khi cần', 'Xuất cho hộ nghèo'] as const;
+export const NXK_MUC_DICH_XUAT_MAC_DINH = ['Để tại kho dùng khi cần', NXK_MUC_DICH_XUAT_HO_NGHEO] as const;

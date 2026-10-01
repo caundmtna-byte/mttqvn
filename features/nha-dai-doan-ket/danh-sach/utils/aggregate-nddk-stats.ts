@@ -1,8 +1,9 @@
+import dayjs from 'dayjs';
 import type { NhaDaiDoanKet } from '@/features/nha-dai-doan-ket/danh-sach/core/types';
 import { NDDK_TRANG_THAI_HOAN_THANH } from '@/features/nha-dai-doan-ket/danh-sach/core/constants';
+import { isDateInStandardRange, type StandardResolvedDateRange } from '@/lib/date-range-presets';
 
 export interface NddkThongKeDimensionFilters {
-  nam: string[];
   nguon: string[];
   nguon_ho_tro: string[];
   doi_tuong: string[];
@@ -12,7 +13,6 @@ export interface NddkThongKeDimensionFilters {
 }
 
 export const NDDK_THONG_KE_INITIAL_DIMS: NddkThongKeDimensionFilters = {
-  nam: [],
   nguon: [],
   nguon_ho_tro: [],
   doi_tuong: [],
@@ -31,13 +31,26 @@ function matches(selected: readonly string[], value: string | null | undefined):
   return selected.includes(v);
 }
 
+/** `tg_tao` là timestamptz — quy về ngày theo giờ địa phương, không cắt chuỗi UTC. */
+function ngayTaoLocal(r: NhaDaiDoanKet): string {
+  return r.tg_tao ? dayjs(r.tg_tao).format('YYYY-MM-DD') : '';
+}
+
+/** Không truyền `range` = không lọc theo thời gian (preset «Tất cả»). */
+const NDDK_ALL_TIME: StandardResolvedDateRange = { start: '', end: '', allTime: true };
+
+/**
+ * `range` lọc theo **ngày tạo hồ sơ** (`tg_tao`), không theo cột `nam`: người
+ * dùng chọn tuần / quý / khoảng tự do nên cần một mốc ngày thật.
+ */
 export function filterRowsForNddkThongKe(
   rows: readonly NhaDaiDoanKet[],
   dims: NddkThongKeDimensionFilters,
+  range: StandardResolvedDateRange = NDDK_ALL_TIME,
 ): NhaDaiDoanKet[] {
   return rows.filter(
     (r) =>
-      matches(dims.nam, String(r.nam ?? '')) &&
+      isDateInStandardRange(ngayTaoLocal(r), range) &&
       matches(dims.nguon, r.nguon) &&
       matches(dims.nguon_ho_tro, r.nguon_ho_tro) &&
       matches(dims.doi_tuong, r.doi_tuong) &&
