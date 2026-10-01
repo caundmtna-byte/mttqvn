@@ -173,7 +173,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
          * của `fn_co_quyen(...)` trong RLS bảng `nddk_nha_dai_doan_ket`, nên
          * đổi ở đây là phải đổi cả migration.
          */
-        groupTitleKey: 'page.anSinhXaHoiDashboard.groupKhenThuongTaiTro',
+        groupTitleKey: 'page.anSinhXaHoiDashboard.groupHoTroKhenThuong',
         modules: [
           {
             id: 'an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach',

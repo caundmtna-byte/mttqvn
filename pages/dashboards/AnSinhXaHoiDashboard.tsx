@@ -92,7 +92,7 @@ const AnSinhXaHoiDashboard: React.FC = () => {
         ],
       },
       {
-        groupTitle: txt('page.anSinhXaHoiDashboard.groupKhenThuongTaiTro'),
+        groupTitle: txt('page.anSinhXaHoiDashboard.groupHoTroKhenThuong'),
         items: [
           {
             path: '/an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach',

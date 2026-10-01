@@ -387,7 +387,7 @@ export const ui = {
       "backToParent": "Quay lại Mặt trận tổ quốc"
     },
     "anSinhXaHoiDashboard": {
-      "groupKhenThuongTaiTro": "Khen thưởng tài trợ",
+      "groupHoTroKhenThuong": "Hỗ trợ & Khen thưởng",
       "khenThuongNhaTaiTro": "Khen thưởng nhà tài trợ",
       "khenThuongNhaTaiTroDesc": "Quyết định khen nhà tài trợ, kèm thành tích hỗ trợ người nghèo.",
       "danhSachNhaDaiDoanKet": "Danh sách nhà đại đoàn kết",
