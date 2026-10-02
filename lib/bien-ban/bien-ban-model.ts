@@ -1,5 +1,5 @@
 /**
- * Mô hình tài liệu cho 3 biên bản Nhà đại đoàn kết.
+ * Mô hình tài liệu cho biên bản / phiếu in (Nhà đại đoàn kết, Chương trình hỗ trợ…).
  *
  * Không dùng `VanBanHanhChinhModel` (khen thưởng): biên bản ở đây có ô ☐/☒ và
  * lưới chữ ký nhiều cột, không có cơ quan ban hành / số ký hiệu / nơi nhận.
@@ -26,7 +26,12 @@ export interface BienBanTieuDeDong {
 export interface BienBanLuaChon {
   label: string;
   checked: boolean;
+  /** Ô "Khác: ……" — in ngay sau nhãn; giá trị trống ⇒ dòng chấm để viết tay. */
+  ghiThem?: BienBanRun;
 }
+
+/** `inline`: cùng dòng nhãn · `stack`: mỗi ô một dòng · `luoi`: nhãn một dòng, ô xếp 2 cột. */
+export type BienBanLuaChonLayout = 'inline' | 'stack' | 'luoi';
 
 export interface BienBanCotKy {
   /** Chức danh in đậm, vd "BÊN GIAO TIỀN". */
@@ -53,7 +58,7 @@ export type BienBanBlock =
       /** Nhãn đứng trước (cùng dòng khi `inline`, dòng riêng khi `stack`). */
       label: BienBanRun[];
       options: BienBanLuaChon[];
-      layout: 'inline' | 'stack';
+      layout: BienBanLuaChonLayout;
     }
   | {
       kind: 'chu-ky';
@@ -113,6 +118,44 @@ export function runsText(runs: BienBanRun[]): string {
 
 export const O_CHON = '☒';
 export const O_TRONG = '☐';
+
+export interface DanhMucLuaChon {
+  value: string;
+  label: string;
+}
+
+/**
+ * Một dòng ô ☐/☒. `chon` là một giá trị (chọn một) hoặc mảng (chọn nhiều).
+ * `khac` thêm ô "Khác: ……" cuối danh sách — có chữ thì tự tick.
+ */
+export function luaChon(
+  label: string | BienBanRun[],
+  danhMuc: readonly DanhMucLuaChon[],
+  chon: string | readonly string[] | null | undefined,
+  layout: BienBanLuaChonLayout,
+  khac?: { value: string | null | undefined; label?: string; dots?: number },
+): BienBanBlock {
+  const daChon = new Set(chon == null ? [] : typeof chon === 'string' ? [chon] : chon);
+  const options: BienBanLuaChon[] = danhMuc.map((d) => ({
+    label: d.label,
+    checked: daChon.has(d.value),
+  }));
+  if (khac) {
+    const ghiThem = f(khac.value, khac.dots ?? DOTS_SHORT);
+    options.push({ label: khac.label ?? 'Khác: ', checked: ghiThem.kind === 'field' && ghiThem.value != null, ghiThem });
+  }
+  return {
+    kind: 'lua-chon',
+    label: typeof label === 'string' ? [t(label)] : label,
+    options,
+    layout,
+  };
+}
+
+/** Văn bản thuần của một ô lựa chọn, không kèm ký hiệu ô. */
+export function luaChonText(o: BienBanLuaChon): string {
+  return o.ghiThem ? `${o.label}${runText(o.ghiThem)}` : o.label;
+}
 
 /* ------------------------------------------------------------------ *
  * Định dạng dữ liệu
@@ -177,6 +220,17 @@ export function diaChiDayDu(khoiXom: string | null, tenXa: string | null): strin
   const parts = [tenThonDayDu(khoiXom), tenXaDayDu(tenXa)].filter(Boolean);
   if (parts.length === 0) return null;
   return [...parts, `tỉnh ${TINH_MAC_DINH}`].join(', ');
+}
+
+/** Tên file an toàn: bỏ dấu, khoảng trắng thành gạch dưới. */
+export function fileSlug(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^A-Za-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 const SO_VN = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 });

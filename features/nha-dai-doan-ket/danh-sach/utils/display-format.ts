@@ -27,6 +27,10 @@ export function formatNddkNguoiTaoDisplay(item: NhaDaiDoanKet): string {
   return item.ho_va_ten_nguoi_tao?.trim() || item.ten_tai_khoan_nguoi_tao?.trim() || '';
 }
 
+export function formatNddkNguoiCapNhatDisplay(item: NhaDaiDoanKet): string {
+  return item.ho_va_ten_nguoi_cap_nhat?.trim() || item.ten_tai_khoan_nguoi_cap_nhat?.trim() || '';
+}
+
 export function trimmedNddkDisplay(value: string | null | undefined): string | null {
   return trimmedDisplay(value);
 }

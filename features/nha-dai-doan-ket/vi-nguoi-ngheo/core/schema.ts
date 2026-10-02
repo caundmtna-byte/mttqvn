@@ -18,6 +18,15 @@ import {
   vnnCoHienVat,
 } from './constants';
 import type { ViNguoiNgheo } from './types';
+import {
+  chuanHoaPhieuKhaoSat,
+  phieuKhaoSatToFormInput,
+  pksChungSchema,
+  pksFormSchema,
+  vnnLoaiPhieu,
+  VNN_NHANH_PHIEU,
+  type PksFormInput,
+} from './phieu-khao-sat';
 
 const optionalText = z
   .string()
@@ -98,12 +107,53 @@ export const viNguoiNgheoSchema = z.object({
   }),
   don_vi_ho_tro_id: optionalFk,
   ghi_chu: optionalText,
-}).transform((v) =>
-  // Đổi từ "Hiện vật" về "Tiền mặt" thì bỏ số hiện vật cũ — ô đã ẩn, không để số rác.
-  vnnCoHienVat(v.hinh_thuc_ho_tro)
-    ? v
-    : { ...v, so_luong: undefined, tong_tien_quy_doi: undefined, tong_tien_ban_giao: undefined },
-);
+  /**
+   * Ô nhập phiếu khảo sát. `undefined` ⇒ form chưa có bản đầy đủ — KHÔNG gửi
+   * cột này lên (ghi rỗng đè dữ liệu thật). Kiểm ở `superRefine` bên dưới vì
+   * chỉ `chung` + nhánh của lĩnh vực đang chọn mới cần hợp lệ.
+   */
+  phieu_khao_sat: z.custom<PksFormInput>().optional(),
+})
+  .superRefine((v, ctx) => {
+    const p = v.phieu_khao_sat;
+    const loai = vnnLoaiPhieu(v.linh_vuc_ho_tro);
+    if (!p || !loai) return;
+    const nhanh = VNN_NHANH_PHIEU[loai];
+    const check = (key: 'chung' | typeof nhanh, schema: z.ZodType) => {
+      const r = schema.safeParse(p[key]);
+      if (r.success) return;
+      for (const issue of r.error.issues) {
+        ctx.addIssue({ code: 'custom', message: issue.message, path: ['phieu_khao_sat', key, ...issue.path] });
+      }
+    };
+    check('chung', pksChungSchema);
+    check(nhanh, pksFormSchema.shape[nhanh]);
+  })
+  .transform((v) => {
+    // Đổi từ "Hiện vật" về "Tiền mặt" thì bỏ số hiện vật cũ — ô đã ẩn, không để số rác.
+    const base = vnnCoHienVat(v.hinh_thuc_ho_tro)
+      ? v
+      : { ...v, so_luong: undefined, tong_tien_quy_doi: undefined, tong_tien_ban_giao: undefined };
+    return { ...base, phieu_khao_sat: chuanHoaPhieuForm(v.phieu_khao_sat, v.linh_vuc_ho_tro) };
+  });
+
+/**
+ * Ô nhập ⇒ giá trị lưu. `undefined` giữ nguyên nghĩa "không gửi"; lĩnh vực không
+ * có phiếu ⇒ `null` (xoá phiếu cũ).
+ */
+function chuanHoaPhieuForm(p: PksFormInput | undefined, linhVuc: string) {
+  if (p === undefined) return undefined;
+  const loai = vnnLoaiPhieu(linhVuc);
+  if (!loai) return null;
+  const nhanh = VNN_NHANH_PHIEU[loai];
+  // superRefine đã kiểm `chung` + nhánh này; các nhánh khác bị bỏ nên điền rỗng.
+  const parsed = pksFormSchema.parse({
+    ...phieuKhaoSatToFormInput(null),
+    chung: p.chung,
+    [nhanh]: p[nhanh],
+  });
+  return chuanHoaPhieuKhaoSat(parsed, linhVuc);
+}
 
 export type ViNguoiNgheoFormValues = z.infer<typeof viNguoiNgheoSchema>;
 
@@ -143,6 +193,8 @@ export type ViNguoiNgheoFormInput = {
   trang_thai: string;
   don_vi_ho_tro_id?: string;
   ghi_chu?: string;
+  /** Có khi form đã có dữ liệu phiếu (tạo mới, hoặc sửa từ bản đầy đủ). */
+  phieu_khao_sat?: PksFormInput;
 };
 
 export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoFormInput {
@@ -166,6 +218,7 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
       trang_thai: VNN_TRANG_THAI_DEFAULT,
       don_vi_ho_tro_id: '',
       ghi_chu: '',
+      phieu_khao_sat: phieuKhaoSatToFormInput(null),
     };
   }
   return {
@@ -187,5 +240,8 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
     trang_thai: row.trang_thai ?? VNN_TRANG_THAI_DEFAULT,
     don_vi_ho_tro_id: row.don_vi_ho_tro_id ?? '',
     ghi_chu: row.ghi_chu ?? '',
+    // `undefined` = dòng từ RPC chưa có phiếu ⇒ để form biết mà không gửi cột này.
+    phieu_khao_sat:
+      row.phieu_khao_sat === undefined ? undefined : phieuKhaoSatToFormInput(row.phieu_khao_sat),
   };
 }

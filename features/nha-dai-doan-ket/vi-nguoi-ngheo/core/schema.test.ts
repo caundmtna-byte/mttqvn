@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { applyZodVietnameseErrors } from '@/lib/validation/zod-vi';
 import { viNguoiNgheoSchema } from './schema';
+import { docPhieuKhaoSat, phieuKhaoSatToFormInput, VNN_LOAI_PHIEU, vnnLoaiPhieu } from './phieu-khao-sat';
 import { checkValuesTrongSchema } from '@/lib/db-schema-snapshot';
 import {
   VNN_DOI_TUONG_VALUES,
@@ -93,6 +94,97 @@ describe('viNguoiNgheoSchema', () => {
   it('năm ngoài khoảng CHECK bị từ chối', () => {
     expect(parse({ nam: 1999 }).success).toBe(false);
     expect(parse({ nam: 2101 }).success).toBe(false);
+  });
+});
+
+describe('viNguoiNgheoSchema — phiếu khảo sát', () => {
+  function phieu(patch: (p: ReturnType<typeof phieuKhaoSatToFormInput>) => void) {
+    const p = phieuKhaoSatToFormInput(null);
+    patch(p);
+    return p;
+  }
+
+  it('form chưa có bản đầy đủ (không có khoá) ⇒ không gửi cột phiếu', () => {
+    expect(parse({ linh_vuc_ho_tro: 'Cứu trợ' }).data!.phieu_khao_sat).toBeUndefined();
+  });
+
+  it('chỉ giữ `chung` + nhánh đúng lĩnh vực; ô trống không ghi khoá', () => {
+    const p = phieu((x) => {
+      x.chung.ghi_chu = '  ';
+      x.chung.thu_nhap_binh_quan = '1.500.000';
+      x.sinh_ke.so_lao_dong = '2';
+      x.hoc_sinh.ho_ten = 'Rác từ lần chọn trước';
+    });
+    const r = parse({ linh_vuc_ho_tro: 'Mô hình sinh kế', phieu_khao_sat: p });
+    expect(r.success).toBe(true);
+    expect(r.data!.phieu_khao_sat).toEqual({
+      chung: { thu_nhap_binh_quan: 1_500_000 },
+      sinh_ke: { so_lao_dong: 2 },
+    });
+  });
+
+  it('lĩnh vực không có phiếu ⇒ null (xoá phiếu cũ)', () => {
+    const p = phieu((x) => (x.chung.ghi_chu = 'cũ'));
+    expect(parse({ linh_vuc_ho_tro: 'Tết vì người nghèo', phieu_khao_sat: p }).data!.phieu_khao_sat).toBeNull();
+  });
+
+  it('số thập phân dấu phẩy, ngày ISO; số sai báo lỗi đúng ô', () => {
+    const ok = phieu((x) => {
+      x.thien_tai.dien_tich_nha = '45,5';
+      x.chung.ngay_khao_sat = '2026-10-05';
+    });
+    const r = parse({ linh_vuc_ho_tro: 'Nhà bị sập', phieu_khao_sat: ok });
+    expect(r.data!.phieu_khao_sat).toEqual({
+      chung: { ngay_khao_sat: '2026-10-05' },
+      thien_tai: { dien_tich_nha: 45.5 },
+    });
+    const sai = phieu((x) => (x.thien_tai.nam_xay_dung = 'abc'));
+    const e = parse({ linh_vuc_ho_tro: 'Nhà bị sập', phieu_khao_sat: sai });
+    expect(e.success).toBe(false);
+    expect(e.error!.issues[0].path).toEqual(['phieu_khao_sat', 'thien_tai', 'nam_xay_dung']);
+  });
+
+  it('số thập phân làm tròn 2 chữ số lẻ — nạp lại vào ô không bị đọc thành hàng nghìn', () => {
+    const p = phieu((x) => (x.hoc_sinh.khoang_cach_km = 1.126 as unknown as string));
+    const r = parse({ linh_vuc_ho_tro: 'Học sinh nghèo', phieu_khao_sat: p });
+    expect(r.data!.phieu_khao_sat?.hoc_sinh?.khoang_cach_km).toBe(1.13);
+    // Giá trị đã lưu đi vòng qua form (String(45.5) = "45.5") vẫn giữ nguyên.
+    const vong = phieuKhaoSatToFormInput({ chung: {}, thien_tai: { dien_tich_nha: 45.5 } });
+    const r2 = parse({ linh_vuc_ho_tro: 'Nhà bị sập', phieu_khao_sat: vong });
+    expect(r2.data!.phieu_khao_sat?.thien_tai?.dien_tich_nha).toBe(45.5);
+  });
+
+  it('ô sai ở nhánh đang ẩn không chặn Lưu', () => {
+    const p = phieu((x) => (x.thien_tai.nam_xay_dung = 'abc'));
+    expect(parse({ linh_vuc_ho_tro: 'Học sinh nghèo', phieu_khao_sat: p }).success).toBe(true);
+  });
+
+  it('ô tick: lọc giá trị ngoài danh mục, giữ thứ tự trên phiếu', () => {
+    const p = phieu((x) => (x.hoc_sinh.nhu_cau = ['Xe đạp', 'Máy tính', 'Học bổng']));
+    const r = parse({ linh_vuc_ho_tro: 'Học sinh nghèo', phieu_khao_sat: p });
+    expect(r.data!.phieu_khao_sat?.hoc_sinh?.nhu_cau).toEqual(['Học bổng', 'Xe đạp']);
+  });
+});
+
+describe('docPhieuKhaoSat — đọc jsonb phòng thủ', () => {
+  it('trường sai kiểu thì bỏ trường đó, không bỏ cả phiếu', () => {
+    expect(
+      docPhieuKhaoSat({
+        chung: { ghi_chu: 'Giữ', thu_nhap_binh_quan: 'không phải số' },
+        sinh_ke: { mo_hinh: ['Buôn bán nhỏ, dịch vụ', 'lạ'] },
+      }),
+    ).toEqual({ chung: { ghi_chu: 'Giữ' }, sinh_ke: { mo_hinh: ['Buôn bán nhỏ, dịch vụ'] } });
+  });
+
+  it('không phải object ⇒ null', () => {
+    expect(docPhieuKhaoSat(null)).toBeNull();
+    expect(docPhieuKhaoSat([1])).toBeNull();
+  });
+
+  it('mọi lĩnh vực trừ Tết đều có phiếu', () => {
+    const coPhieu = VNN_LINH_VUC_VALUES.filter((v) => vnnLoaiPhieu(v) != null);
+    expect(coPhieu).toEqual(VNN_LINH_VUC_VALUES.filter((v) => v !== 'Tết vì người nghèo'));
+    expect(new Set(coPhieu.map(vnnLoaiPhieu))).toEqual(new Set(VNN_LOAI_PHIEU));
   });
 });
 

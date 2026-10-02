@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Printer, Trash2 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import {
   DataTableRowActions,
@@ -7,6 +7,7 @@ import {
   type RowOverflowMenuItem,
 } from '@/components/shared/row-actions';
 import type { ViNguoiNgheo } from '../core/types';
+import { vnnLoaiPhieu } from '../core/phieu-khao-sat';
 import { useCan } from '@/hooks/use-can';
 
 export interface VnnTableRowActionsProps {
@@ -15,6 +16,8 @@ export interface VnnTableRowActionsProps {
   onMenuOpenChange: (id: string | null) => void;
   onEdit: (item: ViNguoiNgheo) => void;
   onDelete: (id: string) => void;
+  /** Mở trang in phiếu khảo sát — chỉ hiện với lĩnh vực có phiếu. */
+  onPrint?: (item: ViNguoiNgheo) => void;
   compact?: boolean;
 }
 
@@ -24,6 +27,7 @@ export function VnnTableRowActions({
   onMenuOpenChange,
   onEdit,
   onDelete,
+  onPrint,
   compact = false,
 }: VnnTableRowActionsProps) {
   const close = () => onMenuOpenChange(null);
@@ -31,6 +35,19 @@ export function VnnTableRowActions({
   const canDelete = useCan('delete', 'viNguoiNgheoList');
 
   const overflowItems: RowOverflowMenuItem[] = [
+    ...(onPrint && vnnLoaiPhieu(item.linh_vuc_ho_tro)
+      ? [
+          {
+            key: 'print',
+            label: txt('viNguoiNgheo.phieuKhaoSat.actionPrint'),
+            icon: <Printer size={14} />,
+            onClick: () => {
+              onPrint(item);
+              close();
+            },
+          },
+        ]
+      : []),
     ...(canDelete
       ? [
           {

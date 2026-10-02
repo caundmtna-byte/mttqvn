@@ -62,6 +62,8 @@ export const nhaDaiDoanKet = {
     ngayTrangThaiCol: 'Ngày cập nhật trạng thái',
     ghiChuCol: 'Ghi chú',
     nguoiTaoCol: 'Người tạo',
+    ngayTaoCol: 'Ngày tạo',
+    nguoiCapNhatCol: 'Người cập nhật',
     tgCapNhatCol: 'Cập nhật',
   },
   form: {

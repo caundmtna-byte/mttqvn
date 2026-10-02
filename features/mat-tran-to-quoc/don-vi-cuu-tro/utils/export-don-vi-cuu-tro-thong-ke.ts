@@ -39,8 +39,8 @@ export async function exportDonViCuuTroThongKeToExcel(input: {
     { [COL_CHI_TIEU]: T('kpi.donViCoUngHo'), [COL_GIA_TRI]: kpis.donViCoUngHo },
     { [COL_CHI_TIEU]: T('kpi.tyLeCoUngHo'), [COL_GIA_TRI]: `${kpis.tyLeCoUngHo}%` },
     { [COL_CHI_TIEU]: T('kpi.tongUngHo'), [COL_GIA_TRI]: kpis.tongUngHo },
-    { [COL_CHI_TIEU]: T('export.tienKho'), [COL_GIA_TRI]: kpis.tongTienKho },
-    { [COL_CHI_TIEU]: T('export.tienChuongTrinh'), [COL_GIA_TRI]: kpis.tongTienChuongTrinh },
+    { [COL_CHI_TIEU]: T('export.tienMat'), [COL_GIA_TRI]: kpis.tongTienMat },
+    { [COL_CHI_TIEU]: T('export.hienVat'), [COL_GIA_TRI]: kpis.tongHienVat },
     { [COL_CHI_TIEU]: T('kpi.soLuot'), [COL_GIA_TRI]: kpis.soLuot },
     { [COL_CHI_TIEU]: T('kpi.binhQuan'), [COL_GIA_TRI]: kpis.binhQuan },
   ];
@@ -75,8 +75,8 @@ export async function exportDonViCuuTroThongKeToExcel(input: {
     [txt('matTranDonViCuuTro.store.tenCol')]: r.row.ten,
     [txt('matTranDonViCuuTro.store.donViGioiThieuCol')]: r.row.don_vi_gioi_thieu_label,
     [T('kpi.soLuot')]: r.soLuot,
-    [T('export.tienKho')]: r.tienKho,
-    [T('export.tienChuongTrinh')]: r.tienChuongTrinh,
+    [T('export.tienMat')]: r.tienMat,
+    [T('export.hienVat')]: r.hienVat,
     [COL_TONG]: r.tong,
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(chiTiet), T('export.sheetChiTiet'));

@@ -4,7 +4,7 @@
  * Đối chiếu: bảng `hngh_thong_tin_ho_ngheo` trong `supabase/schema.sql` (`npm run db:schema`).
  */
 import { describe, expect, it } from 'vitest';
-import { hoNgheoSchema, hoNgheoToFormInput } from './schema';
+import { hoNgheoFormSchema, hoNgheoSchema, hoNgheoToFormInput } from './schema';
 
 const hoHopLe = {
   ho_ten_dai_dien: 'Nguyễn Văn A',
@@ -20,6 +20,22 @@ const hoHopLe = {
   trang_thai: 'Đang khó khăn',
   ghi_chu: '',
 };
+
+describe('hoNgheoFormSchema (form nhập tay)', () => {
+  const day = { ...hoHopLe, so_cccd: '040 012 345 678', khoi_xom: 'Thôn A', doi_tuong: 'Hộ nghèo', dan_toc_id: '5' };
+
+  it('đủ 4 ô bắt buộc thì qua', () => {
+    expect(hoNgheoFormSchema.safeParse(day).data?.so_cccd).toBe('040012345678');
+  });
+
+  it('thiếu số căn cước / khối xóm / đối tượng / dân tộc → báo lỗi đúng ô', () => {
+    const r = hoNgheoFormSchema.safeParse(hoHopLe);
+    const paths = r.error?.issues.map((i) => i.path[0]);
+    expect(paths).toEqual(expect.arrayContaining(['so_cccd', 'khoi_xom', 'doi_tuong', 'dan_toc_id']));
+    expect(hoNgheoFormSchema.safeParse({ ...day, khoi_xom: '   ' }).success).toBe(false);
+    expect(hoNgheoFormSchema.safeParse({ ...day, so_cccd: '04001234567' }).success).toBe(false);
+  });
+});
 
 describe('hoNgheoSchema', () => {
   it('hộ tối thiểu chỉ cần họ tên', () => {

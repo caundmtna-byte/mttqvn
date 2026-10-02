@@ -35,4 +35,10 @@ const LIST_COLS = [
 ].join(',');
 
 export const VNN_SELECT = `${LIST_COLS},${XA_PHUONG},${DON_VI},${NGUOI_TAO}`;
-export const VNN_RETURNING = VNN_SELECT;
+
+/**
+ * Một khoản ĐẦY ĐỦ, kèm jsonb phiếu khảo sát — chỉ chi tiết / sửa / in cần.
+ * Danh sách, thống kê và RPC phân trang KHÔNG kéo cột này (egress).
+ */
+export const VNN_SELECT_FULL = `${VNN_SELECT},phieu_khao_sat`;
+export const VNN_RETURNING = VNN_SELECT_FULL;

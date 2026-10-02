@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BadgeCheck, Building2, Calendar, Edit, FileText, HandCoins, Landmark, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User, Users, UserRound } from 'lucide-react';
+import { BadgeCheck, Building2, Calendar, Edit, FileText, Landmark, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User, Users, UserRound } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -13,18 +13,31 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { buildKhoDonViCuuTroLoaiBadgeConfig, isKhoDonViCuuTroCaNhan } from '../core/loai';
 import type { KhoDonViCuuTroDetail } from '../core/types';
+import type { DonViCuuTroUngHoNhom } from '../utils/ung-ho-nhom';
 
 interface Props {
   data: KhoDonViCuuTroDetail;
+  /** Số ủng hộ của đơn vị này theo từng đợt / nội dung (toàn thời gian), đã sắp. */
+  ungHoNhom: (DonViCuuTroUngHoNhom & { nhan: string; tong: number })[];
   onClose: () => void;
   onEdit: (item: KhoDonViCuuTroDetail) => void;
   onDelete: (id: string) => void;
 }
 
-const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
+const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, ungHoNhom, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('matTranReliefSupportUnits');
 
   const loaiBadge = useMemo(() => buildKhoDonViCuuTroLoaiBadgeConfig(), []);
+  const congUngHo = useMemo(
+    () =>
+      ungHoNhom.reduce(
+        (t, r) => ({ tienMat: t.tienMat + r.tienMat, hienVat: t.hienVat + r.hienVat, tong: t.tong + r.tong, soLuot: t.soLuot + r.soLuot }),
+        { tienMat: 0, hienVat: 0, tong: 0, soLuot: 0 },
+      ),
+    [ungHoNhom],
+  );
+  const U = (k: string) => txt(`matTranDonViCuuTro.ungHo.${k}`);
+  const so = (n: number) => formatDecimal(n, 0);
 
   const renderFooter = (
     <div className="flex items-center justify-between w-full gap-2">
@@ -111,17 +124,6 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
             <DetailField label={txt('matTranDonViCuuTro.form.dienThoai')} value={data.dien_thoai} icon={<Phone size={12} />} />
             <DetailField label={txt('matTranDonViCuuTro.form.diaChi')} value={data.dia_chi} icon={<MapPin size={12} />} />
             <DetailField
-              label={txt('matTranDonViCuuTro.form.ketQuaUngHo')}
-              value={
-                data.ket_qua_ung_ho == null ? null : (
-                  <span className="tabular-nums" title={txt('matTranDonViCuuTro.form.ketQuaUngHoHint')}>
-                    {formatDecimal(data.ket_qua_ung_ho, 0)}
-                  </span>
-                )
-              }
-              icon={<HandCoins size={12} />}
-            />
-            <DetailField
               label={txt('matTranDonViCuuTro.form.donViGioiThieu')}
               value={data.don_vi_gioi_thieu_label || null}
               icon={<Landmark size={12} />}
@@ -134,6 +136,47 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
               icon={<FileText size={12} />}
             />
           </DetailFieldGrid>
+        </DetailSection>
+
+        <DetailSection title={U('bangTitle')}>
+          {ungHoNhom.length === 0 ? (
+            <p className="text-body-sm text-muted-foreground">{U('trong')}</p>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-body-sm">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">{U('colNhom')}</th>
+                    <th className="px-3 py-2 text-right font-medium whitespace-nowrap">{U('colTienMat')}</th>
+                    <th className="px-3 py-2 text-right font-medium whitespace-nowrap">{U('colHienVat')}</th>
+                    <th className="px-3 py-2 text-right font-medium whitespace-nowrap">{U('colTong')}</th>
+                    <th className="px-3 py-2 text-right font-medium whitespace-nowrap">{U('colSoLuot')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ungHoNhom.map((r) => (
+                    <tr key={r.nhomKey} className="border-t border-border">
+                      <td className="px-3 py-2">{r.nhan}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{so(r.tienMat)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{so(r.hienVat)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums font-medium">{so(r.tong)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{r.soLuot}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="border-t-2 border-border font-semibold">
+                  <tr>
+                    <td className="px-3 py-2">{U('cong')}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{so(congUngHo.tienMat)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{so(congUngHo.hienVat)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{so(congUngHo.tong)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{congUngHo.soLuot}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">{U('nguonHint')}</p>
         </DetailSection>
 
         <DetailSection title={txt('matTranDonViCuuTro.detail.systemInfo')}>

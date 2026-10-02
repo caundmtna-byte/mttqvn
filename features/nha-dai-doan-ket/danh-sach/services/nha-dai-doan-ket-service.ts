@@ -100,9 +100,11 @@ function flattenBienBan(r: Record<string, unknown>): NddkBienBan {
 export function flattenNhaDaiDoanKetRow(row: Record<string, unknown>): NhaDaiDoanKet {
   const xp = pickEmbedded<{ ten?: string }>(row.xa_phuong);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nc = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_cap_nhat);
   const rest = { ...row };
   delete rest.xa_phuong;
   delete rest.nguoi_tao;
+  delete rest.nguoi_cap_nhat;
   const r = rest as Record<string, unknown>;
 
   return {
@@ -127,6 +129,9 @@ export function flattenNhaDaiDoanKetRow(row: Record<string, unknown>): NhaDaiDoa
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: nv?.ho_va_ten ?? null,
     ten_tai_khoan_nguoi_tao: nv?.ten_tai_khoan ?? null,
+    id_nguoi_cap_nhat: nullableStr(r.id_nguoi_cap_nhat),
+    ho_va_ten_nguoi_cap_nhat: nc?.ho_va_ten ?? null,
+    ten_tai_khoan_nguoi_cap_nhat: nc?.ten_tai_khoan ?? null,
     // Dòng từ RPC phân trang / select gọn không có các cột này ⇒ `undefined`
     // ("chưa tải"). Gán rỗng ở đây thì form sửa sẽ lưu đè rỗng lên dữ liệu thật.
     bien_ban: 'ngay_khao_sat' in r ? flattenBienBan(r) : undefined,
@@ -278,6 +283,8 @@ function rpcRowToNhaDaiDoanKet(raw: Record<string, unknown>): NhaDaiDoanKet {
     ten_xa_phuong,
     ho_va_ten_nguoi_tao,
     ten_tai_khoan_nguoi_tao,
+    ho_va_ten_nguoi_cap_nhat,
+    ten_tai_khoan_nguoi_cap_nhat,
     total_count: _totalCount,
     ...base
   } = raw;
@@ -285,6 +292,10 @@ function rpcRowToNhaDaiDoanKet(raw: Record<string, unknown>): NhaDaiDoanKet {
     ...base,
     xa_phuong: { ten: ten_xa_phuong },
     nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+    nguoi_cap_nhat: {
+      ho_va_ten: ho_va_ten_nguoi_cap_nhat,
+      ten_tai_khoan: ten_tai_khoan_nguoi_cap_nhat,
+    },
   });
 }
 

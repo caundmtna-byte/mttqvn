@@ -39,6 +39,7 @@ import { dryRunDonViCuuTroImport } from './services/don-vi-cuu-tro-import';
 import ErrorState from '@/components/shared/ErrorState';
 import {
   useKhoDonViCuuTroList,
+  useKhoDonViCuuTroUngHoNhom,
   useKhoDonViCuuTroDetail,
   useDeleteKhoDonViCuuTroMany,
   useImportKhoDonViCuuTro,
@@ -48,6 +49,12 @@ import type { KhoDonViCuuTroListRow } from './core/types';
 import { KHO_DON_VI_CUU_TRO_SEARCHABLE_KEYS } from './utils/search-keys';
 import { countKhoDonViCuuTroColumnSearchActive, khoDonViCuuTroMatchesColumnSearch } from './utils/column-search';
 import { sortKhoDonViCuuTroList } from './utils/sort';
+import {
+  buildNhomUngHoOptions,
+  ganUngHoVaoDanhSach,
+  nhomUngHoCuaDonVi,
+  tongHopUngHoTheoDonVi,
+} from './utils/ung-ho-nhom';
 import KhoDonViCuuTroToolbar from './components/kho-don-vi-cuu-tro-toolbar';
 import KhoDonViCuuTroTable from './components/kho-don-vi-cuu-tro-table';
 import DonViCuuTroThongKePanel from './components/don-vi-cuu-tro-thong-ke-panel';
@@ -126,12 +133,31 @@ const KhoDonViCuuTroPage: React.FC = () => {
   } = useKhoDonViCuuTroStore();
 
   const {
-    data: rows = [],
+    data: listRows,
     isLoading,
     isError: isListError,
     isFetching: isListFetching,
     refetch: refetchList,
   } = useKhoDonViCuuTroList({ enabled: listQueryEnabled });
+
+  /**
+   * Số ủng hộ ghép từ RPC nhóm (toàn thời gian). Chip "Đợt / Nội dung" chỉ giới
+   * hạn số cộng — đơn vị không góp trong nhóm đã chọn vẫn hiện, với số 0.
+   */
+  const { data: ungHoNhomData, isSuccess: ungHoDaTai } = useKhoDonViCuuTroUngHoNhom('', '', {
+    enabled: listQueryEnabled,
+  });
+  const ungHoNhom = useMemo(() => ungHoNhomData ?? [], [ungHoNhomData]);
+  const nhomUngHoOptions = useMemo(() => buildNhomUngHoOptions(ungHoNhom), [ungHoNhom]);
+  const rows = useMemo(
+    () =>
+      ganUngHoVaoDanhSach(
+        listRows ?? [],
+        tongHopUngHoTheoDonVi(ungHoNhom, filters.nhom_ung_ho_filter),
+        ungHoDaTai,
+      ),
+    [listRows, ungHoNhom, filters.nhom_ung_ho_filter, ungHoDaTai],
+  );
   const detailEnabled = listQueryEnabled && Boolean(viewingId?.trim());
   const { data: viewingData } = useKhoDonViCuuTroDetail(viewingId, { enabled: detailEnabled });
   const isListLoading = isLoading || waitingMatrixHydrate;
@@ -175,6 +201,8 @@ const KhoDonViCuuTroPage: React.FC = () => {
       { key: 'chuc_vu', label: txt('matTranDonViCuuTro.store.chucVuCol') },
       { key: 'dien_thoai', label: txt('matTranDonViCuuTro.store.dienThoaiCol') },
       { key: 'dia_chi', label: txt('matTranDonViCuuTro.store.diaChiCol') },
+      { key: 'tien_mat_ung_ho', label: txt('matTranDonViCuuTro.store.tienMatUngHoCol') },
+      { key: 'hien_vat_ung_ho', label: txt('matTranDonViCuuTro.store.hienVatUngHoCol') },
       { key: 'ket_qua_ung_ho', label: txt('matTranDonViCuuTro.store.ketQuaUngHoCol') },
       { key: 'don_vi_gioi_thieu', label: txt('matTranDonViCuuTro.store.donViGioiThieuCol') },
       { key: 'email', label: txt('matTranDonViCuuTro.store.emailCol') },
@@ -226,6 +254,8 @@ const KhoDonViCuuTroPage: React.FC = () => {
       chuc_vu: item.chuc_vu ?? '',
       dien_thoai: item.dien_thoai ?? '',
       dia_chi: item.dia_chi ?? '',
+      tien_mat_ung_ho: item.tien_mat_ung_ho ?? '',
+      hien_vat_ung_ho: item.hien_vat_ung_ho ?? '',
       ket_qua_ung_ho: item.ket_qua_ung_ho ?? '',
       don_vi_gioi_thieu: item.don_vi_gioi_thieu_label,
       email: item.email ?? '',
@@ -408,6 +438,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
           onImport={() => setShowImport(true)}
           onDeleteMany={handleDeleteMany}
           items={rows}
+          nhomUngHoOptions={nhomUngHoOptions}
         />
 
         <div className="flex-1 min-h-0 flex flex-col min-w-0">
@@ -448,6 +479,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
           <Suspense fallback={<DrawerLazyFallback />}>
             <KhoDonViCuuTroDetail
               data={viewingData}
+              ungHoNhom={nhomUngHoCuaDonVi(ungHoNhom, viewingData.id)}
               onClose={() => setViewingId(null)}
               onEdit={handleEditFromDetail}
               onDelete={handleDelete}

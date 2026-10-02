@@ -11,6 +11,7 @@ import {
   getViNguoiNgheoByDonVi,
   getViNguoiNgheoByHoNgheo,
   getViNguoiNgheoById,
+  getViNguoiNgheoFullById,
   getViNguoiNgheoList,
   getVnnHoNgheoOptions,
   updateViNguoiNgheo,
@@ -37,6 +38,26 @@ export function useViNguoiNgheoDetail(id: string | null, options?: { enabled?: b
     enabled,
     ...transactionalCrudListQueryOptions,
   });
+}
+
+/**
+ * Bản ĐẦY ĐỦ (có phiếu khảo sát) — form sửa, mục phiếu ở chi tiết, trang in.
+ * Key riêng: `detail` được mồi bằng dòng RPC thiếu cột phiếu.
+ */
+export function useViNguoiNgheoFull(id: string | null | undefined, options?: { enabled?: boolean }) {
+  const key = id?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.viNguoiNgheo.full(key || '__'),
+    queryFn: () => getViNguoiNgheoFullById(key),
+    enabled: key !== '' && options?.enabled !== false,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
+/** Kết quả mutation đã là bản đầy đủ (`VNN_RETURNING`) ⇒ ghi vào cả hai cache. */
+function ghiCacheMotKhoan(queryClient: ReturnType<typeof useQueryClient>, row: ViNguoiNgheo): void {
+  queryClient.setQueryData(queryKeys.viNguoiNgheo.detail(row.id), row);
+  queryClient.setQueryData(queryKeys.viNguoiNgheo.full(row.id), row);
 }
 
 /** Các khoản của một hộ — mục "Chương trình hỗ trợ" trong chi tiết hộ nghèo. */
@@ -102,7 +123,7 @@ export function useCreateViNguoiNgheo(onSuccess?: () => void) {
         if (!old) return old;
         return [created, ...old.filter((r) => r.id !== created.id)];
       });
-      queryClient.setQueryData(queryKeys.viNguoiNgheo.detail(created.id), created);
+      ghiCacheMotKhoan(queryClient, created);
       invalidateVnnDerived(queryClient);
       toast.success(txt('viNguoiNgheo.toast.create'));
       onSuccess?.();
@@ -119,7 +140,7 @@ export function useUpdateViNguoiNgheo(onSuccess?: () => void) {
       queryClient.setQueryData<ViNguoiNgheo[]>(listKey, (old) =>
         old?.map((r) => (r.id === updated.id ? updated : r)),
       );
-      queryClient.setQueryData(queryKeys.viNguoiNgheo.detail(updated.id), updated);
+      ghiCacheMotKhoan(queryClient, updated);
       invalidateVnnDerived(queryClient);
       toast.success(txt('viNguoiNgheo.toast.update'));
       onSuccess?.();
@@ -136,7 +157,7 @@ export function useUpdateViNguoiNgheoTrangThai(onSuccess?: () => void) {
       queryClient.setQueryData<ViNguoiNgheo[]>(listKey, (old) =>
         old?.map((r) => (r.id === updated.id ? updated : r)),
       );
-      queryClient.setQueryData(queryKeys.viNguoiNgheo.detail(updated.id), updated);
+      ghiCacheMotKhoan(queryClient, updated);
       invalidateVnnDerived(queryClient);
       toast.success(txt('viNguoiNgheo.toast.statusChange'));
       onSuccess?.();
@@ -154,6 +175,7 @@ export function useDeleteViNguoiNgheoMany() {
       );
       for (const id of ids) {
         queryClient.removeQueries({ queryKey: queryKeys.viNguoiNgheo.detail(id) });
+        queryClient.removeQueries({ queryKey: queryKeys.viNguoiNgheo.full(id) });
       }
       invalidateVnnDerived(queryClient);
       toast.success(txt('viNguoiNgheo.toast.delete', { count: ids.length }));

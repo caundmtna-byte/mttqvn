@@ -35,7 +35,7 @@ import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
 import { applyConstraintErrorToForm } from '@/lib/supabase/constraint-field-error';
 import {
-  hoNgheoSchema,
+  hoNgheoFormSchema,
   hoNgheoToFormInput,
   type HoNgheoFormInput,
   type HoNgheoFormValues,
@@ -113,7 +113,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<HoNgheoFormInput, unknown, HoNgheoFormValues>({
     defaultValues: hoNgheoToFormInput(null),
-    resolver: zodResolver(hoNgheoSchema) as Resolver<HoNgheoFormInput, unknown, HoNgheoFormValues>,
+    resolver: zodResolver(hoNgheoFormSchema) as Resolver<HoNgheoFormInput, unknown, HoNgheoFormValues>,
   });
 
   const trangThaiHienTai = useWatch({ control, name: 'trang_thai' });
@@ -202,6 +202,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 placeholder={txt('hoNgheo.form.soCccdPlaceholder')}
                 {...register('so_cccd')}
                 error={errors.so_cccd?.message}
+                required
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 {txt('hoNgheo.form.soCccdHint')}
@@ -229,6 +230,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
               icon={Home}
               {...register('khoi_xom')}
               error={errors.khoi_xom?.message}
+              required
             />
             <Controller
               name="doi_tuong"
@@ -241,6 +243,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
                   label={txt('hoNgheo.store.doiTuongCol')}
                   placeholder={txt('hoNgheo.form.doiTuongPlaceholder')}
                   error={errors.doi_tuong?.message}
+                  required
                   icon={<ListChecks size={14} />}
                   dropdownInPortal
                 />
@@ -257,6 +260,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
                   label={txt('hoNgheo.store.danTocCol')}
                   placeholder={txt('hoNgheo.form.danTocPlaceholder')}
                   error={errors.dan_toc_id?.message}
+                  required
                   icon={<Globe2 size={14} />}
                   dropdownInPortal
                   searchPlaceholder={txt('hoNgheo.store.danTocCol')}

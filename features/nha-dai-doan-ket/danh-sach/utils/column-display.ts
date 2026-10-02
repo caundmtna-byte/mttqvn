@@ -2,6 +2,7 @@ import type { NhaDaiDoanKet } from '../core/types';
 import {
   formatNddkDateTimeDisplay,
   formatNddkNgayDisplay,
+  formatNddkNguoiCapNhatDisplay,
   formatNddkNguoiTaoDisplay,
   formatNddkSoTienDisplay,
   trimmedNddkDisplay,
@@ -26,6 +27,10 @@ export function getNddkColumnDisplayValue(item: NhaDaiDoanKet, colId: string): s
       return trimmedNddkDisplay(item.ghi_chu) ?? '';
     case 'ho_va_ten_nguoi_tao':
       return formatNddkNguoiTaoDisplay(item);
+    case 'tg_tao':
+      return formatNddkDateTimeDisplay(item.tg_tao);
+    case 'ho_va_ten_nguoi_cap_nhat':
+      return formatNddkNguoiCapNhatDisplay(item);
     case 'tg_cap_nhat':
       return formatNddkDateTimeDisplay(item.tg_cap_nhat);
     default:

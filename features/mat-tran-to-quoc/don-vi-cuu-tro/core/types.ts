@@ -8,6 +8,8 @@ export interface KhoDonViCuuTroFilters {
   columnSearch: Record<string, string>;
   loai_filter: string[];
   don_vi_gioi_thieu_filter: string[];
+  /** Chip "Đợt / Nội dung" — chọn thì các cột kết quả chỉ tính trong nhóm đó. */
+  nhom_ung_ho_filter: string[];
 }
 
 export interface KhoDonViCuuTroListRow {
@@ -33,10 +35,11 @@ export interface KhoDonViCuuTroListRow {
   ghi_chu: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
-  /**
-   * Kết quả ủng hộ (đồng) — máy chủ tự tính. `null` = chưa tải (dòng vừa tạo/sửa
-   * trả về từ RETURNING, chưa qua RPC tổng).
-   */
+  /** Tiền mặt ủng hộ (đồng). `null` = chưa tải số ủng hộ. */
+  tien_mat_ung_ho: number | null;
+  /** Hiện vật quy ra tiền (đồng): giá trị hàng nhập kho + hiện vật quy đổi ở Chương trình hỗ trợ. */
+  hien_vat_ung_ho: number | null;
+  /** Tổng = tiền mặt + hiện vật. Trang ghép từ RPC nhóm, không đọc từ bảng. */
   ket_qua_ung_ho: number | null;
 }
 

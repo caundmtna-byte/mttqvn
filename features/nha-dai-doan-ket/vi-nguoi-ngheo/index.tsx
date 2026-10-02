@@ -44,7 +44,7 @@ import { countNddkColumnSearchActive } from '../danh-sach/utils/column-search';
 import { getVnnColumnDisplayValue } from './utils/column-display';
 import VnnToolbar from './components/vnn-toolbar';
 import VnnThongKePanel from './components/vnn-thong-ke-panel';
-import { VNN_MAIN_TABS } from './core/constants';
+import { VNN_LIST_PATH, VNN_MAIN_TABS } from './core/constants';
 import VnnTable from './components/vnn-table';
 
 const VnnForm = lazy(() => import('./components/vnn-form'));
@@ -310,6 +310,10 @@ const ViNguoiNgheoPage: React.FC = () => {
   };
 
   const handlePageBack = () => navigate('/an-sinh-xa-hoi');
+  const handlePrint = useCallback(
+    (item: ViNguoiNgheo) => navigate(`${VNN_LIST_PATH}/${item.id}/in`),
+    [navigate],
+  );
 
   const tabsSlot = (
     <TabGroup
@@ -376,6 +380,7 @@ const ViNguoiNgheoPage: React.FC = () => {
               onRetry={refetchList}
               onEdit={handleEditFromList}
               onDelete={handleDelete}
+              onPrint={handlePrint}
               onView={handleView}
               emptyTitle={emptyTitleResolved}
               serverSidePagination

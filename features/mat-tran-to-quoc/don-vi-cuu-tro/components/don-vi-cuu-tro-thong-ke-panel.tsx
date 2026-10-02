@@ -6,14 +6,17 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   BarChart,
+  Bar,
+  Legend,
 } from 'recharts';
 import {
   Building2,
   HandCoins,
   CheckCircle2,
-  Percent,
+  Banknote,
+  Package,
+  Layers,
   Repeat,
-  Wallet,
   Tags,
   MapPin,
   Trophy,
@@ -39,15 +42,13 @@ import {
   StatsKpiGrid,
   StatsCard,
   StatsTableCard,
-  ColoredBar,
   countActiveStatsFilters,
   type StatsKpiCardItem,
 } from '@/components/shared/stats';
-import { chartFillForCategoricalBar } from '@/lib/constants/chart-colors';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
-import { useKhoDonViCuuTroList, useKhoDonViCuuTroUngHoTheoKy } from '../hooks/use-kho-don-vi-cuu-tro';
+import { useKhoDonViCuuTroList, useKhoDonViCuuTroUngHoNhom } from '../hooks/use-kho-don-vi-cuu-tro';
+import { buildNhomUngHoOptions, tongHopUngHoTheoDonVi } from '../utils/ung-ho-nhom';
 import {
-  buildKhoDonViCuuTroLoaiBadgeConfig,
   khoDonViCuuTroLoaiComboboxOptions,
   khoDonViCuuTroLoaiLabel,
 } from '../core/loai';
@@ -98,7 +99,8 @@ const DonViCuuTroThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExp
   const denNgay = range.allTime ? '' : range.end;
 
   const listQuery = useKhoDonViCuuTroList({ enabled: queryEnabled });
-  const ungHoQuery = useKhoDonViCuuTroUngHoTheoKy(tuNgay, denNgay, { enabled: queryEnabled });
+  const ungHoQuery = useKhoDonViCuuTroUngHoNhom(tuNgay, denNgay, { enabled: queryEnabled });
+  const ungHoNhom = useMemo(() => ungHoQuery.data ?? [], [ungHoQuery.data]);
   const allRows = useMemo(() => listQuery.data ?? [], [listQuery.data]);
 
   const [dims, setDims] = useState<DonViCuuTroThongKeDims>(DON_VI_CUU_TRO_THONG_KE_INITIAL_DIMS);
@@ -119,22 +121,22 @@ const DonViCuuTroThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExp
     () =>
       mergeDonViCuuTroUngHo(
         filterDonViCuuTroForThongKe(allRows, dims),
-        ungHoQuery.data ?? new Map(),
+        tongHopUngHoTheoDonVi(ungHoNhom, dims.nhom),
       ),
-    [allRows, dims, ungHoQuery.data],
+    [allRows, dims, ungHoNhom],
   );
   const kpis = useMemo(() => computeDonViCuuTroKpis(rows), [rows]);
   const loaiRows = useMemo(() => aggregateDonViCuuTroByLoai(rows), [rows]);
   const gioiThieuRows = useMemo(() => aggregateDonViCuuTroByGioiThieu(rows), [rows]);
   const topRows = useMemo(() => topDonViCuuTroByTien(rows, TOP_LIMIT), [rows]);
 
-  const loaiBadge = useMemo(() => buildKhoDonViCuuTroLoaiBadgeConfig(), []);
   const loaiChartData = useMemo(
     () =>
       loaiRows.map((r) => ({
         key: r.key,
         label: khoDonViCuuTroLoaiLabel(r.key),
-        soTien: toTrieu(r.tong),
+        tienMat: toTrieu(r.tienMat),
+        hienVat: toTrieu(r.hienVat),
       })),
     [loaiRows],
   );
@@ -143,15 +145,24 @@ const DonViCuuTroThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExp
     () => [
       { id: 'tongDonVi', label: T('kpi.tongDonVi'), value: kpis.tongDonVi, icon: Building2, color: 'text-primary', bg: 'bg-primary/10' },
       { id: 'tongUngHo', label: T('kpi.tongUngHo'), value: formatCurrency(kpis.tongUngHo), icon: HandCoins, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-      { id: 'donViCoUngHo', label: T('kpi.donViCoUngHo'), value: kpis.donViCoUngHo, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-      { id: 'tyLeCoUngHo', label: T('kpi.tyLeCoUngHo'), value: `${kpis.tyLeCoUngHo}%`, icon: Percent, color: 'text-sky-600', bg: 'bg-sky-500/10' },
+      { id: 'tienMat', label: T('kpi.tienMat'), value: formatCurrency(kpis.tongTienMat), icon: Banknote, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
+      { id: 'hienVat', label: T('kpi.hienVat'), value: formatCurrency(kpis.tongHienVat), icon: Package, color: 'text-violet-600', bg: 'bg-violet-500/10' },
+      {
+        id: 'donViCoUngHo',
+        label: T('kpi.donViCoUngHo'),
+        value: kpis.donViCoUngHo,
+        pct: `${kpis.tyLeCoUngHo}%`,
+        icon: CheckCircle2,
+        color: 'text-sky-600',
+        bg: 'bg-sky-500/10',
+      },
       { id: 'soLuot', label: T('kpi.soLuot'), value: kpis.soLuot, icon: Repeat, color: 'text-slate-600', bg: 'bg-slate-500/10' },
-      { id: 'binhQuan', label: T('kpi.binhQuan'), value: formatCurrency(kpis.binhQuan), icon: Wallet, color: 'text-violet-600', bg: 'bg-violet-500/10' },
     ],
     [kpis],
   );
 
   const loaiOptions = useMemo(() => khoDonViCuuTroLoaiComboboxOptions(), []);
+  const nhomOptions = useMemo(() => buildNhomUngHoOptions(ungHoNhom), [ungHoNhom]);
   const gioiThieuOptions = useMemo(() => {
     const labels = [...new Set(allRows.map((r) => r.don_vi_gioi_thieu_label).filter(Boolean))];
     return labels.sort((a, b) => a.localeCompare(b, 'vi')).map((v) => ({ value: v, label: v }));
@@ -175,8 +186,16 @@ const DonViCuuTroThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExp
         value: dims.don_vi_gioi_thieu,
         onChange: (vals: string[]) => setDim('don_vi_gioi_thieu', vals),
       },
+      {
+        key: 'nhom',
+        label: T('filter.nhomLabel'),
+        icon: Layers,
+        options: nhomOptions,
+        value: dims.nhom,
+        onChange: (vals: string[]) => setDim('nhom', vals),
+      },
     ],
-    [loaiOptions, gioiThieuOptions, dims, setDim],
+    [loaiOptions, gioiThieuOptions, nhomOptions, dims, setDim],
   );
 
   const dateRangePicker = (
@@ -278,14 +297,19 @@ const DonViCuuTroThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExp
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
                     <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
                     <RechartsTooltip content={<ChartTooltip />} />
-                    <ColoredBar
-                      data={loaiChartData}
-                      dataKey="soTien"
-                      name={T('chart.soTien')}
+                    <Legend />
+                    <Bar
+                      dataKey="tienMat"
+                      stackId="ungHo"
+                      name={`${T('kpi.tienMat')} (triệu đồng)`}
+                      fill="hsl(var(--primary))"
+                    />
+                    <Bar
+                      dataKey="hienVat"
+                      stackId="ungHo"
+                      name={`${T('kpi.hienVat')} (triệu đồng)`}
+                      fill="hsl(var(--chart-2, 38 92% 50%))"
                       radius={[4, 4, 0, 0]}
-                      getFill={(row, i) =>
-                        chartFillForCategoricalBar(row, i, { badgeConfig: loaiBadge, labelKey: 'key' })
-                      }
                     />
                   </BarChart>
                 </ResponsiveContainer>

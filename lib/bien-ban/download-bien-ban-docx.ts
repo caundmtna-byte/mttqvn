@@ -26,6 +26,7 @@ import {
   type BienBanAlign,
   type BienBanBlock,
   type BienBanCotKy,
+  type BienBanLuaChon,
   type BienBanModel,
   type BienBanRun,
 } from './bien-ban-model';
@@ -96,6 +97,11 @@ function oChon(checked: boolean) {
   return tr(`${checked ? O_CHON : O_TRONG} `, { font: FONT_O });
 }
 
+/** Ô ☐/☒ + nhãn (+ chữ "Khác: ……" nếu có). */
+function oLuaChon(o: BienBanLuaChon): TextRun[] {
+  return [oChon(o.checked), tr(o.label), ...(o.ghiThem ? runsToText([o.ghiThem]) : [])];
+}
+
 function cell(children: Paragraph[], widthPct: number, columnSpan?: number) {
   return new TableCell({
     width: { size: widthPct, type: WidthType.PERCENTAGE },
@@ -144,13 +150,37 @@ function blockToDocx(b: BienBanBlock): (Paragraph | Table)[] {
     case 'lua-chon': {
       if (b.layout === 'inline') {
         const children = [...runsToText(b.label)];
-        for (const o of b.options) children.push(tr('    '), oChon(o.checked), tr(o.label));
+        for (const o of b.options) children.push(tr('    '), ...oLuaChon(o));
         return [para(children)];
+      }
+      if (b.layout === 'luoi') {
+        // Hai ô một dòng như mẫu giấy — bảng không viền, mỗi ô một cột.
+        const rows: TableRow[] = [];
+        for (let i = 0; i < b.options.length; i += 2) {
+          const pair = b.options.slice(i, i + 2);
+          rows.push(
+            new TableRow({
+              children: [0, 1].map((k) =>
+                cell([para(pair[k] ? oLuaChon(pair[k]) : [tr('')], { after: 0 })], 50),
+              ),
+            }),
+          );
+        }
+        return [
+          para(runsToText(b.label), { after: 0 }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: TABLE_NO_BORDERS,
+            indent: { size: 567, type: WidthType.DXA }, // 1cm — khớp bản HTML
+            rows,
+          }),
+          para([tr('')], { after: 0 }),
+        ];
       }
       return [
         para(runsToText(b.label), { after: 0 }),
         ...b.options.map((o, i) =>
-          para([oChon(o.checked), tr(o.label)], {
+          para(oLuaChon(o), {
             leftIndent: 1247, // 2.2cm — khớp bản HTML
             after: i === b.options.length - 1 ? 60 : 0,
           }),

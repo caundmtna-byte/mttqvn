@@ -97,6 +97,7 @@ export const matTranNhapXuatKho = {
     khoNhap: 'Kho nhập',
     donViCuuTro: 'Đơn vị cứu trợ',
     dotCuuTro: 'Đợt cứu trợ',
+    dotCuuTroNhapHint: 'Không bắt buộc — chọn để tính kết quả ủng hộ của đơn vị theo đợt.',
     doiTuongHoTro: 'Đối tượng hỗ trợ',
     doiTuongHoTroPlaceholder: 'Tìm theo họ tên chủ hộ…',
     doiTuongHoTroHint: 'Chọn từ Thông tin đối tượng hỗ trợ — tự điền người nhận hàng.',

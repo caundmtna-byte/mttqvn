@@ -10,7 +10,7 @@ import {
   deleteKhoDonViCuuTroMany,
   getKhoDonViCuuTroById,
   getKhoDonViCuuTroList,
-  getKhoDonViCuuTroUngHoTheoKy,
+  getKhoDonViCuuTroUngHoNhom,
   updateKhoDonViCuuTro,
 } from '../services/kho-don-vi-cuu-tro-service';
 import type { ImportRunOptions } from '@/components/shared/ImportDialog';
@@ -27,15 +27,18 @@ export function useKhoDonViCuuTroList(options?: { enabled?: boolean }) {
   });
 }
 
-/** `tuNgay` / `denNgay` rỗng = toàn thời gian (preset «Tất cả»). */
-export function useKhoDonViCuuTroUngHoTheoKy(
+/**
+ * Số ủng hộ gom theo đơn vị × đợt / nội dung. `tuNgay` / `denNgay` rỗng = toàn
+ * thời gian (tab Danh sách luôn dùng thế; tab Thống kê truyền kỳ đang chọn).
+ */
+export function useKhoDonViCuuTroUngHoNhom(
   tuNgay: string,
   denNgay: string,
   options?: { enabled?: boolean },
 ) {
   return useQuery({
-    queryKey: queryKeys.khoDonViCuuTro.ungHoTheoKy(tuNgay, denNgay),
-    queryFn: () => getKhoDonViCuuTroUngHoTheoKy(tuNgay, denNgay),
+    queryKey: queryKeys.khoDonViCuuTro.ungHoNhom(tuNgay, denNgay),
+    queryFn: () => getKhoDonViCuuTroUngHoNhom(tuNgay, denNgay),
     enabled: options?.enabled !== false,
     ...transactionalCrudListQueryOptions,
     // Đổi kỳ: giữ số kỳ trước trong lúc tải, khỏi nháy khung xương cả trang.
@@ -59,7 +62,7 @@ export function useCreateKhoDonViCuuTro(onSuccess?: () => void) {
     mutationFn: (data: KhoDonViCuuTroFormValues) => createKhoDonViCuuTro(data),
     onSuccess: (inserted) => {
       // Đơn vị mới chưa có khoản ủng hộ nào.
-      const created: KhoDonViCuuTroListRow = { ...inserted, ket_qua_ung_ho: 0 };
+      const created: KhoDonViCuuTroListRow = { ...inserted };
       queryClient.setQueryData<KhoDonViCuuTroListRow[]>(listKey, (old) => {
         if (!old) return [created];
         const rest = old.filter((r) => r.id !== created.id);

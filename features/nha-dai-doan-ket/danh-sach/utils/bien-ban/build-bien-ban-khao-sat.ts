@@ -8,12 +8,14 @@ import {
   doan,
   dongDiaDanhNgay,
   f,
+  luaChon,
   t,
   tenThonDayDu,
   tenXaDayDu,
   type BienBanBlock,
+  type DanhMucLuaChon,
   type BienBanModel,
-} from './bien-ban-model';
+} from '@/lib/bien-ban/bien-ban-model';
 
 /** Dữ liệu đầu vào chung của 3 builder. `ho` null khi hồ sơ cũ chưa gắn hộ. */
 export interface BienBanNguon {
@@ -24,39 +26,24 @@ export interface BienBanNguon {
 export const TIEU_DE_KHAO_SAT = 'Phiếu khảo sát hộ nghèo, hộ cận nghèo, hộ khó khăn về nhà ở';
 
 /** Mục 12 — đối tượng khó khăn về nhà ở, đúng thứ tự trên mẫu. */
-const DOI_TUONG: { value: string; label: string }[] = [
+const DOI_TUONG: DanhMucLuaChon[] = [
   { value: 'Hộ nghèo', label: 'Hộ nghèo' },
   { value: 'Cận nghèo', label: 'Hộ cận nghèo' },
   { value: 'Khó khăn', label: 'Hộ khó khăn' },
 ];
 
 /** Mục 16 — tình trạng đất ở. */
-const TINH_TRANG_DAT: { value: string; label: string }[] = [
+const TINH_TRANG_DAT: DanhMucLuaChon[] = [
   { value: 'Có GCN QSDĐ', label: 'Có Giấy chứng nhận quyền sử dụng đất' },
   { value: 'Chưa có GCN QSDĐ', label: 'Chưa có Giấy chứng nhận quyền sử dụng đất' },
 ];
 
 /** Mục 19 — nhu cầu cần hỗ trợ. */
-const NHU_CAU: { value: string; label: string }[] = [
+const NHU_CAU: DanhMucLuaChon[] = [
   { value: 'Xây dựng nhà lắp ghép', label: 'Hỗ trợ xây dựng nhà lắp ghép' },
   { value: 'Gia đình tự xây mới', label: 'Hỗ trợ gia đình tự xây mới' },
   { value: 'Gia đình tự sửa chữa', label: 'Hỗ trợ gia đình tự sửa chữa' },
 ];
-
-function luaChon(
-  so: string,
-  label: string,
-  danhMuc: { value: string; label: string }[],
-  chon: string | null | undefined,
-  layout: 'inline' | 'stack',
-): BienBanBlock {
-  return {
-    kind: 'lua-chon',
-    label: [t(`${so}. ${label}:`)],
-    options: danhMuc.map((d) => ({ label: d.label, checked: d.value === chon })),
-    layout,
-  };
-}
 
 /**
  * Phiếu khảo sát — bám mẫu "BB Khảo sát" của cơ quan.
@@ -102,7 +89,7 @@ export function buildBienBanKhaoSat({ nddk, ho }: BienBanNguon): BienBanModel {
       t('11. Tình trạng việc làm (có việc làm/không có việc làm/đang đi học): '),
       f(nk?.tinh_trang_viec_lam, DOTS_SHORT),
     ]),
-    luaChon('12', 'Đối tượng khó khăn về nhà ở', DOI_TUONG, doiTuong, 'inline'),
+    luaChon('12. Đối tượng khó khăn về nhà ở:', DOI_TUONG, doiTuong, 'inline'),
     doan([
       t('13. Dân tộc: '),
       f(ho?.ten_dan_toc, DOTS_MEDIUM),
@@ -110,10 +97,10 @@ export function buildBienBanKhaoSat({ nddk, ho }: BienBanNguon): BienBanModel {
       f(ho?.ton_giao, DOTS_MEDIUM),
     ]),
     doan([t('15. Đối tượng ưu tiên: '), f(nk?.doi_tuong_uu_tien, DOTS_LONG)]),
-    luaChon('16', 'Tình trạng đất ở', TINH_TRANG_DAT, nk?.tinh_trang_dat, 'stack'),
+    luaChon('16. Tình trạng đất ở:', TINH_TRANG_DAT, nk?.tinh_trang_dat, 'stack'),
     doan([t('17. Hiện trạng nhà ở: '), f(bb?.hien_trang_nha, DOTS_LONG)]),
     doan([t('18. Hoàn cảnh gia đình: '), f(bb?.hoan_canh_gia_dinh, DOTS_LONG)]),
-    luaChon('19', 'Nhu cầu cần hỗ trợ', NHU_CAU, bb?.nhu_cau_ho_tro, 'stack'),
+    luaChon('19. Nhu cầu cần hỗ trợ:', NHU_CAU, bb?.nhu_cau_ho_tro, 'stack'),
     doan([t('20. Ghi chú: '), f(bb?.ghi_chu_khao_sat, DOTS_LONG)]),
   ];
   // Mẫu gốc chừa thêm một dòng trống cho ghi chú viết tay.

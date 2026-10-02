@@ -1,5 +1,12 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, Tag, Landmark } from 'lucide-react';
+import {
+  Plus,
+  Download,
+  Upload,
+  Tag,
+  Landmark,
+  Layers,
+} from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -23,6 +30,8 @@ interface Props {
   onImport: () => void;
   onDeleteMany: (ids: string[]) => void;
   items?: KhoDonViCuuTroListRow[] | null;
+  /** Lựa chọn chip "Đợt / Nội dung" — trang dựng từ RPC nhóm ủng hộ. */
+  nhomUngHoOptions?: { value: string; label: string; count: number }[];
 }
 
 const KhoDonViCuuTroToolbar: React.FC<Props> = ({
@@ -32,6 +41,7 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
   onImport,
   onDeleteMany,
   items,
+  nhomUngHoOptions = [],
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('matTranReliefSupportUnits');
   const itemRows = Array.isArray(items) ? items : [];
@@ -81,7 +91,8 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
       (searchTerm ? 1 : 0) +
       countKhoDonViCuuTroColumnSearchActive(filters.columnSearch ?? {}) +
       (filters.loai_filter.length > 0 ? 1 : 0) +
-      (filters.don_vi_gioi_thieu_filter.length > 0 ? 1 : 0)
+      (filters.don_vi_gioi_thieu_filter.length > 0 ? 1 : 0) +
+      (filters.nhom_ung_ho_filter.length > 0 ? 1 : 0)
     );
   }, [searchTerm, filters]);
 
@@ -90,6 +101,7 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
     useKhoDonViCuuTroStore.getState().setFilter('columnSearch', {});
     setFilter('loai_filter', []);
     setFilter('don_vi_gioi_thieu_filter', []);
+    setFilter('nhom_ung_ho_filter', []);
     setSort(null, null);
   };
 
@@ -112,13 +124,23 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
           icon={Landmark}
           className="shrink-0 w-full min-w-0 sm:w-[min(200px,24vw)] sm:max-w-[260px]"
         />
+        <FilterChipMultiSelect
+          options={nhomUngHoOptions}
+          value={filters.nhom_ung_ho_filter}
+          onChange={(val) => setFilter('nhom_ung_ho_filter', val)}
+          placeholder={txt('matTranDonViCuuTro.toolbar.filterNhomUngHo')}
+          icon={Layers}
+          className="shrink-0 w-full min-w-0 sm:w-[min(200px,24vw)] sm:max-w-[260px]"
+        />
       </div>
     ),
     [
       filters.loai_filter,
       filters.don_vi_gioi_thieu_filter,
+      filters.nhom_ung_ho_filter,
       loaiOptions,
       donViGioiThieuOptions,
+      nhomUngHoOptions,
       setFilter,
     ],
   );
@@ -141,10 +163,20 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
         value: filters.don_vi_gioi_thieu_filter,
         onChange: (val: string[]) => setFilter('don_vi_gioi_thieu_filter', val),
       },
+      {
+        key: 'nhom_ung_ho_filter',
+        label: txt('matTranDonViCuuTro.toolbar.filterNhomUngHo'),
+        icon: Layers,
+        options: nhomUngHoOptions,
+        value: filters.nhom_ung_ho_filter,
+        onChange: (val: string[]) => setFilter('nhom_ung_ho_filter', val),
+      },
     ],
     [
       loaiOptions,
       donViGioiThieuOptions,
+      nhomUngHoOptions,
+      filters.nhom_ung_ho_filter,
       filters.loai_filter,
       filters.don_vi_gioi_thieu_filter,
       setFilter,

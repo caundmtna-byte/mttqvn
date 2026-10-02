@@ -62,6 +62,9 @@ export const VNN_TRANG_THAI_DA_NHAN: VnnTrangThai = 'Đã nhận';
 export const VNN_NAM_MIN = 2000;
 export const VNN_NAM_MAX = 2100;
 
+/** Đường dẫn trang danh sách — trang in phiếu nằm ở `${VNN_LIST_PATH}/:id/in`. */
+export const VNN_LIST_PATH = '/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach';
+
 /** Hai tab của module — giữ mảng ở đây để `useTabSearchParam` memo ổn định. */
 export type VnnMainTab = 'danh_sach' | 'thong_ke';
 export const VNN_MAIN_TABS = ['danh_sach', 'thong_ke'] as const satisfies readonly VnnMainTab[];

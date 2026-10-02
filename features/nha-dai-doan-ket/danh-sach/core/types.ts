@@ -46,6 +46,10 @@ export interface NhaDaiDoanKet {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /** Trigger `fn_nddk_gan_nguoi_cap_nhat` gán — form không gửi. */
+  id_nguoi_cap_nhat?: string | null;
+  ho_va_ten_nguoi_cap_nhat?: string | null;
+  ten_tai_khoan_nguoi_cap_nhat?: string | null;
   /**
    * Dữ liệu 3 biên bản — CHỈ có khi dòng được đọc bằng `NDDK_SELECT_FULL`
    * (chi tiết / sửa / in). Dòng từ RPC phân trang không có ⇒ `undefined`,

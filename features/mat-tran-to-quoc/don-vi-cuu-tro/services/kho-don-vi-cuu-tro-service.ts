@@ -9,6 +9,7 @@ import {
 } from '../utils/don-vi-gioi-thieu';
 import type { KhoDonViCuuTroDetail, KhoDonViCuuTroListRow } from '../core/types';
 import type { KhoDonViCuuTroFormValues } from '../core/schema';
+import type { DonViCuuTroUngHoNhom } from '../utils/ung-ho-nhom';
 import { KHO_DON_VI_CUU_TRO_RETURNING, KHO_DON_VI_CUU_TRO_SELECT } from '../core/supabase-select';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -61,6 +62,8 @@ export function flattenKhoDonViCuuTroRow(row: Record<string, unknown>): KhoDonVi
     ghi_chu: nullableStr(r.ghi_chu),
     tg_tao: String(r.tg_tao ?? ''),
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
+    tien_mat_ung_ho: null,
+    hien_vat_ung_ho: null,
     ket_qua_ung_ho: null,
   };
 }
@@ -85,76 +88,45 @@ export function khoDonViCuuTroFormToPayload(data: KhoDonViCuuTroFormValues): Rec
   };
 }
 
-/**
- * "Kết quả ủng hộ (đồng)" theo đơn vị — RPC `get_kho_don_vi_cuu_tro_ket_qua` cộng
- * giá trị hàng nhập kho + tiền/hiện vật quy đổi ở Chương trình vì hộ nghèo.
- */
-async function getKhoDonViCuuTroKetQua(donViId?: string): Promise<Map<string, number>> {
-  const supabase = getSupabase();
-  const out = new Map<string, number>();
-  if (!supabase) return out;
-  const { data, error } = await supabase.rpc('get_kho_don_vi_cuu_tro_ket_qua', {
-    p_don_vi_id: donViId ? Number(donViId) : null,
-  });
-  if (error) handleSupabaseError(error);
-  for (const r of (data ?? []) as { don_vi_id: unknown; ket_qua_ung_ho: unknown }[]) {
-    const n = Number(r.ket_qua_ung_ho);
-    out.set(String(r.don_vi_id), Number.isFinite(n) ? n : 0);
-  }
-  return out;
-}
-
-export interface DonViCuuTroUngHoKy {
-  tienKho: number;
-  tienChuongTrinh: number;
-  soLuot: number;
-}
-
 function toSo(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
 
 /**
- * Kết quả ủng hộ trong khoảng ngày `[tuNgay, denNgay]` (`YYYY-MM-DD`, chuỗi rỗng =
- * không chặn đầu đó). Chỉ có đơn vị phát sinh trong kỳ — vắng mặt nghĩa là 0.
+ * Kết quả ủng hộ gom theo đơn vị × nhóm (đợt cứu trợ / nội dung hỗ trợ), tách tiền
+ * mặt và hiện vật — RPC `get_kho_don_vi_cuu_tro_ung_ho_nhom`. Khoảng ngày
+ * `YYYY-MM-DD`, chuỗi rỗng = không chặn đầu đó. Chỉ có nhóm có phát sinh.
  */
-export async function getKhoDonViCuuTroUngHoTheoKy(
+export async function getKhoDonViCuuTroUngHoNhom(
   tuNgay: string,
   denNgay: string,
-): Promise<Map<string, DonViCuuTroUngHoKy>> {
+): Promise<DonViCuuTroUngHoNhom[]> {
   const supabase = getSupabase();
-  const out = new Map<string, DonViCuuTroUngHoKy>();
-  if (!supabase) return out;
-  const { data, error } = await supabase.rpc('get_kho_don_vi_cuu_tro_ung_ho_theo_ky', {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('get_kho_don_vi_cuu_tro_ung_ho_nhom', {
     p_tu_ngay: tuNgay || null,
     p_den_ngay: denNgay || null,
   });
   if (error) handleSupabaseError(error);
-  for (const r of (data ?? []) as {
-    don_vi_id: unknown;
-    tien_kho: unknown;
-    tien_chuong_trinh: unknown;
-    so_luot: unknown;
-  }[]) {
-    out.set(String(r.don_vi_id), {
-      tienKho: toSo(r.tien_kho),
-      tienChuongTrinh: toSo(r.tien_chuong_trinh),
-      soLuot: toSo(r.so_luot),
-    });
-  }
-  return out;
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    donViId: String(r.don_vi_id),
+    nguon: r.nguon === 'kho' ? 'kho' : 'chuong_trinh',
+    nhomKey: String(r.nhom_key ?? ''),
+    nhomTen: r.nhom_ten == null ? null : String(r.nhom_ten),
+    tienMat: toSo(r.tien_mat),
+    hienVat: toSo(r.hien_vat),
+    soLuot: toSo(r.so_luot),
+  }));
 }
 
+/**
+ * Danh sách đơn vị — KHÔNG kèm số ủng hộ: trang tự ghép từ
+ * `getKhoDonViCuuTroUngHoNhom` để còn lọc được theo đợt / nội dung.
+ */
 export async function getKhoDonViCuuTroList(): Promise<KhoDonViCuuTroListRow[]> {
-  const [list, ketQua] = await Promise.all([
-    repo.getAll({ orderBy: 'tt', ascending: true }),
-    getKhoDonViCuuTroKetQua(),
-  ]);
-  return list.map((row) => {
-    const flat = flattenKhoDonViCuuTroRow(row as unknown as Record<string, unknown>);
-    return { ...flat, ket_qua_ung_ho: ketQua.get(flat.id) ?? 0 };
-  });
+  const list = await repo.getAll({ orderBy: 'tt', ascending: true });
+  return list.map((row) => flattenKhoDonViCuuTroRow(row as unknown as Record<string, unknown>));
 }
 
 export async function getKhoDonViCuuTroById(id: string): Promise<KhoDonViCuuTroDetail | null> {
@@ -167,9 +139,7 @@ export async function getKhoDonViCuuTroById(id: string): Promise<KhoDonViCuuTroD
     .maybeSingle();
   if (error) handleSupabaseError(error);
   if (!data) return null;
-  const flat = flattenKhoDonViCuuTroRow(data as unknown as Record<string, unknown>);
-  const ketQua = await getKhoDonViCuuTroKetQua(flat.id);
-  return { ...flat, ket_qua_ung_ho: ketQua.get(flat.id) ?? 0 };
+  return flattenKhoDonViCuuTroRow(data as unknown as Record<string, unknown>);
 }
 
 export async function createKhoDonViCuuTro(data: KhoDonViCuuTroFormValues): Promise<KhoDonViCuuTroListRow> {

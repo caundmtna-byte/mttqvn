@@ -1,5 +1,13 @@
 import { exportToExcel } from '@/lib/utils';
-import { O_CHON, O_TRONG, QUOC_HIEU, TIEU_NGU, runsText, type BienBanModel } from './bien-ban-model';
+import {
+  O_CHON,
+  O_TRONG,
+  QUOC_HIEU,
+  TIEU_NGU,
+  luaChonText,
+  runsText,
+  type BienBanModel,
+} from './bien-ban-model';
 
 /**
  * Dàn phẳng biên bản thành từng dòng văn bản, mỗi dòng một hàng Excel.
@@ -19,9 +27,12 @@ export function bienBanToRows(model: BienBanModel): string[] {
         rows.push(runsText(b.runs));
         break;
       case 'lua-chon': {
-        const opts = b.options.map((o) => `${o.checked ? O_CHON : O_TRONG} ${o.label}`);
+        const opts = b.options.map((o) => `${o.checked ? O_CHON : O_TRONG} ${luaChonText(o)}`);
         if (b.layout === 'inline') rows.push(`${runsText(b.label)} ${opts.join('   ')}`);
-        else rows.push(runsText(b.label), ...opts.map((o) => `    ${o}`));
+        else if (b.layout === 'luoi') {
+          rows.push(runsText(b.label));
+          for (let i = 0; i < opts.length; i += 2) rows.push(`    ${opts.slice(i, i + 2).join('   ')}`);
+        } else rows.push(runsText(b.label), ...opts.map((o) => `    ${o}`));
         break;
       }
       case 'chu-ky':

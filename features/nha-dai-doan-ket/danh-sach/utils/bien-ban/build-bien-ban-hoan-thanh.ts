@@ -13,7 +13,7 @@ import {
   tenXaDayDu,
   type BienBanBlock,
   type BienBanModel,
-} from './bien-ban-model';
+} from '@/lib/bien-ban/bien-ban-model';
 import type { BienBanNguon } from './build-bien-ban-khao-sat';
 
 export const TIEU_DE_HOAN_THANH = 'Biên bản kiểm tra việc hoàn thành xây dựng (sửa chữa) nhà ở';

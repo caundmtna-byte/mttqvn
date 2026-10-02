@@ -26,7 +26,8 @@ import {
   VNN_NGUON_HO_TRO_DEFAULT,
   VNN_TRANG_THAI_DEFAULT,
 } from '../core/constants';
-import { VNN_RETURNING, VNN_SELECT } from '../core/supabase-select';
+import { VNN_RETURNING, VNN_SELECT, VNN_SELECT_FULL } from '../core/supabase-select';
+import { docPhieuKhaoSat } from '../core/phieu-khao-sat';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -99,6 +100,8 @@ export function flattenViNguoiNgheoRow(row: Record<string, unknown>): ViNguoiNgh
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: embeddedName(nv?.ho_va_ten),
     ten_tai_khoan_nguoi_tao: embeddedName(nv?.ten_tai_khoan),
+    // Không có khoá ⇒ dòng đọc bằng select rút gọn / RPC: để `undefined` = "chưa tải".
+    ...('phieu_khao_sat' in r ? { phieu_khao_sat: docPhieuKhaoSat(r.phieu_khao_sat) } : {}),
   };
 }
 
@@ -126,6 +129,8 @@ function formToPayload(data: ViNguoiNgheoFormValues): Record<string, unknown> {
     trang_thai: data.trang_thai,
     don_vi_ho_tro_id: nullableFk(data.don_vi_ho_tro_id),
     ghi_chu: data.ghi_chu ?? null,
+    // Form chưa có bản đầy đủ ⇒ không gửi, để DB giữ nguyên phiếu đang lưu.
+    ...(data.phieu_khao_sat !== undefined ? { phieu_khao_sat: data.phieu_khao_sat } : {}),
   };
 }
 
@@ -339,6 +344,20 @@ export async function getViNguoiNgheoById(id: string): Promise<ViNguoiNgheo | nu
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase.from(TABLE).select(VNN_SELECT).eq('id', id).maybeSingle();
+  if (error) handleSupabaseError(error);
+  if (!data) return null;
+  return flattenViNguoiNgheoRow(data as unknown as Record<string, unknown>);
+}
+
+/** Bản đầy đủ (có phiếu khảo sát) — form sửa, chi tiết phiếu, trang in. */
+export async function getViNguoiNgheoFullById(id: string): Promise<ViNguoiNgheo | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select(VNN_SELECT_FULL)
+    .eq('id', id)
+    .maybeSingle();
   if (error) handleSupabaseError(error);
   if (!data) return null;
   return flattenViNguoiNgheoRow(data as unknown as Record<string, unknown>);

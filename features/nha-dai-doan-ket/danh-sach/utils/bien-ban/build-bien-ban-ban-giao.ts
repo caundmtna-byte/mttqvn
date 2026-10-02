@@ -13,7 +13,7 @@ import {
   tenXaDayDu,
   type BienBanBlock,
   type BienBanModel,
-} from './bien-ban-model';
+} from '@/lib/bien-ban/bien-ban-model';
 import type { BienBanNguon } from './build-bien-ban-khao-sat';
 
 export const TIEU_DE_BAN_GIAO = 'Biên bản bàn giao tiền mặt hỗ trợ xây mới (sửa chữa) nhà ở';

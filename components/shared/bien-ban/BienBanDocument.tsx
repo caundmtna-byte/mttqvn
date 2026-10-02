@@ -8,7 +8,7 @@ import {
   type BienBanBlock,
   type BienBanModel,
   type BienBanRun,
-} from '../utils/bien-ban/bien-ban-model';
+} from '@/lib/bien-ban/bien-ban-model';
 
 const B = 'bien-ban-doc';
 
@@ -82,18 +82,31 @@ function Block({ block }: { block: BienBanBlock }) {
           <Runs runs={block.runs} />
         </p>
       );
-    case 'lua-chon':
+    case 'lua-chon': {
+      const options = block.options.map((o, i) => (
+        <span key={i} className={`${B}__lua-chon-opt`}>
+          <span className={`${B}__o`}>{o.checked ? O_CHON : O_TRONG}</span>
+          {o.label}
+          {o.ghiThem ? <Runs runs={[o.ghiThem]} /> : null}
+        </span>
+      ));
+      if (block.layout === 'luoi') {
+        return (
+          <div className={`${B}__lua-chon ${B}__lua-chon--luoi`}>
+            <p className={`${B}__lua-chon-nhan`}>
+              <Runs runs={block.label} />
+            </p>
+            <div className={`${B}__lua-chon-luoi`}>{options}</div>
+          </div>
+        );
+      }
       return (
         <p className={`${B}__lua-chon ${B}__lua-chon--${block.layout}`}>
           <Runs runs={block.label} />
-          {block.options.map((o, i) => (
-            <span key={i} className={`${B}__lua-chon-opt`}>
-              <span className={`${B}__o`}>{o.checked ? O_CHON : O_TRONG}</span>
-              {o.label}
-            </span>
-          ))}
+          {options}
         </p>
       );
+    }
     case 'chu-ky': {
       const n = Math.max(1, block.cols.length);
       const gridStyle = { gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` };
@@ -134,7 +147,7 @@ interface Props {
 }
 
 /** Một biên bản — cùng phần tử này làm nguồn cho cửa sổ in và bản chụp PDF. */
-const NddkBienBanDocument: React.FC<Props> = ({ model, rootId }) => (
+const BienBanDocument: React.FC<Props> = ({ model, rootId }) => (
   <article id={rootId} className={B}>
     {model.blocks.map((b, i) => (
       <Block key={i} block={b} />
@@ -142,4 +155,4 @@ const NddkBienBanDocument: React.FC<Props> = ({ model, rootId }) => (
   </article>
 );
 
-export default NddkBienBanDocument;
+export default BienBanDocument;

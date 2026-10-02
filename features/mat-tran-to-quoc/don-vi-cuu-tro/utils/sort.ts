@@ -54,6 +54,10 @@ export function sortKhoDonViCuuTroList(rows: KhoDonViCuuTroListRow[], sort: Sort
         return cmpStr(a.don_vi_gioi_thieu_label, b.don_vi_gioi_thieu_label, dir);
       case 'dia_chi':
         return cmpStr(a.dia_chi, b.dia_chi, dir);
+      case 'tien_mat_ung_ho':
+        return cmpNumNullable(a.tien_mat_ung_ho, b.tien_mat_ung_ho, dir);
+      case 'hien_vat_ung_ho':
+        return cmpNumNullable(a.hien_vat_ung_ho, b.hien_vat_ung_ho, dir);
       case 'ket_qua_ung_ho':
         return cmpNumNullable(a.ket_qua_ung_ho, b.ket_qua_ung_ho, dir);
       case 'dien_thoai':

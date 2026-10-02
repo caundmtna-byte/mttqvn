@@ -1,5 +1,5 @@
 import type { NddkLoaiPhieuIn } from '../../core/constants';
-import type { BienBanModel } from './bien-ban-model';
+import type { BienBanModel } from '@/lib/bien-ban/bien-ban-model';
 import { buildBienBanBanGiao } from './build-bien-ban-ban-giao';
 import { buildBienBanHoanThanh } from './build-bien-ban-hoan-thanh';
 import { buildBienBanKhaoSat, type BienBanNguon } from './build-bien-ban-khao-sat';

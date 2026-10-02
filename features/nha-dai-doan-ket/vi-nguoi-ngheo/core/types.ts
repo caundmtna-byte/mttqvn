@@ -6,6 +6,7 @@ import type {
   VnnNguonHoTro,
   VnnTrangThai,
 } from './constants';
+import type { VnnPhieuKhaoSat } from './phieu-khao-sat';
 
 export interface ViNguoiNgheoFilters {
   columnSearch: Record<string, string>;
@@ -52,4 +53,10 @@ export interface ViNguoiNgheo {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /**
+   * Phiếu khảo sát in — CHỈ có khi dòng đọc bằng `VNN_SELECT_FULL` (chi tiết /
+   * sửa / in). Dòng từ RPC phân trang không có ⇒ `undefined`, nghĩa là "chưa
+   * tải", KHÔNG phải "trống". `null` = lĩnh vực không có phiếu / chưa nhập.
+   */
+  phieu_khao_sat?: VnnPhieuKhaoSat | null;
 }

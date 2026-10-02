@@ -221,8 +221,8 @@ export const queryKeys = {
     all: ['kho-don-vi-cuu-tro'] as const,
     detail: (id: string) => ['kho-don-vi-cuu-tro', 'detail', id] as const,
     /** Cùng tiền tố `all` — invalidate danh sách là kéo luôn số liệu thống kê. */
-    ungHoTheoKy: (tuNgay: string, denNgay: string) =>
-      ['kho-don-vi-cuu-tro', 'ung-ho-theo-ky', tuNgay, denNgay] as const,
+    ungHoNhom: (tuNgay: string, denNgay: string) =>
+      ['kho-don-vi-cuu-tro', 'ung-ho-nhom', tuNgay, denNgay] as const,
   },
   khoDotCuuTro: {
     all: ['kho-dot-cuu-tro'] as const,
@@ -312,6 +312,11 @@ export const queryKeys = {
   viNguoiNgheo: {
     all: ['vi-nguoi-ngheo'] as const,
     detail: (id: string) => ['vi-nguoi-ngheo', 'detail', id] as const,
+    /**
+     * Một khoản ĐẦY ĐỦ (có phiếu khảo sát). Tách khỏi `detail` vì `detail` được
+     * mồi bằng dòng của RPC phân trang — dòng đó thiếu cột phiếu.
+     */
+    full: (id: string) => ['vi-nguoi-ngheo', 'full', id] as const,
     /** Một trang từ RPC `get_vnn_page`. */
     page: (args: unknown) => ['vi-nguoi-ngheo', 'page', args] as const,
     /** Các khoản của một hộ — màn chi tiết hộ nghèo. */

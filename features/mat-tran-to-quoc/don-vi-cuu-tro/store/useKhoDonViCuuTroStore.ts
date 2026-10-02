@@ -72,12 +72,28 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     order: 7,
   },
   {
+    id: 'tien_mat_ung_ho',
+    label: txt('matTranDonViCuuTro.store.tienMatUngHoCol'),
+    visible: true,
+    minWidth: 120,
+    maxWidth: 170,
+    order: 8,
+  },
+  {
+    id: 'hien_vat_ung_ho',
+    label: txt('matTranDonViCuuTro.store.hienVatUngHoCol'),
+    visible: true,
+    minWidth: 130,
+    maxWidth: 180,
+    order: 9,
+  },
+  {
     id: 'ket_qua_ung_ho',
     label: txt('matTranDonViCuuTro.store.ketQuaUngHoCol'),
     visible: true,
     minWidth: 130,
     maxWidth: 180,
-    order: 8,
+    order: 10,
   },
   {
     id: 'don_vi_gioi_thieu',
@@ -85,7 +101,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 150,
     maxWidth: 240,
-    order: 9,
+    order: 11,
   },
   {
     id: 'email',
@@ -93,7 +109,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 160,
     maxWidth: 240,
-    order: 10,
+    order: 12,
   },
   {
     id: 'ghi_chu',
@@ -101,21 +117,21 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: false,
     minWidth: 140,
     maxWidth: 320,
-    order: 11,
+    order: 13,
   },
   {
     id: 'tg_tao',
     label: txt('matTranDonViCuuTro.store.tgTaoCol'),
     visible: false,
     ...P.datetime,
-    order: 12,
+    order: 14,
   },
   {
     id: 'tg_cap_nhat',
     label: txt('matTranDonViCuuTro.store.tgCapNhatCol'),
     visible: true,
     ...P.datetime,
-    order: 13,
+    order: 15,
   },
   {
     id: 'actions',
@@ -123,7 +139,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     visible: true,
     minWidth: 96,
     maxWidth: 120,
-    order: 14,
+    order: 16,
   },
 ];
 
@@ -131,6 +147,7 @@ const initialFilters: KhoDonViCuuTroFilters = {
   columnSearch: {},
   loai_filter: [],
   don_vi_gioi_thieu_filter: [],
+  nhom_ung_ho_filter: [],
 };
 
 export const useKhoDonViCuuTroStore = createGenericStore<KhoDonViCuuTroFilters>(initialFilters, DEFAULT_COLUMNS);

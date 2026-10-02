@@ -1,0 +1,89 @@
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { txt } from '@/lib/text';
+import { useCan } from '@/hooks/use-can';
+import { useAuthStore } from '@/store/useStore';
+import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
+import BienBanPreview from '@/components/shared/bien-ban/BienBanPreview';
+import { fileSlug } from '@/lib/bien-ban/bien-ban-model';
+import { useHoNgheoFull } from '@/features/nha-dai-doan-ket/thong-tin-ho-ngheo/hooks/use-ho-ngheo';
+import { VNN_LIST_PATH } from '../core/constants';
+import { vnnLoaiPhieu } from '../core/phieu-khao-sat';
+import { useViNguoiNgheoFull } from '../hooks/use-vi-nguoi-ngheo';
+import { canViewVnnRow, useVnnViewer } from '../hooks/use-vnn-viewer';
+import { buildPhieuKhaoSat } from '../utils/phieu-khao-sat/build-phieu-khao-sat';
+
+/** Xem trước + in / tải phiếu khảo sát của một khoản hỗ trợ. Phiếu chọn theo lĩnh vực. */
+const VnnInPhieuPage: React.FC = () => {
+  const { vnnId: idParam } = useParams<{ vnnId: string }>();
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const canView = useCan('view', 'viNguoiNgheoList');
+  // Chờ ma trận quyền tải xong mới quyết định chuyển hướng — nếu không, sau mỗi
+  // lần F5 người dùng bị đá ra ngoài trong lúc quyền chưa về.
+  const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
+  const didRedirect = useRef(false);
+
+  const id = String(idParam ?? '').trim();
+  const viewer = useVnnViewer();
+
+  const { data: vnn, isLoading, isError } = useViNguoiNgheoFull(id || null);
+  const hoId = vnn?.ho_ngheo_id ?? null;
+  const { data: ho, isLoading: hoLoading } = useHoNgheoFull(hoId);
+  const loai = vnn ? vnnLoaiPhieu(vnn.linh_vuc_ho_tro) : null;
+
+  const redirect = useCallback(
+    (message: string) => {
+      if (didRedirect.current) return;
+      didRedirect.current = true;
+      toast.error(message);
+      navigate(VNN_LIST_PATH, { replace: true });
+    },
+    [navigate],
+  );
+
+  useEffect(() => {
+    if (!user || permissionsLoading || canView) return;
+    redirect(txt('viNguoiNgheo.noViewPermission'));
+  }, [user, permissionsLoading, canView, redirect]);
+
+  useEffect(() => {
+    if (!id || isLoading) return;
+    if (!isError && vnn === null) redirect(txt('viNguoiNgheo.phieuKhaoSat.notFound'));
+  }, [id, isLoading, isError, vnn, redirect]);
+
+  // Phạm vi dòng: khoản ngoài phạm vi xem thì không được mở bản in.
+  useEffect(() => {
+    if (!vnn || permissionsLoading) return;
+    if (!canViewVnnRow(viewer, vnn)) redirect(txt('viNguoiNgheo.noViewRowPermission'));
+  }, [vnn, viewer, permissionsLoading, redirect]);
+
+  useEffect(() => {
+    if (vnn && !loai) redirect(txt('viNguoiNgheo.phieuKhaoSat.khongCoPhieu'));
+  }, [vnn, loai, redirect]);
+
+  const model = useMemo(() => (vnn ? buildPhieuKhaoSat({ vnn, ho: ho ?? null }) : null), [vnn, ho]);
+
+  const fileBase = useMemo(() => {
+    if (!loai || !vnn) return 'Phieu_khao_sat';
+    return [fileSlug(txt(`viNguoiNgheo.phieuKhaoSat.tenPhieu.${loai}`)), fileSlug(vnn.ho_ten_nguoi_nhan)]
+      .filter(Boolean)
+      .join('_');
+  }, [loai, vnn]);
+
+  const handleBack = useCallback(() => navigate(VNN_LIST_PATH), [navigate]);
+
+  const waitingHo = Boolean(hoId) && hoLoading;
+  if (!canView || isLoading || waitingHo || !vnn || !model) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]" aria-busy="true">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return <BienBanPreview model={model} fileBase={fileBase} onBack={handleBack} />;
+};
+
+export default VnnInPhieuPage;

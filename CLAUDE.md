@@ -29,6 +29,7 @@ Cần `.env.local` (chép từ `.env.example`): `VITE_SUPABASE_URL`, `VITE_SUPAB
 | `components/ui/` | Primitive không nghiệp vụ: `Button`, `Input`, `Combobox`, `DateRangePicker`, `TabGroup`… |
 | `components/layout/` | `Layout`, sidebar, `CommandPalette` |
 | `lib/` | Tiện ích chung: `permissions.ts`, `query-keys.ts`, `date-range-presets.ts`, `text/`, `supabase/`, `data/` |
+| `lib/bien-ban/` + `components/shared/bien-ban/` | Bộ máy in biên bản / phiếu dùng chung: `BienBanModel` (builder thuần, ô ☐/☒, "Khác: …", khối ký nhiều cột) → `BienBanPreview` (xem trước, In, PDF, Word, Excel). Đang dùng: Nhà đại đoàn kết (3 biên bản), Chương trình hỗ trợ (4 phiếu khảo sát theo lĩnh vực). |
 | `store/` | Zustand: `useStore` (auth), `usePermissionGrantStore` (ma trận quyền), `createGenericStore` (state list) |
 | `hooks/` | Hook chung: `use-can`, `use-resource-permissions`, `use-tab-search-param` |
 | `supabase/migrations/` | Migration SQL **mới** (đặt tên `<timestamp>_<mô tả>.sql`). Toàn bộ migration cũ (157 file, đến `20261001100000`) đã chạy trên DB và được **xoá khỏi repo ngày 2026-10-01** (tra lịch sử git). Cấu trúc DB hiện tại chụp ở `supabase/schema.sql` — **đổi DB xong phải chạy `npm run db:schema`** rồi commit kèm, vì test đối chiếu CHECK/trigger đọc file này. |

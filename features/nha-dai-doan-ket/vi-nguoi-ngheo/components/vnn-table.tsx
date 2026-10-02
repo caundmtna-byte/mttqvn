@@ -31,6 +31,7 @@ interface Props {
   onRetry?: () => void;
   onEdit: (item: ViNguoiNgheo) => void;
   onDelete: (id: string) => void;
+  onPrint?: (item: ViNguoiNgheo) => void;
   onView?: (item: ViNguoiNgheo) => void;
   emptyTitle?: string;
   serverSidePagination?: boolean;
@@ -70,6 +71,7 @@ const VnnTable = memo(function VnnTable({
   onRetry,
   onEdit,
   onDelete,
+  onPrint,
   onView,
   emptyTitle,
   serverSidePagination,
@@ -198,13 +200,14 @@ const VnnTable = memo(function VnnTable({
               onMenuOpenChange={setRowMenuOpenId}
               onEdit={onEdit}
               onDelete={onDelete}
+              onPrint={onPrint}
             />
           );
         default:
           return null;
       }
     },
-    [onEdit, onDelete, rowMenuOpenId],
+    [onEdit, onDelete, onPrint, rowMenuOpenId],
   );
 
   const handleRowClick = useCallback((item: ViNguoiNgheo) => onView?.(item), [onView]);
@@ -241,12 +244,13 @@ const VnnTable = memo(function VnnTable({
             onMenuOpenChange={setRowMenuOpenId}
             onEdit={onEdit}
             onDelete={onDelete}
+            onPrint={onPrint}
             compact
           />
         </div>
       </div>
     ),
-    [onEdit, onDelete, rowMenuOpenId],
+    [onEdit, onDelete, onPrint, rowMenuOpenId],
   );
 
   return (

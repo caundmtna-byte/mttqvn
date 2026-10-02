@@ -137,12 +137,20 @@ const KhoDonViCuuTroTable = memo(function KhoDonViCuuTroTable({
               {item.dia_chi ?? txt('common.emptyCell')}
             </span>
           );
-        case 'ket_qua_ung_ho':
+        case 'tien_mat_ung_ho':
+        case 'hien_vat_ung_ho':
+        case 'ket_qua_ung_ho': {
+          const v = item[colId as 'tien_mat_ung_ho' | 'hien_vat_ung_ho' | 'ket_qua_ung_ho'];
           return (
-            <span className="block w-full text-right text-body-sm tabular-nums">
-              {item.ket_qua_ung_ho == null ? txt('common.emptyCell') : formatDecimal(item.ket_qua_ung_ho, 0)}
+            <span
+              className={`block w-full text-right text-body-sm tabular-nums ${
+                colId === 'ket_qua_ung_ho' ? 'font-semibold' : 'text-muted-foreground'
+              }`}
+            >
+              {v == null ? txt('common.emptyCell') : formatDecimal(v, 0)}
             </span>
           );
+        }
         case 'dien_thoai':
           return (
             <span className="text-body-sm text-muted-foreground truncate" title={item.dien_thoai ?? undefined}>

@@ -109,6 +109,21 @@ export const hoNgheoSchema = z.object({
 
 export type HoNgheoFormValues = z.infer<typeof hoNgheoSchema>;
 
+/**
+ * Form nhập tay: bắt buộc thêm Số căn cước, Khối xóm, Đối tượng, Dân tộc.
+ * Import Excel vẫn dùng `hoNgheoSchema` (cho phép trống) để không chặn file cũ.
+ */
+export const hoNgheoFormSchema = hoNgheoSchema.extend({
+  so_cccd: z
+    .string()
+    .transform((s) => chuanHoaSoCccd(s))
+    .refine((s) => s !== '', { message: txt('hoNgheo.validation.soCccdRequired') })
+    .refine((s) => soCccdHopLe(s), { message: txt('hoNgheo.validation.soCccdKhongHopLe') }),
+  khoi_xom: z.string().trim().min(1, txt('hoNgheo.validation.khoiXomRequired')),
+  doi_tuong: z.enum(HNGH_DOI_TUONG_VALUES, { message: txt('hoNgheo.validation.doiTuongRequired') }),
+  dan_toc_id: z.string().trim().min(1, txt('hoNgheo.validation.danTocRequired')),
+});
+
 export const hoNgheoStatusChangeSchema = z.object({
   trang_thai: z.enum(HNGH_TRANG_THAI_VALUES, {
     message: txt('hoNgheo.validation.trangThaiInvalid'),

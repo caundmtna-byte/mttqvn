@@ -49,8 +49,11 @@ import type { ViNguoiNgheo } from '../core/types';
 import {
   useCreateViNguoiNgheo,
   useUpdateViNguoiNgheo,
+  useViNguoiNgheoFull,
   useVnnHoNgheoOptions,
 } from '../hooks/use-vi-nguoi-ngheo';
+import { vnnLoaiPhieu } from '../core/phieu-khao-sat';
+import VnnPhieuKhaoSatSection from './phieu-khao-sat/vnn-phieu-khao-sat-section';
 import { isVnnScopedToXaPhuong, useVnnViewer } from '../hooks/use-vnn-viewer';
 import { useNddkXaPhuongOptions } from '../../danh-sach/hooks/use-nddk-xa-phuong-options';
 
@@ -70,6 +73,15 @@ interface Props {
 
 const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
   const isEdit = Boolean(initialData);
+  /**
+   * `initialData` thường là dòng của bảng (RPC phân trang) — thiếu jsonb phiếu
+   * khảo sát. Sửa thì phải có bản đầy đủ trước: lưu từ dòng thiếu sẽ ghi rỗng
+   * đè lên dữ liệu thật. Chưa tải xong thì khoá nút Lưu.
+   */
+  const needsFull = isEdit && initialData?.phieu_khao_sat === undefined;
+  const { data: fullRow } = useViNguoiNgheoFull(initialData?.id, { enabled: needsFull });
+  const sourceRow = needsFull ? (fullRow ?? null) : (initialData ?? null);
+  const waitingFull = needsFull && !fullRow;
   const user = useAuthStore((s) => s.user);
   const nhanVienId = String(user?.nhan_vien_id ?? '').trim();
 
@@ -123,6 +135,9 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
   });
 
   const coHienVat = vnnCoHienVat(useWatch({ control, name: 'hinh_thuc_ho_tro' }));
+  const linhVuc = useWatch({ control, name: 'linh_vuc_ho_tro' });
+  const loaiPhieu = vnnLoaiPhieu(linhVuc);
+  const daGanHo = Boolean(useWatch({ control, name: 'ho_ngheo_id' }));
 
   /** Ô tiền để trống là hợp lệ — giữ '' chứ không quy về 0. */
   const tienInput = (
@@ -148,15 +163,16 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
   );
 
   useEffect(() => {
-    const base = viNguoiNgheoToFormInput(initialData ?? null);
     if (initialData) {
-      reset(base);
+      // Bản đầy đủ về sau khi người dùng đã gõ: giữ các ô họ đã sửa.
+      reset(viNguoiNgheoToFormInput(sourceRow ?? initialData), { keepDirtyValues: true });
       return;
     }
+    const base = viNguoiNgheoToFormInput(null);
     // Tạo mới: cán bộ cấp xã nhập khoản của chính xã mình — điền sẵn xã.
     const xa = scopedToXa && viewer.viewerDonViId ? { xa_phuong_id: viewer.viewerDonViId } : {};
     reset({ ...base, ...xa, ...prefill });
-  }, [initialData, prefill, reset, scopedToXa, viewer.viewerDonViId]);
+  }, [initialData, sourceRow, prefill, reset, scopedToXa, viewer.viewerDonViId]);
 
   /**
    * Chọn hộ ⇒ ghi đè họ tên / xã / khối xóm / đối tượng bằng dữ liệu của hộ.
@@ -174,6 +190,7 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
   };
 
   const onSubmit: SubmitHandler<ViNguoiNgheoFormValues> = (parsed) => {
+    if (waitingFull) return;
     if (scopedToXa) {
       const xa = parsed.xa_phuong_id?.trim() ?? '';
       if (!viewer.viewerDonViId || xa !== viewer.viewerDonViId) {
@@ -188,7 +205,8 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
     }
   };
 
-  const pending = isSubmitting || createMutation.isPending || updateMutation.isPending;
+  const pending =
+    isSubmitting || createMutation.isPending || updateMutation.isPending || waitingFull;
 
   const enumCombobox = (
     name: 'linh_vuc_ho_tro' | 'nguon' | 'nguon_ho_tro' | 'hinh_thuc_ho_tro' | 'trang_thai',
@@ -384,6 +402,16 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
             </div>
           </FormGrid>
         </FormSection>
+
+        {loaiPhieu ? (
+          <VnnPhieuKhaoSatSection
+            control={control}
+            loai={loaiPhieu}
+            linhVuc={linhVuc}
+            daGanHo={daGanHo}
+            dangTai={waitingFull}
+          />
+        ) : null}
 
         <FormSection title={txt('viNguoiNgheo.form.sectionTrangThai')} icon={<ListChecks size={14} />}>
           <FormGrid cols={2}>

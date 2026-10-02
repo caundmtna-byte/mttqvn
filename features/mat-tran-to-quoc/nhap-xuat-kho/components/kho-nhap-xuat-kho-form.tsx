@@ -149,8 +149,8 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
   useEffect(() => {
     switch (watchedLoaiPhieu) {
       case 'nhap_ngoai':
+        // Giữ đợt: phiếu nhập được gắn đợt (không bắt buộc) để tính kết quả ủng hộ theo đợt.
         setValue('kho_xuat_id', undefined);
-        setValue('dot_cuu_tro_id', undefined);
         break;
       case 'xuat_ngoai':
         setValue('kho_nhap_id', undefined);
@@ -558,7 +558,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                   )}
                 />
               )}
-              {watchedLoaiPhieu === 'xuat_ngoai' && (
+              {(watchedLoaiPhieu === 'xuat_ngoai' || watchedLoaiPhieu === 'nhap_ngoai') && (
                 <Controller
                   name="dot_cuu_tro_id"
                   control={control}
@@ -570,7 +570,12 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                       onChange={(v) => field.onChange(v === '' ? undefined : String(v))}
                       error={errors.dot_cuu_tro_id?.message}
                       icon={<HandHeart size={12} />}
-                      required
+                      required={watchedLoaiPhieu === 'xuat_ngoai'}
+                      hint={
+                        watchedLoaiPhieu === 'nhap_ngoai'
+                          ? txt('matTranNhapXuatKho.form.dotCuuTroNhapHint')
+                          : undefined
+                      }
                       dropdownInPortal
                     />
                   )}

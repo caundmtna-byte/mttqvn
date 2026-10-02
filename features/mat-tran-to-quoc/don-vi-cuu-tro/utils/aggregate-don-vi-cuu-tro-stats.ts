@@ -1,23 +1,26 @@
 import type { KhoDonViCuuTroListRow, KhoDonViCuuTroLoai } from '../core/types';
 import { KHO_DON_VI_CUU_TRO_LOAI } from '../core/loai';
-import type { DonViCuuTroUngHoKy } from '../services/kho-don-vi-cuu-tro-service';
+import type { DonViCuuTroUngHoTong } from './ung-ho-nhom';
 
 export interface DonViCuuTroThongKeDims {
   loai: string[];
   /** So theo `don_vi_gioi_thieu_label` — cùng cách bộ lọc của tab Danh sách. */
   don_vi_gioi_thieu: string[];
+  /** Nhóm ủng hộ (đợt / nội dung) — KHÔNG lọc đơn vị, chỉ giới hạn số cộng (`tongHopUngHoTheoDonVi`). */
+  nhom: string[];
 }
 
 export const DON_VI_CUU_TRO_THONG_KE_INITIAL_DIMS: DonViCuuTroThongKeDims = {
   loai: [],
   don_vi_gioi_thieu: [],
+  nhom: [],
 };
 
 /** Một đơn vị kèm số ủng hộ TRONG KỲ (không phải luỹ kế `ket_qua_ung_ho`). */
 export interface DonViCuuTroThongKeRow {
   row: KhoDonViCuuTroListRow;
-  tienKho: number;
-  tienChuongTrinh: number;
+  tienMat: number;
+  hienVat: number;
   tong: number;
   soLuot: number;
 }
@@ -37,13 +40,13 @@ export function filterDonViCuuTroForThongKe(
 /** Ghép số ủng hộ theo kỳ vào danh sách; đơn vị không phát sinh trong kỳ = 0. */
 export function mergeDonViCuuTroUngHo(
   rows: readonly KhoDonViCuuTroListRow[],
-  ungHo: ReadonlyMap<string, DonViCuuTroUngHoKy>,
+  ungHo: ReadonlyMap<string, DonViCuuTroUngHoTong>,
 ): DonViCuuTroThongKeRow[] {
   return rows.map((row) => {
     const u = ungHo.get(row.id);
-    const tienKho = u?.tienKho ?? 0;
-    const tienChuongTrinh = u?.tienChuongTrinh ?? 0;
-    return { row, tienKho, tienChuongTrinh, tong: tienKho + tienChuongTrinh, soLuot: u?.soLuot ?? 0 };
+    const tienMat = u?.tienMat ?? 0;
+    const hienVat = u?.hienVat ?? 0;
+    return { row, tienMat, hienVat, tong: tienMat + hienVat, soLuot: u?.soLuot ?? 0 };
   });
 }
 
@@ -54,8 +57,8 @@ export interface DonViCuuTroKpis {
   /** 0–100, làm tròn. Không có đơn vị nào ⇒ 0. */
   tyLeCoUngHo: number;
   tongUngHo: number;
-  tongTienKho: number;
-  tongTienChuongTrinh: number;
+  tongTienMat: number;
+  tongHienVat: number;
   soLuot: number;
   /** Bình quân trên các đơn vị CÓ ủng hộ, không phải trên tổng số đơn vị. */
   binhQuan: number;
@@ -63,24 +66,24 @@ export interface DonViCuuTroKpis {
 
 export function computeDonViCuuTroKpis(rows: readonly DonViCuuTroThongKeRow[]): DonViCuuTroKpis {
   let donViCoUngHo = 0;
-  let tongTienKho = 0;
-  let tongTienChuongTrinh = 0;
+  let tongTienMat = 0;
+  let tongHienVat = 0;
   let soLuot = 0;
   for (const r of rows) {
     if (r.soLuot > 0) donViCoUngHo += 1;
-    tongTienKho += r.tienKho;
-    tongTienChuongTrinh += r.tienChuongTrinh;
+    tongTienMat += r.tienMat;
+    tongHienVat += r.hienVat;
     soLuot += r.soLuot;
   }
-  const tongUngHo = tongTienKho + tongTienChuongTrinh;
+  const tongUngHo = tongTienMat + tongHienVat;
   const tongDonVi = rows.length;
   return {
     tongDonVi,
     donViCoUngHo,
     tyLeCoUngHo: tongDonVi > 0 ? Math.round((donViCoUngHo / tongDonVi) * 100) : 0,
     tongUngHo,
-    tongTienKho,
-    tongTienChuongTrinh,
+    tongTienMat,
+    tongHienVat,
     soLuot,
     binhQuan: donViCoUngHo > 0 ? Math.round(tongUngHo / donViCoUngHo) : 0,
   };
@@ -90,6 +93,8 @@ export interface DonViCuuTroNhomRow {
   key: string;
   soDonVi: number;
   donViCoUngHo: number;
+  tienMat: number;
+  hienVat: number;
   tong: number;
 }
 
@@ -98,13 +103,15 @@ export function aggregateDonViCuuTroByLoai(
   rows: readonly DonViCuuTroThongKeRow[],
 ): (DonViCuuTroNhomRow & { key: KhoDonViCuuTroLoai })[] {
   const map = new Map<KhoDonViCuuTroLoai, DonViCuuTroNhomRow & { key: KhoDonViCuuTroLoai }>(
-    KHO_DON_VI_CUU_TRO_LOAI.map((key) => [key, { key, soDonVi: 0, donViCoUngHo: 0, tong: 0 }]),
+    KHO_DON_VI_CUU_TRO_LOAI.map((key) => [key, { key, soDonVi: 0, donViCoUngHo: 0, tienMat: 0, hienVat: 0, tong: 0 }]),
   );
   for (const r of rows) {
     const g = map.get(r.row.loai);
     if (!g) continue;
     g.soDonVi += 1;
     if (r.soLuot > 0) g.donViCoUngHo += 1;
+    g.tienMat += r.tienMat;
+    g.hienVat += r.hienVat;
     g.tong += r.tong;
   }
   return [...map.values()];
@@ -117,9 +124,11 @@ export function aggregateDonViCuuTroByGioiThieu(
   const map = new Map<string, DonViCuuTroNhomRow>();
   for (const r of rows) {
     const key = r.row.don_vi_gioi_thieu_label;
-    const g = map.get(key) ?? { key, soDonVi: 0, donViCoUngHo: 0, tong: 0 };
+    const g = map.get(key) ?? { key, soDonVi: 0, donViCoUngHo: 0, tienMat: 0, hienVat: 0, tong: 0 };
     g.soDonVi += 1;
     if (r.soLuot > 0) g.donViCoUngHo += 1;
+    g.tienMat += r.tienMat;
+    g.hienVat += r.hienVat;
     g.tong += r.tong;
     map.set(key, g);
   }

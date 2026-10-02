@@ -39,6 +39,8 @@ const BASE = `
   .bien-ban-doc__lua-chon { margin: 0 0 4pt; }
   .bien-ban-doc__lua-chon--inline .bien-ban-doc__lua-chon-opt { margin-left: 16pt; }
   .bien-ban-doc__lua-chon--stack .bien-ban-doc__lua-chon-opt { display: block; padding-left: 2.2cm; }
+  .bien-ban-doc__lua-chon-nhan { margin: 0; }
+  .bien-ban-doc__lua-chon-luoi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12pt; padding-left: 1cm; }
   .bien-ban-doc__o { font-family: 'Segoe UI Symbol', 'DejaVu Sans', 'Arial Unicode MS', sans-serif; margin-right: 4pt; }
   .bien-ban-doc__ky { margin-top: 14pt; page-break-inside: avoid; break-inside: avoid; }
   .bien-ban-doc__ky-ngay { text-align: right; font-style: italic; margin: 0 0 4pt !important; }

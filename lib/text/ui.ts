@@ -668,6 +668,7 @@ export const ui = {
   },
   "common": {
     "save": "Lưu",
+    "printPopupBlocked": "Trình duyệt đã chặn cửa sổ in. Hãy cho phép cửa sổ bật lên rồi thử lại.",
     "copy": "Sao chép",
     "permissionPickerTitle": "Phân quyền theo chức vụ",
     "permissionPickerMessage": "Chọn các chức vụ được phép truy cập tài nguyên này.",

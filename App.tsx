@@ -83,6 +83,9 @@ const NddkInBienBanPage = lazy(
   () => import('./features/nha-dai-doan-ket/danh-sach/pages/nddk-in-bien-ban-page'),
 );
 const ViNguoiNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/vi-nguoi-ngheo/index'));
+const VnnInPhieuPage = lazy(
+  () => import('./features/nha-dai-doan-ket/vi-nguoi-ngheo/pages/vnn-in-phieu-page'),
+);
 const ThongTinHoNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/thong-tin-ho-ngheo/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -268,6 +271,7 @@ const App = () => {
             element={<NddkInBienBanPage />}
           />
           <Route path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach" element={<ViNguoiNgheoPage />} />
+          <Route path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach/:vnnId/in" element={<VnnInPhieuPage />} />
           <Route path="/an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach" element={<ThongTinHoNgheoPage />} />
           {/* Thống kê nay là một tab của Danh sách — giữ link cũ khỏi chết. */}
           <Route

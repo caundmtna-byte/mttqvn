@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest';
 import type { HoNgheo } from '@/features/nha-dai-doan-ket/thong-tin-ho-ngheo/core/types';
 import type { NddkBienBan, NhaDaiDoanKet } from '../../core/types';
 import { buildBienBan } from './build-bien-ban';
-import { ngayThangNam, O_CHON, O_TRONG } from './bien-ban-model';
-import { bienBanToRows } from './download-bien-ban-xlsx';
+import { ngayThangNam, O_CHON, O_TRONG } from '@/lib/bien-ban/bien-ban-model';
+import { bienBanToRows } from '@/lib/bien-ban/download-bien-ban-xlsx';
 
 const bienBanRong: NddkBienBan = {
   ngay_khao_sat: null,

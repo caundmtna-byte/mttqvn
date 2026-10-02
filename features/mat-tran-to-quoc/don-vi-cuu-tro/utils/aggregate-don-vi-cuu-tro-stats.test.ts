@@ -33,13 +33,15 @@ function dv(over: Partial<KhoDonViCuuTroListRow> = {}): KhoDonViCuuTroListRow {
     ghi_chu: null,
     tg_tao: '',
     tg_cap_nhat: '',
+    tien_mat_ung_ho: null,
+    hien_vat_ung_ho: null,
     ket_qua_ung_ho: 999,
     ...over,
   };
 }
 
 const ungHo = (entries: [string, number, number, number][]) =>
-  new Map(entries.map(([id, tienKho, tienChuongTrinh, soLuot]) => [id, { tienKho, tienChuongTrinh, soLuot }]));
+  new Map(entries.map(([id, tienMat, hienVat, soLuot]) => [id, { tienMat, hienVat, tong: tienMat + hienVat, soLuot }]));
 
 describe('mergeDonViCuuTroUngHo', () => {
   it('đơn vị không phát sinh trong kỳ = 0, không lấy số luỹ kế ket_qua_ung_ho', () => {
@@ -47,7 +49,7 @@ describe('mergeDonViCuuTroUngHo', () => {
     const b = dv();
     const out = mergeDonViCuuTroUngHo([a, b], ungHo([[a.id, 100, 50, 2]]));
     expect(out.map((r) => r.tong)).toEqual([150, 0]);
-    expect(out[1]).toMatchObject({ tienKho: 0, tienChuongTrinh: 0, soLuot: 0 });
+    expect(out[1]).toMatchObject({ tienMat: 0, hienVat: 0, soLuot: 0 });
   });
 });
 
@@ -68,8 +70,8 @@ describe('computeDonViCuuTroKpis', () => {
       donViCoUngHo: 2,
       tyLeCoUngHo: 67,
       tongUngHo: 400,
-      tongTienKho: 300,
-      tongTienChuongTrinh: 100,
+      tongTienMat: 300,
+      tongHienVat: 100,
       soLuot: 4,
       binhQuan: 200,
     });
@@ -84,7 +86,7 @@ describe('filterDonViCuuTroForThongKe', () => {
       dv({ loai: 'doanh_nghiep', don_vi_gioi_thieu_label: 'Xã A' }),
     ];
     expect(filterDonViCuuTroForThongKe(rows, DON_VI_CUU_TRO_THONG_KE_INITIAL_DIMS)).toHaveLength(3);
-    const out = filterDonViCuuTroForThongKe(rows, { loai: ['ca_nhan'], don_vi_gioi_thieu: ['Xã A'] });
+    const out = filterDonViCuuTroForThongKe(rows, { ...DON_VI_CUU_TRO_THONG_KE_INITIAL_DIMS, loai: ['ca_nhan'], don_vi_gioi_thieu: ['Xã A'] });
     expect(out.map((r) => r.id)).toEqual([rows[0].id]);
   });
 });
