@@ -4,7 +4,8 @@ import { Package, Warehouse, FolderOpen } from 'lucide-react';
 import { useKhoDanhSachKhoList } from '../../danh-sach-kho/hooks/use-kho-danh-sach-kho';
 import { useKhoDanhMucHangHoaList } from '../../hang-hoa/hooks/use-kho-danh-muc-hang-hoa';
 import { useTonKhoDisplay } from '../hooks/use-kho-ton-kho';
-import { useKhoTonKhoViewer, getViewerKhoIds } from '../hooks/use-kho-ton-kho-viewer';
+import { useKhoPhamViViewer } from '../../danh-sach-kho/hooks/use-kho-pham-vi-viewer';
+import { getViewerKhoIds } from '../../danh-sach-kho/utils/pham-vi-kho';
 import { aggregateTonKhoByProduct } from '../utils/aggregate-ton-kho-by-product';
 import { exportTonKhoByProductToExcel } from '../utils/export-ton-kho';
 import type { TonKhoByProductFilters, TonKhoProductAgg } from '../core/types';
@@ -41,7 +42,7 @@ const TonSanPhamTab: React.FC<{
   waitingMatrixHydrate: boolean;
 }> = ({ onBack, listQueryEnabled, waitingMatrixHydrate }) => {
   const { canExport } = useResourcePermissions('matTranReliefInventory');
-  const viewer = useKhoTonKhoViewer();
+  const viewer = useKhoPhamViViewer('matTranReliefInventory');
   const { data: khoList = [] } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
   const viewerKhoIds = useMemo(() => getViewerKhoIds(viewer, khoList), [viewer, khoList]);
   const { data: danhMucList = [] } = useKhoDanhMucHangHoaList({ enabled: listQueryEnabled });

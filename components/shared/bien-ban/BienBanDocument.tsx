@@ -136,6 +136,50 @@ function Block({ block }: { block: BienBanBlock }) {
         </div>
       );
     }
+    case 'bang': {
+      const span = Math.max(1, block.footer?.span ?? 1);
+      const alignOf = (i: number) => block.cols[i]?.align ?? 'left';
+      return (
+        <table className={`${B}__bang`}>
+          <colgroup>
+            {block.cols.map((c, i) => (
+              <col key={i} style={c.widthPct ? { width: `${c.widthPct}%` } : undefined} />
+            ))}
+          </colgroup>
+          <thead>
+            <tr>
+              {block.cols.map((c, i) => (
+                <th key={i}>{c.title}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {block.rows.map((row, r) => (
+              <tr key={r}>
+                {row.map((cell, i) => (
+                  <td key={i} className={`${B}__bang-o--${alignOf(i)}`}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {block.footer ? (
+              <tr className={`${B}__bang-tong`}>
+                {block.footer.cells.map((cell, i) => (
+                  <td
+                    key={i}
+                    colSpan={i === 0 ? span : undefined}
+                    className={`${B}__bang-o--${i === 0 ? 'center' : alignOf(i + span - 1)}`}
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      );
+    }
     default:
       return null;
   }

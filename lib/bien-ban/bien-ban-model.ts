@@ -42,6 +42,13 @@ export interface BienBanCotKy {
   hoTen?: string | null;
 }
 
+/** Cột của bảng có viền (bảng hiện vật…). `widthPct` bỏ trống ⇒ chia đều phần còn lại. */
+export interface BienBanCotBang {
+  title: string;
+  align?: 'left' | 'center' | 'right';
+  widthPct?: number;
+}
+
 export type BienBanBlock =
   | { kind: 'quoc-hieu' }
   | { kind: 'tieu-de'; lines: BienBanTieuDeDong[] }
@@ -67,6 +74,17 @@ export type BienBanBlock =
       /** Nhãn chung đặt trên `span` cột đầu, vd "ĐẠI DIỆN TỔ CÔNG TÁC". */
       nhomDau?: { text: string; span: number };
       cols: BienBanCotKy[];
+    }
+  | {
+      kind: 'bang';
+      cols: BienBanCotBang[];
+      /** Mỗi dòng đủ `cols.length` ô; ô rỗng ⇒ để trống viết tay. */
+      rows: string[][];
+      /**
+       * Dòng tổng in đậm. Ô đầu gộp `span` cột (mặc định 1), nên
+       * `cells.length = cols.length - span + 1`.
+       */
+      footer?: { cells: string[]; span?: number };
     };
 
 export interface BienBanModel {

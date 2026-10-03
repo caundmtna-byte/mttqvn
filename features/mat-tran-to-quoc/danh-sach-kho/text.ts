@@ -38,6 +38,7 @@ export const matTranKhoDanhSach = {
   form: {
     sectionMain: 'Thông tin kho',
     tenKho: 'Tên kho',
+    tenKhoTheoXaHint: 'Tự lấy theo tên xã/phường đã chọn.',
     donVi: 'Xã/phường',
     donViHint: 'Tùy chọn — để trống nếu kho chưa gắn địa bàn xã/phường.',
     moTa: 'Mô tả',

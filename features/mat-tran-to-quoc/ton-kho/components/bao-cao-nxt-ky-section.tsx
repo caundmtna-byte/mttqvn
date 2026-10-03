@@ -4,7 +4,8 @@ import { useKhoDanhSachKhoList } from '../../danh-sach-kho/hooks/use-kho-danh-sa
 import { useKhoDanhSachHangHoaList } from '../../hang-hoa/hooks/use-kho-danh-sach-hang-hoa';
 import { useKhoDanhMucHangHoaList } from '../../hang-hoa/hooks/use-kho-danh-muc-hang-hoa';
 import { useNXTByPeriod, isNXTDateRangeValid } from '../hooks/use-kho-ton-kho';
-import { useKhoTonKhoViewer, getViewerKhoIds } from '../hooks/use-kho-ton-kho-viewer';
+import { useKhoPhamViViewer } from '../../danh-sach-kho/hooks/use-kho-pham-vi-viewer';
+import { getViewerKhoIds } from '../../danh-sach-kho/utils/pham-vi-kho';
 import { useTonKhoNxtStore } from '../store/useTonKhoNxtStore';
 import type { NXTFilters } from '../core/types';
 import { exportNXTToExcel } from '../utils/export-ton-kho';
@@ -21,7 +22,7 @@ interface Props {
 
 const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
   const { canExport } = useResourcePermissions('matTranReliefInventory');
-  const viewer = useKhoTonKhoViewer();
+  const viewer = useKhoPhamViViewer('matTranReliefInventory');
   const { data: khoList = [] } = useKhoDanhSachKhoList({ enabled: listQueryEnabled });
   const viewerKhoIds = useMemo(() => getViewerKhoIds(viewer, khoList), [viewer, khoList]);
   const { data: hangHoaList = [] } = useKhoDanhSachHangHoaList({ enabled: listQueryEnabled });
@@ -43,24 +44,18 @@ const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
     [khoList, viewerKhoIds],
   );
 
-  const effectiveWarehouseIds = useMemo(() => {
-    if (!viewerKhoIds) return nxtWarehouseIds;
-    if (nxtWarehouseIds.length > 0) {
-      return nxtWarehouseIds.filter((id) => viewerKhoIds.includes(id));
-    }
-    return viewerKhoIds;
-  }, [viewerKhoIds, nxtWarehouseIds]);
-
+  // Phạm vi xã đi riêng (`scopeKhoIds`) để chọn "mọi kho" không bị hiểu thành toàn tỉnh.
   const filters: NXTFilters = useMemo(
     () => ({
       dateFrom: nxtDateFrom,
       dateTo: nxtDateTo,
-      warehouseIds: effectiveWarehouseIds,
+      warehouseIds: nxtWarehouseIds,
+      scopeKhoIds: viewerKhoIds,
       loaiPhieu: nxtLoaiPhieu,
       hangHoaIds: nxtHangHoaIds,
       categoryIds: nxtCategoryIds,
     }),
-    [nxtDateFrom, nxtDateTo, effectiveWarehouseIds, nxtLoaiPhieu, nxtHangHoaIds, nxtCategoryIds]
+    [nxtDateFrom, nxtDateTo, nxtWarehouseIds, viewerKhoIds, nxtLoaiPhieu, nxtHangHoaIds, nxtCategoryIds]
   );
 
   const rangeOk = isNXTDateRangeValid(filters);
@@ -96,7 +91,7 @@ const BaoCaoNxtKySection: React.FC<Props> = ({ onBack, listQueryEnabled }) => {
         />
       </div>
       <div className="flex-1 min-h-0 rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
-        <TongHopNxtKyTab onClearFilters={clearNxtFilters} />
+        <TongHopNxtKyTab filters={filters} onClearFilters={clearNxtFilters} />
       </div>
     </div>
   );

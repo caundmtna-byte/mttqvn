@@ -54,6 +54,7 @@ import {
 } from '../hooks/use-vi-nguoi-ngheo';
 import { vnnLoaiPhieu } from '../core/phieu-khao-sat';
 import VnnPhieuKhaoSatSection from './phieu-khao-sat/vnn-phieu-khao-sat-section';
+import VnnBienBanBanGiaoSection from './bien-ban-ban-giao/vnn-bien-ban-ban-giao-section';
 import { isVnnScopedToXaPhuong, useVnnViewer } from '../hooks/use-vnn-viewer';
 import { useNddkXaPhuongOptions } from '../../danh-sach/hooks/use-nddk-xa-phuong-options';
 
@@ -75,10 +76,12 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
   const isEdit = Boolean(initialData);
   /**
    * `initialData` thường là dòng của bảng (RPC phân trang) — thiếu jsonb phiếu
-   * khảo sát. Sửa thì phải có bản đầy đủ trước: lưu từ dòng thiếu sẽ ghi rỗng
+   * khảo sát và biên bản bàn giao. Sửa thì phải có bản đầy đủ trước: lưu từ dòng thiếu sẽ ghi rỗng
    * đè lên dữ liệu thật. Chưa tải xong thì khoá nút Lưu.
    */
-  const needsFull = isEdit && initialData?.phieu_khao_sat === undefined;
+  const needsFull =
+    isEdit &&
+    (initialData?.phieu_khao_sat === undefined || initialData?.bien_ban_ban_giao === undefined);
   const { data: fullRow } = useViNguoiNgheoFull(initialData?.id, { enabled: needsFull });
   const sourceRow = needsFull ? (fullRow ?? null) : (initialData ?? null);
   const waitingFull = needsFull && !fullRow;
@@ -272,21 +275,31 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                     onChange={(v) => {
                       const id = v == null ? '' : String(v);
                       if (id) handlePickHoNgheo(id);
-                      else field.onChange('');
+                      else {
+                        field.onChange('');
+                        setValue('ho_ten_nguoi_nhan', '', { shouldDirty: true });
+                      }
                     }}
                     placeholder={
                       hoNgheoLoading ? txt('common.loading') : txt('viNguoiNgheo.form.hoNgheoPlaceholder')
                     }
                     hint={txt('viNguoiNgheo.form.hoNgheoHint')}
+                    error={errors.ho_ngheo_id?.message}
+                    required
                   />
                 )}
               />
             </div>
+            {/* Họ tên lấy theo hộ nghèo đã chọn — không nhập tay. */}
             <Input
               label={txt('viNguoiNgheo.store.nguoiNhanCol')}
               icon={Users}
               {...register('ho_ten_nguoi_nhan')}
-              error={errors.ho_ten_nguoi_nhan?.message}
+              readOnly
+              tabIndex={-1}
+              className="bg-muted/40 cursor-default focus-visible:ring-0 focus-visible:border-border"
+              placeholder={txt('viNguoiNgheo.form.hoTenTuHoNgheo')}
+              error={daGanHo ? errors.ho_ten_nguoi_nhan?.message : undefined}
               required
             />
             <Controller
@@ -412,6 +425,8 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
             dangTai={waitingFull}
           />
         ) : null}
+
+        <VnnBienBanBanGiaoSection control={control} linhVuc={linhVuc} dangTai={waitingFull} />
 
         <FormSection title={txt('viNguoiNgheo.form.sectionTrangThai')} icon={<ListChecks size={14} />}>
           <FormGrid cols={2}>

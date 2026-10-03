@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   DON_VI_GIOI_THIEU_TINH,
   donViGioiThieuLabel,
+  donViGioiThieuScope,
   donViGioiThieuToFormValue,
   donViGioiThieuToPayload,
   parseDonViGioiThieuLoai,
   resolveDonViGioiThieuImport,
+  timDonViTrungTen,
 } from './don-vi-gioi-thieu';
 
 describe('donViGioiThieuToPayload', () => {
@@ -121,5 +123,48 @@ describe('resolveDonViGioiThieuImport', () => {
       reason: 'missing',
     });
     expect(resolveDonViGioiThieuImport('xã hưng lộc', xa)).toMatchObject({ ok: false, reason: 'ambiguous' });
+  });
+});
+
+describe('donViGioiThieuScope', () => {
+  it('cán bộ cấp xã ⇒ khoá ô, điền sẵn xã của mình', () => {
+    expect(donViGioiThieuScope({ canViewAll: false, chucVuCapQuanLy: 'Xã phường', viewerDonViId: ' 12 ' })).toEqual({
+      khoa: true,
+      xaPhuongId: '12',
+    });
+  });
+
+  it('cấp xã nhưng tài khoản chưa gán xã ⇒ vẫn khoá, không có giá trị (form chặn lưu)', () => {
+    expect(donViGioiThieuScope({ canViewAll: false, chucVuCapQuanLy: 'Xã phường', viewerDonViId: null })).toEqual({
+      khoa: true,
+      xaPhuongId: null,
+    });
+  });
+
+  it('cấp tỉnh, chức vụ chưa phân cấp, hoặc quyền xem hết ⇒ chọn tự do', () => {
+    const tuDo = { khoa: false, xaPhuongId: null };
+    expect(donViGioiThieuScope({ canViewAll: false, chucVuCapQuanLy: 'Tỉnh', viewerDonViId: '12' })).toEqual(tuDo);
+    expect(donViGioiThieuScope({ canViewAll: false, chucVuCapQuanLy: null, viewerDonViId: '12' })).toEqual(tuDo);
+    expect(donViGioiThieuScope({ canViewAll: true, chucVuCapQuanLy: 'Xã phường', viewerDonViId: '12' })).toEqual(tuDo);
+  });
+});
+
+describe('timDonViTrungTen', () => {
+  const rows = [
+    { id: '1', ten: 'Nguyễn Thị Mai (Đông Thành)' },
+    { id: '2', ten: 'CLB TN Quỳnh Phương Xanh' },
+  ];
+
+  it('khớp không phân biệt hoa thường và khoảng trắng thừa — như unique index dưới DB', () => {
+    expect(timDonViTrungTen('  clb tn   quỳnh PHƯƠNG xanh ', rows)?.id).toBe('2');
+  });
+
+  it('bỏ qua chính bản ghi đang sửa', () => {
+    expect(timDonViTrungTen('CLB TN Quỳnh Phương Xanh', rows, '2')).toBeUndefined();
+  });
+
+  it('khác dấu là tên khác; ô trống không báo trùng', () => {
+    expect(timDonViTrungTen('CLB TN Quynh Phuong Xanh', rows)).toBeUndefined();
+    expect(timDonViTrungTen('   ', rows)).toBeUndefined();
   });
 });

@@ -71,6 +71,25 @@ export function enrichFlatRow(
   };
 }
 
+/**
+ * Áp phạm vi kho của viewer trước mọi thống kê. `khoIds = null` ⇒ không giới hạn.
+ * Dòng phiếu giữ khi kho nhập HOẶC kho xuất thuộc phạm vi (cùng luật đọc phiếu của `danh-sach-kho/utils/pham-vi-kho.ts` và RLS),
+ * nên phiếu chuyển kho giữa hai xã hiện ở cả hai bên. `[]` ⇒ không còn gì.
+ */
+export function scopeReliefSupportData(
+  lines: NhapXuatKhoCtFlatRow[],
+  tonMatrix: TonKhoRecord[],
+  khoIds: readonly string[] | null,
+): { flatLines: NhapXuatKhoCtFlatRow[]; tonMatrix: TonKhoRecord[] } {
+  if (!khoIds) return { flatLines: lines, tonMatrix };
+  const scope = new Set(khoIds.map(String));
+  const inScope = (id: string | null | undefined) => id != null && scope.has(String(id));
+  return {
+    flatLines: lines.filter((r) => inScope(r.kho_nhap_id) || inScope(r.kho_xuat_id)),
+    tonMatrix: tonMatrix.filter((t) => inScope(t.kho_id)),
+  };
+}
+
 export function filterReliefSupportRows(
   lines: NhapXuatKhoCtFlatRow[],
   range: ResolvedReliefDateRange,

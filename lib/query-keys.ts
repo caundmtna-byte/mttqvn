@@ -334,6 +334,9 @@ export const queryKeys = {
     page: (args: unknown) => ['khen-thuong-nha-tai-tro', 'page', args] as const,
     /** Toàn bộ dòng trong phạm vi xem — tab Thống kê. */
     allRows: (scope: unknown) => ['khen-thuong-nha-tai-tro', 'all-rows', scope] as const,
+    /** Thành tích tự tính của một nhà tài trợ trong kỳ — RPC `get_ktnt_thanh_tich`. */
+    thanhTich: (nhaTaiTroId: string, tuNam: number | null, denNam: number | null) =>
+      ['khen-thuong-nha-tai-tro', 'thanh-tich', nhaTaiTroId, tuNam, denNam] as const,
   },
   mttqTangLuong: {
     all: ['mttq-tang-luong'] as const,

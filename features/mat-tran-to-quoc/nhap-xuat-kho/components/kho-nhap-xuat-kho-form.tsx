@@ -48,6 +48,7 @@ import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { formatCurrency, formatDecimal } from '@/lib/utils';
 import { useCan } from '@/hooks/use-can';
 import { useKhoDanhSachKhoList } from '@/features/mat-tran-to-quoc/danh-sach-kho/hooks/use-kho-danh-sach-kho';
+import type { KhoDanhSachKhoListRow } from '@/features/mat-tran-to-quoc/danh-sach-kho/core/types';
 import { useKhoDonViCuuTroList } from '@/features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro';
 import { useKhoDotCuuTroList } from '@/features/mat-tran-to-quoc/dot-cuu-tro/hooks/use-kho-dot-cuu-tro';
 import { useKhoDanhSachHangHoaList } from '@/features/mat-tran-to-quoc/hang-hoa/hooks/use-kho-danh-sach-hang-hoa';
@@ -62,7 +63,12 @@ import {
   useNhapXuatKhoMucDichGoiY,
 } from '../hooks/use-kho-nhap-xuat-kho';
 import { buildMucDichOptions, laMucDichXuatHoNgheo } from '../utils/muc-dich-goi-y';
-import { isNhapXuatKhoViewUnrestricted, useKhoNhapXuatKhoViewer } from '../hooks/use-kho-nhap-xuat-kho-viewer';
+import { useKhoPhamViViewer } from '../../danh-sach-kho/hooks/use-kho-pham-vi-viewer';
+import {
+  isKhoPhamViUnrestricted,
+  khoTuDienTheoXa,
+  locKhoTheoPhamVi,
+} from '../../danh-sach-kho/utils/pham-vi-kho';
 import { useVnnHoNgheoOptions } from '@/features/nha-dai-doan-ket/vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
 import { useNddkXaPhuongOptions } from '@/features/nha-dai-doan-ket/danh-sach/hooks/use-nddk-xa-phuong-options';
 import NhapXuatKhoCtLineDrawer, {
@@ -107,6 +113,9 @@ const CELL_NOWRAP = 'whitespace-nowrap align-top';
 function chiTietCellClass(extra: string) {
   return `${CELL_NOWRAP} ${extra}`;
 }
+
+const toKhoOpts = (rows: readonly KhoDanhSachKhoListRow[]) =>
+  rows.map((k) => ({ label: k.ten_kho, value: k.id, subLabel: k.ten_don_vi ?? undefined }));
 
 const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
   const isEdit = Boolean(initialData);
@@ -177,8 +186,8 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
    * chưa được gán đơn vị thì danh sách rỗng chứ không lọt hộ của mọi xã.
    */
   const laXuatHoNgheo = laMucDichXuatHoNgheo(watchedLoaiPhieu, watchedMucDich);
-  const viewer = useKhoNhapXuatKhoViewer();
-  const scopedToXa = !isNhapXuatKhoViewUnrestricted(viewer) && viewer.chucVuCapQuanLy === 'Xã phường';
+  const viewer = useKhoPhamViViewer('matTranReliefStockTransactions');
+  const scopedToXa = !isKhoPhamViUnrestricted(viewer);
   const scopedXaId = scopedToXa ? viewer.viewerDonViId : null;
   const { data: hoNgheoRows = [], isLoading: hoNgheoLoading } = useVnnHoNgheoOptions(scopedXaId, {
     enabled: laXuatHoNgheo && (!scopedToXa || Boolean(scopedXaId)),
@@ -264,13 +273,42 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
     [],
   );
 
-  const khoOpts = useMemo(
-    () =>
-      [...khoRows]
-        .sort((a, b) => a.ten_kho.localeCompare(b.ten_kho, 'vi'))
-        .map((k) => ({ label: k.ten_kho, value: k.id, subLabel: k.ten_don_vi ?? undefined })),
+  const khoSorted = useMemo(
+    () => [...khoRows].sort((a, b) => a.ten_kho.localeCompare(b.ten_kho, 'vi')),
     [khoRows],
   );
+  const khoOpts = useMemo(() => toKhoOpts(khoSorted), [khoSorted]);
+
+  /**
+   * Cán bộ cấp xã: kho xuất (xuất ra ngoài / chuyển kho) và kho nhập (nhập từ ngoài) chỉ là kho
+   * của xã mình. Kho nhập của phiếu chuyển kho vẫn mở mọi kho — chuyển sang xã khác là hợp lệ.
+   */
+  const khoXuatXa = useMemo(
+    () => locKhoTheoPhamVi(khoSorted, viewer, initialData?.kho_xuat_id),
+    [khoSorted, viewer, initialData?.kho_xuat_id],
+  );
+  const khoNhapXa = useMemo(
+    () => locKhoTheoPhamVi(khoSorted, viewer, initialData?.kho_nhap_id),
+    [khoSorted, viewer, initialData?.kho_nhap_id],
+  );
+  const khoXuatOpts = useMemo(() => toKhoOpts(khoXuatXa), [khoXuatXa]);
+  const khoNhapOpts = useMemo(
+    () => (watchedLoaiPhieu === 'nhap_ngoai' ? toKhoOpts(khoNhapXa) : khoOpts),
+    [watchedLoaiPhieu, khoNhapXa, khoOpts],
+  );
+
+  // Phiếu mới của cán bộ cấp xã: xã chỉ có một kho ⇒ điền sẵn (chạy sau effect xoá trường theo loại phiếu).
+  useEffect(() => {
+    if (isEdit || !scopedToXa) return;
+    if (watchedLoaiPhieu === 'xuat_ngoai' || watchedLoaiPhieu === 'chuyen_kho') {
+      const id = khoTuDienTheoXa(khoXuatXa);
+      if (id && !getValues('kho_xuat_id')) setValue('kho_xuat_id', id, { shouldValidate: true });
+    }
+    if (watchedLoaiPhieu === 'nhap_ngoai') {
+      const id = khoTuDienTheoXa(khoNhapXa);
+      if (id && !getValues('kho_nhap_id')) setValue('kho_nhap_id', id, { shouldValidate: true });
+    }
+  }, [isEdit, scopedToXa, watchedLoaiPhieu, khoXuatXa, khoNhapXa, getValues, setValue]);
 
   const dviOpts = useMemo(
     () =>
@@ -529,7 +567,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                   render={({ field }) => (
                     <Combobox
                       label={txt('matTranNhapXuatKho.form.khoXuat')}
-                      options={khoOpts}
+                      options={khoXuatOpts}
                       value={field.value ?? ''}
                       onChange={(v) => field.onChange(v === '' ? undefined : String(v))}
                       error={errors.kho_xuat_id?.message}
@@ -547,7 +585,7 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                   render={({ field }) => (
                     <Combobox
                       label={txt('matTranNhapXuatKho.form.khoNhap')}
-                      options={khoOpts}
+                      options={khoNhapOpts}
                       value={field.value ?? ''}
                       onChange={(v) => field.onChange(v === '' ? undefined : String(v))}
                       error={errors.kho_nhap_id?.message}

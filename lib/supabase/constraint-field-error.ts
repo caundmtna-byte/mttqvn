@@ -18,6 +18,7 @@ const CONSTRAINT_TO_FIELD: Record<string, string> = {
   uq_kho_nhap_xuat_kho_so_phieu: 'so_phieu',
   uq_kho_danh_muc_hang_hoa_ten_lower: 'ten_danh_muc',
   uq_kho_danh_sach_hang_hoa_dm_ten_lower: 'ten_hang_hoa',
+  uq_kho_don_vi_cuu_tro_ten_lower: 'ten',
   uq_bai_viet_danh_sach_link_lower: 'link',
   uq_bai_viet_danh_sach_ten_bai_lower: 'ten_bai',
   uq_bai_viet_thiet_lap_the_loai_ten_lower: 'ten_the_loai',

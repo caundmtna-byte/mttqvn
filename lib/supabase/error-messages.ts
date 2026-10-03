@@ -24,6 +24,8 @@ const BY_CONSTRAINT: Record<string, string> = {
   uq_kho_nhap_xuat_kho_so_phieu: 'Số phiếu này đã được dùng. Vui lòng nhập số phiếu khác.',
   uq_kho_danh_muc_hang_hoa_ten_lower: 'Danh mục hàng hoá này đã có. Vui lòng đặt tên khác.',
   uq_kho_danh_sach_hang_hoa_dm_ten_lower: 'Hàng hoá này đã có trong danh mục đã chọn.',
+  uq_kho_don_vi_cuu_tro_ten_lower:
+    'Tên nhà tài trợ này đã có trong danh sách. Trùng họ tên thì ghi kèm địa danh, ví dụ « Nguyễn Văn A (Quỳnh Lâm) ».',
   uq_bai_viet_danh_sach_link_lower: 'Đường dẫn bài viết này đã được nhập trước đó.',
   uq_bai_viet_danh_sach_ten_bai_lower: 'Tên bài viết này đã được nhập trước đó.',
   uq_bai_viet_thiet_lap_the_loai_ten_lower: 'Thể loại này đã tồn tại.',

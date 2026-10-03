@@ -44,6 +44,8 @@ export function getKtntColumnDisplayValue(item: KhenThuongNhaTaiTro, colId: stri
       return formatDisplayDateTimeShort(item[colId]);
     case 'tong_gia_tri':
     case 'tong_tien_ho_tro':
+    case 'hien_vat_quy_doi':
+    case 'gia_tri_nhap_kho':
     case 'gia_tri_dong_gop_khac':
       return formatKtntTien(item[colId]);
     case 'so_khoan_ho_tro':

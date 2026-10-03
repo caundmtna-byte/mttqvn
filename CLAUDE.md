@@ -66,7 +66,15 @@ Mỗi module trong `features/` theo cấu trúc:
    `module_key` là segment cuối của đường dẫn module.
 
    Đã siết **quyền GHI** cho: `var_phan_quyen`, `var_chuc_vu`, `var_nhan_vien` (sửa hồ sơ của
-   chính mình vẫn được), `mttq_tang_luong`, `luong_thiet_lap_*`.
+   chính mình vẫn được), `mttq_tang_luong`, `luong_thiet_lap_*`, các danh mục kho
+   (`kho_danh_sach_kho`, `kho_danh_sach_hang_hoa`, `kho_danh_muc_hang_hoa`, `kho_don_vi_cuu_tro`, `kho_dot_cuu_tro`).
+
+   **RLS chặn theo dòng (cả ĐỌC lẫn GHI) — mới có ở kho cứu trợ:** `kho_nhap_xuat_kho(_ct)` và
+   `kho_ton_kho_view`. Hàm phạm vi: `fn_kho_xem_tat_ca()` (chỉ cán bộ Xã phường không kiêm Tỉnh bị
+   giới hạn), `fn_kho_cua_toi()`, `fn_don_vi_cua_toi()`, `fn_kho_phieu_ghi_duoc(...)`. Bản sao ở client:
+   `features/mat-tran-to-quoc/danh-sach-kho/utils/pham-vi-kho.ts` (test đối chiếu `schema.sql`).
+   Hàm tổng hợp/kiểm tra phải thấy MỌI dòng (kiểm tồn âm…) thì để `SECURITY DEFINER` — chạy
+   invoker dưới RLS sẽ tính trên phần người gọi thấy và ra số sai.
    Khi viết policy mới: gate bằng `fn_co_quyen(...)` để không chặn nhầm người dùng hợp lệ, và
    **luôn thử tấn công thật** bằng `SET ROLE authenticated` + `set_config('request.jwt.claims', …)`
    trước khi coi là xong.

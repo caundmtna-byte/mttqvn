@@ -35,6 +35,8 @@ const NUMERIC_COLUMNS = new Set([
   'so_khoan_ho_tro',
   'so_nguoi_duoc_ho_tro',
   'tong_tien_ho_tro',
+  'hien_vat_quy_doi',
+  'gia_tri_nhap_kho',
   'tong_gia_tri',
 ]);
 

@@ -25,6 +25,7 @@ import {
   runText,
   type BienBanAlign,
   type BienBanBlock,
+  type BienBanCotBang,
   type BienBanCotKy,
   type BienBanLuaChon,
   type BienBanModel,
@@ -52,6 +53,15 @@ const TABLE_NO_BORDERS = {
   insideVertical: noBorder,
 };
 const CELL_NO_BORDERS = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+const line = { style: BorderStyle.SINGLE, size: 4, color: '000000' } as const;
+const TABLE_BORDERS = {
+  top: line,
+  bottom: line,
+  left: line,
+  right: line,
+  insideHorizontal: line,
+  insideVertical: line,
+};
 
 function tr(text: string, o?: { bold?: boolean; italic?: boolean; size?: number; font?: string }) {
   return new TextRun({
@@ -109,6 +119,50 @@ function cell(children: Paragraph[], widthPct: number, columnSpan?: number) {
     columnSpan,
     children,
   });
+}
+
+/** Độ rộng từng cột (%): cột có `widthPct` giữ nguyên, phần còn lại chia đều. */
+function doRongCot(cols: BienBanCotBang[]): number[] {
+  const daDat = cols.reduce((s, c) => s + (c.widthPct ?? 0), 0);
+  const conLai = cols.filter((c) => !c.widthPct).length;
+  const deu = conLai > 0 ? Math.max(0, 100 - daDat) / conLai : 0;
+  return cols.map((c) => c.widthPct ?? deu);
+}
+
+function oBang(text: string, widthPct: number, o?: { bold?: boolean; align?: BienBanAlign; span?: number }) {
+  return new TableCell({
+    width: { size: widthPct, type: WidthType.PERCENTAGE },
+    columnSpan: o?.span,
+    children: [para([tr(text, { bold: o?.bold, size: SMALL })], { align: o?.align, after: 0 })],
+  });
+}
+
+function bangToDocx(b: Extract<BienBanBlock, { kind: 'bang' }>): Table {
+  const w = doRongCot(b.cols);
+  const alignOf = (i: number) => b.cols[i]?.align ?? 'left';
+  const rows: TableRow[] = [
+    new TableRow({
+      tableHeader: true,
+      children: b.cols.map((c, i) => oBang(c.title, w[i], { bold: true, align: 'center' })),
+    }),
+    ...b.rows.map(
+      (r) => new TableRow({ children: r.map((cell, i) => oBang(cell, w[i], { align: alignOf(i) })) }),
+    ),
+  ];
+  if (b.footer) {
+    const span = Math.max(1, b.footer.span ?? 1);
+    const wDau = w.slice(0, span).reduce((s, x) => s + x, 0);
+    rows.push(
+      new TableRow({
+        children: b.footer.cells.map((cell, i) =>
+          i === 0
+            ? oBang(cell, wDau, { bold: true, align: 'center', span: span > 1 ? span : undefined })
+            : oBang(cell, w[i + span - 1], { bold: true, align: alignOf(i + span - 1) }),
+        ),
+      }),
+    );
+  }
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: TABLE_BORDERS, rows });
 }
 
 function cotKy(c: BienBanCotKy): Paragraph[] {
@@ -209,6 +263,8 @@ function blockToDocx(b: BienBanBlock): (Paragraph | Table)[] {
       );
       return out;
     }
+    case 'bang':
+      return [bangToDocx(b), para([tr('')], { after: 0 })];
     default:
       return [];
   }

@@ -18,28 +18,17 @@ function formatDateDisplay(ymd: string): string {
 }
 
 interface Props {
+  /** Bộ lọc đã gắn phạm vi kho của viewer — dựng ở `BaoCaoNxtKySection`, không tự dựng lại từ store. */
+  filters: NXTFilters;
   onClearFilters?: () => void;
 }
 
-const TongHopNxtKyTab: React.FC<Props> = ({ onClearFilters }) => {
-  const nxtDateFrom = useTonKhoNxtStore((s) => s.nxtDateFrom);
-  const nxtDateTo = useTonKhoNxtStore((s) => s.nxtDateTo);
+const TongHopNxtKyTab: React.FC<Props> = ({ filters, onClearFilters }) => {
+  const { dateFrom: nxtDateFrom, dateTo: nxtDateTo } = filters;
   const nxtWarehouseIds = useTonKhoNxtStore((s) => s.nxtWarehouseIds);
   const nxtLoaiPhieu = useTonKhoNxtStore((s) => s.nxtLoaiPhieu);
   const nxtHangHoaIds = useTonKhoNxtStore((s) => s.nxtHangHoaIds);
   const nxtCategoryIds = useTonKhoNxtStore((s) => s.nxtCategoryIds);
-
-  const filters: NXTFilters = useMemo(
-    () => ({
-      dateFrom: nxtDateFrom,
-      dateTo: nxtDateTo,
-      warehouseIds: nxtWarehouseIds,
-      loaiPhieu: nxtLoaiPhieu,
-      hangHoaIds: nxtHangHoaIds,
-      categoryIds: nxtCategoryIds,
-    }),
-    [nxtDateFrom, nxtDateTo, nxtWarehouseIds, nxtLoaiPhieu, nxtHangHoaIds, nxtCategoryIds]
-  );
 
   const rangeOk = isNXTDateRangeValid(filters);
   const { data, isLoading, isError, error } = useNXTByPeriod(filters, true);

@@ -118,7 +118,8 @@ export const PKS_NHU_CAU_HOC_SINH = [
 ] as const;
 
 /* ------------------------------------------------------------------ *
- * Kiểu trường — ô trống ⇒ `undefined` (không ghi khoá vào jsonb)
+ * Kiểu trường — ô trống ⇒ `undefined` (không ghi khoá vào jsonb).
+ * Biên bản bàn giao (`bien-ban-ban-giao.ts`) dùng chung các kiểu này.
  * ------------------------------------------------------------------ */
 
 const TEXT_MAX = 2000;
@@ -129,12 +130,12 @@ function blank(v: unknown): unknown {
   return v;
 }
 
-const vText = z.preprocess(
+export const vText = z.preprocess(
   (v) => (typeof v === 'string' ? blank(v.trim()) : blank(v)),
   z.string().max(TEXT_MAX, 'Tối đa 2000 ký tự').optional(),
 );
 
-const vNgay = z.preprocess(
+export const vNgay = z.preprocess(
   (v) => blank(typeof v === 'string' ? v.trim() : v),
   z
     .string()
@@ -142,7 +143,7 @@ const vNgay = z.preprocess(
     .optional(),
 );
 
-function vSo(opts: { choThapPhan?: boolean; nguyen?: boolean; min?: number; max?: number }) {
+export function vSo(opts: { choThapPhan?: boolean; nguyen?: boolean; min?: number; max?: number }) {
   return z.preprocess(
     (v) => {
       const b = blank(v);
@@ -356,7 +357,7 @@ export const pksFormSchema = z.object({
 });
 export type PksFormValues = z.infer<typeof pksFormSchema>;
 
-function boKhoaRong<T extends Record<string, unknown>>(o: T): T {
+export function boKhoaRong<T extends Record<string, unknown>>(o: T): T {
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
 }
 
@@ -381,7 +382,7 @@ export function chuanHoaPhieuKhaoSat(
  * Đọc jsonb từ DB — phòng thủ, từng trường một
  * ------------------------------------------------------------------ */
 
-function asObject(v: unknown): Record<string, unknown> | undefined {
+export function asObject(v: unknown): Record<string, unknown> | undefined {
   return v != null && typeof v === 'object' && !Array.isArray(v)
     ? (v as Record<string, unknown>)
     : undefined;

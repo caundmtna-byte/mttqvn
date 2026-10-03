@@ -70,6 +70,8 @@ export async function exportKtntThongKeReportToExcel(input: {
     input.chiTietRows.map((item) => ({
       ...Object.fromEntries(CHI_TIET_COLS.map(([col, label]) => [L(label), getKtntColumnDisplayValue(item, col)])),
       [L('tongTienHoTroCol')]: item.tong_tien_ho_tro,
+      [L('hienVatQuyDoiCol')]: item.hien_vat_quy_doi,
+      [L('giaTriNhapKhoCol')]: item.gia_tri_nhap_kho,
       [L('giaTriKhacCol')]: item.gia_tri_dong_gop_khac ?? '',
       [L('tongGiaTriCol')]: item.tong_gia_tri,
     })),

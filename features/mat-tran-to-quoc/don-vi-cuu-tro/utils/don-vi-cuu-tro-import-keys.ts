@@ -16,11 +16,10 @@ export const DON_VI_CUU_TRO_IMPORT_KEYS: readonly ImportKeySpec<DonViCuuTroImpor
     ofRow: (r) => r.idKey,
   },
   {
-    // DB không có unique index trên tên (hai cá nhân trùng họ tên là có thật):
-    // khớp nhiều bản ghi thì lõi báo lỗi, không đoán.
+    // Unique index `uq_kho_don_vi_cuu_tro_ten_lower` — cùng cách chuẩn hoá.
     key: 'ten',
     label: txt('matTranDonViCuuTro.form.ten'),
-    unique: false,
+    unique: true,
     ofExisting: (e) => chuanHoaKhoaVanBan(e.ten),
     ofRow: (r) => chuanHoaKhoaVanBan(r.values.ten),
   },

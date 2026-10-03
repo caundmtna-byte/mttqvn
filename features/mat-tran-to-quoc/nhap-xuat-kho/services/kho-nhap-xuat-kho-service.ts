@@ -254,7 +254,7 @@ export type NhapXuatKhoPageQuery = {
   pageSize: number;
   search: string;
   sort?: ServerSortState | null;
-  /** Phạm vi xem — suy từ useKhoNhapXuatKhoViewer. */
+  /** Phạm vi xem — suy từ useKhoPhamViViewer. */
   viewAll: boolean;
   viewerDonViId: string | null;
   loaiPhieu: string | null;

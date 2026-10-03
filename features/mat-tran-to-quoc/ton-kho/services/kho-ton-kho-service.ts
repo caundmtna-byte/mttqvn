@@ -23,6 +23,7 @@ import type {
   TonKhoRecord,
   TonKhoSummaryTotals,
 } from '../core/types';
+import { resolveNxtWarehouseSet } from '../utils/resolve-nxt-warehouse-set';
 
 const VIEW_TON = 'kho_ton_kho_view';
 
@@ -152,7 +153,7 @@ interface NXTPeriodState {
 }
 
 async function computeNXTPeriodState(filters: NXTFilters): Promise<NXTPeriodState> {
-  const { dateFrom, dateTo, warehouseIds, loaiPhieu, hangHoaIds, categoryIds } = filters;
+  const { dateFrom, dateTo, warehouseIds, scopeKhoIds, loaiPhieu, hangHoaIds, categoryIds } = filters;
 
   const [tonKhoList, flatRows, khoList, hangHoaList] = await Promise.all([
     getTonKhoMatrix(),
@@ -194,7 +195,7 @@ async function computeNXTPeriodState(filters: NXTFilters): Promise<NXTPeriodStat
 
   const phieuList = [...phieuMap.values()];
 
-  const warehouseSet = warehouseIds?.length ? new Set(warehouseIds.map(String)) : null;
+  const warehouseSet = resolveNxtWarehouseSet(warehouseIds, scopeKhoIds);
   const loaiSet = loaiPhieu?.length ? new Set(loaiPhieu) : null;
   const hangHoaSet = hangHoaIds?.length ? new Set(hangHoaIds.map(String)) : null;
   const categorySet = categoryIds?.length ? new Set(categoryIds.map(String)) : null;

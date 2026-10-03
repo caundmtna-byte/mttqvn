@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { txt } from '@/lib/text';
 import { queryKeys } from '@/lib/query-keys';
 import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
+import { isConstraintFieldError } from '@/lib/supabase/constraint-field-error';
+import { getErrorMessage } from '@/lib/utils';
 import type { KhoDonViCuuTroFormValues } from '../core/schema';
 import type { KhoDonViCuuTroListRow } from '../core/types';
 import {
@@ -17,6 +19,12 @@ import type { ImportRunOptions } from '@/components/shared/ImportDialog';
 import { importDonViCuuTroRows } from '../services/don-vi-cuu-tro-import';
 
 const listKey = queryKeys.khoDonViCuuTro.all;
+
+/** Trùng tên ⇒ form gắn chữ đỏ dưới ô (xem `applyConstraintErrorToForm`), không toast. */
+function onGhiLoi(e: unknown) {
+  if (isConstraintFieldError(e)) return;
+  toast.error(getErrorMessage(e));
+}
 
 export function useKhoDonViCuuTroList(options?: { enabled?: boolean }) {
   return useQuery({
@@ -74,6 +82,7 @@ export function useCreateKhoDonViCuuTro(onSuccess?: () => void) {
       toast.success(txt('matTranDonViCuuTro.toast.create'));
       onSuccess?.();
     },
+    onError: onGhiLoi,
   });
 }
 
@@ -102,6 +111,7 @@ export function useUpdateKhoDonViCuuTro(onSuccess?: () => void) {
       toast.success(txt('matTranDonViCuuTro.toast.update'));
       onSuccess?.();
     },
+    onError: onGhiLoi,
   });
 }
 

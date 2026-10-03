@@ -15,7 +15,8 @@ import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hook
 import { khoDanhSachKhoSchema, type KhoDanhSachKhoFormValues } from '../core/schema';
 import type { KhoDanhSachKhoListRow } from '../core/types';
 import { useCreateKhoDanhSachKho, useUpdateKhoDanhSachKho } from '../hooks/use-kho-danh-sach-kho';
-import { useKhoDanhSachKhoViewer } from '../hooks/use-kho-danh-sach-kho-viewer';
+import { useKhoPhamViViewer } from '../hooks/use-kho-pham-vi-viewer';
+import { tenKhoTheoXa } from '../utils/ten-kho';
 
 const FORM_ID = 'kho-danh-sach-kho-form';
 
@@ -35,7 +36,7 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
   const { data: tinhList = [] } = useTinhThanhList();
   const { data: xaList = [] } = useXaPhuongForTab(true, '');
 
-  const viewer = useKhoDanhSachKhoViewer();
+  const viewer = useKhoPhamViViewer('matTranReliefWarehouseList');
   /**
    * Tài khoản cấp Xã phường — điền sẵn đơn vị khi tạo kho (không khóa).
    * Bỏ trống thì kho mới biến mất khỏi Tồn kho / Nhập–xuất kho của chính người tạo.
@@ -74,6 +75,8 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<KhoDanhSachKhoFormValues>({
     defaultValues: DEFAULT_VALUES,
@@ -96,6 +99,17 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
       reset(DEFAULT_VALUES);
     }
   }, [initialData, reset, defaultDonViFromViewer, viewer.viewerDonViId]);
+
+  /** Gắn xã → tên kho = "MTTQ <tên xã>" (DB gán lại bằng trigger), ô tên bị khoá. */
+  const donViId = watch('don_vi_id');
+  const tenKhoTuXa = useMemo(() => {
+    if (!donViId) return null;
+    return tenKhoTheoXa(xaList.find((x) => String(x.id) === donViId)?.ten);
+  }, [donViId, xaList]);
+
+  useEffect(() => {
+    if (tenKhoTuXa) setValue('ten_kho', tenKhoTuXa, { shouldValidate: true });
+  }, [tenKhoTuXa, setValue]);
 
   const onSubmit: SubmitHandler<KhoDanhSachKhoFormValues> = (data) => {
     if (isEdit && initialData) {
@@ -135,8 +149,12 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 required
                 icon={Warehouse}
                 {...register('ten_kho')}
+                readOnly={Boolean(tenKhoTuXa)}
                 error={errors.ten_kho?.message}
               />
+              {tenKhoTuXa && (
+                <p className="text-xs text-muted-foreground mt-1.5 mb-0">{txt('matTranKhoDanhSach.form.tenKhoTheoXaHint')}</p>
+              )}
             </div>
             <Controller
               name="don_vi_id"

@@ -94,8 +94,8 @@ describe('filterDonViCuuTroForThongKe', () => {
 describe('gom nhóm và top', () => {
   const a = dv({ loai: 'ca_nhan', ten: 'Bình', don_vi_gioi_thieu_label: 'Xã A' });
   const b = dv({ loai: 'ca_nhan', ten: 'An', don_vi_gioi_thieu_label: 'Xã A' });
-  const c = dv({ loai: 'cau_lac_bo', ten: 'CLB', don_vi_gioi_thieu_label: 'MTTQ tỉnh' });
-  const d = dv({ loai: 'cau_lac_bo', ten: 'Chưa góp' });
+  const c = dv({ loai: 'nhom_thien_nguyen', ten: 'CLB', don_vi_gioi_thieu_label: 'MTTQ tỉnh' });
+  const d = dv({ loai: 'nhom_thien_nguyen', ten: 'Chưa góp' });
   const rows = mergeDonViCuuTroUngHo(
     [a, b, c, d],
     ungHo([[a.id, 50, 0, 1], [b.id, 50, 0, 1], [c.id, 500, 0, 2]]),
@@ -105,7 +105,7 @@ describe('gom nhóm và top', () => {
     const out = aggregateDonViCuuTroByLoai(rows);
     expect(out.map((r) => r.key)).toEqual([...KHO_DON_VI_CUU_TRO_LOAI]);
     expect(out.find((r) => r.key === 'ca_nhan')).toMatchObject({ soDonVi: 2, donViCoUngHo: 2, tong: 100 });
-    expect(out.find((r) => r.key === 'cau_lac_bo')).toMatchObject({ soDonVi: 2, donViCoUngHo: 1, tong: 500 });
+    expect(out.find((r) => r.key === 'nhom_thien_nguyen')).toMatchObject({ soDonVi: 2, donViCoUngHo: 1, tong: 500 });
     expect(out.find((r) => r.key === 'cq_cap_xa')).toMatchObject({ soDonVi: 0, tong: 0 });
   });
 

@@ -51,6 +51,15 @@ const BASE = `
   .bien-ban-doc__ky-note { font-style: italic; font-size: 12pt; }
   .bien-ban-doc__ky-space { height: 64pt; }
   .bien-ban-doc__ky-name { font-weight: 700; }
+  .bien-ban-doc__bang { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 2pt 0 6pt; font-size: 12pt; line-height: 1.3; }
+  .bien-ban-doc__bang tr { page-break-inside: avoid; break-inside: avoid; }
+  .bien-ban-doc__bang th, .bien-ban-doc__bang td { border: 1px solid #000; padding: 3pt 4pt; vertical-align: middle; overflow-wrap: anywhere; }
+  .bien-ban-doc__bang th { font-weight: 700; text-align: center; }
+  .bien-ban-doc__bang td { height: 18pt; }
+  .bien-ban-doc__bang-o--left { text-align: left; }
+  .bien-ban-doc__bang-o--center { text-align: center; }
+  .bien-ban-doc__bang-o--right { text-align: right; }
+  .bien-ban-doc__bang-tong td { font-weight: 700; }
 `;
 
 /** Khung xem trước: lề giống lề giấy thật để bản PDF chụp lại khớp bản in. */

@@ -655,6 +655,29 @@ COMMENT ON FUNCTION public.fn_co_tai_khoan_dang_nhap(p_ten_tai_khoan text) IS 'T
 
 
 --
+-- Name: fn_don_vi_cua_toi(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_don_vi_cua_toi() RETURNS bigint
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT nv.don_vi_id
+  FROM public.var_nhan_vien nv
+  WHERE lower(btrim(nv.ten_tai_khoan)) = public.fn_ten_dang_nhap_hien_tai()
+    AND nv.trang_thai = 'Hoạt động'
+  LIMIT 1;
+$$;
+
+
+--
+-- Name: FUNCTION fn_don_vi_cua_toi(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_don_vi_cua_toi() IS 'var_nhan_vien.don_vi_id (xã/phường) của người đang đăng nhập, hoặc NULL.';
+
+
+--
 -- Name: fn_duoc_khoa_ky(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -927,11 +950,78 @@ $$;
 
 
 --
+-- Name: fn_kho_ct_ghi_duoc(bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_kho_ct_ghi_duoc(p_phieu_id bigint) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.kho_nhap_xuat_kho p
+    WHERE p.id = p_phieu_id
+      AND public.fn_kho_phieu_ghi_duoc(p.loai_phieu, p.kho_xuat_id, p.kho_nhap_id)
+  );
+$$;
+
+
+--
+-- Name: FUNCTION fn_kho_ct_ghi_duoc(p_phieu_id bigint); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_kho_ct_ghi_duoc(p_phieu_id bigint) IS 'Dòng chi tiết ghi được khi phiếu cha nằm trong phạm vi GHI (fn_kho_phieu_ghi_duoc).';
+
+
+--
+-- Name: fn_kho_cua_toi(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_kho_cua_toi() RETURNS bigint[]
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT COALESCE(array_agg(k.id), ARRAY[]::bigint[])
+  FROM public.kho_danh_sach_kho k
+  WHERE k.don_vi_id = public.fn_don_vi_cua_toi();
+$$;
+
+
+--
+-- Name: FUNCTION fn_kho_cua_toi(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_kho_cua_toi() IS 'Danh sách id kho thuộc xã (don_vi_id) của người đang đăng nhập. Rỗng nếu chưa gán đơn vị.';
+
+
+--
+-- Name: fn_kho_gan_ten_theo_xa(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_kho_gan_ten_theo_xa() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_ten text;
+BEGIN
+  IF NEW.don_vi_id IS NOT NULL THEN
+    SELECT public.fn_ten_kho_theo_xa(x.ten) INTO v_ten
+    FROM public.var_ssn_xa_phuong x WHERE x.id = NEW.don_vi_id;
+    IF v_ten IS NOT NULL THEN
+      NEW.ten_kho := v_ten;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: fn_kho_khoa_kho(bigint); Type: FUNCTION; Schema: public; Owner: -
 --
 
 CREATE FUNCTION public.fn_kho_khoa_kho(p_kho_id bigint) RETURNS void
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 BEGIN
   IF p_kho_id IS NULL THEN
@@ -956,7 +1046,8 @@ COMMENT ON FUNCTION public.fn_kho_khoa_kho(p_kho_id bigint) IS 'Khoá tư vấn 
 --
 
 CREATE FUNCTION public.fn_kho_kiem_tra_ton_am(p_kho_id bigint) RETURNS void
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 DECLARE
   v_am       RECORD;
@@ -1017,7 +1108,8 @@ COMMENT ON FUNCTION public.fn_kho_kiem_tra_ton_am(p_kho_id bigint) IS 'Báo lỗ
 --
 
 CREATE FUNCTION public.fn_kho_kiem_tra_ton_am_ct() RETURNS trigger
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 DECLARE
   v_phieu_id BIGINT;
@@ -1052,7 +1144,8 @@ $$;
 --
 
 CREATE FUNCTION public.fn_kho_kiem_tra_ton_am_phieu() RETURNS trigger
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 DECLARE
   v_kho BIGINT;
@@ -1081,7 +1174,8 @@ $$;
 --
 
 CREATE FUNCTION public.fn_kho_kiem_tra_ton_kho() RETURNS trigger
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 DECLARE
   v_kho_xuat_id   BIGINT;
@@ -1144,6 +1238,26 @@ $$;
 
 
 --
+-- Name: fn_kho_phieu_ghi_duoc(text, bigint, bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_kho_phieu_ghi_duoc(p_loai text, p_kho_xuat bigint, p_kho_nhap bigint) RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT public.fn_kho_xem_tat_ca()
+      OR (CASE WHEN p_loai = 'nhap_ngoai' THEN p_kho_nhap ELSE p_kho_xuat END) = ANY (public.fn_kho_cua_toi());
+$$;
+
+
+--
+-- Name: FUNCTION fn_kho_phieu_ghi_duoc(p_loai text, p_kho_xuat bigint, p_kho_nhap bigint); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_kho_phieu_ghi_duoc(p_loai text, p_kho_xuat bigint, p_kho_nhap bigint) IS 'Phiếu có nằm trong phạm vi GHI không: kho chính (nhap_ngoai → kho nhập; xuat_ngoai/chuyen_kho → kho xuất) thuộc xã mình.';
+
+
+--
 -- Name: fn_kho_sinh_so_phieu(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1176,6 +1290,32 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+--
+-- Name: fn_kho_xem_tat_ca(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_kho_xem_tat_ca() RETURNS boolean
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT public.fn_la_quan_tri() OR NOT EXISTS (
+    SELECT 1
+    FROM public.var_nhan_vien nv
+    WHERE lower(btrim(nv.ten_tai_khoan)) = public.fn_ten_dang_nhap_hien_tai()
+      AND nv.trang_thai = 'Hoạt động'
+      AND 'Xã phường' = ANY (COALESCE(nv.cap_quan_ly, ARRAY[]::text[]))
+      AND NOT ('Tỉnh' = ANY (COALESCE(nv.cap_quan_ly, ARRAY[]::text[])))
+  );
+$$;
+
+
+--
+-- Name: FUNCTION fn_kho_xem_tat_ca(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_kho_xem_tat_ca() IS 'Người đang đăng nhập có xem/ghi được phiếu kho của mọi xã không. FALSE chỉ khi là cán bộ cấp Xã phường (không kiêm Tỉnh, không phải quản trị).';
 
 
 --
@@ -1735,6 +1875,20 @@ COMMENT ON FUNCTION public.fn_ten_dang_nhap_hien_tai() IS 'Tên tài khoản c�
 
 
 --
+-- Name: fn_ten_kho_theo_xa(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_ten_kho_theo_xa(p_ten_xa text) RETURNS text
+    LANGUAGE sql IMMUTABLE
+    AS $$
+  -- "Xã Yên Hòa" → "MTTQ xã Yên Hòa"; gộp khoảng trắng thừa.
+  SELECT 'MTTQ ' || lower(left(t, 1)) || substr(t, 2)
+  FROM (SELECT regexp_replace(btrim(p_ten_xa), '\s+', ' ', 'g') AS t) s
+  WHERE t <> '';
+$$;
+
+
+--
 -- Name: fn_thong_bao_chi_cho_danh_dau_doc(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2052,6 +2206,25 @@ BEGIN
     NEW.ngay_cap_nhat_trang_thai := OLD.ngay_cap_nhat_trang_thai;
   END IF;
   RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: fn_xa_phuong_dong_bo_ten_kho(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_xa_phuong_dong_bo_ten_kho() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  UPDATE public.kho_danh_sach_kho
+  SET ten_kho = public.fn_ten_kho_theo_xa(NEW.ten)
+  WHERE don_vi_id = NEW.id
+    AND public.fn_ten_kho_theo_xa(NEW.ten) IS NOT NULL
+    AND ten_kho IS DISTINCT FROM public.fn_ten_kho_theo_xa(NEW.ten);
+  RETURN NULL;
 END;
 $$;
 
@@ -3037,7 +3210,7 @@ $$;
 -- Name: get_ktnt_page(text, integer, integer, text, boolean, bigint, integer[], text[], text[], bigint[], bigint[], text[], jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_cap_khen text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_nha_tai_tro_ids bigint[] DEFAULT NULL::bigint[], p_loai_nha_tai_tro text[] DEFAULT NULL::text[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, noi_dung_khen text, ngay_khen date, so_quyet_dinh text, cap_khen text, don_vi_khen text, xa_phuong_id bigint, ten_xa_phuong text, nha_tai_tro_id bigint, ten_nha_tai_tro text, loai_nha_tai_tro text, nam_thanh_tich_tu integer, nam_thanh_tich_den integer, gia_tri_dong_gop_khac numeric, so_khoan_ho_tro bigint, so_nguoi_duoc_ho_tro bigint, tong_tien_ho_tro numeric, tong_gia_tri numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, nguoi_duyet_id bigint, ho_va_ten_nguoi_duyet text, tg_duyet timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, total_count bigint)
+CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_cap_khen text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_nha_tai_tro_ids bigint[] DEFAULT NULL::bigint[], p_loai_nha_tai_tro text[] DEFAULT NULL::text[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, noi_dung_khen text, ngay_khen date, so_quyet_dinh text, cap_khen text, don_vi_khen text, xa_phuong_id bigint, ten_xa_phuong text, nha_tai_tro_id bigint, ten_nha_tai_tro text, loai_nha_tai_tro text, nam_thanh_tich_tu integer, nam_thanh_tich_den integer, gia_tri_dong_gop_khac numeric, so_khoan_ho_tro bigint, so_nguoi_duoc_ho_tro bigint, tong_tien_ho_tro numeric, hien_vat_quy_doi numeric, gia_tri_nhap_kho numeric, so_phieu_nhap_kho bigint, tong_gia_tri numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, nguoi_duyet_id bigint, ho_va_ten_nguoi_duyet text, tg_duyet timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, total_count bigint)
     LANGUAGE sql STABLE
     AS $$
   WITH src AS (
@@ -3053,33 +3226,28 @@ CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit i
         AS nguoi_tao_display,
       tt.so_khoan_ho_tro,
       tt.so_nguoi_duoc_ho_tro,
-      tt.tong_tien_ho_tro,
-      tt.tong_tien_ho_tro + COALESCE(t.gia_tri_dong_gop_khac, 0) AS tong_gia_tri
+      tt.tien_mat AS tong_tien_ho_tro,
+      tt.hien_vat_quy_doi,
+      tt.gia_tri_nhap_kho,
+      tt.so_phieu_nhap_kho,
+      tt.tien_mat + tt.hien_vat_quy_doi + tt.gia_tri_nhap_kho
+        + COALESCE(t.gia_tri_dong_gop_khac, 0) AS tong_gia_tri
     FROM public.ktnt_khen_thuong_nha_tai_tro t
     LEFT JOIN public.var_ssn_xa_phuong  xp ON xp.id = t.xa_phuong_id
     LEFT JOIN public.kho_don_vi_cuu_tro dv ON dv.id = t.nha_tai_tro_id
     LEFT JOIN public.var_nhan_vien      nd ON nd.id = t.nguoi_duyet_id
     LEFT JOIN public.var_nhan_vien      nt ON nt.id = t.id_nguoi_tao
-    CROSS JOIN LATERAL (
-      SELECT
-        count(*)::bigint AS so_khoan_ho_tro,
-        count(DISTINCT COALESCE(
-          'ho:' || v.ho_ngheo_id::text,
-          'ten:' || lower(regexp_replace(btrim(v.ho_ten_nguoi_nhan), '\s+', ' ', 'g'))
-            || '|' || COALESCE(v.xa_phuong_id::text, '')
-        ))::bigint AS so_nguoi_duoc_ho_tro,
-        COALESCE(sum(v.so_tien), 0)::numeric AS tong_tien_ho_tro
-      FROM public.vnn_chuong_trinh v
-      WHERE v.don_vi_ho_tro_id = t.nha_tai_tro_id
-        AND (t.nam_thanh_tich_tu  IS NULL OR v.nam >= t.nam_thanh_tich_tu)
-        AND (t.nam_thanh_tich_den IS NULL OR v.nam <= t.nam_thanh_tich_den)
+    -- Thành tích: một nguồn sự thật với màn chi tiết / form (get_ktnt_thanh_tich).
+    CROSS JOIN LATERAL public.get_ktnt_thanh_tich(
+      t.nha_tai_tro_id, t.nam_thanh_tich_tu, t.nam_thanh_tich_den
     ) tt
   )
   SELECT
     s.id, s.noi_dung_khen, s.ngay_khen, s.so_quyet_dinh, s.cap_khen, s.don_vi_khen,
     s.xa_phuong_id, s.ten_xa_phuong, s.nha_tai_tro_id, s.ten_nha_tai_tro, s.loai_nha_tai_tro,
     s.nam_thanh_tich_tu, s.nam_thanh_tich_den, s.gia_tri_dong_gop_khac,
-    s.so_khoan_ho_tro, s.so_nguoi_duoc_ho_tro, s.tong_tien_ho_tro, s.tong_gia_tri,
+    s.so_khoan_ho_tro, s.so_nguoi_duoc_ho_tro, s.tong_tien_ho_tro,
+    s.hien_vat_quy_doi, s.gia_tri_nhap_kho, s.so_phieu_nhap_kho, s.tong_gia_tri,
     s.trang_thai, s.ngay_cap_nhat_trang_thai, s.nguoi_duyet_id, s.ho_va_ten_nguoi_duyet, s.tg_duyet,
     s.ghi_chu, s.id_nguoi_tao, s.ho_va_ten_nguoi_tao, s.ten_tai_khoan_nguoi_tao,
     s.tg_tao, s.tg_cap_nhat,
@@ -3157,6 +3325,10 @@ CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit i
     CASE WHEN p_sort = 'so_nguoi_duoc_ho_tro_desc' THEN s.so_nguoi_duoc_ho_tro END DESC NULLS LAST,
     CASE WHEN p_sort = 'tong_tien_ho_tro_asc' THEN s.tong_tien_ho_tro END ASC  NULLS LAST,
     CASE WHEN p_sort = 'tong_tien_ho_tro_desc' THEN s.tong_tien_ho_tro END DESC NULLS LAST,
+    CASE WHEN p_sort = 'hien_vat_quy_doi_asc' THEN s.hien_vat_quy_doi END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'hien_vat_quy_doi_desc' THEN s.hien_vat_quy_doi END DESC NULLS LAST,
+    CASE WHEN p_sort = 'gia_tri_nhap_kho_asc' THEN s.gia_tri_nhap_kho END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'gia_tri_nhap_kho_desc' THEN s.gia_tri_nhap_kho END DESC NULLS LAST,
     CASE WHEN p_sort = 'tong_gia_tri_asc' THEN s.tong_gia_tri END ASC  NULLS LAST,
     CASE WHEN p_sort = 'tong_gia_tri_desc' THEN s.tong_gia_tri END DESC NULLS LAST,
     CASE WHEN p_sort = 'trang_thai_asc' THEN s.trang_thai END ASC  NULLS LAST,
@@ -3175,6 +3347,45 @@ CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit i
     s.ngay_khen DESC, s.id DESC
   LIMIT greatest(p_limit, 1)
   OFFSET greatest(p_offset, 0);
+$$;
+
+
+--
+-- Name: get_ktnt_thanh_tich(bigint, integer, integer); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_nam integer DEFAULT NULL::integer, p_den_nam integer DEFAULT NULL::integer) RETURNS TABLE(tien_mat numeric, hien_vat_quy_doi numeric, gia_tri_nhap_kho numeric, so_khoan_ho_tro bigint, so_nguoi_duoc_ho_tro bigint, so_phieu_nhap_kho bigint)
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT
+    vnn.tien_mat, vnn.hien_vat_quy_doi, kho.gia_tri_nhap_kho,
+    vnn.so_khoan_ho_tro, vnn.so_nguoi_duoc_ho_tro, kho.so_phieu_nhap_kho
+  FROM (
+    SELECT
+      COALESCE(sum(v.so_tien), 0)::numeric           AS tien_mat,
+      COALESCE(sum(v.tong_tien_quy_doi), 0)::numeric AS hien_vat_quy_doi,
+      count(*)::bigint                               AS so_khoan_ho_tro,
+      count(DISTINCT COALESCE(
+        'ho:' || v.ho_ngheo_id::text,
+        'ten:' || lower(regexp_replace(btrim(v.ho_ten_nguoi_nhan), '\s+', ' ', 'g'))
+          || '|' || COALESCE(v.xa_phuong_id::text, '')
+      ))::bigint                                     AS so_nguoi_duoc_ho_tro
+    FROM public.vnn_chuong_trinh v
+    WHERE v.don_vi_ho_tro_id = p_nha_tai_tro_id
+      AND (p_tu_nam  IS NULL OR v.nam >= p_tu_nam)
+      AND (p_den_nam IS NULL OR v.nam <= p_den_nam)
+  ) vnn
+  CROSS JOIN (
+    SELECT
+      COALESCE(sum(ct.thanh_tien), 0)::numeric AS gia_tri_nhap_kho,
+      count(DISTINCT p.id)::bigint             AS so_phieu_nhap_kho
+    FROM public.kho_nhap_xuat_kho p
+    JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = p.id
+    WHERE p.loai_phieu = 'nhap_ngoai'
+      AND p.don_vi_cuu_tro_id = p_nha_tai_tro_id
+      AND (p_tu_nam  IS NULL OR extract(year FROM p.ngay_phieu)::int >= p_tu_nam)
+      AND (p_den_nam IS NULL OR extract(year FROM p.ngay_phieu)::int <= p_den_nam)
+  ) kho;
 $$;
 
 
@@ -5465,6 +5676,7 @@ CREATE VIEW public.kho_ton_kho_view WITH (security_invoker='true') AS
     hang_hoa_id,
     (sum(qty))::numeric(18,3) AS ton_kho
    FROM movements
+  WHERE (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (kho_id = ANY (( SELECT public.fn_kho_cua_toi() AS fn_kho_cua_toi)::bigint[])))
   GROUP BY kho_id, hang_hoa_id;
 
 
@@ -6794,6 +7006,8 @@ CREATE TABLE public.vnn_chuong_trinh (
     tong_tien_quy_doi numeric(15,0),
     tong_tien_ban_giao numeric(15,0),
     phieu_khao_sat jsonb,
+    bien_ban_ban_giao jsonb,
+    CONSTRAINT vnn_bien_ban_ban_giao_chk CHECK (((bien_ban_ban_giao IS NULL) OR (jsonb_typeof(bien_ban_ban_giao) = 'object'::text))),
     CONSTRAINT vnn_chuong_trinh_doi_tuong_check CHECK (((doi_tuong IS NULL) OR (doi_tuong = ANY (ARRAY['Hộ nghèo'::text, 'Cận nghèo'::text, 'Khó khăn'::text])))),
     CONSTRAINT vnn_chuong_trinh_hinh_thuc_check CHECK ((hinh_thuc_ho_tro = ANY (ARRAY['Tiền mặt'::text, 'Hiện vật và Tiền'::text, 'Hiện vật'::text]))),
     CONSTRAINT vnn_chuong_trinh_linh_vuc_ho_tro_check CHECK ((linh_vuc_ho_tro = ANY (ARRAY['Tết vì người nghèo'::text, 'Cứu trợ'::text, 'Mô hình sinh kế'::text, 'Học sinh nghèo'::text, 'Chữa bệnh'::text, 'Nhà bị sập'::text, 'Người chết'::text, 'Hoả hoạn'::text]))),
@@ -6863,6 +7077,13 @@ COMMENT ON COLUMN public.vnn_chuong_trinh.tong_tien_ban_giao IS 'Tổng tiền k
 --
 
 COMMENT ON COLUMN public.vnn_chuong_trinh.phieu_khao_sat IS 'Dữ liệu phiếu khảo sát in: {chung, thien_tai|benh_tat|sinh_ke|hoc_sinh}. NULL khi lĩnh vực không có phiếu.';
+
+
+--
+-- Name: COLUMN vnn_chuong_trinh.bien_ban_ban_giao; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.vnn_chuong_trinh.bien_ban_ban_giao IS 'Dữ liệu biên bản bàn giao in: ngày/địa điểm, bên giao, làm chứng, căn cứ, hiện vật[], mục đích. NULL khi chưa nhập.';
 
 
 --
@@ -7692,13 +7913,6 @@ CREATE INDEX idx_kho_don_vi_cuu_tro_loai ON public.kho_don_vi_cuu_tro USING btre
 
 
 --
--- Name: idx_kho_don_vi_cuu_tro_ten_lower; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_kho_don_vi_cuu_tro_ten_lower ON public.kho_don_vi_cuu_tro USING btree (lower(TRIM(BOTH FROM ten)));
-
-
---
 -- Name: idx_kho_don_vi_cuu_tro_tt; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8413,6 +8627,13 @@ CREATE UNIQUE INDEX uq_kho_danh_sach_hang_hoa_dm_ten_lower ON public.kho_danh_sa
 
 
 --
+-- Name: uq_kho_don_vi_cuu_tro_ten_lower; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_kho_don_vi_cuu_tro_ten_lower ON public.kho_don_vi_cuu_tro USING btree (lower(regexp_replace(btrim(ten), '\s+'::text, ' '::text, 'g'::text)));
+
+
+--
 -- Name: uq_kho_nhap_xuat_kho_so_phieu; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8973,6 +9194,13 @@ CREATE TRIGGER trg_kho_dot_cuu_tro_updated BEFORE UPDATE ON public.kho_dot_cuu_t
 
 
 --
+-- Name: kho_danh_sach_kho trg_kho_gan_ten_theo_xa; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_kho_gan_ten_theo_xa BEFORE INSERT OR UPDATE OF ten_kho, don_vi_id ON public.kho_danh_sach_kho FOR EACH ROW EXECUTE FUNCTION public.fn_kho_gan_ten_theo_xa();
+
+
+--
 -- Name: kho_nhap_xuat_kho_ct trg_kho_nhap_xuat_kho_ct_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -9334,6 +9562,13 @@ CREATE TRIGGER trg_vnn_ngay_trang_thai BEFORE INSERT OR UPDATE ON public.vnn_chu
 --
 
 CREATE TRIGGER trg_vnn_updated BEFORE UPDATE ON public.vnn_chuong_trinh FOR EACH ROW EXECUTE FUNCTION public.set_tg_cap_nhat();
+
+
+--
+-- Name: var_ssn_xa_phuong trg_xa_phuong_dong_bo_ten_kho; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_xa_phuong_dong_bo_ten_kho AFTER UPDATE OF ten ON public.var_ssn_xa_phuong FOR EACH ROW WHEN ((old.ten IS DISTINCT FROM new.ten)) EXECUTE FUNCTION public.fn_xa_phuong_dong_bo_ten_kho();
 
 
 --
@@ -10430,17 +10665,31 @@ CREATE POLICY hngh_thong_tin_ho_ngheo_xoa ON public.hngh_thong_tin_ho_ngheo FOR 
 ALTER TABLE public.kho_danh_muc_hang_hoa ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: kho_danh_muc_hang_hoa kho_danh_muc_hang_hoa_modify; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY kho_danh_muc_hang_hoa_modify ON public.kho_danh_muc_hang_hoa TO authenticated USING (true) WITH CHECK (true);
-
-
---
 -- Name: kho_danh_muc_hang_hoa kho_danh_muc_hang_hoa_select; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY kho_danh_muc_hang_hoa_select ON public.kho_danh_muc_hang_hoa FOR SELECT TO authenticated USING (true);
+
+
+--
+-- Name: kho_danh_muc_hang_hoa kho_danh_muc_hang_hoa_sua; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_muc_hang_hoa_sua ON public.kho_danh_muc_hang_hoa FOR UPDATE TO authenticated USING (( SELECT public.fn_co_quyen('hang-hoa'::text, 'sua'::text) AS fn_co_quyen)) WITH CHECK (( SELECT public.fn_co_quyen('hang-hoa'::text, 'sua'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_danh_muc_hang_hoa kho_danh_muc_hang_hoa_them; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_muc_hang_hoa_them ON public.kho_danh_muc_hang_hoa FOR INSERT TO authenticated WITH CHECK (( SELECT public.fn_co_quyen('hang-hoa'::text, 'them'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_danh_muc_hang_hoa kho_danh_muc_hang_hoa_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_muc_hang_hoa_xoa ON public.kho_danh_muc_hang_hoa FOR DELETE TO authenticated USING (( SELECT public.fn_co_quyen('hang-hoa'::text, 'xoa'::text) AS fn_co_quyen));
 
 
 --
@@ -10450,17 +10699,31 @@ CREATE POLICY kho_danh_muc_hang_hoa_select ON public.kho_danh_muc_hang_hoa FOR S
 ALTER TABLE public.kho_danh_sach_hang_hoa ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_modify; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY kho_danh_sach_hang_hoa_modify ON public.kho_danh_sach_hang_hoa TO authenticated USING (true) WITH CHECK (true);
-
-
---
 -- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_select; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY kho_danh_sach_hang_hoa_select ON public.kho_danh_sach_hang_hoa FOR SELECT TO authenticated USING (true);
+
+
+--
+-- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_sua; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_sach_hang_hoa_sua ON public.kho_danh_sach_hang_hoa FOR UPDATE TO authenticated USING (( SELECT public.fn_co_quyen('hang-hoa'::text, 'sua'::text) AS fn_co_quyen)) WITH CHECK (( SELECT public.fn_co_quyen('hang-hoa'::text, 'sua'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_them; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_sach_hang_hoa_them ON public.kho_danh_sach_hang_hoa FOR INSERT TO authenticated WITH CHECK (( SELECT public.fn_co_quyen('hang-hoa'::text, 'them'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_sach_hang_hoa_xoa ON public.kho_danh_sach_hang_hoa FOR DELETE TO authenticated USING (( SELECT public.fn_co_quyen('hang-hoa'::text, 'xoa'::text) AS fn_co_quyen));
 
 
 --
@@ -10470,17 +10733,31 @@ CREATE POLICY kho_danh_sach_hang_hoa_select ON public.kho_danh_sach_hang_hoa FOR
 ALTER TABLE public.kho_danh_sach_kho ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: kho_danh_sach_kho kho_danh_sach_kho_modify; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY kho_danh_sach_kho_modify ON public.kho_danh_sach_kho TO authenticated USING (true) WITH CHECK (true);
-
-
---
 -- Name: kho_danh_sach_kho kho_danh_sach_kho_select; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY kho_danh_sach_kho_select ON public.kho_danh_sach_kho FOR SELECT TO authenticated USING (true);
+
+
+--
+-- Name: kho_danh_sach_kho kho_danh_sach_kho_sua; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_sach_kho_sua ON public.kho_danh_sach_kho FOR UPDATE TO authenticated USING ((( SELECT public.fn_co_quyen('danh-sach-kho'::text, 'sua'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (don_vi_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi))))) WITH CHECK ((( SELECT public.fn_co_quyen('danh-sach-kho'::text, 'sua'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (don_vi_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi)))));
+
+
+--
+-- Name: kho_danh_sach_kho kho_danh_sach_kho_them; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_sach_kho_them ON public.kho_danh_sach_kho FOR INSERT TO authenticated WITH CHECK ((( SELECT public.fn_co_quyen('danh-sach-kho'::text, 'them'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (don_vi_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi)))));
+
+
+--
+-- Name: kho_danh_sach_kho kho_danh_sach_kho_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_danh_sach_kho_xoa ON public.kho_danh_sach_kho FOR DELETE TO authenticated USING ((( SELECT public.fn_co_quyen('danh-sach-kho'::text, 'xoa'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (don_vi_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi)))));
 
 
 --
@@ -10490,17 +10767,31 @@ CREATE POLICY kho_danh_sach_kho_select ON public.kho_danh_sach_kho FOR SELECT TO
 ALTER TABLE public.kho_don_vi_cuu_tro ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_modify; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY kho_don_vi_cuu_tro_modify ON public.kho_don_vi_cuu_tro TO authenticated USING (true) WITH CHECK (true);
-
-
---
 -- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_select; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY kho_don_vi_cuu_tro_select ON public.kho_don_vi_cuu_tro FOR SELECT TO authenticated USING (true);
+
+
+--
+-- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_sua; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_don_vi_cuu_tro_sua ON public.kho_don_vi_cuu_tro FOR UPDATE TO authenticated USING (( SELECT public.fn_co_quyen('don-vi-cuu-tro'::text, 'sua'::text) AS fn_co_quyen)) WITH CHECK (( SELECT public.fn_co_quyen('don-vi-cuu-tro'::text, 'sua'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_them; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_don_vi_cuu_tro_them ON public.kho_don_vi_cuu_tro FOR INSERT TO authenticated WITH CHECK (( SELECT public.fn_co_quyen('don-vi-cuu-tro'::text, 'them'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_don_vi_cuu_tro_xoa ON public.kho_don_vi_cuu_tro FOR DELETE TO authenticated USING (( SELECT public.fn_co_quyen('don-vi-cuu-tro'::text, 'xoa'::text) AS fn_co_quyen));
 
 
 --
@@ -10510,17 +10801,31 @@ CREATE POLICY kho_don_vi_cuu_tro_select ON public.kho_don_vi_cuu_tro FOR SELECT 
 ALTER TABLE public.kho_dot_cuu_tro ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: kho_dot_cuu_tro kho_dot_cuu_tro_modify; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY kho_dot_cuu_tro_modify ON public.kho_dot_cuu_tro TO authenticated USING (true) WITH CHECK (true);
-
-
---
 -- Name: kho_dot_cuu_tro kho_dot_cuu_tro_select; Type: POLICY; Schema: public; Owner: -
 --
 
 CREATE POLICY kho_dot_cuu_tro_select ON public.kho_dot_cuu_tro FOR SELECT TO authenticated USING (true);
+
+
+--
+-- Name: kho_dot_cuu_tro kho_dot_cuu_tro_sua; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_dot_cuu_tro_sua ON public.kho_dot_cuu_tro FOR UPDATE TO authenticated USING (( SELECT public.fn_co_quyen('dot-cuu-tro'::text, 'sua'::text) AS fn_co_quyen)) WITH CHECK (( SELECT public.fn_co_quyen('dot-cuu-tro'::text, 'sua'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_dot_cuu_tro kho_dot_cuu_tro_them; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_dot_cuu_tro_them ON public.kho_dot_cuu_tro FOR INSERT TO authenticated WITH CHECK (( SELECT public.fn_co_quyen('dot-cuu-tro'::text, 'them'::text) AS fn_co_quyen));
+
+
+--
+-- Name: kho_dot_cuu_tro kho_dot_cuu_tro_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_dot_cuu_tro_xoa ON public.kho_dot_cuu_tro FOR DELETE TO authenticated USING (( SELECT public.fn_co_quyen('dot-cuu-tro'::text, 'xoa'::text) AS fn_co_quyen));
 
 
 --
@@ -10536,31 +10841,61 @@ ALTER TABLE public.kho_nhap_xuat_kho ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.kho_nhap_xuat_kho_ct ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: kho_nhap_xuat_kho_ct kho_nhap_xuat_kho_ct_modify; Type: POLICY; Schema: public; Owner: -
+-- Name: kho_nhap_xuat_kho_ct kho_nhap_xuat_kho_ct_sua; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY kho_nhap_xuat_kho_ct_modify ON public.kho_nhap_xuat_kho_ct TO authenticated USING (true) WITH CHECK (true);
-
-
---
--- Name: kho_nhap_xuat_kho_ct kho_nhap_xuat_kho_ct_select; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY kho_nhap_xuat_kho_ct_select ON public.kho_nhap_xuat_kho_ct FOR SELECT TO authenticated USING (true);
+CREATE POLICY kho_nhap_xuat_kho_ct_sua ON public.kho_nhap_xuat_kho_ct FOR UPDATE TO authenticated USING ((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'sua'::text) AS fn_co_quyen) AND public.fn_kho_ct_ghi_duoc(phieu_id))) WITH CHECK ((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'sua'::text) AS fn_co_quyen) AND public.fn_kho_ct_ghi_duoc(phieu_id)));
 
 
 --
--- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_modify; Type: POLICY; Schema: public; Owner: -
+-- Name: kho_nhap_xuat_kho_ct kho_nhap_xuat_kho_ct_them; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY kho_nhap_xuat_kho_modify ON public.kho_nhap_xuat_kho TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY kho_nhap_xuat_kho_ct_them ON public.kho_nhap_xuat_kho_ct FOR INSERT TO authenticated WITH CHECK (((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'them'::text) AS fn_co_quyen) OR ( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'sua'::text) AS fn_co_quyen)) AND public.fn_kho_ct_ghi_duoc(phieu_id)));
 
 
 --
--- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_select; Type: POLICY; Schema: public; Owner: -
+-- Name: kho_nhap_xuat_kho_ct kho_nhap_xuat_kho_ct_xem; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY kho_nhap_xuat_kho_select ON public.kho_nhap_xuat_kho FOR SELECT TO authenticated USING (true);
+CREATE POLICY kho_nhap_xuat_kho_ct_xem ON public.kho_nhap_xuat_kho_ct FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.kho_nhap_xuat_kho p
+  WHERE (p.id = kho_nhap_xuat_kho_ct.phieu_id))));
+
+
+--
+-- Name: kho_nhap_xuat_kho_ct kho_nhap_xuat_kho_ct_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_nhap_xuat_kho_ct_xoa ON public.kho_nhap_xuat_kho_ct FOR DELETE TO authenticated USING (((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'sua'::text) AS fn_co_quyen) OR ( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'xoa'::text) AS fn_co_quyen)) AND public.fn_kho_ct_ghi_duoc(phieu_id)));
+
+
+--
+-- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_sua; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_nhap_xuat_kho_sua ON public.kho_nhap_xuat_kho FOR UPDATE TO authenticated USING ((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'sua'::text) AS fn_co_quyen) AND public.fn_kho_phieu_ghi_duoc(loai_phieu, kho_xuat_id, kho_nhap_id))) WITH CHECK ((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'sua'::text) AS fn_co_quyen) AND public.fn_kho_phieu_ghi_duoc(loai_phieu, kho_xuat_id, kho_nhap_id)));
+
+
+--
+-- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_them; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_nhap_xuat_kho_them ON public.kho_nhap_xuat_kho FOR INSERT TO authenticated WITH CHECK ((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'them'::text) AS fn_co_quyen) AND public.fn_kho_phieu_ghi_duoc(loai_phieu, kho_xuat_id, kho_nhap_id)));
+
+
+--
+-- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_xem; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_nhap_xuat_kho_xem ON public.kho_nhap_xuat_kho FOR SELECT TO authenticated USING ((( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (kho_xuat_id = ANY (( SELECT public.fn_kho_cua_toi() AS fn_kho_cua_toi)::bigint[])) OR (kho_nhap_id = ANY (( SELECT public.fn_kho_cua_toi() AS fn_kho_cua_toi)::bigint[]))));
+
+
+--
+-- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY kho_nhap_xuat_kho_xoa ON public.kho_nhap_xuat_kho FOR DELETE TO authenticated USING ((( SELECT public.fn_co_quyen('nhap-xuat-kho'::text, 'xoa'::text) AS fn_co_quyen) AND public.fn_kho_phieu_ghi_duoc(loai_phieu, kho_xuat_id, kho_nhap_id)));
 
 
 --
@@ -11313,6 +11648,15 @@ GRANT ALL ON FUNCTION public.fn_co_tai_khoan_dang_nhap(p_ten_tai_khoan text) TO 
 
 
 --
+-- Name: FUNCTION fn_don_vi_cua_toi(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_don_vi_cua_toi() TO anon;
+GRANT ALL ON FUNCTION public.fn_don_vi_cua_toi() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_don_vi_cua_toi() TO service_role;
+
+
+--
 -- Name: FUNCTION fn_duoc_khoa_ky(p_module_key text); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11403,6 +11747,33 @@ GRANT ALL ON FUNCTION public.fn_kho_chan_doi_loai_phieu() TO service_role;
 
 
 --
+-- Name: FUNCTION fn_kho_ct_ghi_duoc(p_phieu_id bigint); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_kho_ct_ghi_duoc(p_phieu_id bigint) TO anon;
+GRANT ALL ON FUNCTION public.fn_kho_ct_ghi_duoc(p_phieu_id bigint) TO authenticated;
+GRANT ALL ON FUNCTION public.fn_kho_ct_ghi_duoc(p_phieu_id bigint) TO service_role;
+
+
+--
+-- Name: FUNCTION fn_kho_cua_toi(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_kho_cua_toi() TO anon;
+GRANT ALL ON FUNCTION public.fn_kho_cua_toi() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_kho_cua_toi() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_kho_gan_ten_theo_xa(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_kho_gan_ten_theo_xa() TO anon;
+GRANT ALL ON FUNCTION public.fn_kho_gan_ten_theo_xa() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_kho_gan_ten_theo_xa() TO service_role;
+
+
+--
 -- Name: FUNCTION fn_kho_khoa_kho(p_kho_id bigint); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11448,12 +11819,30 @@ GRANT ALL ON FUNCTION public.fn_kho_kiem_tra_ton_kho() TO service_role;
 
 
 --
+-- Name: FUNCTION fn_kho_phieu_ghi_duoc(p_loai text, p_kho_xuat bigint, p_kho_nhap bigint); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_kho_phieu_ghi_duoc(p_loai text, p_kho_xuat bigint, p_kho_nhap bigint) TO anon;
+GRANT ALL ON FUNCTION public.fn_kho_phieu_ghi_duoc(p_loai text, p_kho_xuat bigint, p_kho_nhap bigint) TO authenticated;
+GRANT ALL ON FUNCTION public.fn_kho_phieu_ghi_duoc(p_loai text, p_kho_xuat bigint, p_kho_nhap bigint) TO service_role;
+
+
+--
 -- Name: FUNCTION fn_kho_sinh_so_phieu(); Type: ACL; Schema: public; Owner: -
 --
 
 GRANT ALL ON FUNCTION public.fn_kho_sinh_so_phieu() TO anon;
 GRANT ALL ON FUNCTION public.fn_kho_sinh_so_phieu() TO authenticated;
 GRANT ALL ON FUNCTION public.fn_kho_sinh_so_phieu() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_kho_xem_tat_ca(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_kho_xem_tat_ca() TO anon;
+GRANT ALL ON FUNCTION public.fn_kho_xem_tat_ca() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_kho_xem_tat_ca() TO service_role;
 
 
 --
@@ -11610,6 +11999,15 @@ GRANT ALL ON FUNCTION public.fn_ten_dang_nhap_hien_tai() TO service_role;
 
 
 --
+-- Name: FUNCTION fn_ten_kho_theo_xa(p_ten_xa text); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_ten_kho_theo_xa(p_ten_xa text) TO anon;
+GRANT ALL ON FUNCTION public.fn_ten_kho_theo_xa(p_ten_xa text) TO authenticated;
+GRANT ALL ON FUNCTION public.fn_ten_kho_theo_xa(p_ten_xa text) TO service_role;
+
+
+--
 -- Name: FUNCTION fn_thong_bao_chi_cho_danh_dau_doc(); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11650,6 +12048,15 @@ GRANT ALL ON FUNCTION public.fn_var_phong_ban_lan_nhanh() TO service_role;
 GRANT ALL ON FUNCTION public.fn_vnn_set_ngay_trang_thai() TO anon;
 GRANT ALL ON FUNCTION public.fn_vnn_set_ngay_trang_thai() TO authenticated;
 GRANT ALL ON FUNCTION public.fn_vnn_set_ngay_trang_thai() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_xa_phuong_dong_bo_ten_kho(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_xa_phuong_dong_bo_ten_kho() TO anon;
+GRANT ALL ON FUNCTION public.fn_xa_phuong_dong_bo_ten_kho() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_xa_phuong_dong_bo_ten_kho() TO service_role;
 
 
 --
@@ -11776,6 +12183,15 @@ GRANT ALL ON FUNCTION public.get_kho_nxk_muc_dich_goi_y(p_loai_phieu text) TO se
 GRANT ALL ON FUNCTION public.get_ktnt_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_cap_khen text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_nha_tai_tro_ids bigint[], p_loai_nha_tai_tro text[], p_column_search jsonb) TO anon;
 GRANT ALL ON FUNCTION public.get_ktnt_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_cap_khen text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_nha_tai_tro_ids bigint[], p_loai_nha_tai_tro text[], p_column_search jsonb) TO authenticated;
 GRANT ALL ON FUNCTION public.get_ktnt_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_cap_khen text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_nha_tai_tro_ids bigint[], p_loai_nha_tai_tro text[], p_column_search jsonb) TO service_role;
+
+
+--
+-- Name: FUNCTION get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_nam integer, p_den_nam integer); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_nam integer, p_den_nam integer) TO anon;
+GRANT ALL ON FUNCTION public.get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_nam integer, p_den_nam integer) TO authenticated;
+GRANT ALL ON FUNCTION public.get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_nam integer, p_den_nam integer) TO service_role;
 
 
 --

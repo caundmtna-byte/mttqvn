@@ -20,12 +20,14 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'loai_nha_tai_tro', label: L('loaiNhaTaiTroCol'), visible: false, ...P.enumBadgeMedium, order: 10 },
   { id: 'so_khoan_ho_tro', label: L('soKhoanCol'), visible: false, minWidth: 100, maxWidth: 140, order: 11 },
   { id: 'tong_tien_ho_tro', label: L('tongTienHoTroCol'), visible: false, minWidth: 130, maxWidth: 170, order: 12 },
-  { id: 'ngay_cap_nhat_trang_thai', label: L('ngayTrangThaiCol'), visible: false, ...P.date, order: 13 },
-  { id: 'ho_va_ten_nguoi_duyet', label: L('nguoiDuyetCol'), visible: false, ...P.personName, order: 14 },
-  { id: 'ghi_chu', label: L('ghiChuCol'), visible: false, minWidth: 160, maxWidth: 280, order: 15 },
-  { id: 'ho_va_ten_nguoi_tao', label: L('nguoiTaoCol'), visible: false, ...P.personName, order: 16 },
-  { id: 'tg_cap_nhat', label: L('tgCapNhatCol'), visible: false, ...P.datetime, order: 17 },
-  { id: 'actions', label: txt('common.actions'), visible: true, minWidth: 96, maxWidth: 120, order: 18 },
+  { id: 'hien_vat_quy_doi', label: L('hienVatQuyDoiCol'), visible: false, minWidth: 130, maxWidth: 170, order: 13 },
+  { id: 'gia_tri_nhap_kho', label: L('giaTriNhapKhoCol'), visible: false, minWidth: 130, maxWidth: 170, order: 14 },
+  { id: 'ngay_cap_nhat_trang_thai', label: L('ngayTrangThaiCol'), visible: false, ...P.date, order: 15 },
+  { id: 'ho_va_ten_nguoi_duyet', label: L('nguoiDuyetCol'), visible: false, ...P.personName, order: 16 },
+  { id: 'ghi_chu', label: L('ghiChuCol'), visible: false, minWidth: 160, maxWidth: 280, order: 17 },
+  { id: 'ho_va_ten_nguoi_tao', label: L('nguoiTaoCol'), visible: false, ...P.personName, order: 18 },
+  { id: 'tg_cap_nhat', label: L('tgCapNhatCol'), visible: false, ...P.datetime, order: 19 },
+  { id: 'actions', label: txt('common.actions'), visible: true, minWidth: 96, maxWidth: 120, order: 20 },
 ];
 
 const initialFilters: KhenThuongNhaTaiTroFilters = {

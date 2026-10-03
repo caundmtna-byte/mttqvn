@@ -27,6 +27,12 @@ import {
   VNN_NHANH_PHIEU,
   type PksFormInput,
 } from './phieu-khao-sat';
+import {
+  bbbgFormSchema,
+  bienBanBanGiaoToFormInput,
+  chuanHoaBienBanBanGiao,
+  type BbbgFormInput,
+} from './bien-ban-ban-giao';
 
 const optionalText = z
   .string()
@@ -87,7 +93,8 @@ export const viNguoiNgheoSchema = z.object({
   nguon_ho_tro: z.enum(VNN_NGUON_HO_TRO_VALUES, {
     message: txt('viNguoiNgheo.validation.nguonHoTroInvalid'),
   }),
-  ho_ngheo_id: optionalFk,
+  /** Người được hỗ trợ BẮT BUỘC là một hộ trong danh sách hộ nghèo — không nhập tay. */
+  ho_ngheo_id: z.string().trim().min(1, txt('viNguoiNgheo.validation.hoNgheoRequired')),
   ho_ten_nguoi_nhan: z.string().trim().min(1, txt('viNguoiNgheo.validation.nguoiNhanRequired')),
   xa_phuong_id: optionalFk,
   khoi_xom: optionalText,
@@ -113,8 +120,18 @@ export const viNguoiNgheoSchema = z.object({
    * chỉ `chung` + nhánh của lĩnh vực đang chọn mới cần hợp lệ.
    */
   phieu_khao_sat: z.custom<PksFormInput>().optional(),
+  /** Ô nhập biên bản bàn giao — cùng quy ước `undefined` ⇒ không gửi cột. */
+  bien_ban_ban_giao: z.custom<BbbgFormInput>().optional(),
 })
   .superRefine((v, ctx) => {
+    if (v.bien_ban_ban_giao) {
+      const r = bbbgFormSchema.safeParse(v.bien_ban_ban_giao);
+      if (!r.success) {
+        for (const issue of r.error.issues) {
+          ctx.addIssue({ code: 'custom', message: issue.message, path: ['bien_ban_ban_giao', ...issue.path] });
+        }
+      }
+    }
     const p = v.phieu_khao_sat;
     const loai = vnnLoaiPhieu(v.linh_vuc_ho_tro);
     if (!p || !loai) return;
@@ -134,7 +151,14 @@ export const viNguoiNgheoSchema = z.object({
     const base = vnnCoHienVat(v.hinh_thuc_ho_tro)
       ? v
       : { ...v, so_luong: undefined, tong_tien_quy_doi: undefined, tong_tien_ban_giao: undefined };
-    return { ...base, phieu_khao_sat: chuanHoaPhieuForm(v.phieu_khao_sat, v.linh_vuc_ho_tro) };
+    return {
+      ...base,
+      phieu_khao_sat: chuanHoaPhieuForm(v.phieu_khao_sat, v.linh_vuc_ho_tro),
+      bien_ban_ban_giao:
+        v.bien_ban_ban_giao === undefined
+          ? undefined
+          : chuanHoaBienBanBanGiao(bbbgFormSchema.parse(v.bien_ban_ban_giao), v.linh_vuc_ho_tro),
+    };
   });
 
 /**
@@ -195,6 +219,7 @@ export type ViNguoiNgheoFormInput = {
   ghi_chu?: string;
   /** Có khi form đã có dữ liệu phiếu (tạo mới, hoặc sửa từ bản đầy đủ). */
   phieu_khao_sat?: PksFormInput;
+  bien_ban_ban_giao?: BbbgFormInput;
 };
 
 export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoFormInput {
@@ -219,6 +244,7 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
       don_vi_ho_tro_id: '',
       ghi_chu: '',
       phieu_khao_sat: phieuKhaoSatToFormInput(null),
+      bien_ban_ban_giao: bienBanBanGiaoToFormInput(null),
     };
   }
   return {
@@ -243,5 +269,7 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
     // `undefined` = dòng từ RPC chưa có phiếu ⇒ để form biết mà không gửi cột này.
     phieu_khao_sat:
       row.phieu_khao_sat === undefined ? undefined : phieuKhaoSatToFormInput(row.phieu_khao_sat),
+    bien_ban_ban_giao:
+      row.bien_ban_ban_giao === undefined ? undefined : bienBanBanGiaoToFormInput(row.bien_ban_ban_giao),
   };
 }

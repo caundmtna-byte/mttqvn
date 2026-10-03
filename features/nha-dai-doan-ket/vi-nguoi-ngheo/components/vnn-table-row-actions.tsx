@@ -7,7 +7,6 @@ import {
   type RowOverflowMenuItem,
 } from '@/components/shared/row-actions';
 import type { ViNguoiNgheo } from '../core/types';
-import { vnnLoaiPhieu } from '../core/phieu-khao-sat';
 import { useCan } from '@/hooks/use-can';
 
 export interface VnnTableRowActionsProps {
@@ -16,7 +15,7 @@ export interface VnnTableRowActionsProps {
   onMenuOpenChange: (id: string | null) => void;
   onEdit: (item: ViNguoiNgheo) => void;
   onDelete: (id: string) => void;
-  /** Mở trang in phiếu khảo sát — chỉ hiện với lĩnh vực có phiếu. */
+  /** Mở hộp chọn phiếu in (phiếu khảo sát / biên bản bàn giao). */
   onPrint?: (item: ViNguoiNgheo) => void;
   compact?: boolean;
 }
@@ -35,7 +34,7 @@ export function VnnTableRowActions({
   const canDelete = useCan('delete', 'viNguoiNgheoList');
 
   const overflowItems: RowOverflowMenuItem[] = [
-    ...(onPrint && vnnLoaiPhieu(item.linh_vuc_ho_tro)
+    ...(onPrint
       ? [
           {
             key: 'print',

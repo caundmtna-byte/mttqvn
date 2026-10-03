@@ -18,8 +18,9 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
     id: 'loai',
     label: txt('matTranDonViCuuTro.store.loaiCol'),
     visible: true,
-    minWidth: 100,
-    maxWidth: 140,
+    // Đủ chỗ cho nhãn dài nhất ("Nhóm thiện nguyện") không bị cắt "…".
+    minWidth: 170,
+    maxWidth: 200,
     order: 1,
   },
   {

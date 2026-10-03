@@ -4,7 +4,6 @@ import type { BadgeConfig } from '@/components/ui/EnumBadge';
 /** Giá trị `loai` lưu DB — nhãn hiển thị qua `matTranDonViCuuTro.loai.*`. */
 export const KHO_DON_VI_CUU_TRO_LOAI = [
   'doanh_nghiep',
-  'cau_lac_bo',
   'cq_cap_tinh',
   'ca_nhan',
   'co_so_ton_giao',
@@ -30,11 +29,12 @@ const LOAI_LEGACY: Record<string, KhoDonViCuuTroLoai> = {
   co_quan: 'cq_cap_tinh',
   don_vi: 'don_vi_su_nghiep',
   to_chuc: 'don_vi_su_nghiep',
+  // Bỏ khỏi danh mục 2026-10-03 (DB không còn bản ghi nào); CLB đang nhập là nhóm thiện nguyện.
+  cau_lac_bo: 'nhom_thien_nguyen',
 };
 
 const LOAI_LABEL_KEY: Record<KhoDonViCuuTroLoai, `matTranDonViCuuTro.loai.${string}`> = {
   doanh_nghiep: 'matTranDonViCuuTro.loai.doanhNghiep',
-  cau_lac_bo: 'matTranDonViCuuTro.loai.cauLacBo',
   cq_cap_tinh: 'matTranDonViCuuTro.loai.cqCapTinh',
   ca_nhan: 'matTranDonViCuuTro.loai.caNhan',
   co_so_ton_giao: 'matTranDonViCuuTro.loai.coSoTonGiao',
@@ -61,7 +61,6 @@ export function khoDonViCuuTroLoaiLabel(loai: KhoDonViCuuTroLoai): string {
 export function buildKhoDonViCuuTroLoaiBadgeConfig(): BadgeConfig<KhoDonViCuuTroLoai> {
   return {
     doanh_nghiep: { label: txt('matTranDonViCuuTro.loai.doanhNghiep'), color: 'indigo' },
-    cau_lac_bo: { label: txt('matTranDonViCuuTro.loai.cauLacBo'), color: 'cyan' },
     cq_cap_tinh: { label: txt('matTranDonViCuuTro.loai.cqCapTinh'), color: 'slate' },
     ca_nhan: { label: txt('matTranDonViCuuTro.loai.caNhan'), color: 'amber' },
     co_so_ton_giao: { label: txt('matTranDonViCuuTro.loai.coSoTonGiao'), color: 'violet' },

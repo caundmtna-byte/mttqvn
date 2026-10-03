@@ -19,9 +19,10 @@ describe('parseKhoDonViCuuTroLoai', () => {
     expect(parseKhoDonViCuuTroLoai('co_quan')).toBe('cq_cap_tinh');
     expect(parseKhoDonViCuuTroLoai('don_vi')).toBe('don_vi_su_nghiep');
     expect(parseKhoDonViCuuTroLoai('to_chuc')).toBe('don_vi_su_nghiep');
+    expect(parseKhoDonViCuuTroLoai('cau_lac_bo')).toBe('nhom_thien_nguyen');
   });
 
-  it('giữ nguyên tám giá trị mới', () => {
+  it('giữ nguyên các giá trị hiện hành', () => {
     for (const v of KHO_DON_VI_CUU_TRO_LOAI) {
       expect(parseKhoDonViCuuTroLoai(v)).toBe(v);
     }

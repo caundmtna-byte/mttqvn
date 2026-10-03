@@ -47,6 +47,7 @@ import {
   useUpdateKhenThuongNhaTaiTro,
 } from '../hooks/use-khen-thuong-nha-tai-tro';
 import { isKtntScopedToXaPhuong, useKtntViewer } from '../hooks/use-ktnt-viewer';
+import KtntTuTinhPreview from './ktnt-tu-tinh-preview';
 import { useNddkXaPhuongOptions } from '../../danh-sach/hooks/use-nddk-xa-phuong-options';
 
 const FORM_ID = 'ktnt-form';
@@ -117,6 +118,10 @@ const KtntForm: React.FC<Props> = ({ initialData, onClose }) => {
   }, [initialData, reset, scopedToXa, viewer.viewerDonViId]);
 
   const capKhen = useWatch({ control, name: 'cap_khen' });
+  const [nhaTaiTroId, namTu, namDen, giaTriKhac] = useWatch({
+    control,
+    name: ['nha_tai_tro_id', 'nam_thanh_tich_tu', 'nam_thanh_tich_den', 'gia_tri_dong_gop_khac'],
+  });
   const laCapXa = capKhen === KTNT_CAP_KHEN_XA;
 
   const onSubmit: SubmitHandler<KhenThuongNhaTaiTroFormValues> = (parsed) => {
@@ -295,6 +300,14 @@ const KtntForm: React.FC<Props> = ({ initialData, onClose }) => {
               <p className="mt-1.5 text-xs text-muted-foreground">
                 {txt('khenThuongNhaTaiTro.form.giaTriKhacHint')}
               </p>
+            </div>
+            <div className={FORM_GRID_SPAN_FULL}>
+              <KtntTuTinhPreview
+                nhaTaiTroId={nhaTaiTroId}
+                tuNam={namTu}
+                denNam={namDen}
+                giaTriKhac={giaTriKhac}
+              />
             </div>
           </FormGrid>
         </FormSection>

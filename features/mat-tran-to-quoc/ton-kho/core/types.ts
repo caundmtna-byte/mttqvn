@@ -41,6 +41,11 @@ export interface NXTFilters {
   loaiPhieu: NhapXuatKhoLoaiPhieu[];
   hangHoaIds: string[];
   categoryIds: string[];
+  /**
+   * Phạm vi kho của viewer (`getViewerKhoIds`), tách khỏi `warehouseIds` người dùng chọn.
+   * `null` = không giới hạn; `[]` = không thấy kho nào (cán bộ xã chưa gán đơn vị / xã chưa có kho).
+   */
+  scopeKhoIds: string[] | null;
 }
 
 /** Tổng hợp NXT theo kho (kỳ). */

@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   ArrowRightLeft,
   Edit,
@@ -34,9 +33,11 @@ import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import type { ViNguoiNgheo } from '../core/types';
-import { VNN_LIST_PATH, vnnCoHienVat } from '../core/constants';
+import { vnnCoHienVat } from '../core/constants';
 import { vnnLoaiPhieu } from '../core/phieu-khao-sat';
 import VnnPhieuKhaoSatDetailSection from './phieu-khao-sat/vnn-phieu-khao-sat-detail-section';
+import VnnBienBanBanGiaoDetailSection from './bien-ban-ban-giao/vnn-bien-ban-ban-giao-detail-section';
+import VnnChonPhieuInDialog from './vnn-chon-phieu-in-dialog';
 import {
   vnnDoiTuongBadge,
   vnnHinhThucBadge,
@@ -79,20 +80,19 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const statusMutation = useUpdateViNguoiNgheoTrangThai();
 
-  const navigate = useNavigate();
+  const [chonPhieuOpen, setChonPhieuOpen] = useState(false);
   const loaiPhieu = vnnLoaiPhieu(data.linh_vuc_ho_tro);
 
   const toolbarActions: DetailToolbarAction[] = useMemo(() => {
     const actions: DetailToolbarAction[] = [];
-    // In chỉ cần quyền xem — người mở được chi tiết là in được.
-    if (loaiPhieu) {
-      actions.push({
-        label: txt('viNguoiNgheo.phieuKhaoSat.actionPrint'),
-        icon: <Printer size={16} />,
-        variant: 'primary' as const,
-        onClick: () => navigate(`${VNN_LIST_PATH}/${data.id}/in`),
-      });
-    }
+    // In chỉ cần quyền xem — người mở được chi tiết là in được. Biên bản bàn
+    // giao có với mọi lĩnh vực nên nút In luôn hiện.
+    actions.push({
+      label: txt('viNguoiNgheo.phieuKhaoSat.actionPrint'),
+      icon: <Printer size={16} />,
+      variant: 'primary' as const,
+      onClick: () => setChonPhieuOpen(true),
+    });
     if (canEdit) {
       actions.push({
         label: txt('viNguoiNgheo.detail.actionChangeStatus'),
@@ -102,7 +102,7 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
       });
     }
     return actions;
-  }, [canEdit, loaiPhieu, navigate, data.id]);
+  }, [canEdit]);
 
   const statusInitial: ViNguoiNgheoStatusChangeValues = useMemo(
     () => ({ trang_thai: data.trang_thai, ghi_chu: data.ghi_chu ?? undefined }),
@@ -323,6 +323,8 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
           <VnnPhieuKhaoSatDetailSection id={data.id} loai={loaiPhieu} linhVuc={data.linh_vuc_ho_tro} />
         ) : null}
 
+        <VnnBienBanBanGiaoDetailSection id={data.id} />
+
         <DetailSection
           title={txt('viNguoiNgheo.form.sectionTrangThai')}
           icon={<ListChecks size={14} />}
@@ -379,6 +381,7 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
         </DetailSection>
       </div>
 
+      <VnnChonPhieuInDialog item={chonPhieuOpen ? data : null} onClose={() => setChonPhieuOpen(false)} />
       <VnnChuyenTrangThaiDialog
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}

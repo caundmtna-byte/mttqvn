@@ -13,6 +13,7 @@ import {
   deleteKhenThuongNhaTaiTroMany,
   getKhenThuongNhaTaiTroAll,
   getKhenThuongNhaTaiTroById,
+  getKtntThanhTich,
   updateKhenThuongNhaTaiTro,
   updateKhenThuongNhaTaiTroTrangThai,
 } from '../services/khen-thuong-nha-tai-tro-service';
@@ -53,6 +54,25 @@ export function useKhenThuongNhaTaiTroDetail(id: string | null, options?: { enab
     queryKey: queryKeys.khenThuongNhaTaiTro.detail(id?.trim() ?? '__'),
     queryFn: () => getKhenThuongNhaTaiTroById(id!.trim()),
     enabled,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
+/**
+ * Thành tích tự tính của một nhà tài trợ trong kỳ (tiền mặt · hiện vật · nhập kho).
+ * `enabled: false` khi chưa chọn nhà tài trợ hoặc kỳ năm đang gõ dở.
+ */
+export function useKtntThanhTich(
+  nhaTaiTroId: string | null | undefined,
+  tuNam: number | null,
+  denNam: number | null,
+  options?: { enabled?: boolean },
+) {
+  const id = nhaTaiTroId?.trim() ?? '';
+  return useQuery({
+    queryKey: queryKeys.khenThuongNhaTaiTro.thanhTich(id, tuNam, denNam),
+    queryFn: () => getKtntThanhTich(id, tuNam, denNam),
+    enabled: id !== '' && options?.enabled !== false,
     ...transactionalCrudListQueryOptions,
   });
 }

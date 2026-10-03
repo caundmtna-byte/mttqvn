@@ -41,7 +41,8 @@ import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import type { KhenThuongNhaTaiTro } from '../core/types';
 import type { KhenThuongNhaTaiTroStatusChangeValues } from '../core/schema';
 import { ktntCapKhenBadge, ktntTrangThaiBadge } from '../core/display-badges';
-import { useUpdateKhenThuongNhaTaiTroTrangThai } from '../hooks/use-khen-thuong-nha-tai-tro';
+import { useKtntThanhTich, useUpdateKhenThuongNhaTaiTroTrangThai } from '../hooks/use-khen-thuong-nha-tai-tro';
+import { tongGiaTriKtnt } from '../utils/thanh-tich';
 import {
   formatKtntKy,
   formatKtntLoai,
@@ -51,7 +52,6 @@ import {
 } from '../utils/column-display';
 import KtntChuyenTrangThaiDialog from './ktnt-chuyen-trang-thai-dialog';
 import { useViNguoiNgheoByDonVi } from '../../vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
-import { computeVnnKpis } from '../../vi-nguoi-ngheo/utils/aggregate-vnn-stats';
 import { vnnLinhVucBadge, vnnTrangThaiBadge } from '../../vi-nguoi-ngheo/core/display-badges';
 import type { ViNguoiNgheo } from '../../vi-nguoi-ngheo/core/types';
 
@@ -82,16 +82,21 @@ const KtntDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const statusMutation = useUpdateKhenThuongNhaTaiTroTrangThai();
 
   /**
-   * Thành tích đọc từ Chương trình hỗ trợ — cùng điều kiện với cột tổng
-   * hợp trong RPC `get_ktnt_page`, nên số ở đây khớp số trên bảng danh sách.
+   * Số thành tích đọc từ `get_ktnt_thanh_tich` — đúng hàm SQL mà RPC danh sách
+   * dùng cho cột tổng, nên khớp bảng. Lưới bên dưới chỉ liệt kê các khoản của
+   * Chương trình hỗ trợ (phiếu nhập kho xem ở module Nhập–xuất kho).
    */
+  const { data: thanhTich, isLoading: thanhTichLoading } = useKtntThanhTich(
+    data.nha_tai_tro_id,
+    data.nam_thanh_tich_tu,
+    data.nam_thanh_tich_den,
+  );
   const { data: khoanRows = [], isLoading: khoanLoading } = useViNguoiNgheoByDonVi(
     data.nha_tai_tro_id,
     data.nam_thanh_tich_tu,
     data.nam_thanh_tich_den,
   );
-  const thanhTich = useMemo(() => computeVnnKpis(khoanRows), [khoanRows]);
-  const tongGiaTri = thanhTich.tongSoTien + (data.gia_tri_dong_gop_khac ?? 0);
+  const tongGiaTri = thanhTich ? tongGiaTriKtnt(thanhTich, data.gia_tri_dong_gop_khac) : 0;
 
   const toolbarActions: DetailToolbarAction[] = useMemo(() => {
     // Đã huỷ là kết thúc — không còn bước nào để chuyển.
@@ -293,12 +298,32 @@ const KtntDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
             <DetailField
               label={L('soNguoiCol')}
               icon={<Users size={12} />}
-              value={khoanLoading ? '…' : tabular(`${thanhTich.soNguoiNhan} · ${thanhTich.tongSoKhoan} ${txt('khenThuongNhaTaiTro.detail.kySuffix')}`)}
+              value={
+                thanhTichLoading || !thanhTich
+                  ? '…'
+                  : tabular(`${thanhTich.so_nguoi_duoc_ho_tro} · ${thanhTich.so_khoan_ho_tro} ${txt('khenThuongNhaTaiTro.detail.kySuffix')}`)
+              }
             />
             <DetailField
               label={L('tongTienHoTroCol')}
               icon={<Coins size={12} />}
-              value={khoanLoading ? '…' : tabular(formatKtntTien(thanhTich.tongSoTien))}
+              value={thanhTichLoading || !thanhTich ? '…' : tabular(formatKtntTien(thanhTich.tien_mat))}
+            />
+            <DetailField
+              label={L('hienVatQuyDoiCol')}
+              icon={<Coins size={12} />}
+              value={thanhTichLoading || !thanhTich ? '…' : tabular(formatKtntTien(thanhTich.hien_vat_quy_doi))}
+            />
+            <DetailField
+              label={L('giaTriNhapKhoCol')}
+              icon={<Coins size={12} />}
+              value={
+                thanhTichLoading || !thanhTich
+                  ? '…'
+                  : tabular(
+                      `${formatKtntTien(thanhTich.gia_tri_nhap_kho)} · ${thanhTich.so_phieu_nhap_kho} ${txt('khenThuongNhaTaiTro.detail.phieuSuffix')}`,
+                    )
+              }
             />
             <DetailField
               label={L('giaTriKhacCol')}
@@ -311,7 +336,7 @@ const KtntDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
               label={L('tongGiaTriCol')}
               icon={<Coins size={12} />}
               value={
-                khoanLoading ? '…' : (
+                thanhTichLoading || !thanhTich ? '…' : (
                   <span className="tabular-nums font-semibold text-body-sm text-foreground">
                     {formatKtntTien(tongGiaTri)}
                   </span>

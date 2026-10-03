@@ -1,5 +1,7 @@
 import { txt } from '@/lib/text';
 import { findRefStrict, type NamedRef } from '@/lib/data/import-cells';
+import { chuanHoaKhoaVanBan } from '@/lib/data/import-plan';
+import type { CapQuanLy } from '@/features/he-thong/chuc-vu/utils/cap-quan-ly';
 
 /**
  * "Đơn vị giới thiệu" — MỘT ô chọn trên form, HAI cột dưới DB. Bắt buộc:
@@ -59,6 +61,53 @@ export function donViGioiThieuLabel(
   if (loai === 'xa_phuong') return (tenXaPhuong ?? '').trim();
   // NULL chỉ còn ở dữ liệu trước migration bắt buộc — cũng là MTTQ tỉnh.
   return txt('matTranDonViCuuTro.tinhCap');
+}
+
+/* ------------------------------------------------------------------ *
+ * Tài khoản cấp xã: ô "Đơn vị giới thiệu" khoá cứng về xã/phường của mình
+ * ------------------------------------------------------------------ */
+
+export interface DonViGioiThieuScopeInput {
+  /** cap_bac = 1, quan_tri, role admin, hoặc ma trận chưa hydrate. */
+  canViewAll: boolean;
+  chucVuCapQuanLy: CapQuanLy | null;
+  /** `var_nhan_vien.don_vi_id` — id xã/phường của người đăng nhập. */
+  viewerDonViId: string | null;
+}
+
+export interface DonViGioiThieuScope {
+  /** True ⇒ ô chọn bị khoá, người dùng không đổi được. */
+  khoa: boolean;
+  /** Giá trị điền sẵn khi thêm mới; `null` = cấp xã nhưng tài khoản chưa gán xã. */
+  xaPhuongId: string | null;
+}
+
+/**
+ * Cán bộ cấp xã chỉ giới thiệu nhà tài trợ cho chính xã mình — điền sẵn, khoá ô.
+ * Tỉnh / quản trị / chức vụ chưa phân cấp ⇒ chọn tự do như cũ.
+ */
+export function donViGioiThieuScope(input: DonViGioiThieuScopeInput): DonViGioiThieuScope {
+  if (input.canViewAll || input.chucVuCapQuanLy !== 'Xã phường') return { khoa: false, xaPhuongId: null };
+  const dv = input.viewerDonViId?.trim();
+  return { khoa: true, xaPhuongId: dv ? dv : null };
+}
+
+/* ------------------------------------------------------------------ *
+ * Tên nhà tài trợ là duy nhất (unique index `uq_kho_don_vi_cuu_tro_ten_lower`)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Bản ghi KHÁC đang mang cùng tên (so như unique index dưới DB: bỏ khoảng trắng
+ * thừa, không phân biệt hoa thường). `boQuaId` = bản ghi đang sửa.
+ */
+export function timDonViTrungTen<T extends { id: string; ten: string }>(
+  ten: string,
+  rows: readonly T[],
+  boQuaId?: string | null,
+): T | undefined {
+  const khoa = chuanHoaKhoaVanBan(ten);
+  if (!khoa) return undefined;
+  return rows.find((r) => r.id !== boQuaId && chuanHoaKhoaVanBan(r.ten) === khoa);
 }
 
 /* ------------------------------------------------------------------ *

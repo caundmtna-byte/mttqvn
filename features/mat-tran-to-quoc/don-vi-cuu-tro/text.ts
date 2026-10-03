@@ -73,6 +73,9 @@ export const matTranDonViCuuTro = {
   validation: {
     loaiRequired: 'Chọn loại đối tượng trong danh sách.',
     tenRequired: 'Nhập tên nhà tài trợ hoặc họ tên.',
+    tenTrung:
+      'Tên nhà tài trợ « {{ten}} » đã có trong danh sách. Trùng họ tên thì ghi kèm địa danh, ví dụ « Nguyễn Văn A (Quỳnh Lâm) ».',
+    chuaGanXaPhuong: 'Tài khoản cấp xã chưa được gán xã/phường — liên hệ quản trị để cập nhật hồ sơ nhân viên.',
     emailInvalid: 'Email không hợp lệ.',
     soNguoiInvalid: 'Số người phải là số nguyên không âm.',
     donViGioiThieuInvalid: 'Đơn vị giới thiệu chưa hợp lệ. Chọn lại trong danh sách.',
@@ -101,13 +104,12 @@ export const matTranDonViCuuTro = {
     filterNhomUngHo: 'Đợt / Nội dung',
   },
   emptyTitle: 'Chưa có đơn vị hỗ trợ',
-  emptyHint: 'Thêm doanh nghiệp, câu lạc bộ, cơ sở tôn giáo, nhóm thiện nguyện hoặc cá nhân tham gia quyên góp.',
+  emptyHint: 'Thêm doanh nghiệp, cơ sở tôn giáo, nhóm thiện nguyện hoặc cá nhân tham gia quyên góp.',
   emptyFilteredHint: 'Thử xóa bộ lọc hoặc đổi từ khóa tìm kiếm.',
   /** Danh sách — lỗi tải (kèm nút thử lại trên trang). */
   listLoadErrorHint: 'Không tải được danh sách. Kiểm tra kết nối rồi thử lại.',
   loai: {
     doanhNghiep: 'Doanh nghiệp',
-    cauLacBo: 'Câu lạc bộ',
     cqCapTinh: 'CQ cấp tỉnh',
     caNhan: 'Cá nhân',
     coSoTonGiao: 'Cơ sở tôn giáo',

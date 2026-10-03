@@ -12,7 +12,8 @@ import type {
   KhenThuongNhaTaiTroFormValues,
   KhenThuongNhaTaiTroStatusChangeValues,
 } from '../core/schema';
-import type { KhenThuongNhaTaiTro } from '../core/types';
+import type { KhenThuongNhaTaiTro, KtntThanhTich } from '../core/types';
+import { tongGiaTriKtnt } from '../utils/thanh-tich';
 import {
   KTNT_CAP_KHEN_DEFAULT,
   KTNT_TRANG_THAI_DEFAULT,
@@ -82,6 +83,8 @@ export function flattenKhenThuongNhaTaiTroRow(row: Record<string, unknown>): Khe
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
   const r = row;
   const tongTienHoTro = num0(r.tong_tien_ho_tro);
+  const hienVatQuyDoi = num0(r.hien_vat_quy_doi);
+  const giaTriNhapKho = num0(r.gia_tri_nhap_kho);
   const giaTriKhac = nullableNum(r.gia_tri_dong_gop_khac);
 
   return {
@@ -102,7 +105,16 @@ export function flattenKhenThuongNhaTaiTroRow(row: Record<string, unknown>): Khe
     so_khoan_ho_tro: num0(r.so_khoan_ho_tro),
     so_nguoi_duoc_ho_tro: num0(r.so_nguoi_duoc_ho_tro),
     tong_tien_ho_tro: tongTienHoTro,
-    tong_gia_tri: r.tong_gia_tri != null ? num0(r.tong_gia_tri) : tongTienHoTro + (giaTriKhac ?? 0),
+    hien_vat_quy_doi: hienVatQuyDoi,
+    gia_tri_nhap_kho: giaTriNhapKho,
+    so_phieu_nhap_kho: num0(r.so_phieu_nhap_kho),
+    tong_gia_tri:
+      r.tong_gia_tri != null
+        ? num0(r.tong_gia_tri)
+        : tongGiaTriKtnt(
+            { tien_mat: tongTienHoTro, hien_vat_quy_doi: hienVatQuyDoi, gia_tri_nhap_kho: giaTriNhapKho },
+            giaTriKhac,
+          ),
     trang_thai: String(r.trang_thai ?? KTNT_TRANG_THAI_DEFAULT) as KtntTrangThai,
     ngay_cap_nhat_trang_thai: String(r.ngay_cap_nhat_trang_thai ?? ''),
     nguoi_duyet_id: nullableStr(r.nguoi_duyet_id),
@@ -157,6 +169,8 @@ export const KTNT_SERVER_SORT_COLUMNS = [
   'so_khoan_ho_tro',
   'so_nguoi_duoc_ho_tro',
   'tong_tien_ho_tro',
+  'hien_vat_quy_doi',
+  'gia_tri_nhap_kho',
   'tong_gia_tri',
   'trang_thai',
   'ngay_cap_nhat_trang_thai',
@@ -265,6 +279,44 @@ export function getKhenThuongNhaTaiTroAll(
   q: Omit<KtntPageQuery, 'page' | 'pageSize'>,
 ): Promise<KhenThuongNhaTaiTro[]> {
   return fetchAllServerPages(q, getKhenThuongNhaTaiTroPage);
+}
+
+/**
+ * Thành tích của một nhà tài trợ trong kỳ — cùng hàm SQL mà `get_ktnt_page` dùng
+ * cho cột tổng, nên số ở chi tiết / form luôn khớp bảng danh sách.
+ */
+export async function getKtntThanhTich(
+  nhaTaiTroId: string,
+  tuNam: number | null,
+  denNam: number | null,
+): Promise<KtntThanhTich> {
+  const empty: KtntThanhTich = {
+    tien_mat: 0,
+    hien_vat_quy_doi: 0,
+    gia_tri_nhap_kho: 0,
+    so_khoan_ho_tro: 0,
+    so_nguoi_duoc_ho_tro: 0,
+    so_phieu_nhap_kho: 0,
+  };
+  const supabase = getSupabase();
+  const id = Number(nhaTaiTroId.trim());
+  if (!supabase || !nhaTaiTroId.trim() || !Number.isFinite(id)) return empty;
+  const { data, error } = await supabase.rpc('get_ktnt_thanh_tich', {
+    p_nha_tai_tro_id: id,
+    p_tu_nam: tuNam,
+    p_den_nam: denNam,
+  } as never);
+  if (error) handleSupabaseError(error);
+  const r = ((data ?? []) as unknown as Record<string, unknown>[])[0];
+  if (!r) return empty;
+  return {
+    tien_mat: num0(r.tien_mat),
+    hien_vat_quy_doi: num0(r.hien_vat_quy_doi),
+    gia_tri_nhap_kho: num0(r.gia_tri_nhap_kho),
+    so_khoan_ho_tro: num0(r.so_khoan_ho_tro),
+    so_nguoi_duoc_ho_tro: num0(r.so_nguoi_duoc_ho_tro),
+    so_phieu_nhap_kho: num0(r.so_phieu_nhap_kho),
+  };
 }
 
 export async function getKhenThuongNhaTaiTroById(id: string): Promise<KhenThuongNhaTaiTro | null> {

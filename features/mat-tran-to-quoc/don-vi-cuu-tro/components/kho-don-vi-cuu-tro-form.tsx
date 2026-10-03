@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import { BadgeCheck, Building2, FileText, Landmark, Mail, MapPin, Phone, Type, User, Users, UserRound } from 'lucide-react';
 import { txt } from '@/lib/text';
+import { applyConstraintErrorToForm } from '@/lib/supabase/constraint-field-error';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
@@ -16,10 +18,19 @@ import {
   khoDonViCuuTroLoaiComboboxOptions,
 } from '../core/loai';
 import { khoDonViCuuTroSchema, type KhoDonViCuuTroFormValues } from '../core/schema';
-import { DON_VI_GIOI_THIEU_TINH, donViGioiThieuToFormValue } from '../utils/don-vi-gioi-thieu';
+import {
+  DON_VI_GIOI_THIEU_TINH,
+  donViGioiThieuToFormValue,
+  timDonViTrungTen,
+} from '../utils/don-vi-gioi-thieu';
 import { useDonViGioiThieuOptions } from '../hooks/use-don-vi-gioi-thieu-options';
+import { useDonViGioiThieuScope } from '../hooks/use-don-vi-gioi-thieu-scope';
 import type { KhoDonViCuuTroListRow } from '../core/types';
-import { useCreateKhoDonViCuuTro, useUpdateKhoDonViCuuTro } from '../hooks/use-kho-don-vi-cuu-tro';
+import {
+  useCreateKhoDonViCuuTro,
+  useKhoDonViCuuTroList,
+  useUpdateKhoDonViCuuTro,
+} from '../hooks/use-kho-don-vi-cuu-tro';
 
 const FORM_ID = 'kho-don-vi-cuu-tro-form';
 
@@ -46,6 +57,9 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
   const isEdit = Boolean(initialData);
   const createMutation = useCreateKhoDonViCuuTro(onClose);
   const updateMutation = useUpdateKhoDonViCuuTro(onClose);
+  const scope = useDonViGioiThieuScope();
+  // Danh sách đã nạp sẵn ở trang (client-side) — dùng để báo trùng tên trước khi gửi.
+  const { data: danhSach = [] } = useKhoDonViCuuTroList();
 
   const {
     register,
@@ -53,6 +67,7 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
     handleSubmit,
     reset,
     watch,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<KhoDonViCuuTroFormValues>({
     defaultValues: DEFAULT_VALUES,
@@ -62,7 +77,16 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
   const loai = watch('loai');
 
   const loaiOptions = useMemo(() => khoDonViCuuTroLoaiComboboxOptions(), []);
-  const { options: donViGioiThieuOptions } = useDonViGioiThieuOptions();
+  const { options: tatCaDonViGioiThieu } = useDonViGioiThieuOptions();
+  const donViGioiThieu = watch('don_vi_gioi_thieu');
+  // Cấp xã chỉ thấy xã mình (khi sửa: giữ cả giá trị đang có của bản ghi).
+  const donViGioiThieuOptions = useMemo(
+    () =>
+      scope.khoa
+        ? tatCaDonViGioiThieu.filter((o) => o.value === scope.xaPhuongId || o.value === donViGioiThieu)
+        : tatCaDonViGioiThieu,
+    [scope.khoa, scope.xaPhuongId, tatCaDonViGioiThieu, donViGioiThieu],
+  );
 
   useEffect(() => {
     if (initialData) {
@@ -82,15 +106,34 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
         ghi_chu: initialData.ghi_chu ?? '',
       });
     } else {
-      reset(DEFAULT_VALUES);
+      // Cán bộ cấp xã: điền sẵn xã/phường của mình (ô bị khoá bên dưới).
+      reset(
+        scope.khoa && scope.xaPhuongId
+          ? { ...DEFAULT_VALUES, don_vi_gioi_thieu: scope.xaPhuongId }
+          : DEFAULT_VALUES,
+      );
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, scope.khoa, scope.xaPhuongId]);
 
-  const onSubmit: SubmitHandler<KhoDonViCuuTroFormValues> = (data) => {
-    if (isEdit && initialData) {
-      updateMutation.mutate({ id: initialData.id, data });
-    } else {
-      createMutation.mutate(data);
+  const onSubmit: SubmitHandler<KhoDonViCuuTroFormValues> = async (data) => {
+    if (!isEdit && scope.khoa && !scope.xaPhuongId) {
+      toast.error(txt('matTranDonViCuuTro.validation.chuaGanXaPhuong'));
+      return;
+    }
+    const trung = timDonViTrungTen(data.ten, danhSach, initialData?.id);
+    if (trung) {
+      setError('ten', { type: 'manual', message: txt('matTranDonViCuuTro.validation.tenTrung', { ten: trung.ten }) });
+      return;
+    }
+    // Lưới cuối: unique index dưới DB (người khác vừa thêm cùng tên) ⇒ chữ đỏ dưới ô.
+    try {
+      if (isEdit && initialData) {
+        await updateMutation.mutateAsync({ id: initialData.id, data });
+      } else {
+        await createMutation.mutateAsync(data);
+      }
+    } catch (e) {
+      applyConstraintErrorToForm(e, setError);
     }
   };
 
@@ -205,6 +248,7 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
                     label={txt('matTranDonViCuuTro.form.donViGioiThieu')}
                     required
                     clearable={false}
+                    disabled={scope.khoa}
                     placeholder={txt('matTranDonViCuuTro.form.donViGioiThieuPlaceholder')}
                     error={errors.don_vi_gioi_thieu?.message}
                     icon={<Landmark size={14} />}

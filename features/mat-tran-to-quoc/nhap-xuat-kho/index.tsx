@@ -33,10 +33,8 @@ import {
   useDeleteNhapXuatKhoMany,
   useImportNhapXuatKho,
 } from './hooks/use-kho-nhap-xuat-kho';
-import {
-  useKhoNhapXuatKhoViewer,
-  isNhapXuatKhoViewUnrestricted,
-} from './hooks/use-kho-nhap-xuat-kho-viewer';
+import { useKhoPhamViViewer } from '../danh-sach-kho/hooks/use-kho-pham-vi-viewer';
+import { isKhoPhamViUnrestricted } from '../danh-sach-kho/utils/pham-vi-kho';
 import { useServerPagedList } from '@/hooks/use-server-paged-list';
 import { useKhoDanhSachKhoList } from '@/features/mat-tran-to-quoc/danh-sach-kho/hooks/use-kho-danh-sach-kho';
 import { useKhoDanhSachHangHoaList } from '@/features/mat-tran-to-quoc/hang-hoa/hooks/use-kho-danh-sach-hang-hoa';
@@ -161,17 +159,15 @@ const NhapXuatKhoPage: React.FC = () => {
     columns: ctCols,
   } = ctStore;
 
-  const viewer = useKhoNhapXuatKhoViewer();
+  const viewer = useKhoPhamViViewer('matTranReliefStockTransactions');
 
   // Phạm vi xem đi xuống RPC: cấp Tỉnh / quản trị xem hết, cấp Xã phường chỉ
-  // thấy phiếu có kho xuất hoặc kho nhập thuộc đơn vị mình.
+  // thấy phiếu có kho xuất hoặc kho nhập thuộc đơn vị mình. RLS dưới DB chặn
+  // y hệt (`fn_kho_xem_tat_ca`); tham số này chỉ để RPC lọc sớm. Gửi viewAll rõ
+  // ràng để cán bộ Xã phường CHƯA được gán đơn vị thấy rỗng thay vì thấy tất.
   const viewScope = useMemo(
     () => ({
-      // Chỉ cấp Xã phường mới bị bó theo đơn vị; các cấp khác xem hết — đúng như
-      // canViewNhapXuatKhoRow. Gửi viewAll=true ở đây để RPC không phải đoán,
-      // nhờ đó cán bộ Xã phường CHƯA được gán đơn vị sẽ thấy rỗng thay vì thấy tất.
-      viewAll:
-        isNhapXuatKhoViewUnrestricted(viewer) || viewer.chucVuCapQuanLy !== 'Xã phường',
+      viewAll: isKhoPhamViUnrestricted(viewer),
       viewerDonViId: viewer.chucVuCapQuanLy === 'Xã phường' ? viewer.viewerDonViId : null,
     }),
     [viewer],

@@ -20,6 +20,7 @@ const KHOAN_HOP_LE = {
   linh_vuc_ho_tro: 'Tết vì người nghèo',
   nguon: 'Vì người nghèo',
   nguon_ho_tro: 'Cấp tỉnh',
+  ho_ngheo_id: 'ho-1',
   ho_ten_nguoi_nhan: 'Hồ Văn Thu',
   hinh_thuc_ho_tro: 'Tiền mặt',
   trang_thai: 'Đang khảo sát',
@@ -78,13 +79,18 @@ describe('viNguoiNgheoSchema', () => {
   });
 
   it('ô liên kết trống quy về undefined (gửi NULL), không phải chuỗi rỗng', () => {
-    const r = parse({ ho_ngheo_id: '', don_vi_ho_tro_id: ' ', xa_phuong_id: '' });
+    const r = parse({ don_vi_ho_tro_id: ' ', xa_phuong_id: '' });
     expect(r.success).toBe(true);
     expect(r.data).toMatchObject({
-      ho_ngheo_id: undefined,
       don_vi_ho_tro_id: undefined,
       xa_phuong_id: undefined,
     });
+  });
+
+  it('bắt buộc chọn hộ nghèo — không cho nhập tay họ tên', () => {
+    expect(parse({ ho_ngheo_id: '' }).success).toBe(false);
+    expect(parse({ ho_ngheo_id: '  ' }).success).toBe(false);
+    expect(parse({ ho_ngheo_id: undefined }).success).toBe(false);
   });
 
   it('"Quà tết" cũ không còn là lĩnh vực hợp lệ — đã gộp vào "Tết vì người nghèo"', () => {

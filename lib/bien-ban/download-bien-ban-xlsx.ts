@@ -11,7 +11,8 @@ import {
 
 /**
  * Dàn phẳng biên bản thành từng dòng văn bản, mỗi dòng một hàng Excel.
- * Biên bản không có bảng số liệu — file này để đối chiếu / chép lại nội dung.
+ * Bảng (hiện vật…) dàn thành từng dòng, ô nối bằng ` | ` — file này để đối
+ * chiếu / chép lại nội dung, không phải bảng tính.
  */
 export function bienBanToRows(model: BienBanModel): string[] {
   const rows: string[] = [];
@@ -44,6 +45,12 @@ export function bienBanToRows(model: BienBanModel): string[] {
           const names = b.cols.map((c) => c.hoTen?.trim() ?? '');
           if (names.some(Boolean)) rows.push(names.join('   |   '));
         }
+        break;
+      case 'bang':
+        rows.push(b.cols.map((c) => c.title).join(' | '));
+        for (const r of b.rows) rows.push(r.join(' | '));
+        if (b.footer) rows.push(b.footer.cells.join(' | '));
+        rows.push('');
         break;
       default:
         break;

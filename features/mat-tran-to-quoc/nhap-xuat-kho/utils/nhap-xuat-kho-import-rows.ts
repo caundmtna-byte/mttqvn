@@ -28,6 +28,11 @@
 import { txt } from '@/lib/text';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
 import { nhapXuatKhoFormSchema, type NhapXuatKhoFormValues } from '../core/schema';
+import {
+  khoChinhCuaPhieu,
+  khoTrongPhamVi,
+  type KhoPhamViViewer,
+} from '../../danh-sach-kho/utils/pham-vi-kho';
 
 /** Trần số dòng một lần nhập — file dán nhầm sẽ bị chặn trước khi chạm CSDL. */
 export const NHAP_XUAT_KHO_IMPORT_MAX_ROWS = 3000;
@@ -51,12 +56,8 @@ export interface NamedRef {
   ten: string;
 }
 
-/** Phạm vi ghi — dùng lại đúng tín hiệu của `use-kho-nhap-xuat-kho-viewer`. */
-export interface NhapXuatKhoImportViewer {
-  canViewAll: boolean;
-  chucVuCapQuanLy: 'Tỉnh' | 'Xã phường' | null;
-  viewerDonViId: string | null;
-}
+/** Phạm vi ghi — luật chung ở `danh-sach-kho/utils/pham-vi-kho.ts` (bản sao của RLS). */
+export type NhapXuatKhoImportViewer = KhoPhamViViewer;
 
 export interface NhapXuatKhoImportCtx {
   khoList: NamedKho[];
@@ -181,16 +182,6 @@ export function parseImportLoaiPhieu(raw: unknown): NhapXuatKhoLoaiPhieu | null 
   return LOAI_PHIEU_ALIAS[key] ?? null;
 }
 
-/** Kho phải nằm trong đơn vị của người lập, trừ khi người đó xem/ghi toàn tỉnh. */
-export function khoTrongPhamViGhi(viewer: NhapXuatKhoImportViewer, kho: NamedKho): boolean {
-  if (viewer.canViewAll || viewer.chucVuCapQuanLy === 'Tỉnh') return true;
-  if (viewer.chucVuCapQuanLy === 'Xã phường') {
-    if (!viewer.viewerDonViId) return false;
-    return String(kho.don_vi_id ?? '').trim() === viewer.viewerDonViId;
-  }
-  return true;
-}
-
 type HeaderFields = {
   loai_phieu: NhapXuatKhoLoaiPhieu;
   ngay_phieu: string;
@@ -239,7 +230,12 @@ function parseHeader(
     };
   }
 
-  const resolveKho = (raw: unknown, labelKey: string): { ok: true; id: string } | { ok: false; message: string } => {
+  // Chỉ kho chính của phiếu phải thuộc xã mình (khớp RLS) — chuyển kho được sang kho xã khác.
+  const resolveKho = (
+    raw: unknown,
+    labelKey: string,
+    kiemPhamVi: boolean,
+  ): { ok: true; id: string } | { ok: false; message: string } => {
     const s = trimCell(raw);
     if (!s) return { ok: true, id: '' };
     const kho = findByIdOrName(
@@ -252,7 +248,7 @@ function parseHeader(
         message: rowPrefix(rowNum) + txt('matTranNhapXuatKho.import.errKhoNotFound', { ten: s, cot: txt(labelKey) }),
       };
     }
-    if (!khoTrongPhamViGhi(ctx.viewer, kho)) {
+    if (kiemPhamVi && !khoTrongPhamVi(ctx.viewer, kho)) {
       return {
         ok: false,
         message: rowPrefix(rowNum) + txt('matTranNhapXuatKho.import.errKhoNgoaiPhamVi', { ten: kho.ten }),
@@ -261,9 +257,10 @@ function parseHeader(
     return { ok: true, id: kho.id };
   };
 
-  const khoXuat = resolveKho(row.kho_xuat_id, 'matTranNhapXuatKho.import.colKhoXuat');
+  const khoChinh = khoChinhCuaPhieu(loai);
+  const khoXuat = resolveKho(row.kho_xuat_id, 'matTranNhapXuatKho.import.colKhoXuat', khoChinh === 'kho_xuat_id');
   if (!khoXuat.ok) return khoXuat;
-  const khoNhap = resolveKho(row.kho_nhap_id, 'matTranNhapXuatKho.import.colKhoNhap');
+  const khoNhap = resolveKho(row.kho_nhap_id, 'matTranNhapXuatKho.import.colKhoNhap', khoChinh === 'kho_nhap_id');
   if (!khoNhap.ok) return khoNhap;
 
   let donViCuuTroId = '';

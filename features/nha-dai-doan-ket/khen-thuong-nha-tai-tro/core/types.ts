@@ -11,8 +11,25 @@ export interface KhenThuongNhaTaiTroFilters {
 }
 
 /**
+ * Thành tích của một nhà tài trợ trong kỳ — RPC `get_ktnt_thanh_tich`, cũng là
+ * nguồn của các cột thành tích trong `get_ktnt_page`.
+ */
+export interface KtntThanhTich {
+  /** Σ `vnn_chuong_trinh.so_tien`. */
+  tien_mat: number;
+  /** Σ `vnn_chuong_trinh.tong_tien_quy_doi`. */
+  hien_vat_quy_doi: number;
+  /** Σ thành tiền các phiếu nhập kho (`nhap_ngoai`) từ nhà tài trợ. */
+  gia_tri_nhap_kho: number;
+  so_khoan_ho_tro: number;
+  so_nguoi_duoc_ho_tro: number;
+  so_phieu_nhap_kho: number;
+}
+
+/**
  * Một quyết định khen. Các cột "thành tích" (`so_khoan_ho_tro`…) KHÔNG lưu ở
- * bảng — RPC `get_ktnt_page` tính từ `vnn_chuong_trinh` mỗi lần đọc.
+ * bảng — RPC `get_ktnt_page` tính từ `vnn_chuong_trinh` + `kho_nhap_xuat_kho`
+ * mỗi lần đọc. Đọc thẳng bảng (getById, kết quả ghi) thì các cột này = 0.
  */
 export interface KhenThuongNhaTaiTro {
   id: string;
@@ -34,8 +51,12 @@ export interface KhenThuongNhaTaiTro {
   gia_tri_dong_gop_khac: number | null;
   so_khoan_ho_tro: number;
   so_nguoi_duoc_ho_tro: number;
+  /** Tiền mặt từ Chương trình hỗ trợ. */
   tong_tien_ho_tro: number;
-  /** `tong_tien_ho_tro` + `gia_tri_dong_gop_khac`. */
+  hien_vat_quy_doi: number;
+  gia_tri_nhap_kho: number;
+  so_phieu_nhap_kho: number;
+  /** Tiền mặt + hiện vật quy đổi + hàng nhập kho + `gia_tri_dong_gop_khac` — xem `tongGiaTriKtnt`. */
   tong_gia_tri: number;
   trang_thai: KtntTrangThai;
   ngay_cap_nhat_trang_thai: string;

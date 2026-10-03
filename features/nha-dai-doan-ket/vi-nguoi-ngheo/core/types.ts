@@ -6,6 +6,7 @@ import type {
   VnnNguonHoTro,
   VnnTrangThai,
 } from './constants';
+import type { VnnBienBanBanGiao } from './bien-ban-ban-giao';
 import type { VnnPhieuKhaoSat } from './phieu-khao-sat';
 
 export interface ViNguoiNgheoFilters {
@@ -59,4 +60,6 @@ export interface ViNguoiNgheo {
    * tải", KHÔNG phải "trống". `null` = lĩnh vực không có phiếu / chưa nhập.
    */
   phieu_khao_sat?: VnnPhieuKhaoSat | null;
+  /** Biên bản bàn giao in — cùng quy ước `undefined` = chưa tải, `null` = chưa nhập. */
+  bien_ban_ban_giao?: VnnBienBanBanGiao | null;
 }

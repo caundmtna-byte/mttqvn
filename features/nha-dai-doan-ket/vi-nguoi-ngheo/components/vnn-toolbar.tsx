@@ -50,6 +50,7 @@ const INLINE_CHIPS: readonly ChipKey[] = [
   'trang_thai_filter',
   'linh_vuc_filter',
   'hinh_thuc_filter',
+  'xa_phuong_filter',
 ];
 
 const VnnToolbar: React.FC<Props> = ({ tabSlot, onPageBack, onAdd, onExport, onDeleteMany }) => {

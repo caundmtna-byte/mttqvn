@@ -271,7 +271,15 @@ const App = () => {
             element={<NddkInBienBanPage />}
           />
           <Route path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach" element={<ViNguoiNgheoPage />} />
-          <Route path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach/:vnnId/in" element={<VnnInPhieuPage />} />
+          <Route
+            path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach/:vnnId/in/:loaiPhieu"
+            element={<VnnInPhieuPage />}
+          />
+          {/* Link cũ (chỉ có phiếu khảo sát) — giữ khỏi chết. */}
+          <Route
+            path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach/:vnnId/in"
+            element={<Navigate to="khao-sat" replace />}
+          />
           <Route path="/an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach" element={<ThongTinHoNgheoPage />} />
           {/* Thống kê nay là một tab của Danh sách — giữ link cũ khỏi chết. */}
           <Route

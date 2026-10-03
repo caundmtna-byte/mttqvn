@@ -74,8 +74,11 @@ import {
   buildReliefMasterMaps,
   computeReliefSupportStats,
   resolveReliefStatsDateRange,
+  scopeReliefSupportData,
   sortReliefLookupRows,
 } from './utils/aggregate-kho-ho-tro-stats';
+import { useKhoPhamViViewer } from '../danh-sach-kho/hooks/use-kho-pham-vi-viewer';
+import { getViewerKhoIds } from '../danh-sach-kho/utils/pham-vi-kho';
 import { exportBaoCaoHoTroToExcel } from './utils/export-bao-cao-ho-tro';
 
 const KhoNhapXuatKhoDetailDrawer = lazy(
@@ -145,18 +148,26 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
   }, [user, canView, navigate]);
 
   const {
-    flatLines,
+    flatLines: rawFlatLines,
     khoList,
     hangList,
     donViList,
     dotList,
-    tonMatrix,
+    tonMatrix: rawTonMatrix,
     isLoading,
     isError,
     error,
     refetch,
   } = useKhoBaoCaoHoTroRawData({ enabled: listQueryEnabled });
   const isReportLoading = isLoading || waitingMatrixHydrate;
+
+  // Tỉnh / quản trị thấy hết; cán bộ xã chỉ phiếu + tồn của kho thuộc xã mình (như trang Nhập xuất kho).
+  const viewer = useKhoPhamViViewer('matTranReliefSupportReport');
+  const viewerKhoIds = useMemo(() => getViewerKhoIds(viewer, khoList), [viewer, khoList]);
+  const { flatLines, tonMatrix } = useMemo(
+    () => scopeReliefSupportData(rawFlatLines, rawTonMatrix, viewerKhoIds),
+    [rawFlatLines, rawTonMatrix, viewerKhoIds],
+  );
 
   const {
     dateRange,

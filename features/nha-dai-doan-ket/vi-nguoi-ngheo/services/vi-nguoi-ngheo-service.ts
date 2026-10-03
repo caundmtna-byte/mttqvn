@@ -28,6 +28,7 @@ import {
 } from '../core/constants';
 import { VNN_RETURNING, VNN_SELECT, VNN_SELECT_FULL } from '../core/supabase-select';
 import { docPhieuKhaoSat } from '../core/phieu-khao-sat';
+import { docBienBanBanGiao } from '../core/bien-ban-ban-giao';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -102,6 +103,7 @@ export function flattenViNguoiNgheoRow(row: Record<string, unknown>): ViNguoiNgh
     ten_tai_khoan_nguoi_tao: embeddedName(nv?.ten_tai_khoan),
     // Không có khoá ⇒ dòng đọc bằng select rút gọn / RPC: để `undefined` = "chưa tải".
     ...('phieu_khao_sat' in r ? { phieu_khao_sat: docPhieuKhaoSat(r.phieu_khao_sat) } : {}),
+    ...('bien_ban_ban_giao' in r ? { bien_ban_ban_giao: docBienBanBanGiao(r.bien_ban_ban_giao) } : {}),
   };
 }
 
@@ -131,6 +133,7 @@ function formToPayload(data: ViNguoiNgheoFormValues): Record<string, unknown> {
     ghi_chu: data.ghi_chu ?? null,
     // Form chưa có bản đầy đủ ⇒ không gửi, để DB giữ nguyên phiếu đang lưu.
     ...(data.phieu_khao_sat !== undefined ? { phieu_khao_sat: data.phieu_khao_sat } : {}),
+    ...(data.bien_ban_ban_giao !== undefined ? { bien_ban_ban_giao: data.bien_ban_ban_giao } : {}),
   };
 }
 

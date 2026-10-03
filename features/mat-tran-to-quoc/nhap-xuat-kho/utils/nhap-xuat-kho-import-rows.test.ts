@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildNhapXuatKhoImportPhieus,
-  khoTrongPhamViGhi,
   parseImportLoaiPhieu,
   parseImportNgay,
   parseImportSo,
@@ -81,21 +80,6 @@ describe('parseImportLoaiPhieu', () => {
     expect(parseImportLoaiPhieu('XUẤT RA NGOÀI')).toBe('xuat_ngoai');
     expect(parseImportLoaiPhieu('chuyen kho')).toBe('chuyen_kho');
     expect(parseImportLoaiPhieu('trả hàng')).toBeNull();
-  });
-});
-
-describe('khoTrongPhamViGhi', () => {
-  const kho = { id: '2', ten: 'Kho xã Môn Sơn', don_vi_id: '900' };
-
-  it('cấp tỉnh / xem toàn bộ ⇒ mọi kho', () => {
-    expect(khoTrongPhamViGhi({ canViewAll: true, chucVuCapQuanLy: null, viewerDonViId: null }, kho)).toBe(true);
-    expect(khoTrongPhamViGhi({ canViewAll: false, chucVuCapQuanLy: 'Tỉnh', viewerDonViId: null }, kho)).toBe(true);
-  });
-
-  it('xã phường ⇒ chỉ kho cùng đơn vị', () => {
-    expect(khoTrongPhamViGhi({ canViewAll: false, chucVuCapQuanLy: 'Xã phường', viewerDonViId: '900' }, kho)).toBe(true);
-    expect(khoTrongPhamViGhi({ canViewAll: false, chucVuCapQuanLy: 'Xã phường', viewerDonViId: '901' }, kho)).toBe(false);
-    expect(khoTrongPhamViGhi({ canViewAll: false, chucVuCapQuanLy: 'Xã phường', viewerDonViId: null }, kho)).toBe(false);
   });
 });
 
@@ -243,6 +227,30 @@ describe('buildNhapXuatKhoImportPhieus', () => {
     );
     expect(phieus).toHaveLength(0);
     expect(errors[0].message).toContain('kho « Kho xã Môn Sơn » không thuộc đơn vị của bạn');
+  });
+
+  it('cán bộ xã chuyển kho sang kho xã khác ⇒ hợp lệ; xuất từ kho xã khác ⇒ bị chặn', () => {
+    const xa = ctx({ viewer: { canViewAll: false, chucVuCapQuanLy: 'Xã phường', viewerDonViId: '900' } });
+    const chuyen = {
+      ma_phieu: 'PC1',
+      loai_phieu: 'Chuyển kho',
+      ngay_phieu: '15/09/2026',
+      hang_hoa_id: 'Gạo tẻ',
+      so_luong: 10,
+    };
+    const ok = buildNhapXuatKhoImportPhieus(
+      [src(2, { ...chuyen, kho_xuat_id: 'Kho xã Môn Sơn', kho_nhap_id: 'Kho xã Lượng Minh' })],
+      xa,
+    );
+    expect(ok.errors).toEqual([]);
+    expect(ok.phieus).toHaveLength(1);
+
+    const chan = buildNhapXuatKhoImportPhieus(
+      [src(2, { ...chuyen, kho_xuat_id: 'Kho xã Lượng Minh', kho_nhap_id: 'Kho xã Môn Sơn' })],
+      xa,
+    );
+    expect(chan.phieus).toHaveLength(0);
+    expect(chan.errors[0].message).toContain('kho « Kho xã Lượng Minh » không thuộc đơn vị của bạn');
   });
 
   it('đơn vị tính để trống ⇒ lấy theo hàng hóa trong danh mục', () => {
