@@ -52,7 +52,7 @@ import { isNddkScopedToXaPhuong, useNddkViewer } from '../hooks/use-nddk-viewer'
 import { useNddkXaPhuongOptions } from '../hooks/use-nddk-xa-phuong-options';
 import { useVnnHoNgheoOptions } from '../../vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
 import { useKhoDonViCuuTroList } from '@/features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro';
-import { canNhaTaiTro, nddkTrangThaiCanTien } from '../core/luat-so-tien';
+import { canNhaTaiTro } from '../core/luat-so-tien';
 
 const FORM_ID = 'nddk-form';
 
@@ -148,7 +148,6 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
     >,
   });
 
-  const trangThai = watch('trang_thai');
   const nguonHoTro = watch('nguon_ho_tro');
   const { data: nhaTaiTroRows = [] } = useKhoDonViCuuTroList();
   const nhaTaiTroOptions = useMemo(
@@ -379,15 +378,13 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
                   label={txt('nhaDaiDoanKet.store.soTienCol')}
                   icon={Coins}
                   suffix="đ"
-                  placeholder={txt('nhaDaiDoanKet.form.soTienPlaceholder')}
-                  // Form giữ số tiền dạng chuỗi; ô trống là hợp lệ (hồ sơ đang
-                  // khảo sát thì chưa chốt mức hỗ trợ) nên phải giữ '' chứ
-                  // không quy về 0.
+                  // Form giữ số tiền dạng chuỗi; ô trống giữ '' để zod báo
+                  // "bắt buộc" chứ không quy về 0.
                   value={field.value === '' || field.value == null ? null : field.value}
                   onChange={(n) => field.onChange(n == null ? '' : String(n))}
                   onBlur={field.onBlur}
                   min={0}
-                  required={nddkTrangThaiCanTien(trangThai)}
+                  required
                   error={errors.so_tien?.message}
                 />
               )}

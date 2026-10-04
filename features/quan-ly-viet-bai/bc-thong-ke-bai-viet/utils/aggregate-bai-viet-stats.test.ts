@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { BaiVietDanhSach } from '../../bai-viet/core/types';
+import type { BaiVietThongKeNhom } from '../../bai-viet/utils/thong-ke-nhom';
 import {
   resolveArticleStatsDateRange,
   filterArticlesForStats,
   computeArticleStatsKpis,
   pickTrendBucket,
   buildTrendSeries,
-  getArticleStatsDateFromCreatedAt,
+  aggregateTopCounts,
   aggregateByDonVi,
   aggregateByNguoiTao,
   aggregateDonViTheLoaiMatrix,
@@ -21,25 +21,26 @@ const noDims = {
   idDonVi: [] as string[],
 };
 
-const base = (over: Partial<BaiVietDanhSach>): BaiVietDanhSach => ({
+/** Một nhóm = một bài (so_bai 1) trừ khi ghi đè; `id` chỉ để test nhận diện nhóm. */
+type Nhom = BaiVietThongKeNhom & { id: string };
+const base = (over: Partial<Nhom>): Nhom => ({
   id: '1',
-  ten_bai: 'A',
+  ky: '2026-05-02',
   id_the_loai: '10',
   ten_the_loai: 'TL',
-  don_gia: 100_000,
-  ngay_dang: '2026-05-01',
   id_nguon_dang: '20',
   ten_nguon_dang: 'N1',
   id_trang_dang: '30',
   ten_trang_dang: 'T1',
-  link: 'https://x.test',
   id_nguoi_tao: '40',
   ho_va_ten_nguoi_tao: 'NV',
   ten_tai_khoan_nguoi_tao: null,
-  tg_tao: '2026-05-02T08:00:00.000Z',
-  tg_cap_nhat: '2026-05-03T10:00:00.000Z',
+  id_don_vi_nguoi_tao: null,
+  so_bai: 1,
+  so_tien: 100_000,
   ...over,
 });
+const ids = (rows: BaiVietThongKeNhom[]) => rows.map((r) => (r as Nhom).id);
 
 describe('aggregate-bai-viet-stats', () => {
   it('resolveArticleStatsDateRange swaps custom when start > end', () => {
@@ -53,24 +54,17 @@ describe('aggregate-bai-viet-stats', () => {
     expect(pickTrendBucket('2026-01-01', '2026-05-15')).toBe('month');
   });
 
-  it('getArticleStatsDateFromCreatedAt reads tg_tao as YYYY-MM-DD', () => {
-    const row = base({});
-    expect(getArticleStatsDateFromCreatedAt(row)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(getArticleStatsDateFromCreatedAt(row).slice(0, 10)).toBe('2026-05-02');
-  });
-
-  it('filterArticlesForStats filters by created-at range and dims', () => {
+  it('filterArticlesForStats lọc theo các chiều, không chọn gì thì giữ hết', () => {
     const items = [
-      base({ id: '1', tg_tao: '2026-05-05T10:00:00.000Z', id_the_loai: '1' }),
-      base({ id: '2', tg_tao: '2026-06-01T10:00:00.000Z', id_the_loai: '2' }),
-      base({ id: '3', tg_tao: '2026-05-06T10:00:00.000Z', id_the_loai: '2', ten_bai: 'B' }),
+      base({ id: '1', id_the_loai: '1' }),
+      base({ id: '2', id_the_loai: '2', id_nguon_dang: '21' }),
+      base({ id: '3', id_the_loai: '2' }),
     ];
-    const range = { start: '2026-05-01', end: '2026-05-31' };
-    const allInMay = filterArticlesForStats(items, range, noDims);
-    expect(allInMay).toHaveLength(2);
-
-    const byTheLoai = filterArticlesForStats(items, range, { ...noDims, idTheLoai: ['2'] });
-    expect(byTheLoai.map((r) => r.id)).toEqual(['3']);
+    expect(filterArticlesForStats(items, noDims)).toHaveLength(3);
+    expect(ids(filterArticlesForStats(items, { ...noDims, idTheLoai: ['2'] }))).toEqual(['2', '3']);
+    expect(
+      ids(filterArticlesForStats(items, { ...noDims, idTheLoai: ['2'], idNguonDang: ['20'] })),
+    ).toEqual(['3']);
   });
 
   it('filterArticlesForStats lọc theo đơn vị của người tạo', () => {
@@ -79,12 +73,11 @@ describe('aggregate-bai-viet-stats', () => {
       base({ id: '2', id_don_vi_nguoi_tao: '8' }),
       base({ id: '3', id_don_vi_nguoi_tao: null }),
     ];
-    const range = { start: '', end: '', allTime: true };
-    expect(filterArticlesForStats(items, range, { ...noDims, idDonVi: ['7'] }).map((r) => r.id)).toEqual(['1']);
+    expect(ids(filterArticlesForStats(items, { ...noDims, idDonVi: ['7'] }))).toEqual(['1']);
     // Nhóm "chưa xác định" cũng phải chọn được, nếu không thì bài của tài khoản
     // chưa gắn đơn vị biến mất khỏi báo cáo mà không ai biết.
     expect(
-      filterArticlesForStats(items, range, { ...noDims, idDonVi: [ARTICLE_STATS_DON_VI_UNKNOWN] }).map((r) => r.id),
+      ids(filterArticlesForStats(items, { ...noDims, idDonVi: [ARTICLE_STATS_DON_VI_UNKNOWN] })),
     ).toEqual(['3']);
   });
 
@@ -123,18 +116,54 @@ describe('aggregate-bai-viet-stats', () => {
     expect(k.avgBaiMoiDonVi).toBe(0);
   });
 
-  it('buildTrendSeries fills buckets by tg_tao with counts', () => {
+  it('computeArticleStatsKpis cộng so_bai của nhóm, không đếm số nhóm', () => {
+    const k = computeArticleStatsKpis([
+      base({ id: '1', so_bai: 3, id_don_vi_nguoi_tao: '1' }),
+      base({ id: '2', so_bai: 2, id_don_vi_nguoi_tao: null }),
+    ]);
+    expect(k.totalCount).toBe(5);
+    expect(k.soBaiCoDonVi).toBe(3);
+    expect(k.avgBaiMoiDonVi).toBe(3);
+  });
+
+  it('buildTrendSeries cộng theo khoá kỳ, kỳ trống vẫn hiện 0', () => {
     const items = [
-      base({ id: '1', tg_tao: '2026-05-01T12:00:00.000Z' }),
-      base({ id: '2', tg_tao: '2026-05-01T13:00:00.000Z' }),
-      base({ id: '3', tg_tao: '2026-05-02T10:00:00.000Z' }),
+      base({ id: '1', ky: '2026-05-01', so_bai: 2, so_tien: 50 }),
+      base({ id: '2', ky: '2026-05-03', so_bai: 1, so_tien: 10 }),
+      base({ id: '3', ky: '2026-05-01', so_bai: 1, so_tien: 5 }),
     ];
-    const range = { start: '2026-05-01', end: '2026-05-02' };
-    const series = buildTrendSeries(items, range, 'day');
-    expect(series).toHaveLength(2);
-    expect(series[0].count).toBe(2);
-    expect(series[1].count).toBe(1);
+    const series = buildTrendSeries(items, { start: '2026-05-01', end: '2026-05-03' }, 'day');
+    expect(series.map((p) => p.count)).toEqual([3, 0, 1]);
+    expect(series[0].soTien).toBe(55);
     expect(series[0]).not.toHaveProperty('totalDonGia');
+  });
+
+  it('buildTrendSeries theo tháng và khoảng rỗng (preset "Tất cả" chưa có ngày) không lặp vô tận', () => {
+    const items = [base({ ky: '2026-05', so_bai: 4 }), base({ ky: '2026-07', so_bai: 1 })];
+    const series = buildTrendSeries(items, { start: '2026-05-10', end: '2026-07-02' }, 'month');
+    expect(series.map((p) => [p.key, p.count])).toEqual([
+      ['2026-05', 4],
+      ['2026-06', 0],
+      ['2026-07', 1],
+    ]);
+    expect(buildTrendSeries(items, { start: '', end: '' }, 'month')).toEqual([]);
+  });
+
+  it('mọi bảng tổng hợp đều ra cùng tổng số bài với KPI', () => {
+    const items = [
+      base({ id: '1', so_bai: 3, id_the_loai: 'a', id_nguoi_tao: '1', id_don_vi_nguoi_tao: '1' }),
+      base({ id: '2', so_bai: 2, id_the_loai: 'b', id_nguoi_tao: '2', id_don_vi_nguoi_tao: null }),
+      base({ id: '3', so_bai: 4, id_the_loai: 'a', id_nguoi_tao: '2', id_trang_dang: '31' }),
+    ];
+    const tong = computeArticleStatsKpis(items).totalCount;
+    const sum = (xs: number[]) => xs.reduce((s, v) => s + v, 0);
+    expect(tong).toBe(9);
+    for (const mode of ['the_loai', 'nguon', 'trang', 'nguoi_tao'] as const) {
+      expect(sum(aggregateTopCounts(items, mode).map((r) => r.value))).toBe(tong);
+    }
+    expect(sum(aggregateByDonVi(items, new Map(), '?').map((r) => r.soBai))).toBe(tong);
+    expect(aggregateDonViTheLoaiMatrix(items, new Map(), '?').totals.soBai).toBe(tong);
+    expect(sum(aggregateByNguoiTao(items, new Map(), '?').map((r) => r.soBai))).toBe(tong);
   });
 
   describe('aggregateByDonVi', () => {

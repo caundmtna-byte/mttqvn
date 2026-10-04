@@ -22,7 +22,6 @@ export const viNguoiNgheo = {
     chuaLienKet: 'Nhập tay (không liên kết)',
   },
   statusChangeModal: {
-    canNhapTien: 'Khoản "Đã nhận" phải có số tiền / giá trị quy đổi cụ thể. Mở "Sửa" để nhập trước.',
     title: 'Chuyển trạng thái',
     subtitle: 'Đổi trạng thái khoản hỗ trợ và ghi lý do',
     section: 'Trạng thái mới',
@@ -224,8 +223,8 @@ export const viNguoiNgheo = {
     noEmployeeProfile: 'Không xác định được nhân viên đăng nhập.',
   },
   validation: {
-    soTienBatBuoc: 'Khoản "Đã nhận" phải có số tiền cụ thể (lớn hơn 0) để cộng tổng ủng hộ.',
-    quyDoiBatBuoc: 'Khoản "Đã nhận" có hiện vật phải có tổng tiền quy đổi (lớn hơn 0).',
+    soTienBatBuoc: 'Nhập số tiền hỗ trợ (chưa có thì nhập 0).',
+    quyDoiBatBuoc: 'Khoản có hiện vật phải nhập tổng tiền quy đổi (chưa có thì nhập 0).',
     nhaTaiTroRequired: 'Nguồn "Ủng hộ trực tiếp" phải chọn nhà tài trợ.',
     noiDungRequired: 'Nhập nội dung hỗ trợ',
     nguoiNhanRequired: 'Nhập họ tên người được hỗ trợ',

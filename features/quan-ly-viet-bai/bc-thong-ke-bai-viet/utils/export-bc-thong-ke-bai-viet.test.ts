@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BaiVietDanhSach } from '../../bai-viet/core/types';
+import type { BaiVietThongKeNhom } from '../../bai-viet/utils/thong-ke-nhom';
 import {
   aggregateByNguoiTao,
   aggregateDonViTheLoaiMatrix,
@@ -59,17 +60,34 @@ const rows = [
   }),
 ];
 
+/** Mỗi bài thành một nhóm máy chủ (so_bai 1) — các khối tổng hợp đọc từ nhóm. */
+const nhom: BaiVietThongKeNhom[] = rows.map((r) => ({
+  ky: '2026-05',
+  id_the_loai: r.id_the_loai,
+  ten_the_loai: r.ten_the_loai ?? null,
+  id_nguon_dang: r.id_nguon_dang,
+  ten_nguon_dang: r.ten_nguon_dang ?? null,
+  id_trang_dang: r.id_trang_dang,
+  ten_trang_dang: r.ten_trang_dang ?? null,
+  id_nguoi_tao: r.id_nguoi_tao,
+  ho_va_ten_nguoi_tao: r.ho_va_ten_nguoi_tao ?? null,
+  ten_tai_khoan_nguoi_tao: r.ten_tai_khoan_nguoi_tao ?? null,
+  id_don_vi_nguoi_tao: r.id_don_vi_nguoi_tao ?? null,
+  so_bai: 1,
+  so_tien: r.don_gia,
+}));
+
 function buildInput(over: Partial<BcThongKeExportInput> = {}): BcThongKeExportInput {
   const unknown = 'Chưa xác định đơn vị';
   return {
-    kpis: computeArticleStatsKpis(rows),
+    kpis: computeArticleStatsKpis(nhom),
     range: { start: '2026-05-01', end: '2026-05-31' },
     activeFilters: [{ label: 'Thể loại', value: 'Tin' }],
-    matrix: aggregateDonViTheLoaiMatrix(rows, tenDonViById, unknown),
-    theLoaiRows: aggregateTopCounts(rows, 'the_loai'),
-    nguonRows: aggregateTopCounts(rows, 'nguon'),
-    trangRows: aggregateTopCounts(rows, 'trang'),
-    nguoiTaoRows: aggregateByNguoiTao(rows, tenDonViById, unknown),
+    matrix: aggregateDonViTheLoaiMatrix(nhom, tenDonViById, unknown),
+    theLoaiRows: aggregateTopCounts(nhom, 'the_loai'),
+    nguonRows: aggregateTopCounts(nhom, 'nguon'),
+    trangRows: aggregateTopCounts(nhom, 'trang'),
+    nguoiTaoRows: aggregateByNguoiTao(nhom, tenDonViById, unknown),
     trendRows: [{ key: '2026-05-01', label: '01/05', count: 4, soTien: 400_000 }],
     lookupRows: rows,
     tenDonViById,

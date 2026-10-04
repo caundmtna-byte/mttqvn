@@ -23,6 +23,7 @@ const KHOAN_HOP_LE = {
   ho_ngheo_id: 'ho-1',
   ho_ten_nguoi_nhan: 'Hồ Văn Thu',
   hinh_thuc_ho_tro: 'Tiền mặt',
+  so_tien: '500.000',
   trang_thai: 'Đang khảo sát',
 };
 
@@ -36,10 +37,16 @@ describe('viNguoiNgheoSchema', () => {
     expect(parse({ so_tien: '500,000' }).data?.so_tien).toBe(500_000);
   });
 
-  it('để trống số tiền là hợp lệ — khoản chỉ có hiện vật', () => {
-    const r = parse({ so_tien: '', hinh_thuc_ho_tro: 'Hiện vật' });
+  it('để trống số tiền chỉ hợp lệ khi khoản chỉ có hiện vật (đã có tiền quy đổi)', () => {
+    const r = parse({ so_tien: '', hinh_thuc_ho_tro: 'Hiện vật', tong_tien_quy_doi: '300.000' });
     expect(r.success).toBe(true);
     expect(r.data!.so_tien).toBeUndefined();
+  });
+
+  it('tiền mặt để trống số tiền bị từ chối — kể cả khi đang khảo sát', () => {
+    const r = parse({ so_tien: '' });
+    expect(r.success).toBe(false);
+    expect(r.error!.issues.map((i) => i.path.join('.'))).toEqual(['so_tien']);
   });
 
   it('"Quà" cũ không còn là hình thức hợp lệ — đã đổi thành "Hiện vật"', () => {

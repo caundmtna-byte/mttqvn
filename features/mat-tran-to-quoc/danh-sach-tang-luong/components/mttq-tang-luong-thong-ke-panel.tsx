@@ -23,6 +23,7 @@ import {
   computeTangLuongKpis,
   filterRowsForStats,
 } from '../utils/aggregate-tang-luong-stats';
+import { formatAxisTick } from '@/lib/utils';
 
 const loaiKyBadgeConfig = getTangLuongLoaiKyBadgeConfig();
 
@@ -127,7 +128,7 @@ const MttqTangLuongThongKePanel: React.FC<Props> = ({
               <BarChart data={byLoaiKy} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} />
                 <RechartsTooltip content={<ChartTooltip />} />
                 <ColoredBar
                   data={byLoaiKy}
@@ -148,7 +149,7 @@ const MttqTangLuongThongKePanel: React.FC<Props> = ({
               <BarChart data={planChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} />
                 <RechartsTooltip content={<ChartTooltip />} />
                 <ColoredBar
                   data={planChart}
@@ -167,7 +168,7 @@ const MttqTangLuongThongKePanel: React.FC<Props> = ({
               <BarChart data={byMonth} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} />
                 <RechartsTooltip content={<ChartTooltip />} />
                 <ColoredBar
                   data={byMonth}

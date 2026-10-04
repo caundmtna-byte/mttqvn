@@ -15,7 +15,9 @@ const LEGACY_MODULE_STORAGE_KEY_TO_ID: Record<string, string> = {
   'mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro': 'nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo',
   // module_id dạng đường dẫn trước khi nhóm đổi thành /nghia-tinh-dong-lam (2026-10-04).
   'an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro': 'nghia-tinh-dong-lam/chuong-trinh-van-dong',
-  'an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan': 'nghia-tinh-dong-lam/tiep-nhan',
+  'an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan': 'nghia-tinh-dong-lam/tiep-nhan-tien',
+  // Tiếp nhận → Tiếp nhận tiền (2026-10-04); khoá DB vẫn `tiep-nhan`.
+  'nghia-tinh-dong-lam/tiep-nhan': 'nghia-tinh-dong-lam/tiep-nhan-tien',
   'an-sinh-xa-hoi/kho-cuu-tro/hang-hoa': 'nghia-tinh-dong-lam/danh-muc-hang-hoa',
   'an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho': 'nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang',
   'an-sinh-xa-hoi/kho-cuu-tro/ton-kho': 'nghia-tinh-dong-lam/ton-kho',

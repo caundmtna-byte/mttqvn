@@ -17,12 +17,19 @@ describe('chuyenDuongDanCu', () => {
       '/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang/86/in-phieu',
     );
     expect(chuyenDuongDanCu('/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan?nha_tai_tro=12')).toBe(
-      '/nghia-tinh-dong-lam/tiep-nhan?nha_tai_tro=12',
+      '/nghia-tinh-dong-lam/tiep-nhan-tien?nha_tai_tro=12',
     );
   });
 
   it('link thống kê cũ chuyển thành tab, ghép đúng query', () => {
     expect(chuyenDuongDanCu('/an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke')).toBe('/nghia-tinh-dong-lam/nha-dai-doan-ket?tab=thong_ke');
+  });
+
+  it('Tiếp nhận → Tiếp nhận tiền, giữ trang in và query', () => {
+    expect(chuyenDuongDanCu('/nghia-tinh-dong-lam/tiep-nhan')).toBe('/nghia-tinh-dong-lam/tiep-nhan-tien');
+    expect(chuyenDuongDanCu('/nghia-tinh-dong-lam/tiep-nhan/5/in/bien-ban-xac-nhan?tab=thong_ke')).toBe(
+      '/nghia-tinh-dong-lam/tiep-nhan-tien/5/in/bien-ban-xac-nhan?tab=thong_ke',
+    );
   });
 
   it('đường dẫn kho cũ dưới Mặt trận tổ quốc đi thẳng tới đường dẫn mới', () => {
@@ -32,6 +39,7 @@ describe('chuyenDuongDanCu', () => {
   it('chỉ khớp trọn segment; đường dẫn khác ⇒ null', () => {
     expect(chuyenDuongDanCu('/an-sinh-xa-hoi-khac')).toBeNull();
     expect(chuyenDuongDanCu('/mat-tran-to-quoc/uy-vien-uy-ban/ky-hop')).toBeNull();
-    expect(chuyenDuongDanCu('/nghia-tinh-dong-lam/tiep-nhan')).toBeNull();
+    expect(chuyenDuongDanCu('/nghia-tinh-dong-lam/tiep-nhan-tien')).toBeNull();
+    expect(chuyenDuongDanCu('/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang')).toBeNull();
   });
 });

@@ -77,6 +77,8 @@ export const queryKeys = {
     }) => ['bai-viet-danh-sach', 'page', args] as const,
     nguoiTaoFilterOptions: (args: { scope: string; viewerDonViId: string | null }) =>
       ['bai-viet-danh-sach', 'nguoi-tao-filter-options', args] as const,
+    /** Số liệu gộp nhóm (BC thống kê / Nhuận bút). Nằm dưới `all` để thêm/sửa/xoá bài tự làm mới. */
+    thongKe: (args: object) => ['bai-viet-danh-sach', 'thong-ke', args] as const,
   },
   chuongTrinhNam: {
     all: ['chuong-trinh-nam'] as const,
@@ -340,6 +342,8 @@ export const queryKeys = {
     full: (id: string) => ['tiep-nhan', 'full', id] as const,
     /** Phiếu "Nhập từ ngoài" của một nhà tài trợ — ô gắn phiếu trong form. */
     phieuKho: (nhaTaiTroId: string) => ['tiep-nhan', 'phieu-kho', nhaTaiTroId] as const,
+    /** Toàn bộ khoản trong phạm vi xem — tab Thống kê. */
+    thongKe: ['tiep-nhan', 'thong-ke'] as const,
   },
   khenThuongNhaTaiTro: {
     all: ['khen-thuong-nha-tai-tro'] as const,

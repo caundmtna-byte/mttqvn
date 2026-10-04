@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -96,7 +96,7 @@ const BarCard: React.FC<{
         <BarChart data={rows}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-          <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+          <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
           <RechartsTooltip content={<ChartTooltip />} />
           <ColoredBar
             data={rows}
@@ -260,7 +260,7 @@ const KtntThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                   <LineChart data={namSeries.map((p) => ({ ...p, nam: String(p.nam) }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="nam" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
                     <RechartsTooltip content={<ChartTooltip />} />
                     <Legend />
                     <Line type="monotone" dataKey="soQuyetDinh" name={T('chart.soQuyetDinh')} stroke="hsl(var(--primary))" strokeWidth={2} />
@@ -283,7 +283,7 @@ const KtntThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                 rows={topRows.map((r) => ({
                   id: r.id,
                   label: r.label,
-                  value: `${r.soQuyetDinh} · ${formatCurrency(r.giaTri)}`,
+                  value: `${formatDecimal(r.soQuyetDinh)} · ${formatCurrency(r.giaTri)}`,
                 }))}
                 columnLabelKey="khenThuongNhaTaiTroThongKe.table.colNhaTaiTro"
                 columnValueKey="khenThuongNhaTaiTroThongKe.table.colGiaTri"

@@ -14,6 +14,8 @@
 
 /** Câu theo TÊN RÀNG BUỘC — cụ thể nhất, ưu tiên cao nhất. */
 const BY_CONSTRAINT: Record<string, string> = {
+  vnn_so_tien_theo_hinh_thuc_chk:
+    'Khoản hỗ trợ phải nhập số tiền (tiền mặt) và/hoặc tổng tiền quy đổi (hiện vật); chưa có thì nhập 0.',
   // --- UNIQUE: trùng dữ liệu (mã 23505) ---
   uq_mttq_uy_vien_uy_ban_nhiem_ky_can_bo: 'Cán bộ này đã là uỷ viên của nhiệm kỳ đã chọn.',
   uq_mttq_uy_vien_uy_ban_nhiem_ky_ma_uv:

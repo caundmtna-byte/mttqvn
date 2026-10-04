@@ -39,7 +39,8 @@ export const TN_PHU_LUC_MAX = 30;
 /** Phụ lục để trống ⇒ in sẵn 10 dòng rỗng để viết tay (đúng mẫu). */
 export const TN_PHU_LUC_DONG_TRONG = 10;
 
-export const TN_LIST_PATH = '/nghia-tinh-dong-lam/tiep-nhan';
+export const TN_LIST_PATH = '/nghia-tinh-dong-lam/tiep-nhan-tien';
+export const TN_MAIN_TABS = ['danh_sach', 'thong_ke'] as const;
 export const TN_LOAI_PHIEU_IN = ['bien-ban-xac-nhan'] as const;
 export type TnLoaiPhieuIn = (typeof TN_LOAI_PHIEU_IN)[number];
 export function isTnLoaiPhieuIn(v: unknown): v is TnLoaiPhieuIn {

@@ -413,7 +413,6 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         initial={statusInitial}
-        soTien={data.so_tien}
         canApprove={canApprove}
         isSubmitting={statusMutation.isPending}
         onSave={handleStatusSave}

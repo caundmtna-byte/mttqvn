@@ -25,6 +25,7 @@ import type {
   CongViecMucDo,
   CongViecTrangThai,
 } from '@/features/quan-ly-giao-viec/cong-viec/core/constants';
+import { formatAxisTick } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
 /*  Color palette - khớp badge config trong cong-viec/display-badges  */
@@ -74,7 +75,7 @@ export const TrendChart: React.FC<{ data: TaskReportTrendPoint[] }> = ({ data })
         <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+          <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
           <RechartsTooltip content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Line
@@ -161,7 +162,7 @@ export const MucDoBarChart: React.FC<{ data: TaskReportEnumCount<CongViecMucDo>[
         <BarChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
           <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+          <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
           <RechartsTooltip content={<ChartTooltip />} />
           <Bar dataKey="count" name={txt('taskReport.chartPhanBoMucDo')} radius={[4, 4, 0, 0]}>
             {chart.map((row, i) => (
@@ -202,7 +203,7 @@ export const TopTrachNhiemChart: React.FC<{ data: TaskReportPersonRow[] }> = ({ 
           margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
         >
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-          <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+          <XAxis tickFormatter={formatAxisTick} type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
           <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10 }} />
           <RechartsTooltip content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: 11 }} />

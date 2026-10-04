@@ -19,7 +19,7 @@ const getRouteConfig = (t: TFunction): Record<string, RouteConfig> => ({
   '/mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien': { label: t('breadcrumb.matTranCommitteeMembers'), parentPath: '/mat-tran-to-quoc' },
   '/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien': { label: t('breadcrumb.matTranCommitteeMemberStats'), parentPath: '/mat-tran-to-quoc' },
   '/nghia-tinh-dong-lam/chuong-trinh-van-dong': { label: t('breadcrumb.matTranReliefCampaign'), parentPath: '/nghia-tinh-dong-lam' },
-  '/nghia-tinh-dong-lam/tiep-nhan': { label: t('breadcrumb.matTranTiepNhan'), parentPath: '/nghia-tinh-dong-lam' },
+  '/nghia-tinh-dong-lam/tiep-nhan-tien': { label: t('breadcrumb.matTranTiepNhan'), parentPath: '/nghia-tinh-dong-lam' },
   '/nghia-tinh-dong-lam/danh-muc-hang-hoa': { label: t('breadcrumb.matTranReliefGoods'), parentPath: '/nghia-tinh-dong-lam' },
   '/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang': { label: t('breadcrumb.matTranReliefStockTransactions'), parentPath: '/nghia-tinh-dong-lam' },
   '/nghia-tinh-dong-lam/ton-kho': { label: t('breadcrumb.matTranReliefInventory'), parentPath: '/nghia-tinh-dong-lam' },

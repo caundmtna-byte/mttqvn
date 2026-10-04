@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -446,8 +446,8 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                   <LineChart data={namChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="nam" tick={{ fontSize: 12 }} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 12 }} allowDecimals={false} />
-                    <YAxis
+                    <YAxis tickFormatter={formatAxisTick} yAxisId="left" tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <YAxis tickFormatter={formatAxisTick}
                       yAxisId="right"
                       orientation="right"
                       tick={{ fontSize: 12 }}
@@ -486,7 +486,7 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                     <BarChart data={trangThaiRows}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={trangThaiRows}
@@ -508,7 +508,7 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                     <BarChart data={loaiHinhRows}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={loaiHinhRows}
@@ -530,7 +530,7 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                     <BarChart data={nguonRows}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={nguonRows}
@@ -552,7 +552,7 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                     <BarChart data={doiTuongRows}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={doiTuongRows}
@@ -576,7 +576,7 @@ const NddkThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, qu
                 rows={xaPhuongRows.map((r) => ({
                   id: r.id,
                   label: r.label,
-                  value: `${r.soNha} · ${r.daBanGiao} ${txt('nhaDaiDoanKetThongKe.table.colDaBanGiao').toLowerCase()}`,
+                  value: `${formatDecimal(r.soNha)} · ${formatDecimal(r.daBanGiao)} ${txt('nhaDaiDoanKetThongKe.table.colDaBanGiao').toLowerCase()}`,
                 }))}
                 columnLabelKey="nhaDaiDoanKetThongKe.table.colXaPhuong"
                 columnValueKey="nhaDaiDoanKetThongKe.table.colSoNha"

@@ -121,7 +121,12 @@ const queryClient = new QueryClient({
  *     lệch với Supabase khi sửa ngoài app / SQL.
  * v6: không persist `['roles']` — ma trận phân quyền sau lưu reload không bị khôi phục cache cũ
  *     (invalidate trước refetch + staleTime 30 phút).
+ * v7: thống kê hộ nghèo đổi sang nhóm có `so_ho` (RPC gộp nhóm); bỏ mảng bài viết 12k dòng
+ *     đã persist — cache cũ sai hình dạng sẽ cộng ra NaN.
  */
+/** Query trả mảng dài hơn mức này thì không persist — xem `shouldDehydrateQuery`. */
+const PERSIST_MAX_ARRAY_ROWS = 2000;
+
 const localStoragePersister = createSyncStoragePersister({
   storage: window.localStorage,
   key: RQ_PERSIST_STORAGE_KEY,
@@ -142,7 +147,7 @@ root.render(
           persistOptions={{
             persister: localStoragePersister,
             maxAge: SERVER_GC_TIME_MS,
-            buster: '6',
+            buster: '7',
             dehydrateOptions: {
               shouldDehydrateQuery: (query) => {
                 const k = query.queryKey;
@@ -151,6 +156,11 @@ root.render(
                 if (k[0] === 'employee') return false;
                 if (k[0] === 'roles') return false;
                 if (typeof k[0] === 'string' && k[0].startsWith('kho-')) return false;
+                // Mảng lớn (list kéo cả bảng) không ghi vào localStorage: mỗi lần cache đổi
+                // là JSON.stringify lại cả khối nhiều MB ⇒ giật toàn app và chạm trần quota.
+                if (Array.isArray(query.state.data) && query.state.data.length > PERSIST_MAX_ARRAY_ROWS) {
+                  return false;
+                }
                 return defaultShouldDehydrateQuery(query);
               },
             },

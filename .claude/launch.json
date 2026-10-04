@@ -22,6 +22,19 @@
         "--strictPort"
       ],
       "port": 3005
+    },
+    {
+      "name": "mttqvn-dev-3011",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3011",
+        "--strictPort"
+      ],
+      "port": 3011
     }
   ]
 }

@@ -370,7 +370,6 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         initial={statusInitial}
-        tien={data}
         isSubmitting={statusMutation.isPending}
         onSave={async (values) => {
           await statusMutation.mutateAsync({ id: data.id, data: values });

@@ -11,8 +11,6 @@ import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { DIALOG_SIZE } from '@/lib/dialog-sizes';
 import { VNN_TRANG_THAI_VALUES } from '../core/constants';
-import { vnnOTienCanNhap } from '../core/luat-so-tien';
-import type { ViNguoiNgheo } from '../core/types';
 import {
   viNguoiNgheoStatusChangeSchema,
   type ViNguoiNgheoStatusChangeValues,
@@ -26,8 +24,6 @@ interface Props {
   onClose: () => void;
   initial: ViNguoiNgheoStatusChangeValues;
   isSubmitting?: boolean;
-  /** Giá trị tiền hiện có — chặn chuyển sang "Đã nhận" khi còn thiếu (bản sao CHECK dưới DB). */
-  tien?: Pick<ViNguoiNgheo, 'hinh_thuc_ho_tro' | 'so_tien' | 'tong_tien_quy_doi'>;
   onSave: (values: ViNguoiNgheoStatusChangeValues) => void | Promise<void>;
 }
 
@@ -40,7 +36,6 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
   onClose,
   initial,
   isSubmitting = false,
-  tien,
   onSave,
 }) => {
   const {
@@ -48,7 +43,6 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
     register,
     handleSubmit,
     reset,
-    setError,
     formState: { errors },
   } = useForm<ViNguoiNgheoStatusChangeValues>({
     resolver: zodResolver(viNguoiNgheoStatusChangeSchema) as Resolver<ViNguoiNgheoStatusChangeValues>,
@@ -61,10 +55,6 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
   }, [open, initial, reset]);
 
   const onSubmit: SubmitHandler<ViNguoiNgheoStatusChangeValues> = async (values) => {
-    if (tien && vnnOTienCanNhap({ ...tien, trang_thai: values.trang_thai }).length > 0) {
-      setError('trang_thai', { message: txt('viNguoiNgheo.statusChangeModal.canNhapTien') });
-      return;
-    }
     await Promise.resolve(onSave(values));
     onClose();
   };

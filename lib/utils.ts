@@ -275,6 +275,24 @@ export function formatDecimal(value: number, maximumFractionDigits = 3): string 
   }).format(value);
 }
 
+/**
+ * Số hiển thị trên giao diện: số thì phân tách hàng nghìn theo locale ("12.199"),
+ * chuỗi (đã định dạng sẵn: tiền, %, "—") giữ nguyên.
+ */
+export function formatDisplayNumber(value: number | string | null | undefined): string {
+  if (value == null) return '';
+  return typeof value === 'number' ? formatDecimal(value) : value;
+}
+
+/**
+ * `tickFormatter` cho trục số Recharts. Không truyền thẳng `formatDecimal`:
+ * Recharts gọi `(value, index)` nên `index` sẽ bị hiểu thành số chữ số thập phân.
+ */
+export function formatAxisTick(value: number | string): string {
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? formatDecimal(n) : String(value);
+}
+
 export function exportToExcel(data: Record<string, unknown>[], filename: string) {
   if (!data || !data.length) return;
   import('xlsx').then(XLSX => {

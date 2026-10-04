@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '../../../lib/utils';
+import { cn, formatDisplayNumber } from '../../../lib/utils';
 import type { StatsKpiCardItem } from './types';
 import StatsTrendBadge from './StatsTrendBadge';
 
@@ -50,7 +50,7 @@ const StatsKpiGrid: React.FC<StatsKpiGridProps> = ({
               <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
               <div className="flex items-baseline gap-1.5 mt-0.5">
                 <span className="text-lg font-bold text-foreground tabular-nums">
-                  {kpi.value}
+                  {formatDisplayNumber(kpi.value)}
                 </span>
                 {kpi.pct != null && kpi.pct !== '' && (
                   <span className="text-xs font-medium text-muted-foreground tabular-nums">

@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
 import { toast } from 'sonner';
 import { FolderOpen, Coins, FileText, Users, TrendingUp, Download, MapPin } from 'lucide-react';
@@ -22,7 +23,19 @@ import StatsKpiGrid from '@/components/shared/stats/StatsKpiGrid';
 import StatsCard from '@/components/shared/stats/StatsCard';
 import StatsTableCard from '@/components/shared/stats/StatsTableCard';
 import type { StatsKpiCardItem } from '@/components/shared/stats/types';
-import { useBaiVietDanhSachList } from '../bai-viet/hooks/use-bai-viet-danh-sach';
+import { queryKeys } from '@/lib/query-keys';
+import { listQueryOptions } from '@/lib/supabase/query-config';
+import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
+import {
+  getBaiVietDanhSachAllForExport,
+  getBaiVietThongKeNhom,
+} from '../bai-viet/services/bai-viet-danh-sach-service';
+import {
+  splitDonViFilter,
+  type BaiVietThongKeArgs,
+  type BaiVietThongKeNhom,
+} from '../bai-viet/utils/thong-ke-nhom';
+import { resolveBaiVietAllTabRpcScope } from '../hooks/use-article-all-tab-viewer';
 import {
   aggregateCommission,
   donViKeyOf,
@@ -35,13 +48,14 @@ import {
   CommissionByTheLoaiChart,
   CommissionByAuthorChart,
 } from './components/commission-charts';
-import { useCommissionAllTabViewer, rowVisibleOnCommissionAllTab } from './hooks/use-commission-all-tab-viewer';
+import { useCommissionAllTabViewer } from './hooks/use-commission-all-tab-viewer';
 import { exportNhuanButToExcel } from './utils/export-nhuan-but';
 
 const TAB_MINE: CommissionScope = 'mine';
 const TAB_ALL: CommissionScope = 'all';
 
 const CUSTOM_PRESET = 'custom';
+const EMPTY_NHOM: BaiVietThongKeNhom[] = [];
 
 const initialDateRange: DateRangeValue = {
   preset: 'all',
@@ -92,12 +106,6 @@ const HoaHongVietBaiPage: React.FC = () => {
   const [donViIds, setDonViIds] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
 
-  const {
-    data: rows = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useBaiVietDanhSachList({ enabled: canOpenPage });
   const allTabViewer = useCommissionAllTabViewer();
 
   const presets = useMemo(() => buildStandardDateRangePresets(), []);
@@ -108,23 +116,46 @@ const HoaHongVietBaiPage: React.FC = () => {
     return { dateFrom: r.start, dateTo: r.end };
   }, [dateRange]);
 
-  const scopedRows = useMemo(() => {
-    if (scope === TAB_MINE) {
-      if (!nhanVienId) return [];
-      return rows.filter((r) => String(r.id_nguoi_tao) === nhanVienId);
-    }
-    return rows.filter((r) => rowVisibleOnCommissionAllTab(allTabViewer, r));
-  }, [rows, scope, nhanVienId, allTabViewer]);
-
-  const dateScopedRows = useMemo(
+  /** Tab "Của tôi" = bài mình tạo; tab "Tất cả" = phạm vi xem như Danh sách bài viết. */
+  const scopeArgs = useMemo(
     () =>
-      scopedRows.filter((row) => {
-        const d = row.ngay_dang.slice(0, 10);
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo && d > dateTo) return false;
-        return true;
-      }),
-    [scopedRows, dateFrom, dateTo],
+      scope === TAB_MINE
+        ? { scope: 'mine' as const, viewerNhanVienId: nhanVienId || null, viewerDonViId: null }
+        : {
+            scope: resolveBaiVietAllTabRpcScope(allTabViewer),
+            viewerNhanVienId: allTabViewer.viewerNhanVienId,
+            viewerDonViId: allTabViewer.viewerDonViId,
+          },
+    [scope, nhanVienId, allTabViewer],
+  );
+
+  /**
+   * Số liệu gộp theo tháng đăng × thể loại × … × người tạo, phạm vi + khoảng ngày
+   * lọc ở máy chủ. Trước đây trang kéo nguyên bảng bài viết (12k+ dòng, ~10 MB).
+   */
+  const thongKeArgs = useMemo<BaiVietThongKeArgs>(
+    () => ({ trucNgay: 'ngay_dang', tuNgay: dateFrom, denNgay: dateTo, bucket: 'month', ...scopeArgs }),
+    [dateFrom, dateTo, scopeArgs],
+  );
+  const {
+    data: thongKe,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.baiVietDanhSach.thongKe(thongKeArgs),
+    queryFn: () => getBaiVietThongKeNhom(thongKeArgs),
+    enabled: canOpenPage,
+    placeholderData: keepPreviousData,
+    ...listQueryOptions,
+  });
+  const dateScopedRows = thongKe?.nhom ?? EMPTY_NHOM;
+
+  /** Tên xã tra từ danh mục (cache 24h) thay vì embed lặp vào từng dòng. */
+  const { data: xaPhuongList = [] } = useXaPhuongForTab(true, '', { enabled: canOpenPage });
+  const tenDonViById = useMemo(
+    () => new Map(xaPhuongList.map((x) => [String(x.id), x.ten])),
+    [xaPhuongList],
   );
 
   const rowsForTheLoaiOptions = useMemo(() => {
@@ -172,7 +203,7 @@ const HoaHongVietBaiPage: React.FC = () => {
       const id = String(row.id_the_loai);
       const label = row.ten_the_loai?.trim() || id;
       const cur = map.get(id) ?? { label, count: 0 };
-      cur.count += 1;
+      cur.count += row.so_bai;
       map.set(id, cur);
     }
     return [...map.entries()]
@@ -189,7 +220,7 @@ const HoaHongVietBaiPage: React.FC = () => {
         row.ten_tai_khoan_nguoi_tao?.trim() ||
         `NV ${id}`;
       const cur = map.get(id) ?? { label, count: 0 };
-      cur.count += 1;
+      cur.count += row.so_bai;
       map.set(id, cur);
     }
     return [...map.entries()]
@@ -204,15 +235,15 @@ const HoaHongVietBaiPage: React.FC = () => {
       const label =
         key === DON_VI_CHUA_GAN
           ? txt('articleCommission.donViChuaGan')
-          : row.ten_don_vi_nguoi_tao?.trim() || key;
+          : tenDonViById.get(key)?.trim() || key;
       const cur = map.get(key) ?? { label, count: 0 };
-      cur.count += 1;
+      cur.count += row.so_bai;
       map.set(key, cur);
     }
     return [...map.entries()]
       .map(([value, { label, count }]) => ({ label, value, count }))
       .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
-  }, [rowsForDonViOptions]);
+  }, [rowsForDonViOptions, tenDonViById]);
 
   const tabs = useMemo((): { id: CommissionScope; label: string }[] => {
     const base: { id: CommissionScope; label: string }[] = [{ id: TAB_MINE, label: txt('articleCommission.tabMine') }];
@@ -224,14 +255,12 @@ const HoaHongVietBaiPage: React.FC = () => {
 
   const agg = useMemo(
     () =>
-      aggregateCommission(scopedRows, scope, nhanVienId, {
-        dateFrom,
-        dateTo,
+      aggregateCommission(dateScopedRows, scope, nhanVienId, {
         theLoaiIds,
         authorIds: scope === TAB_ALL ? authorIds : [],
         donViIds: scope === TAB_ALL ? donViIds : [],
       }),
-    [scopedRows, scope, nhanVienId, dateFrom, dateTo, theLoaiIds, authorIds, donViIds],
+    [dateScopedRows, scope, nhanVienId, theLoaiIds, authorIds, donViIds],
   );
 
   /** Bộ lọc đang bật, đã đổi id thành tên — ghi vào sheet Tổng hợp của file xuất. */
@@ -282,8 +311,7 @@ const HoaHongVietBaiPage: React.FC = () => {
    * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
    * dữ liệu trong phạm vi xem có bản ghi mà bộ lọc đang bật lọc hết sạch.
    */
-  const commissionFilteredEmpty =
-    agg.filteredRows.length === 0 && scopedRows.length > 0 && activeFilterCount > 0;
+  const commissionFilteredEmpty = agg.filteredRows.length === 0 && activeFilterCount > 0;
 
   const filterGroups: FilterGroup[] = useMemo(
     () => [
@@ -435,8 +463,28 @@ const HoaHongVietBaiPage: React.FC = () => {
     }
     setExporting(true);
     try {
+      // File xuất cần từng bài: chỉ kéo khi bấm xuất, theo lô qua RPC phân trang,
+      // cùng phạm vi + bộ lọc với số liệu trên trang.
+      const isAll = scope === TAB_ALL;
+      const donVi = splitDonViFilter(isAll ? donViIds : [], DON_VI_CHUA_GAN);
+      const rows = await getBaiVietDanhSachAllForExport({
+        search: '',
+        ...scopeArgs,
+        theLoaiIds,
+        nguonDangIds: [],
+        trangDangIds: [],
+        nguoiTaoIds: isAll ? authorIds : [],
+        trucNgay: 'ngay_dang',
+        tuNgay: dateFrom,
+        denNgay: dateTo,
+        donViIds: donVi.donViIds,
+        donViIncludeNull: donVi.donViIncludeNull,
+      });
       await exportNhuanButToExcel({
-        rows: agg.filteredRows,
+        rows: rows.map((r) => ({
+          ...r,
+          ten_don_vi_nguoi_tao: r.id_don_vi_nguoi_tao ? (tenDonViById.get(r.id_don_vi_nguoi_tao) ?? null) : null,
+        })),
         scopeLabel:
           scope === TAB_ALL ? txt('articleCommission.tabAll') : txt('articleCommission.tabMine'),
         range: { start: dateFrom, end: dateTo },
@@ -448,7 +496,19 @@ const HoaHongVietBaiPage: React.FC = () => {
     } finally {
       setExporting(false);
     }
-  }, [agg.filteredRows, agg.seriesByMonth, scope, dateFrom, dateTo, activeFilterSummary]);
+  }, [
+    agg.filteredRows.length,
+    agg.seriesByMonth,
+    scope,
+    scopeArgs,
+    theLoaiIds,
+    authorIds,
+    donViIds,
+    dateFrom,
+    dateTo,
+    tenDonViById,
+    activeFilterSummary,
+  ]);
 
   const renderExportToolbarButton = () =>
     canExport ? (

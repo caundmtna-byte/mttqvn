@@ -37,7 +37,6 @@ export const nhaDaiDoanKet = {
     printPopupBlocked: 'Trình duyệt đã chặn cửa sổ in. Hãy cho phép cửa sổ bật lên rồi thử lại.',
   },
   statusChangeModal: {
-    canNhapTien: 'Hồ sơ chưa có số tiền. Mở "Sửa" để nhập số tiền trước khi chuyển sang "{{trangThai}}".',
     title: 'Chuyển trạng thái',
     subtitle: 'Đổi trạng thái hồ sơ và ghi lý do',
     section: 'Trạng thái mới',
@@ -74,7 +73,6 @@ export const nhaDaiDoanKet = {
     sectionHoDan: 'Hộ gia đình',
     sectionHoTro: 'Nội dung & nguồn hỗ trợ',
     sectionTrangThai: 'Trạng thái',
-    soTienPlaceholder: 'Để trống nếu chưa chốt mức hỗ trợ',
     nhaTaiTroPlaceholder: 'Chọn từ danh mục Nhà tài trợ',
     ghiChuHint: 'Ghi chú cũng được lưu làm lý do cho lần đổi trạng thái này.',
     hoNgheoLabel: 'Hộ nghèo',
@@ -145,7 +143,7 @@ export const nhaDaiDoanKet = {
     soTienMin: 'Số tiền không được âm',
     ngayInvalid: 'Ngày không hợp lệ',
     dienTichInvalid: 'Diện tích phải là số không âm',
-    soTienBatBuoc: 'Hồ sơ "{{trangThai}}" phải có số tiền cụ thể (lớn hơn 0) để cộng tổng ủng hộ.',
+    soTienBatBuoc: 'Nhập số tiền hỗ trợ (chưa có thì nhập 0).',
     nhaTaiTroRequired: 'Nguồn "Ủng hộ trực tiếp" phải chọn nhà tài trợ.',
   },
 };

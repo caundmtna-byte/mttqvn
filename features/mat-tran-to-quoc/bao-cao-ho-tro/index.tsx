@@ -36,7 +36,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { txt } from '@/lib/text';
-import { cn, formatCurrency, getLanguage, getErrorMessage } from '@/lib/utils';
+import { cn, formatCurrency, getLanguage, getErrorMessage, formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -654,7 +654,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
                     <LineChart data={stats.trendSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <Line
                         type="monotone"
@@ -683,7 +683,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
                     <BarChart data={loaiDonViBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={loaiDonViBar}
@@ -794,7 +794,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
                         <td className="py-2 pr-3 max-w-[180px] truncate">{row.kho_label}</td>
                         <td className="py-2 pr-3 max-w-[180px] truncate">{row.nguon_dich_label}</td>
                         <td className="py-2 pr-3 max-w-[160px] truncate">{row.ten_hang_hoa ?? '—'}</td>
-                        <td className="py-2 pr-3 tabular-nums">{row.so_luong}</td>
+                        <td className="py-2 pr-3 tabular-nums">{formatDecimal(row.so_luong)}</td>
                         <td className="py-2 pr-3">{row.don_vi_tinh}</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">
                           {formatCurrency(row.thanh_tien)}

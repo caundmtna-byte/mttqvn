@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -119,7 +119,7 @@ const BarCard: React.FC<{
         <BarChart data={rows}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-          <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+          <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
           <RechartsTooltip content={<ChartTooltip />} />
           <ColoredBar
             data={rows}
@@ -348,8 +348,8 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
                   <LineChart data={namChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="nam" tick={{ fontSize: 12 }} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 12 }} allowDecimals={false} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <YAxis tickFormatter={formatAxisTick} yAxisId="left" tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <YAxis tickFormatter={formatAxisTick} yAxisId="right" orientation="right" tick={{ fontSize: 12 }} allowDecimals={false} />
                     <RechartsTooltip content={<ChartTooltip />} />
                     <Legend />
                     <Line
@@ -387,7 +387,7 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
                 rows={xaPhuongRows.map((r) => ({
                   id: r.id,
                   label: r.label,
-                  value: `${r.soKhoan} · ${formatCurrency(r.soTien)}`,
+                  value: `${formatDecimal(r.soKhoan)} · ${formatCurrency(r.soTien)}`,
                 }))}
                 columnLabelKey="viNguoiNgheoThongKe.table.colXaPhuong"
                 columnValueKey="viNguoiNgheoThongKe.table.colSoKhoan"

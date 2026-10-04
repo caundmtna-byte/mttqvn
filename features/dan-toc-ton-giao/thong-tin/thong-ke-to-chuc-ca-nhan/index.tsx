@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { cn, getLanguage, getErrorMessage } from '@/lib/utils';
+import { cn, getLanguage, getErrorMessage, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -636,7 +636,7 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
                     <LineChart data={trendSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <Line
                         type="monotone"
@@ -657,7 +657,7 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
                     <BarChart data={trangThaiBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-12} textAnchor="end" height={40} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={trangThaiBar}
@@ -684,7 +684,7 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
                     <BarChart data={loaiBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={loaiBar}
@@ -725,7 +725,7 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
                     <BarChart data={loaiHinhBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-12} textAnchor="end" height={40} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={loaiHinhBar}
@@ -745,7 +745,7 @@ const ThongKeToChucCaNhanPage: React.FC = () => {
                     <BarChart data={doiTuongBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-12} textAnchor="end" height={40} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={doiTuongBar}

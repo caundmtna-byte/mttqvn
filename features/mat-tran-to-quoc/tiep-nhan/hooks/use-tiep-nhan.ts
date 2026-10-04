@@ -6,6 +6,7 @@ import { transactionalCrudListQueryOptions } from '@/lib/supabase/query-config';
 import type { TiepNhanFormValues, TiepNhanTrangThaiValues } from '../core/schema';
 import {
   deleteTiepNhanMany,
+  getTiepNhanAllForExport,
   getTiepNhanFull,
   getTnPhieuKhoCuaNhaTaiTro,
   luuTiepNhan,
@@ -19,6 +20,20 @@ export function useTiepNhanFull(id: string | null | undefined, options?: { enabl
     queryKey: queryKeys.tiepNhan.full(key || '__'),
     queryFn: () => getTiepNhanFull(key),
     enabled: key !== '' && options?.enabled !== false,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
+/**
+ * Mọi khoản trong phạm vi xem — nguồn của tab Thống kê. Phạm vi lọc TẠI MÁY CHỦ
+ * (RPC phân trang), kéo đủ từng lô 500 dòng. Chỉ bật khi tab đang mở.
+ */
+export function useTiepNhanThongKe(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.tiepNhan.thongKe,
+    queryFn: () =>
+      getTiepNhanAllForExport({ search: '', nhaTaiTroIds: [], chuongTrinhIds: [], hinhThuc: [], trangThai: [] }),
+    enabled: options?.enabled !== false,
     ...transactionalCrudListQueryOptions,
   });
 }

@@ -3,6 +3,8 @@ import type { HoNgheoThongKeRow } from '../core/types';
 /**
  * Tổng hợp cho tab Thống kê — hàm thuần, không gọi mạng.
  *
+ * Mỗi dòng là một NHÓM hộ đã gộp ở máy chủ, nên mọi phép đếm là cộng `so_ho`.
+ *
  * Hộ nghèo là sổ hộ theo HIỆN TRẠNG, nên không có trục thời gian: lọc theo
  * `tg_tao` sẽ ra "số hộ nhập trong kỳ", rất dễ bị đọc nhầm là "số hộ nghèo trong kỳ".
  */
@@ -60,12 +62,13 @@ export function computeHnghKpis(rows: readonly HoNgheoThongKeRow[]): HnghKpis {
   let dangKhoKhan = 0;
   let hetKhoKhan = 0;
   let coTonGiao = 0;
+  let tongSoHo = 0;
   for (const r of rows) {
-    if (r.trang_thai === 'Đang khó khăn') dangKhoKhan += 1;
-    else if (r.trang_thai === 'Hết khó khăn') hetKhoKhan += 1;
-    if (r.ton_giao === 'Có') coTonGiao += 1;
+    tongSoHo += r.so_ho;
+    if (r.trang_thai === 'Đang khó khăn') dangKhoKhan += r.so_ho;
+    else if (r.trang_thai === 'Hết khó khăn') hetKhoKhan += r.so_ho;
+    if (r.ton_giao === 'Có') coTonGiao += r.so_ho;
   }
-  const tongSoHo = rows.length;
   return {
     tongSoHo,
     dangKhoKhan,
@@ -101,11 +104,11 @@ export function buildHnghBarData(
   for (const r of rows) {
     const label = r[key]?.toString().trim();
     if (!label) {
-      khongXacDinh += 1;
+      khongXacDinh += r.so_ho;
       continue;
     }
     const cur = byLabel.get(label) ?? { label, soHo: 0 };
-    cur.soHo += 1;
+    cur.soHo += r.so_ho;
     byLabel.set(label, cur);
   }
   const out = [...byLabel.values()];
@@ -123,11 +126,11 @@ export function buildHnghDanTocBarData(
   for (const r of rows) {
     const id = r.dan_toc_id?.toString().trim();
     if (!id) {
-      khongXacDinh += 1;
+      khongXacDinh += r.so_ho;
       continue;
     }
     const cur = byId.get(id) ?? { label: r.ten_dan_toc?.trim() || id, soHo: 0 };
-    cur.soHo += 1;
+    cur.soHo += r.so_ho;
     byId.set(id, cur);
   }
   const out = [...byId.values()].sort(
@@ -170,12 +173,13 @@ export function aggregateHnghByXaPhuong(
       canNgheo: 0,
       khoKhan: 0,
     };
-    cur.tongSoHo += 1;
-    if (r.trang_thai === 'Đang khó khăn') cur.dangKhoKhan += 1;
-    else if (r.trang_thai === 'Hết khó khăn') cur.hetKhoKhan += 1;
-    if (r.doi_tuong === 'Hộ nghèo') cur.hoNgheo += 1;
-    else if (r.doi_tuong === 'Cận nghèo') cur.canNgheo += 1;
-    else if (r.doi_tuong === 'Khó khăn') cur.khoKhan += 1;
+    const n = r.so_ho;
+    cur.tongSoHo += n;
+    if (r.trang_thai === 'Đang khó khăn') cur.dangKhoKhan += n;
+    else if (r.trang_thai === 'Hết khó khăn') cur.hetKhoKhan += n;
+    if (r.doi_tuong === 'Hộ nghèo') cur.hoNgheo += n;
+    else if (r.doi_tuong === 'Cận nghèo') cur.canNgheo += n;
+    else if (r.doi_tuong === 'Khó khăn') cur.khoKhan += n;
     byXa.set(id, cur);
   }
   return [...byXa.values()].sort(

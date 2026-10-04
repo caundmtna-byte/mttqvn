@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { BarChart3, List } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
@@ -14,9 +15,13 @@ import { useAuthStore } from '@/store/useStore';
 import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useServerPagedList } from '@/hooks/use-server-paged-list';
+import { useResourcePermissions } from '@/hooks/use-resource-permissions';
+import { useTabSearchParam } from '@/hooks/use-tab-search-param';
+import TabGroup from '@/components/ui/TabGroup';
+import PageTabRow from '@/components/shared/PageTabRow';
 import ExportDialog from '@/components/shared/ExportDialog';
 import ErrorState from '@/components/shared/ErrorState';
-import { TN_LIST_PATH } from './core/constants';
+import { TN_LIST_PATH, TN_MAIN_TABS } from './core/constants';
 import type { TiepNhan, TiepNhanFull } from './core/types';
 import { useDeleteTiepNhanMany, useTiepNhanFull } from './hooks/use-tiep-nhan';
 import { getTiepNhanAllForExport, getTiepNhanFull, getTiepNhanPage } from './services/tiep-nhan-service';
@@ -24,6 +29,7 @@ import { useTiepNhanStore } from './store/useTiepNhanStore';
 import { getTnColumnDisplayValue } from './utils/column-display';
 import TnToolbar from './components/tn-toolbar';
 import TnTable from './components/tn-table';
+import TnThongKePanel from './components/tn-thong-ke-panel';
 
 const TnForm = lazy(() => import('./components/tn-form'));
 const TnDetail = lazy(() => import('./components/tn-detail'));
@@ -66,6 +72,8 @@ const TiepNhanPage: React.FC = () => {
   const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const didRedirect = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { canExport } = useResourcePermissions('matTranTiepNhan');
+  const [mainTab, setMainTab] = useTabSearchParam(TN_MAIN_TABS, 'danh_sach');
 
   const listQueryEnabled = Boolean(user && (user.role === 'admin' || (matrixActive && canView)));
   const chucVuKey = user ? (Array.isArray(user.id_chuc_vu) ? (user.id_chuc_vu[0] ?? '') : String(user.id_chuc_vu ?? '')) : '';
@@ -125,7 +133,8 @@ const TiepNhanPage: React.FC = () => {
     extraParams: pageExtraParams,
     queryKey: queryKeys.tiepNhan.page,
     fetchFn: getTiepNhanPage,
-    enabled: listQueryEnabled,
+    // Tab Thống kê có nguồn riêng — không kéo trang danh sách khi đang ở đó.
+    enabled: listQueryEnabled && mainTab === 'danh_sach',
   });
 
   const { data: viewingData } = useTiepNhanFull(viewingId, { enabled: listQueryEnabled && Boolean(viewingId) });
@@ -223,6 +232,8 @@ const TiepNhanPage: React.FC = () => {
     setShowExport(true);
   };
 
+  const handlePageBack = () => navigate('/nghia-tinh-dong-lam');
+
   if (!canView) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[40vh] px-4" aria-busy="true" aria-label={txt('common.loading')}>
@@ -233,9 +244,23 @@ const TiepNhanPage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-page relative">
+      <PageTabRow>
+        <TabGroup
+          tabs={[
+            { id: 'danh_sach', label: txt('matTranTiepNhan.tabs.danhSach'), icon: List },
+            { id: 'thong_ke', label: txt('matTranTiepNhan.tabs.thongKe'), icon: BarChart3 },
+          ]}
+          activeTab={mainTab}
+          onChange={setMainTab}
+          className="shrink-0"
+        />
+      </PageTabRow>
+      {mainTab === 'thong_ke' ? (
+        <TnThongKePanel onPageBack={handlePageBack} canExport={canExport} queryEnabled={listQueryEnabled} />
+      ) : (
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <TnToolbar
-          onPageBack={() => navigate('/nghia-tinh-dong-lam')}
+          onPageBack={handlePageBack}
           onAdd={() =>
             startTransition(() => {
               setEditing(null);
@@ -273,6 +298,7 @@ const TiepNhanPage: React.FC = () => {
           )}
         </div>
       </div>
+      )}
 
       <AnimatePresence>
         {showForm && (

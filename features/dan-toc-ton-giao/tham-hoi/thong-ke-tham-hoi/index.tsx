@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { cn, getLanguage } from '@/lib/utils';
+import { cn, getLanguage, formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -503,7 +503,7 @@ const ThongKeThamHoiPage: React.FC = () => {
                     <LineChart data={trendSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <Line
                         type="monotone"
@@ -524,7 +524,7 @@ const ThongKeThamHoiPage: React.FC = () => {
                     <BarChart data={tinhTrangBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-12} textAnchor="end" height={40} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={tinhTrangBar}
@@ -551,7 +551,7 @@ const ThongKeThamHoiPage: React.FC = () => {
                     <BarChart data={loaiBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={loaiBar}
@@ -591,7 +591,7 @@ const ThongKeThamHoiPage: React.FC = () => {
                       <BarChart data={byYearChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                         <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                        <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                         <RechartsTooltip content={<ChartTooltip />} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
                         <Bar
@@ -636,13 +636,13 @@ const ThongKeThamHoiPage: React.FC = () => {
                         {byYearRows.map((row) => (
                           <tr key={row.year} className="border-b border-border/60">
                             <td className="py-2 px-3 tabular-nums font-medium">{row.label}</td>
-                            <td className="py-2 pr-3 text-right tabular-nums">{row.soDot}</td>
-                            <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.tongLuot}</td>
-                            <td className="py-2 pr-3 text-right tabular-nums">{row.toChuc}</td>
-                            <td className="py-2 pr-3 text-right tabular-nums">{row.caNhan}</td>
-                            <td className="py-2 pr-3 text-right tabular-nums">{row.hoanThanh}</td>
-                            <td className="py-2 pr-3 text-right tabular-nums">{row.dangThucHien}</td>
-                            <td className="py-2 pr-3 text-right tabular-nums">{row.chuaThucHien}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.soDot)}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{formatDecimal(row.tongLuot)}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.toChuc)}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.caNhan)}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.hoanThanh)}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.dangThucHien)}</td>
+                            <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.chuaThucHien)}</td>
                           </tr>
                         ))}
                       </tbody>

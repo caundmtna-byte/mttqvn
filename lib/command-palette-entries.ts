@@ -20,7 +20,7 @@ export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien', nameKey: 'page.matTranDashboard.committeeMemberStatsReport', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
   { path: '/nghia-tinh-dong-lam', nameKey: 'nav.anSinhXaHoi', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/nghia-tinh-dong-lam/chuong-trinh-van-dong', nameKey: 'page.matTranDashboard.reliefCampaign', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
-  { path: '/nghia-tinh-dong-lam/tiep-nhan', nameKey: 'page.matTranDashboard.tiepNhan', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
+  { path: '/nghia-tinh-dong-lam/tiep-nhan-tien', nameKey: 'page.matTranDashboard.tiepNhan', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/nghia-tinh-dong-lam/danh-muc-hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang', nameKey: 'page.matTranDashboard.reliefStockTransactions', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/nghia-tinh-dong-lam/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },

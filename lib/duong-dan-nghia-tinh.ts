@@ -13,9 +13,12 @@ export const NTDL_ROOT = '/nghia-tinh-dong-lam';
 
 /** [tiền tố cũ, tiền tố mới] — xếp tiền tố DÀI trước để khớp đúng nhất. */
 const BANG_DUONG_DAN_CU: readonly (readonly [string, string])[] = [
+  // 2026-10-04: Tiếp nhận → Tiếp nhận tiền (khoá quyền vẫn `tiep-nhan`). Khớp trọn segment
+  // nên không đụng `/tiep-nhan-phan-bo-hang`.
+  [`${NTDL_ROOT}/tiep-nhan`, `${NTDL_ROOT}/tiep-nhan-tien`],
   // Đợt 2026-10: /an-sinh-xa-hoi → /nghia-tinh-dong-lam, bỏ tầng /kho-cuu-tro và /danh-sach.
   ['/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro', `${NTDL_ROOT}/chuong-trinh-van-dong`],
-  ['/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan', `${NTDL_ROOT}/tiep-nhan`],
+  ['/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan', `${NTDL_ROOT}/tiep-nhan-tien`],
   ['/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa', `${NTDL_ROOT}/danh-muc-hang-hoa`],
   ['/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho', `${NTDL_ROOT}/tiep-nhan-phan-bo-hang`],
   ['/an-sinh-xa-hoi/kho-cuu-tro/ton-kho', `${NTDL_ROOT}/ton-kho`],

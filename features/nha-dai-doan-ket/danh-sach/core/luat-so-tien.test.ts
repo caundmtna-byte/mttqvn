@@ -1,20 +1,14 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { NDDK_TRANG_THAI_VALUES } from './constants';
-import { NDDK_TRANG_THAI_BAT_BUOC_TIEN, canNhaTaiTro, nddkThieuTien } from './luat-so-tien';
+import { docSchemaSql } from '@/lib/db-schema-snapshot';
+import { canNhaTaiTro, nddkThieuTien } from './luat-so-tien';
 
 describe('nddkThieuTien', () => {
-  it('đang khảo sát / tạm dừng được để trống tiền', () => {
-    expect(nddkThieuTien('Đang khảo sát', null)).toBe(false);
-    expect(nddkThieuTien('Tạm dừng', null)).toBe(false);
-  });
-  it('từ đã phê duyệt trở đi phải có tiền > 0', () => {
-    for (const tt of ['Đã phê duyệt', 'Đang thực hiện', 'Đã bàn giao']) {
-      expect(nddkThieuTien(tt, null)).toBe(true);
-      expect(nddkThieuTien(tt, 0)).toBe(true);
-      expect(nddkThieuTien(tt, 50_000_000)).toBe(false);
-    }
+  it('mọi trạng thái đều phải nhập tiền; 0 là hợp lệ', () => {
+    expect(nddkThieuTien(null)).toBe(true);
+    expect(nddkThieuTien(undefined)).toBe(true);
+    expect(nddkThieuTien(Number.NaN)).toBe(true);
+    expect(nddkThieuTien(0)).toBe(false);
+    expect(nddkThieuTien(50_000_000)).toBe(false);
   });
 });
 
@@ -26,13 +20,11 @@ describe('canNhaTaiTro', () => {
   });
 });
 
-describe('khớp CHECK nddk_so_tien_theo_trang_thai_chk trong schema.sql', () => {
-  const schema = readFileSync(resolve(__dirname, '../../../../supabase/schema.sql'), 'utf8');
-  const line = schema.split('\n').find((l) => l.includes('CONSTRAINT nddk_so_tien_theo_trang_thai_chk'));
-  it('đúng danh sách trạng thái bắt buộc tiền', () => {
-    expect(line).toBeDefined();
-    const dsTrongDb = [...(line ?? '').matchAll(/'([^']+)'::text/g)].map((m) => m[1]);
-    expect(dsTrongDb).toEqual([...NDDK_TRANG_THAI_BAT_BUOC_TIEN]);
-    for (const tt of dsTrongDb) expect(NDDK_TRANG_THAI_VALUES).toContain(tt);
+describe('khớp schema.sql', () => {
+  it('nddk_nha_dai_doan_ket.so_tien là NOT NULL', () => {
+    const sql = docSchemaSql();
+    const dau = sql.indexOf('CREATE TABLE public.nddk_nha_dai_doan_ket (');
+    const bang = sql.slice(dau, sql.indexOf('\n);', dau));
+    expect(bang).toMatch(/\n    so_tien numeric\S* NOT NULL,/);
   });
 });

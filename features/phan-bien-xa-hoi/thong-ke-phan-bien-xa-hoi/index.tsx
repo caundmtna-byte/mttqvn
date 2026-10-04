@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { cn, getLanguage, getErrorMessage } from '@/lib/utils';
+import { cn, getLanguage, getErrorMessage, formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -682,7 +682,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     <LineChart data={trendSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <Line
                         type="monotone"
@@ -703,7 +703,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     <BarChart data={tinhTrangBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={50} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={tinhTrangBar}
@@ -730,7 +730,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     <BarChart data={loaiHinhBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={45} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={loaiHinhBar}
@@ -755,7 +755,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     <BarChart data={capBar} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={capBar}
@@ -777,7 +777,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     <LineChart data={avgPhanTramTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} domain={[0, 100]} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <Line
                         type="monotone"
@@ -798,7 +798,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                     <BarChart data={avgPhanTramLoaiHinh} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" height={45} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} domain={[0, 100]} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={avgPhanTramLoaiHinh}
@@ -830,7 +830,7 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                       margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-                      <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
+                      <XAxis tickFormatter={formatAxisTick} type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
                       <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -876,8 +876,8 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                         </td>
                         <td className="py-2 pr-3 max-w-[160px] truncate">{row.don_vi_thuc_hien_label}</td>
                         <td className="py-2 pr-3 text-right tabular-nums font-medium text-primary">{row.phan_tram_hoan_thanh}%</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_hoan_thanh}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{row.so_lan_khao_sat}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.so_lan_hoan_thanh)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.so_lan_khao_sat)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -927,11 +927,11 @@ const ThongKePhanBienXaHoiPage: React.FC = () => {
                       <tr key={row.id} className="border-b border-border/60">
                         <td className="py-2 px-3 tabular-nums text-muted-foreground">{idx + 1}</td>
                         <td className="py-2 px-4 max-w-[240px] truncate">{row.label}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{row.total}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{row.dangThucHien}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{row.hoanThanh}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanHoanThanh}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{row.sumSoLanKhaoSat}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.total)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.dangThucHien)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.hoanThanh)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.sumSoLanHoanThanh)}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.sumSoLanKhaoSat)}</td>
                         <td className="py-2 pr-3 text-right tabular-nums font-medium">{row.tyLeThucTe}%</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{row.avgPhanTram}%</td>
                       </tr>

@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 import Button from '../ui/Button';
 import Tooltip from '../ui/Tooltip';
 import PageSizeSelect from './PageSizeSelect';
-import { cn } from '../../lib/utils';
+import { cn, formatDecimal } from '../../lib/utils';
 
 export interface TablePaginationFooterProps {
   /** Tổng số bản ghi khớp bộ lọc. */
@@ -91,10 +91,10 @@ export const TablePaginationFooter: React.FC<TablePaginationFooterProps> = ({
       <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
         <span className="tabular-nums">
           <span className="font-medium text-foreground">
-            {rangeStart}–{rangeEnd}
+            {formatDecimal(rangeStart)}–{formatDecimal(rangeEnd)}
           </span>
           <span className="text-muted-foreground/60">/Tổng:</span>
-          <span className="font-semibold text-foreground">{totalRecordsLabel ?? totalRecords}</span>
+          <span className="font-semibold text-foreground">{totalRecordsLabel ?? formatDecimal(totalRecords)}</span>
         </span>
 
         {selectedCount > 0 && (
@@ -185,7 +185,7 @@ export const TablePaginationFooter: React.FC<TablePaginationFooterProps> = ({
             )}
             <span className="text-muted-foreground/40 text-xs">/</span>
             <span className="text-xs font-medium text-muted-foreground tabular-nums">
-              {totalPages || 1}
+              {formatDecimal(totalPages || 1)}
             </span>
           </div>
         </Tooltip>

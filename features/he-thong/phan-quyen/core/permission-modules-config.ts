@@ -162,7 +162,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         groupTitleKey: 'page.matTranDashboard.groupReliefWarehouse',
         modules: [
           { id: 'nghia-tinh-dong-lam/chuong-trinh-van-dong', nameKey: 'page.matTranDashboard.reliefCampaign', storageKey: 'dot-cuu-tro' },
-          { id: 'nghia-tinh-dong-lam/tiep-nhan', nameKey: 'page.matTranDashboard.tiepNhan', storageKey: 'tiep-nhan' },
+          { id: 'nghia-tinh-dong-lam/tiep-nhan-tien', nameKey: 'page.matTranDashboard.tiepNhan', storageKey: 'tiep-nhan' },
           { id: 'nghia-tinh-dong-lam/danh-muc-hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods', storageKey: 'hang-hoa' },
           { id: 'nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang', nameKey: 'page.matTranDashboard.reliefStockTransactions', storageKey: 'nhap-xuat-kho' },
           { id: 'nghia-tinh-dong-lam/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory', storageKey: 'ton-kho' },

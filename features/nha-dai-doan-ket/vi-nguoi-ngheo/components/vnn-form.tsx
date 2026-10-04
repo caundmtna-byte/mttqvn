@@ -44,7 +44,6 @@ import {
   VNN_NGUON_HO_TRO_VALUES,
   VNN_NGUON_VALUES,
   VNN_TRANG_THAI_VALUES,
-  VNN_TRANG_THAI_DA_NHAN,
 } from '../core/constants';
 import { canNhaTaiTro } from '../../danh-sach/core/luat-so-tien';
 import type { ViNguoiNgheo } from '../core/types';
@@ -141,14 +140,12 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
 
   const hinhThuc = useWatch({ control, name: 'hinh_thuc_ho_tro' });
   const coHienVat = vnnCoHienVat(hinhThuc);
-  // Đánh dấu ô bắt buộc theo luật tiền (core/luat-so-tien.ts); zod mới là nơi kiểm.
-  const daNhan = useWatch({ control, name: 'trang_thai' }) === VNN_TRANG_THAI_DA_NHAN;
   const canNtt = canNhaTaiTro(useWatch({ control, name: 'nguon_ho_tro' }));
   const linhVuc = useWatch({ control, name: 'linh_vuc_ho_tro' });
   const loaiPhieu = vnnLoaiPhieu(linhVuc);
   const daGanHo = Boolean(useWatch({ control, name: 'ho_ngheo_id' }));
 
-  /** Ô tiền để trống là hợp lệ — giữ '' chứ không quy về 0. */
+  /** Ô trống giữ '' chứ không quy về 0 — để zod báo "bắt buộc" đúng ô. */
   const tienInput = (
     name: 'tong_tien_quy_doi' | 'tong_tien_ban_giao',
     label: string,
@@ -165,7 +162,8 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
           onChange={(n) => field.onChange(n == null ? '' : String(n))}
           onBlur={field.onBlur}
           min={0}
-          required={name === 'tong_tien_quy_doi' && daNhan}
+          // Đánh dấu theo luật tiền (core/luat-so-tien.ts); zod mới là nơi kiểm.
+          required={name === 'tong_tien_quy_doi'}
           error={errors[name]?.message}
         />
       )}
@@ -381,13 +379,13 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                   label={txt('viNguoiNgheo.store.soTienCol')}
                   icon={Coins}
                   suffix="đ"
-                  placeholder={txt('viNguoiNgheo.form.soTienPlaceholder')}
-                  // Ô trống là hợp lệ (khoản chỉ có hiện vật) nên giữ '' chứ không quy về 0.
+                  // Chỉ "Hiện vật" mới được để trống; giữ '' chứ không quy về 0.
+                  placeholder={hinhThuc === 'Hiện vật' ? txt('viNguoiNgheo.form.soTienPlaceholder') : undefined}
                   value={field.value === '' || field.value == null ? null : field.value}
                   onChange={(n) => field.onChange(n == null ? '' : String(n))}
                   onBlur={field.onBlur}
                   min={0}
-                  required={daNhan && hinhThuc !== 'Hiện vật'}
+                  required={hinhThuc !== 'Hiện vật'}
                   error={errors.so_tien?.message}
                 />
               )}

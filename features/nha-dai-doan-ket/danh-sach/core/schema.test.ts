@@ -12,6 +12,7 @@ const HO_SO_HOP_LE = {
   nguon_ho_tro: 'Cấp xã',
   ho_ngheo_id: '9',
   ho_ten_chu_ho: 'Hồ Văn Thu',
+  so_tien: '50.000.000',
   trang_thai: 'Đang khảo sát',
 };
 
@@ -37,10 +38,9 @@ describe('số tiền hồ sơ Nhà đại đoàn kết', () => {
     expect(soTien('500000000').data?.so_tien).toBe(500_000_000);
   });
 
-  it('để trống là hợp lệ — hồ sơ đang khảo sát chưa chốt mức hỗ trợ', () => {
-    const r = soTien('');
-    expect(r.success).toBe(true);
-    expect(r.data!.so_tien).toBeUndefined();
+  it('để trống bị từ chối kể cả hồ sơ đang khảo sát; nhập 0 hợp lệ', () => {
+    expect(soTien('').success).toBe(false);
+    expect(soTien('0').data?.so_tien).toBe(0);
   });
 
   it('số âm bị từ chối — khớp CHECK (so_tien >= 0) ở DB', () => {

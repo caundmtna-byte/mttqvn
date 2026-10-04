@@ -1,5 +1,6 @@
 import React, { useState, useMemo, lazy, Suspense, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   ResponsiveContainer,
   LineChart,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { cn, formatDecimal, getLanguage } from '@/lib/utils';
+import { cn, formatDecimal, getLanguage, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import type { FilterGroup } from '@/components/ui/MobileFilterSheet';
 import Button from '@/components/ui/Button';
@@ -35,8 +36,10 @@ import {
   StatsTableCard,
   ColoredBar,
   useStatsPageFilters,
-  resolveStatsTrendChartRange,
 } from '@/components/shared/stats';
+import TablePaginationFooter from '@/components/shared/TablePaginationFooter';
+import { queryKeys } from '@/lib/query-keys';
+import { listQueryOptions } from '@/lib/supabase/query-config';
 import { chartFillByIndex } from '@/lib/constants/chart-colors';
 import type { StatsTableRow } from '@/components/shared/stats/types';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
@@ -47,13 +50,24 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { CONFIRM_DELETE } from '@/lib/button-labels';
 import { DRAWER_Z_CONTENT_BASE } from '@/lib/dialog-sizes';
 import { AnimatePresence } from 'framer-motion';
-import { useBaiVietDanhSachList, useDeleteBaiVietDanhSachMany } from '../bai-viet/hooks/use-bai-viet-danh-sach';
+import { useDeleteBaiVietDanhSachMany } from '../bai-viet/hooks/use-bai-viet-danh-sach';
 import {
   useArticleAllTabViewer,
-  rowVisibleOnArticleAllTab,
   canLoadArticleAllTab,
+  resolveBaiVietAllTabRpcScope,
 } from '../hooks/use-article-all-tab-viewer';
 import type { BaiVietDanhSach } from '../bai-viet/core/types';
+import {
+  getBaiVietDanhSachAllForExport,
+  getBaiVietDanhSachPage,
+  getBaiVietThongKeNhom,
+  type BaiVietPageQuery,
+} from '../bai-viet/services/bai-viet-danh-sach-service';
+import {
+  splitDonViFilter,
+  type BaiVietThongKeArgs,
+  type BaiVietThongKeNhom,
+} from '../bai-viet/utils/thong-ke-nhom';
 import { useXaPhuongForTab } from '@/features/he-thong/danh-sach-tinh-thanh/hooks/use-dia-ban';
 import {
   type ArticleStatsDimensionFilters,
@@ -63,14 +77,12 @@ import {
   pickTrendBucket,
   buildTrendSeries,
   aggregateTopCounts,
-  sortLookupRows,
-  type LookupSortKey,
-  getArticleStatsDateFromCreatedAt,
   aggregateByDonVi,
   aggregateByNguoiTao,
   aggregateDonViTheLoaiMatrix,
   getArticleDonViKey,
   getArticleDonViLabel,
+  ARTICLE_STATS_DON_VI_UNKNOWN,
 } from './utils/aggregate-bai-viet-stats';
 import { exportBcThongKeBaiVietToExcel } from './utils/export-bc-thong-ke-bai-viet';
 import ChartTooltip from '@/components/ui/ChartTooltip';
@@ -79,6 +91,18 @@ import { useCan } from '@/hooks/use-can';
 const BaiVietDetail = lazy(() => import('../bai-viet/components/bai-viet-detail'));
 
 const CUSTOM_PRESET = 'custom';
+
+/** Cột bảng tra cứu — đúng tên cột trong whitelist `BAI_VIET_SERVER_SORT_COLUMNS` của RPC. */
+type LookupSortKey =
+  | 'ten_bai'
+  | 'ten_the_loai'
+  | 'ngay_dang'
+  | 'ten_nguon_dang'
+  | 'ten_trang_dang'
+  | 'ho_va_ten_nguoi_tao';
+
+const LOOKUP_PAGE_SIZE_OPTIONS = [20, 50, 100];
+const EMPTY_NHOM: BaiVietThongKeNhom[] = [];
 
 const initialDims: ArticleStatsDimensionFilters = {
   idTheLoai: [],
@@ -101,15 +125,15 @@ const DrawerLazyFallback: React.FC = () => (
 );
 
 function buildDimOptions(
-  rows: BaiVietDanhSach[],
-  pick: (r: BaiVietDanhSach) => { id: string; label: string },
+  rows: BaiVietThongKeNhom[],
+  pick: (r: BaiVietThongKeNhom) => { id: string; label: string },
 ): Option[] {
   const m = new Map<string, { label: string; count: number }>();
   for (const r of rows) {
     const { id, label } = pick(r);
     const prev = m.get(id);
-    if (prev) prev.count += 1;
-    else m.set(id, { label: label || id, count: 1 });
+    if (prev) prev.count += r.so_bai;
+    else m.set(id, { label: label || id, count: r.so_bai });
   }
   return [...m.entries()]
     .map(([value, v]) => ({ value, label: v.label, count: v.count }))
@@ -163,29 +187,6 @@ const BcThongKeBaiVietPage: React.FC = () => {
   }, [user, waitingMatrixHydrate, canOpenPage, navigate]);
 
   const {
-    data: allRows = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useBaiVietDanhSachList({ enabled: listQueryEnabled });
-  /** Lọc phạm vi ngay tại nguồn: KPI, biểu đồ, top, bảng tra cứu và export đều đọc từ đây. */
-  const rows = useMemo(
-    () => allRows.filter((r) => rowVisibleOnArticleAllTab(allTabViewer, r)),
-    [allRows, allTabViewer],
-  );
-  const deleteMutation = useDeleteBaiVietDanhSachMany();
-
-  /**
-   * Tên xã/phường tra từ danh mục (cache 24h + localStorage) chứ không embed vào
-   * từng dòng bài viết — embed sẽ lặp lại tên xã cho hàng nghìn dòng, tốn egress.
-   */
-  const { data: xaPhuongList = [] } = useXaPhuongForTab(true, '', { enabled: listQueryEnabled });
-  const tenDonViById = useMemo(
-    () => new Map(xaPhuongList.map((x) => [String(x.id), x.ten])),
-    [xaPhuongList],
-  );
-
-  const {
     dateRange,
     setDateRange,
     dims,
@@ -198,36 +199,95 @@ const BcThongKeBaiVietPage: React.FC = () => {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [viewing, setViewing] = useState<BaiVietDanhSach | null>(null);
   const [exporting, setExporting] = useState(false);
+  const deleteMutation = useDeleteBaiVietDanhSachMany();
 
-  useEffect(() => {
-    if (!viewing) return;
-    const fresh = rows.find((r) => r.id === viewing.id);
-    if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
-  }, [rows, viewing]);
+  /**
+   * Tên xã/phường tra từ danh mục (cache 24h + localStorage) chứ không embed vào
+   * từng dòng bài viết — embed sẽ lặp lại tên xã cho hàng nghìn dòng, tốn egress.
+   */
+  const { data: xaPhuongList = [] } = useXaPhuongForTab(true, '', { enabled: listQueryEnabled });
+  const tenDonViById = useMemo(
+    () => new Map(xaPhuongList.map((x) => [String(x.id), x.ten])),
+    [xaPhuongList],
+  );
 
   const resolvedRange = useMemo(
     () => resolveArticleStatsDateRange(dateRange.preset, dateRange.customStart, dateRange.customEnd),
     [dateRange.preset, dateRange.customStart, dateRange.customEnd],
   );
 
-  const filtered = useMemo(
-    () => filterArticlesForStats(rows, resolvedRange, dims),
-    [rows, resolvedRange, dims],
+  /**
+   * Phạm vi xem — cùng rule với tab "Tất cả" của Danh sách bài viết, áp ngay TẠI
+   * MÁY CHỦ (RPC) thay vì tải hết rồi lọc ở client.
+   */
+  const scopeArgs = useMemo(
+    () => ({
+      scope: resolveBaiVietAllTabRpcScope(allTabViewer),
+      viewerNhanVienId: allTabViewer.viewerNhanVienId,
+      viewerDonViId: allTabViewer.viewerDonViId,
+    }),
+    [allTabViewer],
   );
 
   /**
-   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": chỉ báo không khớp khi
-   * dữ liệu gốc có bản ghi mà bộ lọc đang bật lọc hết sạch.
+   * Bucket biểu đồ phải chốt TRƯỚC khi gọi RPC vì máy chủ gộp theo đúng kỳ đó.
+   * Preset "Tất cả" chưa biết khoảng ngày nên gộp theo tháng.
    */
-  const reportFilteredEmpty = filtered.length === 0 && rows.length > 0 && activeFilterCount > 0;
+  const bucket = useMemo(
+    () =>
+      resolvedRange.allTime || !resolvedRange.start || !resolvedRange.end
+        ? 'month'
+        : pickTrendBucket(resolvedRange.start, resolvedRange.end),
+    [resolvedRange],
+  );
+
+  const thongKeArgs = useMemo<BaiVietThongKeArgs>(
+    () => ({
+      trucNgay: 'tg_tao',
+      tuNgay: resolvedRange.allTime ? null : resolvedRange.start || null,
+      denNgay: resolvedRange.allTime ? null : resolvedRange.end || null,
+      bucket,
+      ...scopeArgs,
+    }),
+    [resolvedRange, bucket, scopeArgs],
+  );
+
+  /**
+   * Số liệu gộp nhóm ở máy chủ: vài chục KB thay cho việc kéo nguyên bảng bài viết
+   * (12k+ dòng, ~10 MB). Bộ lọc chiều (thể loại, nguồn…) lọc ngay trên các nhóm nên
+   * đổi bộ lọc không phải tải lại; chỉ đổi khoảng ngày mới gọi lại RPC.
+   */
+  const {
+    data: thongKe,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.baiVietDanhSach.thongKe(thongKeArgs),
+    queryFn: () => getBaiVietThongKeNhom(thongKeArgs),
+    enabled: listQueryEnabled,
+    placeholderData: keepPreviousData,
+    ...listQueryOptions,
+  });
+  const rows = thongKe?.nhom ?? EMPTY_NHOM;
+
+  const filtered = useMemo(() => filterArticlesForStats(rows, dims), [rows, dims]);
+
+  /**
+   * Phân biệt "chưa có dữ liệu" với "không khớp bộ lọc": khoảng ngày giờ lọc ở máy
+   * chủ, nên hễ có bộ lọc đang bật mà rỗng thì coi là "không khớp" để còn nút xoá lọc.
+   */
+  const reportFilteredEmpty = filtered.length === 0 && activeFilterCount > 0;
 
   const kpis = useMemo(() => computeArticleStatsKpis(filtered), [filtered]);
 
   const trendRange = useMemo(
-    () => resolveStatsTrendChartRange(resolvedRange, filtered, getArticleStatsDateFromCreatedAt),
-    [resolvedRange, filtered],
+    () =>
+      resolvedRange.allTime || !resolvedRange.start || !resolvedRange.end
+        ? { start: thongKe?.ngayMin ?? '', end: thongKe?.ngayMax ?? '' }
+        : { start: resolvedRange.start, end: resolvedRange.end },
+    [resolvedRange, thongKe?.ngayMin, thongKe?.ngayMax],
   );
-  const bucket = useMemo(() => pickTrendBucket(trendRange.start, trendRange.end), [trendRange]);
   const trendSeries = useMemo(
     () => buildTrendSeries(filtered, trendRange, bucket),
     [filtered, trendRange, bucket],
@@ -263,10 +323,56 @@ const BcThongKeBaiVietPage: React.FC = () => {
     [donViRows],
   );
 
-  const sortedLookup = useMemo(
-    () => sortLookupRows(filtered, sortKey, sortDir),
-    [filtered, sortKey, sortDir],
+  /**
+   * Bảng tra cứu phân trang MÁY CHỦ (get_bai_viet_page) với đúng bộ lọc của báo cáo.
+   * Trước đây bảng render toàn bộ dòng đã lọc — 12k `<tr>` treo trình duyệt.
+   */
+  const donViSplit = useMemo(
+    () => splitDonViFilter(dims.idDonVi, ARTICLE_STATS_DON_VI_UNKNOWN),
+    [dims.idDonVi],
   );
+  const lookupQuery = useMemo<Omit<BaiVietPageQuery, 'page' | 'pageSize'>>(
+    () => ({
+      search: '',
+      ...scopeArgs,
+      theLoaiIds: dims.idTheLoai,
+      nguonDangIds: dims.idNguonDang,
+      trangDangIds: dims.idTrangDang,
+      nguoiTaoIds: dims.idNguoiTao,
+      sort: { column: sortKey, direction: sortDir },
+      trucNgay: 'tg_tao',
+      tuNgay: thongKeArgs.tuNgay,
+      denNgay: thongKeArgs.denNgay,
+      donViIds: donViSplit.donViIds,
+      donViIncludeNull: donViSplit.donViIncludeNull,
+    }),
+    [scopeArgs, dims, sortKey, sortDir, thongKeArgs.tuNgay, thongKeArgs.denNgay, donViSplit],
+  );
+  /** Số trang gắn với bộ lọc đã tạo ra nó: đổi bộ lọc là về trang 1, không cần effect. */
+  const [lookupPaging, setLookupPaging] = useState<{ page: number; pageSize: number; forQuery: unknown }>({
+    page: 1,
+    pageSize: 50,
+    forQuery: null,
+  });
+  const lookupPage = lookupPaging.forQuery === lookupQuery ? lookupPaging.page : 1;
+  const lookupParams = useMemo<BaiVietPageQuery>(
+    () => ({ ...lookupQuery, page: lookupPage, pageSize: lookupPaging.pageSize }),
+    [lookupQuery, lookupPage, lookupPaging.pageSize],
+  );
+  const lookup = useQuery({
+    queryKey: queryKeys.baiVietDanhSach.page(lookupParams),
+    queryFn: () => getBaiVietDanhSachPage(lookupParams),
+    enabled: listQueryEnabled,
+    placeholderData: keepPreviousData,
+    ...listQueryOptions,
+  });
+  const lookupRows = useMemo(() => lookup.data?.rows ?? [], [lookup.data]);
+
+  useEffect(() => {
+    if (!viewing) return;
+    const fresh = lookupRows.find((r) => r.id === viewing.id);
+    if (fresh && fresh !== viewing) queueMicrotask(() => setViewing(fresh));
+  }, [lookupRows, viewing]);
 
   const theLoaiOptions = useMemo(
     () => buildDimOptions(rows, (r) => ({ id: String(r.id_the_loai), label: r.ten_the_loai?.trim() || '' })),
@@ -398,13 +504,15 @@ const BcThongKeBaiVietPage: React.FC = () => {
    * Các bảng tổng hợp tính ngay tại đây (không `useMemo`) vì chỉ cần khi bấm xuất.
    */
   const handleExport = async () => {
-    if (sortedLookup.length === 0) {
+    if (kpis.totalCount === 0) {
       toast.warning(txt('articleStats.noExportData'));
       return;
     }
     setExporting(true);
     try {
       const unknownLabel = txt('articleStats.donViKhongXacDinh');
+      // Sheet chi tiết cần từng bài: chỉ kéo khi bấm xuất, theo lô qua RPC phân trang.
+      const allLookupRows = await getBaiVietDanhSachAllForExport(lookupQuery);
       await exportBcThongKeBaiVietToExcel({
         kpis,
         range: resolvedRange,
@@ -415,7 +523,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
         trangRows: aggregateTopCounts(filtered, 'trang'),
         nguoiTaoRows: aggregateByNguoiTao(filtered, tenDonViById, unknownLabel),
         trendRows: trendSeries,
-        lookupRows: sortedLookup,
+        lookupRows: allLookupRows,
         tenDonViById,
       });
     } catch {
@@ -587,7 +695,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                     <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <Line type="monotone" dataKey="count" name="Số bài" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
                     </LineChart>
@@ -601,7 +709,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                     <BarChart data={theLoaiChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} height={48} angle={-20} textAnchor="end" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                       <RechartsTooltip content={<ChartTooltip />} />
                       <ColoredBar
                         data={theLoaiChartData}
@@ -656,7 +764,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                       margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                      <XAxis tickFormatter={formatAxisTick} type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                       <YAxis
                         type="category"
                         dataKey="label"
@@ -695,7 +803,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                       {donViRows.map((row) => (
                         <tr key={row.id} className="border-b border-border/60">
                           <td className="py-2 px-3 max-w-[200px] truncate">{row.label}</td>
-                          <td className="py-2 pr-3 text-right tabular-nums">{row.soBai}</td>
+                          <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(row.soBai)}</td>
                           <td className="py-2 pr-3 text-right tabular-nums">
                             {formatDecimal(row.tyTrongSoBai, 1)}%
                           </td>
@@ -705,7 +813,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                     <tfoot className="sticky bottom-0 bg-card border-t border-border">
                       <tr className="font-medium">
                         <td className="py-2 px-3">{txt('articleStats.tableRowTong')}</td>
-                        <td className="py-2 pr-3 text-right tabular-nums">{donViTotals}</td>
+                        <td className="py-2 pr-3 text-right tabular-nums">{formatDecimal(donViTotals)}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">
                           {donViTotals > 0 ? `${formatDecimal(100, 1)}%` : '—'}
                         </td>
@@ -728,7 +836,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                           ['ngay_dang', txt('articleStats.tableColNgayDang')],
                           ['ten_nguon_dang', txt('articleStats.tableColNguon')],
                           ['ten_trang_dang', txt('articleStats.tableColTrang')],
-                          ['creator', txt('articleStats.tableColNguoi')],
+                          ['ho_va_ten_nguoi_tao', txt('articleStats.tableColNguoi')],
                         ] as const
                       ).map(([key, label]) => (
                         <th key={key} className="py-2 pr-3 font-medium whitespace-nowrap">
@@ -749,7 +857,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedLookup.map((row) => (
+                    {lookupRows.map((row) => (
                       <tr
                         key={row.id}
                         className="border-b border-border/60 hover:bg-muted/40 cursor-pointer"
@@ -783,6 +891,16 @@ const BcThongKeBaiVietPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              <TablePaginationFooter
+                className="-mx-4 -mb-4 mt-4 border-t border-border"
+                totalRecords={lookup.data?.totalRecords ?? 0}
+                page={lookupPage}
+                pageSize={lookupPaging.pageSize}
+                pageSizeOptions={LOOKUP_PAGE_SIZE_OPTIONS}
+                disableAllOption
+                onPageChange={(page) => setLookupPaging((p) => ({ ...p, page, forQuery: lookupQuery }))}
+                onPageSizeChange={(pageSize) => setLookupPaging({ page: 1, pageSize, forQuery: lookupQuery })}
+              />
             </StatsCard>
           </>
         )}

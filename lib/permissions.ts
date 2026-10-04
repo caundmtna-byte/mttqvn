@@ -108,7 +108,7 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranReliefSupportUnits: 'nghia-tinh-dong-lam/nha-tai-tro',
   matTranReliefSupportReport: 'nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo',
   /** Tiếp nhận — `module_key` DB: `tiep-nhan`; RLS `tn_tiep_nhan` gọi `fn_co_quyen('tiep-nhan', …)`. */
-  matTranTiepNhan: 'nghia-tinh-dong-lam/tiep-nhan',
+  matTranTiepNhan: 'nghia-tinh-dong-lam/tiep-nhan-tien',
   /** Danh sách tăng lương — `can()`: `cap_bac===1` hoặc `quan_tri` (`admin`/`all`) hoặc token `xem`/`them`/`sua`/`xoa`. */
   matTranSalaryIncreaseList: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong',
   /** Thiết lập lương — cùng luật `can()` như danh sách tăng lương. */

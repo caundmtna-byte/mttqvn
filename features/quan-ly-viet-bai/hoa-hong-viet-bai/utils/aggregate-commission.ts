@@ -1,12 +1,12 @@
 import type { BaiVietDanhSach } from '../../bai-viet/core/types';
+import type { BaiVietThongKeNhom } from '../../bai-viet/utils/thong-ke-nhom';
 import type { StatsTableRow } from '@/components/shared/stats/types';
 import { formatDecimal } from '@/lib/utils';
 
 export type CommissionScope = 'mine' | 'all';
 
+/** Khoảng ngày đăng đã lọc ở máy chủ (RPC gộp nhóm) — ở đây chỉ còn lọc theo chiều. */
 export interface CommissionFilters {
-  dateFrom: string | null;
-  dateTo: string | null;
   theLoaiIds: string[];
   authorIds: string[];
   donViIds: string[];
@@ -18,7 +18,7 @@ export interface CommissionFilters {
  */
 export const DON_VI_CHUA_GAN = '__chua_gan__';
 
-export function donViKeyOf(row: BaiVietDanhSach): string {
+export function donViKeyOf(row: Pick<BaiVietDanhSach, 'id_don_vi_nguoi_tao'>): string {
   const id = String(row.id_don_vi_nguoi_tao ?? '').trim();
   return id === '' ? DON_VI_CHUA_GAN : id;
 }
@@ -31,7 +31,8 @@ export interface CommissionSeriesPoint {
 }
 
 export interface CommissionAggregateResult {
-  filteredRows: BaiVietDanhSach[];
+  /** Các nhóm (kỳ × thể loại × … × người tạo) còn lại sau bộ lọc. */
+  filteredRows: BaiVietThongKeNhom[];
   totalCommission: number;
   articleCount: number;
   avgCommission: number;
@@ -42,25 +43,17 @@ export interface CommissionAggregateResult {
   theLoaiTableRows: StatsTableRow[];
 }
 
-function inDateRange(isoDate: string, from: string | null, to: string | null): boolean {
-  const d = isoDate.slice(0, 10);
-  if (from && d < from) return false;
-  if (to && d > to) return false;
-  return true;
-}
-
-function monthKey(isoDate: string): string {
-  return isoDate.slice(0, 7);
-}
-
 function labelMonth(key: string): string {
   const [y, m] = key.split('-');
   return `${m}/${y}`;
 }
 
-/** Gom KPI + chuỗi chart/bảng từ danh sách bài (don_gia = nhuận bút). */
+/**
+ * Gom KPI + chuỗi chart/bảng từ các nhóm máy chủ đã gộp theo THÁNG ĐĂNG
+ * (`so_tien` = tổng nhuận bút, `so_bai` = số bài của nhóm).
+ */
 export function aggregateCommission(
-  rows: BaiVietDanhSach[],
+  rows: BaiVietThongKeNhom[],
   scope: CommissionScope,
   currentAuthorId: string,
   filters: CommissionFilters,
@@ -77,8 +70,6 @@ export function aggregateCommission(
     }
   }
 
-  list = list.filter((r) => inDateRange(r.ngay_dang, filters.dateFrom, filters.dateTo));
-
   if (filters.theLoaiIds.length > 0) {
     const set = new Set(filters.theLoaiIds);
     list = list.filter((r) => set.has(String(r.id_the_loai)));
@@ -94,16 +85,16 @@ export function aggregateCommission(
     list = list.filter((r) => set.has(donViKeyOf(r)));
   }
 
-  const totalCommission = list.reduce((s, r) => s + (Number(r.don_gia) || 0), 0);
-  const articleCount = list.length;
+  const totalCommission = list.reduce((s, r) => s + r.so_tien, 0);
+  const articleCount = list.reduce((s, r) => s + r.so_bai, 0);
   const avgCommission = articleCount > 0 ? totalCommission / articleCount : 0;
 
   const byMonth = new Map<string, { total: number; count: number }>();
   for (const r of list) {
-    const k = monthKey(r.ngay_dang);
+    const k = r.ky.slice(0, 7);
     const cur = byMonth.get(k) ?? { total: 0, count: 0 };
-    cur.total += Number(r.don_gia) || 0;
-    cur.count += 1;
+    cur.total += r.so_tien;
+    cur.count += r.so_bai;
     byMonth.set(k, cur);
   }
   const monthKeys = [...byMonth.keys()].sort();
@@ -117,8 +108,8 @@ export function aggregateCommission(
     const id = String(r.id_the_loai);
     const label = r.ten_the_loai?.trim() || id;
     const cur = byTl.get(id) ?? { label, total: 0, count: 0 };
-    cur.total += Number(r.don_gia) || 0;
-    cur.count += 1;
+    cur.total += r.so_tien;
+    cur.count += r.so_bai;
     byTl.set(id, cur);
   }
   const seriesByTheLoai: CommissionSeriesPoint[] = [...byTl.entries()]
@@ -133,8 +124,8 @@ export function aggregateCommission(
       r.ten_tai_khoan_nguoi_tao?.trim() ||
       `NV ${id}`;
     const cur = byAu.get(id) ?? { label, total: 0, count: 0 };
-    cur.total += Number(r.don_gia) || 0;
-    cur.count += 1;
+    cur.total += r.so_tien;
+    cur.count += r.so_bai;
     byAu.set(id, cur);
   }
   const seriesByAuthor: CommissionSeriesPoint[] = [...byAu.entries()]
@@ -148,13 +139,13 @@ export function aggregateCommission(
   const authorTableRows: StatsTableRow[] = seriesByAuthor.map((p) => ({
     id: p.key,
     label: p.label,
-    value: `${fmtMoney(p.total)} (${p.count})`,
+    value: `${fmtMoney(p.total)} (${fmtMoney(p.count)})`,
   }));
 
   const theLoaiTableRows: StatsTableRow[] = seriesByTheLoai.map((p) => ({
     id: p.key,
     label: p.label,
-    value: `${fmtMoney(p.total)} (${p.count})`,
+    value: `${fmtMoney(p.total)} (${fmtMoney(p.count)})`,
   }));
 
   return {

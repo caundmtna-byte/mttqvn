@@ -49,7 +49,7 @@ const AnSinhXaHoiDashboard: React.FC = () => {
             color: 'bg-rose-500',
           },
           {
-            path: '/nghia-tinh-dong-lam/tiep-nhan',
+            path: '/nghia-tinh-dong-lam/tiep-nhan-tien',
             title: txt('page.matTranDashboard.tiepNhan'),
             description: txt('page.matTranDashboard.tiepNhanDesc'),
             icon: HandCoins,

@@ -181,7 +181,7 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, ungHoNhom, onClose,
                       <td className="px-3 py-2 text-right tabular-nums">{so(r.tienMat)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{so(r.hienVat)}</td>
                       <td className="px-3 py-2 text-right tabular-nums font-medium">{so(r.tong)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.soLuot}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatDecimal(r.soLuot)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -191,7 +191,7 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, ungHoNhom, onClose,
                     <td className="px-3 py-2 text-right tabular-nums">{so(congUngHo.tienMat)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{so(congUngHo.hienVat)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{so(congUngHo.tong)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{congUngHo.soLuot}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{formatDecimal(congUngHo.soLuot)}</td>
                   </tr>
                 </tfoot>
               </table>

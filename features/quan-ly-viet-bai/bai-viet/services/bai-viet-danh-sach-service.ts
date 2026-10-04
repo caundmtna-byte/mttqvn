@@ -9,6 +9,13 @@ import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { BaiVietDanhSach } from '../core/types';
+import {
+  parseBaiVietThongKeNhom,
+  toBaiVietThongKeRpcParams,
+  type BaiVietThongKeArgs,
+  type BaiVietThongKeNhomResult,
+  type BaiVietTrucNgay,
+} from '../utils/thong-ke-nhom';
 import type { BaiVietDanhSachFormValues } from '../core/schema';
 import {
   BAI_VIET_DANH_SACH_RETURNING,
@@ -365,6 +372,15 @@ export type BaiVietPageQuery = {
   trangDangIds: readonly string[];
   nguoiTaoIds: readonly string[];
   sort?: ServerSortState | null;
+  /**
+   * Lọc khoảng ngày + đơn vị người tạo — chỉ BC thống kê / Nhuận bút dùng.
+   * Bỏ trống thì KHÔNG gửi tham số, trang danh sách giữ nguyên lời gọi cũ.
+   */
+  trucNgay?: BaiVietTrucNgay;
+  tuNgay?: string | null;
+  denNgay?: string | null;
+  donViIds?: readonly string[];
+  donViIncludeNull?: boolean;
 };
 
 export type BaiVietNguoiTaoFilterOption = {
@@ -424,6 +440,21 @@ function rpcRowToBaiViet(raw: Record<string, unknown>): BaiVietDanhSach {
   );
 }
 
+function buildBaiVietPageExtraParams(q: BaiVietPageQuery): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (q.tuNgay || q.denNgay) {
+    out.p_truc_ngay = q.trucNgay ?? 'ngay_dang';
+    out.p_tu_ngay = q.tuNgay || null;
+    out.p_den_ngay = q.denNgay || null;
+  }
+  const donViNums = (q.donViIds ?? [])
+    .map((x) => Number(String(x).trim()))
+    .filter((n) => Number.isFinite(n));
+  if (donViNums.length) out.p_don_vi_ids = donViNums;
+  if (q.donViIncludeNull) out.p_don_vi_include_null = true;
+  return out;
+}
+
 export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVietPageResult> {
   const pageSize = Math.max(1, Math.min(Math.floor(q.pageSize), 500));
   const page = Math.max(1, Math.floor(q.page));
@@ -459,6 +490,7 @@ export async function getBaiVietDanhSachPage(q: BaiVietPageQuery): Promise<BaiVi
     p_trang_dang_ids: trangNums.length ? trangNums : null,
     p_id_nguoi_tao: nguoiTaoNums.length ? nguoiTaoNums : null,
     p_sort: buildRpcSortParam(q.sort, BAI_VIET_SERVER_SORT_COLUMNS),
+    ...buildBaiVietPageExtraParams(q),
   } as never);
   if (error) handleSupabaseError(error);
 
@@ -503,4 +535,16 @@ export async function getBaiVietNguoiTaoFilterOptions(
     label: row.label?.trim() || String(row.id),
     count: Number(row.cnt) || 0,
   }));
+}
+
+/** Số liệu gộp nhóm cho BC thống kê / Nhuận bút — xem `utils/thong-ke-nhom.ts`. */
+export async function getBaiVietThongKeNhom(args: BaiVietThongKeArgs): Promise<BaiVietThongKeNhomResult> {
+  const supabase = getSupabase();
+  if (!supabase) return { nhom: [], ngayMin: '', ngayMax: '' };
+  const { data, error } = await supabase.rpc(
+    'get_bai_viet_thong_ke_nhom',
+    toBaiVietThongKeRpcParams(args) as never,
+  );
+  if (error) handleSupabaseError(error);
+  return parseBaiVietThongKeNhom(data);
 }

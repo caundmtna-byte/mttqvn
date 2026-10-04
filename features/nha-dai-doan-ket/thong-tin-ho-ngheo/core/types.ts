@@ -69,9 +69,9 @@ export interface HnghNhanKhau {
   tinh_trang_dat: HnghTinhTrangDat | null;
 }
 
-/** Một hộ ở tab Thống kê — chỉ cột phân loại (xem `HNGH_SELECT_THONG_KE`). */
+/** Một NHÓM hộ cùng phân loại (RPC `get_hngh_thong_ke_nhom`), `so_ho` = số hộ của nhóm. */
 export interface HoNgheoThongKeRow {
-  id: string;
+  so_ho: number;
   xa_phuong_id: string | null;
   ten_xa_phuong: string | null;
   doi_tuong: HnghDoiTuong | null;

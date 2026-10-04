@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
+import { formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -88,7 +89,7 @@ const BarCard: React.FC<{
         <BarChart data={rows}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-          <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+          <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
           <RechartsTooltip content={<ChartTooltip />} />
           <ColoredBar
             data={rows}
@@ -397,7 +398,7 @@ const HoNgheoThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport,
               rows={xaPhuongRows.map((r) => ({
                 id: r.id,
                 label: r.label,
-                value: `${r.tongSoHo} · ${r.dangKhoKhan} ${txt('hoNgheoThongKe.kpi.dangKhoKhan').toLowerCase()}`,
+                value: `${formatDecimal(r.tongSoHo)} · ${formatDecimal(r.dangKhoKhan)} ${txt('hoNgheoThongKe.kpi.dangKhoKhan').toLowerCase()}`,
               }))}
               columnLabelKey="hoNgheoThongKe.table.colXaPhuong"
               columnValueKey="hoNgheoThongKe.table.colSoHo"

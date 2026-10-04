@@ -55,18 +55,3 @@ export const HNGH_SELECT_FULL = `${HNGH_SELECT},${HNGH_NHAN_KHAU_COLS.join(',')}
  * cột thì màn chi tiết mất nhân khẩu cho tới khi tải lại.
  */
 export const HNGH_RETURNING = HNGH_SELECT_FULL;
-
-/**
- * Tab Thống kê: chỉ các cột phân loại. Cố ý KHÔNG kéo số căn cước, số tài khoản,
- * điện thoại — vừa tốn egress vừa đưa dữ liệu nhạy cảm vào nơi không cần.
- */
-export const HNGH_SELECT_THONG_KE = [
-  'id',
-  'xa_phuong_id',
-  'doi_tuong',
-  'dan_toc_id',
-  'ton_giao',
-  'trang_thai',
-  XA_PHUONG,
-  DAN_TOC,
-].join(',');

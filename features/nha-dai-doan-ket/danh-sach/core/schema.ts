@@ -177,13 +177,9 @@ export const nhaDaiDoanKetSchema = z.object({
   so_quyet_dinh: optionalText,
   ngay_quyet_dinh: optionalDate,
 }).superRefine((v, ctx) => {
-  // Bản sao CHECK nddk_so_tien_theo_trang_thai_chk — xem core/luat-so-tien.ts.
-  if (nddkThieuTien(v.trang_thai, v.so_tien)) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['so_tien'],
-      message: txt('nhaDaiDoanKet.validation.soTienBatBuoc', { trangThai: v.trang_thai }),
-    });
+  // Bản sao so_tien NOT NULL dưới DB — xem core/luat-so-tien.ts.
+  if (nddkThieuTien(v.so_tien)) {
+    ctx.addIssue({ code: 'custom', path: ['so_tien'], message: txt('nhaDaiDoanKet.validation.soTienBatBuoc') });
   }
   if (canNhaTaiTro(v.nguon_ho_tro) && !v.nha_tai_tro_id) {
     ctx.addIssue({ code: 'custom', path: ['nha_tai_tro_id'], message: txt('nhaDaiDoanKet.validation.nhaTaiTroRequired') });

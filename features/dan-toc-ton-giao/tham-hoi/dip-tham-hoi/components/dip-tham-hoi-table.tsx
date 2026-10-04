@@ -5,7 +5,7 @@ import type { ColumnConfig } from '@/store/createGenericStore';
 import type { DipThamHoi } from '../core/types';
 import { useDipThamHoiStore } from '../store/useDipThamHoiStore';
 import GenericTable from '@/components/shared/GenericTable';
-import { formatDateTimeShort } from '@/lib/utils';
+import { formatDateTimeShort, formatDecimal } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { trangThaiDipThamHoiBadge } from '../core/display-badges';
@@ -110,15 +110,15 @@ const DipThamHoiTable = memo(function DipThamHoiTable({
           );
         case 'so_luong_du_kien_tong':
           return (
-            <span className="text-body-sm font-medium tabular-nums">{item.so_luong_du_kien_tong}</span>
+            <span className="text-body-sm font-medium tabular-nums">{formatDecimal(item.so_luong_du_kien_tong)}</span>
           );
         case 'so_luong_to_chuc_du_kien':
           return (
-            <span className="text-body-sm tabular-nums text-muted-foreground">{item.so_luong_to_chuc_du_kien}</span>
+            <span className="text-body-sm tabular-nums text-muted-foreground">{formatDecimal(item.so_luong_to_chuc_du_kien)}</span>
           );
         case 'so_luong_ca_nhan_du_kien':
           return (
-            <span className="text-body-sm tabular-nums text-muted-foreground">{item.so_luong_ca_nhan_du_kien}</span>
+            <span className="text-body-sm tabular-nums text-muted-foreground">{formatDecimal(item.so_luong_ca_nhan_du_kien)}</span>
           );
         case 'so_luong_thuc_te_tong':
           return (

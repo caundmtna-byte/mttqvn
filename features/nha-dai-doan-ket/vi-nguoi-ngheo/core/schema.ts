@@ -126,7 +126,7 @@ export const viNguoiNgheoSchema = z.object({
   bien_ban_ban_giao: z.custom<BbbgFormInput>().optional(),
 })
   .superRefine((v, ctx) => {
-    // Bản sao CHECK vnn_so_tien_theo_trang_thai_chk — xem core/luat-so-tien.ts.
+    // Bản sao CHECK vnn_so_tien_theo_hinh_thuc_chk — xem core/luat-so-tien.ts.
     for (const o of vnnOTienCanNhap(v)) {
       ctx.addIssue({
         code: 'custom',

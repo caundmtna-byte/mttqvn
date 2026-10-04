@@ -1,7 +1,13 @@
+/**
+ * Tổng hợp BC thống kê bài viết trên các NHÓM máy chủ đã gộp sẵn
+ * (`BaiVietThongKeNhom`, RPC `get_bai_viet_thong_ke_nhom`) — mỗi nhóm mang
+ * `so_bai` / `so_tien`, nên mọi phép đếm ở đây là CỘNG trọng số, không đếm dòng.
+ * Khoảng ngày đã lọc ở máy chủ; ở đây chỉ còn lọc theo chiều (thể loại, nguồn…).
+ */
 import dayjs from 'dayjs';
 import type { BaiVietDanhSach } from '../../bai-viet/core/types';
+import type { BaiVietThongKeNhom } from '../../bai-viet/utils/thong-ke-nhom';
 import {
-  isDateInStandardRange,
   resolveStandardDateRange,
   STANDARD_DATE_RANGE_PRESET_IDS,
   type StandardResolvedDateRange,
@@ -23,7 +29,7 @@ export const ARTICLE_STATS_DON_VI_UNKNOWN = '__khong_xac_dinh__';
  * Bài viết không có cột đơn vị riêng: đơn vị của bài = `don_vi_id` của NGƯỜI TẠO.
  * Người tạo chưa gắn đơn vị gom về một nhóm riêng thay vì bị loại khỏi báo cáo.
  */
-export function getArticleDonViKey(item: BaiVietDanhSach): string {
+export function getArticleDonViKey(item: Pick<BaiVietDanhSach, 'id_don_vi_nguoi_tao'>): string {
   const raw = item.id_don_vi_nguoi_tao;
   return raw != null && String(raw).trim() !== '' ? String(raw).trim() : ARTICLE_STATS_DON_VI_UNKNOWN;
 }
@@ -52,32 +58,27 @@ export function resolveArticleStatsDateRange(
   return resolveStandardDateRange(preset, customStart, customEnd, now);
 }
 
-/** Ngày YYYY-MM-DD cho lọc & biểu đồ — luôn theo `tg_tao` (ngày tạo). */
-export function getArticleStatsDateFromCreatedAt(item: BaiVietDanhSach): string {
-  const raw = item.tg_tao;
-  if (!raw) return '';
-  return dayjs(raw).format('YYYY-MM-DD');
-}
-
-export function isDateInRange(dateStr: string, range: ResolvedDateRange): boolean {
-  return isDateInStandardRange(dateStr, range);
-}
-
+/** Lọc nhóm theo các chiều đang chọn. Khoảng ngày đã lọc ở máy chủ. */
 export function filterArticlesForStats(
-  items: BaiVietDanhSach[],
-  range: ResolvedDateRange,
+  items: BaiVietThongKeNhom[],
   dims: ArticleStatsDimensionFilters,
-): BaiVietDanhSach[] {
-  return items.filter((item) => {
-    const d = getArticleStatsDateFromCreatedAt(item);
-    if (!range.allTime && !isDateInRange(d, range)) return false;
-    if (dims.idTheLoai.length > 0 && !dims.idTheLoai.includes(String(item.id_the_loai))) return false;
-    if (dims.idNguonDang.length > 0 && !dims.idNguonDang.includes(String(item.id_nguon_dang))) return false;
-    if (dims.idTrangDang.length > 0 && !dims.idTrangDang.includes(String(item.id_trang_dang))) return false;
-    if (dims.idNguoiTao.length > 0 && !dims.idNguoiTao.includes(String(item.id_nguoi_tao))) return false;
-    if (dims.idDonVi.length > 0 && !dims.idDonVi.includes(getArticleDonViKey(item))) return false;
-    return true;
-  });
+): BaiVietThongKeNhom[] {
+  const has = (vals: string[], v: string) => vals.length === 0 || vals.includes(v);
+  return items.filter(
+    (item) =>
+      has(dims.idTheLoai, item.id_the_loai) &&
+      has(dims.idNguonDang, item.id_nguon_dang) &&
+      has(dims.idTrangDang, item.id_trang_dang) &&
+      has(dims.idNguoiTao, item.id_nguoi_tao) &&
+      has(dims.idDonVi, getArticleDonViKey(item)),
+  );
+}
+
+/** Tổng số bài của các nhóm. */
+export function sumSoBai(items: readonly BaiVietThongKeNhom[]): number {
+  let n = 0;
+  for (const r of items) n += r.so_bai;
+  return n;
 }
 
 /**
@@ -85,7 +86,7 @@ export function filterArticlesForStats(
  * Cơ quan không có ngân sách trả nhuận bút, nên số tiền trên trang thống kê
  * khiến cán bộ hiểu nhầm là khoản sẽ được nhận. Tiền chỉ còn ở trang Nhuận bút.
  */
-export function computeArticleStatsKpis(filtered: BaiVietDanhSach[]): {
+export function computeArticleStatsKpis(filtered: BaiVietThongKeNhom[]): {
   totalCount: number;
   distinctTheLoai: number;
   distinctNguoiTao: number;
@@ -97,18 +98,19 @@ export function computeArticleStatsKpis(filtered: BaiVietDanhSach[]): {
    *  bài của tài khoản chưa gắn đơn vị không kéo lệch con số này. */
   avgBaiMoiDonVi: number;
 } {
-  const totalCount = filtered.length;
+  let totalCount = 0;
   const theLoai = new Set<string>();
   const nguoi = new Set<string>();
   const donVi = new Set<string>();
   let soBaiCoDonVi = 0;
   for (const r of filtered) {
-    theLoai.add(String(r.id_the_loai));
-    nguoi.add(String(r.id_nguoi_tao));
+    totalCount += r.so_bai;
+    theLoai.add(r.id_the_loai);
+    nguoi.add(r.id_nguoi_tao);
     const key = getArticleDonViKey(r);
     if (key !== ARTICLE_STATS_DON_VI_UNKNOWN) {
       donVi.add(key);
-      soBaiCoDonVi += 1;
+      soBaiCoDonVi += r.so_bai;
     }
   }
   return {
@@ -119,12 +121,6 @@ export function computeArticleStatsKpis(filtered: BaiVietDanhSach[]): {
     soBaiCoDonVi,
     avgBaiMoiDonVi: donVi.size > 0 ? soBaiCoDonVi / donVi.size : 0,
   };
-}
-
-/** `don_gia` từ Supabase có thể là chuỗi (numeric) — cộng thẳng sẽ ra nối chuỗi. */
-function toSoTien(item: BaiVietDanhSach): number {
-  const n = Number(item.don_gia);
-  return Number.isFinite(n) ? n : 0;
 }
 
 export type TrendBucket = 'day' | 'month';
@@ -145,27 +141,20 @@ export interface TrendPoint {
   soTien: number;
 }
 
-/** Chuỗi bucket liên tục trong [start,end], gộp theo ngày hoặc tháng (YYYY-MM). */
+/**
+ * Chuỗi bucket liên tục trong [start,end] (ngày hoặc tháng YYYY-MM). Nhóm máy chủ
+ * đã mang khoá kỳ đúng bucket nên chỉ việc cộng vào; kỳ không có bài vẫn hiện 0.
+ * `range` rỗng (preset "Tất cả") phải truyền khoảng ngày thật từ `ngayMin/ngayMax`
+ * — vòng lặp dayjs trên ngày rỗng sẽ không bao giờ dừng, nên có guard `isValid`.
+ */
 export function buildTrendSeries(
-  filtered: BaiVietDanhSach[],
-  range: ResolvedDateRange,
+  filtered: BaiVietThongKeNhom[],
+  range: { start: string; end: string },
   bucket: TrendBucket,
 ): TrendPoint[] {
-  let startStr = range.start;
-  let endStr = range.end;
-
-  // allTime hoặc empty start/end → tự suy min/max từ data để tránh vòng lặp vô tận
-  if (!startStr || !endStr) {
-    if (filtered.length === 0) return [];
-    const dates = filtered.map(getArticleStatsDateFromCreatedAt).filter(Boolean);
-    if (dates.length === 0) return [];
-    startStr = dates.reduce((a, b) => (a < b ? a : b));
-    endStr = dates.reduce((a, b) => (a > b ? a : b));
-  }
-
-  const start = dayjs(startStr.slice(0, 10));
-  const end = dayjs(endStr.slice(0, 10));
-  if (!start.isValid() || !end.isValid()) return [];
+  const start = dayjs(range.start.slice(0, 10));
+  const end = dayjs(range.end.slice(0, 10));
+  if (!range.start || !range.end || !start.isValid() || !end.isValid()) return [];
   const keys: string[] = [];
   if (bucket === 'day') {
     for (let cur = start; !cur.isAfter(end, 'day'); cur = cur.add(1, 'day')) {
@@ -183,13 +172,10 @@ export function buildTrendSeries(
   }
 
   for (const item of filtered) {
-    const d = getArticleStatsDateFromCreatedAt(item);
-    if (!d) continue;
-    const key = bucket === 'day' ? d.slice(0, 10) : d.slice(0, 7);
-    const cur = map.get(key);
+    const cur = map.get(item.ky);
     if (!cur) continue;
-    cur.count += 1;
-    cur.soTien += toSoTien(item);
+    cur.count += item.so_bai;
+    cur.soTien += item.so_tien;
   }
 
   return keys.map((key) => {
@@ -210,7 +196,7 @@ export interface LabelCountRow {
 
 /** `topN` bỏ trống = lấy đủ mọi nhóm (file xuất không được cắt top như giao diện). */
 export function aggregateTopCounts(
-  filtered: BaiVietDanhSach[],
+  filtered: BaiVietThongKeNhom[],
   mode: 'the_loai' | 'nguon' | 'trang' | 'nguoi_tao',
   topN: number = Number.POSITIVE_INFINITY,
 ): LabelCountRow[] {
@@ -242,62 +228,18 @@ export function aggregateTopCounts(
         id = '';
         label = '';
     }
-    const soTien = toSoTien(item);
     const prev = tally.get(id);
     if (prev) {
-      prev.count += 1;
-      prev.soTien += soTien;
+      prev.count += item.so_bai;
+      prev.soTien += item.so_tien;
     } else {
-      tally.set(id, { label, count: 1, soTien });
+      tally.set(id, { label, count: item.so_bai, soTien: item.so_tien });
     }
   }
   const rows = [...tally.entries()]
     .map(([id, v]) => ({ id, label: v.label, value: v.count, soTien: v.soTien }))
     .sort((a, b) => b.value - a.value);
   return rows.slice(0, topN);
-}
-
-export type LookupSortKey =
-  | 'ten_bai'
-  | 'ngay_dang'
-  | 'ten_the_loai'
-  | 'ten_nguon_dang'
-  | 'ten_trang_dang'
-  | 'creator';
-
-export function sortLookupRows(
-  rows: BaiVietDanhSach[],
-  sortKey: LookupSortKey,
-  direction: 'asc' | 'desc',
-): BaiVietDanhSach[] {
-  const dir = direction === 'asc' ? 1 : -1;
-  const creator = (r: BaiVietDanhSach) =>
-    r.ho_va_ten_nguoi_tao?.trim() || r.ten_tai_khoan_nguoi_tao?.trim() || '';
-  const sorted = [...rows];
-  sorted.sort((a, b) => {
-    let cmp: number;
-    switch (sortKey) {
-      case 'ngay_dang':
-        cmp = String(a.ngay_dang).localeCompare(String(b.ngay_dang));
-        break;
-      case 'ten_the_loai':
-        cmp = String(a.ten_the_loai ?? '').localeCompare(String(b.ten_the_loai ?? ''));
-        break;
-      case 'ten_nguon_dang':
-        cmp = String(a.ten_nguon_dang ?? '').localeCompare(String(b.ten_nguon_dang ?? ''));
-        break;
-      case 'ten_trang_dang':
-        cmp = String(a.ten_trang_dang ?? '').localeCompare(String(b.ten_trang_dang ?? ''));
-        break;
-      case 'creator':
-        cmp = creator(a).localeCompare(creator(b));
-        break;
-      default:
-        cmp = String(a.ten_bai).localeCompare(String(b.ten_bai));
-    }
-    return cmp * dir;
-  });
-  return sorted;
 }
 
 /* ------------------------------------------------------------------ *
@@ -325,7 +267,7 @@ export interface DonViStatsRow {
  * chen giữa các xã thật trong bảng báo cáo.
  */
 export function aggregateByDonVi(
-  filtered: BaiVietDanhSach[],
+  filtered: BaiVietThongKeNhom[],
   tenDonViById: ReadonlyMap<string, string>,
   unknownLabel: string,
 ): DonViStatsRow[] {
@@ -335,13 +277,13 @@ export function aggregateByDonVi(
     const id = getArticleDonViKey(item);
     const prev = tally.get(id);
     if (prev) {
-      prev.soBai += 1;
+      prev.soBai += item.so_bai;
     } else {
-      tally.set(id, { label: getArticleDonViLabel(id, tenDonViById, unknownLabel), soBai: 1 });
+      tally.set(id, { label: getArticleDonViLabel(id, tenDonViById, unknownLabel), soBai: item.so_bai });
     }
   }
 
-  const tongSoBai = filtered.length;
+  const tongSoBai = sumSoBai(filtered);
   const rows = [...tally.entries()].map(([id, v]) => ({
     id,
     label: v.label,
@@ -390,10 +332,10 @@ export interface DonViTheLoaiMatrix {
 /**
  * Gộp hai chiều đơn vị × thể loại cho sheet "Theo don vi" của file xuất —
  * đúng thứ người dùng cần: mỗi đơn vị một dòng, tổng bài và tổng từng thể loại.
- * Tổng các dòng, tổng các cột và `totals.soBai` luôn bằng `filtered.length`.
+ * Tổng các dòng, tổng các cột và `totals.soBai` luôn bằng tổng `so_bai` đã lọc.
  */
 export function aggregateDonViTheLoaiMatrix(
-  filtered: BaiVietDanhSach[],
+  filtered: BaiVietThongKeNhom[],
   tenDonViById: ReadonlyMap<string, string>,
   unknownLabel: string,
 ): DonViTheLoaiMatrix {
@@ -408,10 +350,10 @@ export function aggregateDonViTheLoaiMatrix(
     const theLoaiId = String(item.id_the_loai);
     const theLoaiLabel = item.ten_the_loai?.trim() || theLoaiId;
     const tl = theLoaiTally.get(theLoaiId);
-    if (tl) tl.soBai += 1;
-    else theLoaiTally.set(theLoaiId, { label: theLoaiLabel, soBai: 1 });
+    if (tl) tl.soBai += item.so_bai;
+    else theLoaiTally.set(theLoaiId, { label: theLoaiLabel, soBai: item.so_bai });
 
-    const soTien = toSoTien(item);
+    const soTien = item.so_tien;
     tongSoTien += soTien;
 
     const donViId = getArticleDonViKey(item);
@@ -425,16 +367,16 @@ export function aggregateDonViTheLoaiMatrix(
       };
       donViTally.set(donViId, dv);
     }
-    dv.soBai += 1;
+    dv.soBai += item.so_bai;
     dv.soTien += soTien;
-    dv.theoTheLoai.set(theLoaiId, (dv.theoTheLoai.get(theLoaiId) ?? 0) + 1);
+    dv.theoTheLoai.set(theLoaiId, (dv.theoTheLoai.get(theLoaiId) ?? 0) + item.so_bai);
   }
 
   const theLoaiCols = [...theLoaiTally.entries()]
     .sort((a, b) => b[1].soBai - a[1].soBai || a[1].label.localeCompare(b[1].label, 'vi'))
     .map(([id, v]) => ({ id, label: v.label }));
 
-  const tongSoBai = filtered.length;
+  const tongSoBai = sumSoBai(filtered);
   const rows = [...donViTally.entries()]
     .map(([id, v]) => ({
       id,
@@ -471,26 +413,25 @@ export interface NguoiTaoStatsRow {
 }
 
 export function aggregateByNguoiTao(
-  filtered: BaiVietDanhSach[],
+  filtered: BaiVietThongKeNhom[],
   tenDonViById: ReadonlyMap<string, string>,
   unknownLabel: string,
 ): NguoiTaoStatsRow[] {
   const tally = new Map<string, NguoiTaoStatsRow>();
   for (const item of filtered) {
-    const id = String(item.id_nguoi_tao);
-    const soTien = toSoTien(item);
+    const id = item.id_nguoi_tao;
     const prev = tally.get(id);
     if (prev) {
-      prev.soBai += 1;
-      prev.soTien += soTien;
+      prev.soBai += item.so_bai;
+      prev.soTien += item.so_tien;
       continue;
     }
     tally.set(id, {
       id,
       label: item.ho_va_ten_nguoi_tao?.trim() || item.ten_tai_khoan_nguoi_tao?.trim() || id,
       tenDonVi: getArticleDonViLabel(getArticleDonViKey(item), tenDonViById, unknownLabel),
-      soBai: 1,
-      soTien,
+      soBai: item.so_bai,
+      soTien: item.so_tien,
     });
   }
   return [...tally.values()].sort(

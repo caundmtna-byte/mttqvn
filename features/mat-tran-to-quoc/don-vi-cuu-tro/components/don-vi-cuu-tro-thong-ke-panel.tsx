@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import Button from '@/components/ui/Button';
 import Tooltip from '@/components/ui/Tooltip';
@@ -295,7 +295,7 @@ const DonViCuuTroThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExp
                   <BarChart data={loaiChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
-                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <YAxis tickFormatter={formatAxisTick} tick={{ fontSize: 12 }} allowDecimals={false} />
                     <RechartsTooltip content={<ChartTooltip />} />
                     <Legend />
                     <Bar

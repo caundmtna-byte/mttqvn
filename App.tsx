@@ -237,8 +237,10 @@ const App = () => {
           */}
           <Route path="/nghia-tinh-dong-lam" element={<AnSinhXaHoiDashboard />} />
           <Route path="/nghia-tinh-dong-lam/chuong-trinh-van-dong" element={<KhoDotCuuTroPage />} />
-          <Route path="/nghia-tinh-dong-lam/tiep-nhan" element={<TiepNhanPage />} />
-          <Route path="/nghia-tinh-dong-lam/tiep-nhan/:tnId/in/:loaiPhieu" element={<TnInBienBanPage />} />
+          <Route path="/nghia-tinh-dong-lam/tiep-nhan-tien" element={<TiepNhanPage />} />
+          <Route path="/nghia-tinh-dong-lam/tiep-nhan-tien/:tnId/in/:loaiPhieu" element={<TnInBienBanPage />} />
+          {/* Đường dẫn cũ (đổi 2026-10-04) — giữ link đã gửi / bookmark / trang in. */}
+          <Route path="/nghia-tinh-dong-lam/tiep-nhan/*" element={<ChuyenDuongDanCu />} />
           <Route path="/nghia-tinh-dong-lam/danh-muc-hang-hoa" element={<HangHoaPage />} />
           <Route path="/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang" element={<NhapXuatKhoPage />} />
           <Route

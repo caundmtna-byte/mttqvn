@@ -10,7 +10,6 @@ import {
   createBaiVietDanhSach,
   deleteBaiVietDanhSachMany,
   getBaiVietDanhSachById,
-  getBaiVietDanhSachList,
   updateBaiVietDanhSach,
 } from '../services/bai-viet-danh-sach-service';
 import { importBaiVietRows, type BaiVietImportContext } from '../services/bai-viet-import';
@@ -19,14 +18,6 @@ import { BaiVietLinkConflictError } from '../utils/bai-viet-link-conflict';
 import { BaiVietTenBaiConflictError } from '../utils/bai-viet-ten-bai-conflict';
 
 const listKey = queryKeys.baiVietDanhSach.all;
-
-export const useBaiVietDanhSachList = (options?: { enabled?: boolean }) =>
-  useQuery({
-    queryKey: listKey,
-    queryFn: getBaiVietDanhSachList,
-    enabled: options?.enabled !== false,
-    ...listQueryOptions,
-  });
 
 
 export const useBaiVietDanhSachDetail = (id: string | null) =>

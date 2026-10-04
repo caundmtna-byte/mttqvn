@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDisplayNumber } from '@/lib/utils';
 
 /** Props tương thích Recharts Tooltip (active, payload, label) */
 export interface ChartTooltipPayloadItem {
@@ -27,7 +28,7 @@ const ChartTooltip: React.FC<ChartTooltipProps> = ({ active: isActive, payload, 
             className="inline-block w-2 h-2 rounded-full mr-1.5"
             style={{ backgroundColor: p.color ?? p.fill }}
           />
-          {p.name}: <span className="font-semibold text-foreground">{p.value}</span>
+          {p.name}: <span className="font-semibold text-foreground">{formatDisplayNumber(p.value)}</span>
         </p>
       ))}
     </div>

@@ -8,7 +8,7 @@ import { getModuleStorageKey, resolveModuleIdFromStorageKey } from './module-sto
  */
 const KHOA_KHONG_DOI: readonly [string, string][] = [
   ['nghia-tinh-dong-lam/chuong-trinh-van-dong', 'dot-cuu-tro'],
-  ['nghia-tinh-dong-lam/tiep-nhan', 'tiep-nhan'],
+  ['nghia-tinh-dong-lam/tiep-nhan-tien', 'tiep-nhan'],
   ['nghia-tinh-dong-lam/danh-muc-hang-hoa', 'hang-hoa'],
   ['nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang', 'nhap-xuat-kho'],
   ['nghia-tinh-dong-lam/ton-kho', 'ton-kho'],
@@ -32,5 +32,6 @@ describe('khoá quyền nhóm Nghĩa tình dòng Lam không đổi theo đườn
       'nghia-tinh-dong-lam/chuong-trinh-van-dong',
     );
     expect(resolveModuleIdFromStorageKey('don-vi-ho-tro')).toBe('nghia-tinh-dong-lam/nha-tai-tro');
+    expect(resolveModuleIdFromStorageKey('nghia-tinh-dong-lam/tiep-nhan')).toBe('nghia-tinh-dong-lam/tiep-nhan-tien');
   });
 });

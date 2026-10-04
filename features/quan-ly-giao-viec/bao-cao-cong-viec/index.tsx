@@ -24,7 +24,7 @@ import {
   Users,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
-import { cn, formatDateShort } from '@/lib/utils';
+import { cn, formatDateShort, formatDecimal } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
 import DateRangePicker, { type DateRangeValue } from '@/components/ui/DateRangePicker';
 import { buildStandardDateRangePresets } from '@/lib/date-range-presets';
@@ -792,12 +792,12 @@ const PersonStatsTable: React.FC<{ rows: TaskReportPersonRow[]; showDoing?: bool
               <td className="py-2 px-3 max-w-[180px] truncate text-foreground" title={r.ho_va_ten ?? r.ten_tai_khoan ?? r.id}>
                 {r.ho_va_ten ?? r.ten_tai_khoan ?? r.id}
               </td>
-              <td className="py-2 px-2 text-right tabular-nums">{r.total}</td>
-              <td className="py-2 px-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{r.hoan_thanh}</td>
+              <td className="py-2 px-2 text-right tabular-nums">{formatDecimal(r.total)}</td>
+              <td className="py-2 px-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{formatDecimal(r.hoan_thanh)}</td>
               {showDoing ? (
-                <td className="py-2 px-2 text-right tabular-nums text-blue-600 dark:text-blue-400">{r.dang ?? 0}</td>
+                <td className="py-2 px-2 text-right tabular-nums text-blue-600 dark:text-blue-400">{formatDecimal(r.dang ?? 0)}</td>
               ) : null}
-              <td className="py-2 px-2 text-right tabular-nums text-rose-600 dark:text-rose-400">{r.qua_han}</td>
+              <td className="py-2 px-2 text-right tabular-nums text-rose-600 dark:text-rose-400">{formatDecimal(r.qua_han)}</td>
               <td className="py-2 px-3 text-right tabular-nums font-medium">
                 {r.completion_rate == null ? '—' : `${r.completion_rate}%`}
               </td>

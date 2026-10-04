@@ -3,7 +3,7 @@ import { txt } from '../../lib/text';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, X, AlertCircle, CheckCircle2, Download, ArrowRight } from 'lucide-react';
 import Button from '../ui/Button';
-import { cn, getErrorMessage, getTodayISODate } from '../../lib/utils';
+import { cn, formatDecimal, getErrorMessage, getTodayISODate } from '../../lib/utils';
 import { chuanHoaKhoaSoKhop } from '../../lib/vietnamese';
 import Combobox, { type Option } from '../ui/Combobox';
 import { DIALOG_SIZE } from '../../lib/dialog-sizes';
@@ -695,7 +695,7 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                       ] as const
                     ).map(([label, value, color]) => (
                       <div key={label} className="border border-border rounded-xl p-3 text-center">
-                        <p className={cn('text-lg font-semibold tabular-nums', color)}>{value}</p>
+                        <p className={cn('text-lg font-semibold tabular-nums', color)}>{formatDecimal(value)}</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
                       </div>
                     ))}

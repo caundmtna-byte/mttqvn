@@ -30,6 +30,7 @@ import {
   aggregateTapHuanTopDonViLopFromFlat,
   aggregateTapHuanTopTenLopFromFlat,
 } from '../utils/aggregate-mttq-tap-huan-stats';
+import { formatAxisTick } from '@/lib/utils';
 
 const DON_VI_NONE_ID = '__none__';
 
@@ -145,7 +146,7 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
               <BarChart data={byCap} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={56} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                 <RechartsTooltip content={<ChartTooltip />} />
                 <ColoredBar
                   data={byCap}
@@ -165,7 +166,7 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
               <BarChart data={byNam} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                 <RechartsTooltip content={<ChartTooltip />} />
                 <ColoredBar
                   data={byNam}
@@ -188,7 +189,7 @@ const MttqTapHuanThongKePanel: React.FC<Props> = ({ rows, flatRows, viewer, isLo
                 <BarChart data={byThuocDien} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={52} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                  <YAxis tickFormatter={formatAxisTick} allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                   <RechartsTooltip content={<ChartTooltip />} />
                   <ColoredBar
                     data={byThuocDien}

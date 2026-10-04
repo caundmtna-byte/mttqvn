@@ -1,6 +1,6 @@
 import React from 'react';
 import { txt } from '../../../lib/text';
-import { cn } from '../../../lib/utils';
+import { cn, formatDisplayNumber } from '../../../lib/utils';
 import type { StatsTableCardProps as Props } from './types';
 
 const StatsTableCard: React.FC<Props> = ({
@@ -33,7 +33,7 @@ const StatsTableCard: React.FC<Props> = ({
               {rows.map((row, idx) => (
                 <tr key={row.id ?? idx} className="border-b border-border/50">
                   <td className="py-2 text-foreground">{row.label}</td>
-                  <td className="py-2 text-right font-medium tabular-nums">{row.value}</td>
+                  <td className="py-2 text-right font-medium tabular-nums">{formatDisplayNumber(row.value)}</td>
                 </tr>
               ))}
             </tbody>

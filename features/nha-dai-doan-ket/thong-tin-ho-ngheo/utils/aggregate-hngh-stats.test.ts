@@ -11,11 +11,10 @@ import {
   filterRowsForHnghThongKe,
 } from './aggregate-hngh-stats';
 
-let seq = 0;
+/** Một nhóm = một hộ trừ khi ghi đè `so_ho`. */
 function ho(p: Partial<HoNgheoThongKeRow> = {}): HoNgheoThongKeRow {
-  seq += 1;
   return {
-    id: String(seq),
+    so_ho: 1,
     xa_phuong_id: '1',
     ten_xa_phuong: 'Xã A',
     doi_tuong: 'Hộ nghèo',
@@ -132,5 +131,21 @@ describe('aggregateHnghByXaPhuong', () => {
     ]);
     expect(out[0]).toMatchObject({ dangKhoKhan: 1, hetKhoKhan: 1, canNgheo: 1, khoKhan: 1, hoNgheo: 0 });
     expect(out.reduce((s, r) => s + r.tongSoHo, 0)).toBe(4);
+  });
+});
+
+describe('cộng theo nhóm hộ', () => {
+  it('KPI, biểu đồ và bảng xã đều cộng so_ho, cùng ra một tổng', () => {
+    const rows = [
+      ho({ so_ho: 5, xa_phuong_id: '1', trang_thai: 'Hết khó khăn', ton_giao: 'Có' }),
+      ho({ so_ho: 3, xa_phuong_id: '2', doi_tuong: 'Cận nghèo' }),
+      ho({ so_ho: 2, xa_phuong_id: null, ten_xa_phuong: null, doi_tuong: null, dan_toc_id: null }),
+    ];
+    const k = computeHnghKpis(rows);
+    expect(k).toMatchObject({ tongSoHo: 10, hetKhoKhan: 5, dangKhoKhan: 5, coTonGiao: 5, tyLeHetKhoKhan: 50 });
+    const sum = (xs: { soHo: number }[]) => xs.reduce((s, p) => s + p.soHo, 0);
+    expect(sum(buildHnghBarData(rows, 'doi_tuong', HNGH_DOI_TUONG_VALUES, '?'))).toBe(10);
+    expect(sum(buildHnghDanTocBarData(rows, '?'))).toBe(10);
+    expect(aggregateHnghByXaPhuong(rows, '?').reduce((s, r) => s + r.tongSoHo, 0)).toBe(10);
   });
 });
