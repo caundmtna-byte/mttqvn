@@ -47,7 +47,7 @@ Variables** cho môi trường chạy thật.
 | `VITE_APP_VERSION` | — | Thiếu thì stack trace production là mã đã nén, đọc không ra |
 
 Chỉ có hai biến Supabase là bắt buộc: thiếu chúng, `assertSupabaseConfigured()`
-(`lib/supabase/config.ts`) ném lỗi ngay trước auth/repository.
+(`lib/data/config.ts`) ném lỗi ngay trước auth/repository.
 
 **Biến chỉ dành cho phía server — tuyệt đối không đặt tiền tố `VITE_`:**
 
@@ -295,10 +295,6 @@ Hệ thống → Nhân viên.
 | `npm run db:backup` (`scripts/backup-db.sh`) | Sao lưu schema `public` ra ngoài repo + dọn bản cũ — xem [4.1](#41-script-sao-lưu-scriptsbackup-dbsh) |
 | `scripts/lib/supabase-env.sh` | Hàm dùng chung: đọc `.env.local`, tìm project ref. `source`, không chạy trực tiếp |
 | `npm run storage:create-avatars` (`scripts/create-avatars-bucket.ts`) | Tạo bucket `avatars` |
-| `scripts/generate-text-from-locales.mjs` | Sinh `lib/text/` từ `locales/*.json` |
-| `scripts/archive/migrate-avatars-to-cloudinary.ts` | Migration một lần: avatar Supabase Storage → Cloudinary. Chạy `DRY_RUN=1` trước |
-| `scripts/archive/migrate-avatars-to-storage.ts` | Migration cũ hơn (base64 → Storage path). Giữ để tham chiếu |
-| `scripts/archive/migrate-logo-to-cloudinary.ts` | Migration logo thương hiệu |
 
 ---
 

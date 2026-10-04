@@ -125,9 +125,8 @@ typecheck riêng cho phạm vi MTTQ.
 | `supabase/migrations/` | Migration SQL mới, đặt tên `<timestamp>_<mô tả>.sql` — migration cũ đã chạy và được xoá khỏi repo ngày 2026-10-01 (tra lịch sử git) |
 | `supabase/functions/admin-user/` | Edge Function tạo/sửa/xoá tài khoản Auth |
 | `supabase/scripts/` | Script SQL chạy tay: seed, repair dữ liệu |
-| `scripts/` | Script Node/Bash: deploy Edge Function, tạo bucket, migrate ảnh (`archive/`) |
+| `scripts/` | Script Node/Bash: deploy Edge Function, tạo bucket, sao lưu / chụp schema DB |
 | `docs/` | Quy ước và vận hành |
-| `locales/` | `common.json` (+ `en/`) — nguồn để sinh `lib/text/` |
 
 ---
 
@@ -155,4 +154,3 @@ typecheck riêng cho phạm vi MTTQ.
 | [`docs/UI-CONVENTIONS.md`](docs/UI-CONVENTIONS.md) | Quy ước giao diện |
 | [`docs/PERMISSION-SUBMENU-PATTERN.md`](docs/PERMISSION-SUBMENU-PATTERN.md) | Ẩn/hiện menu theo quyền |
 | [`docs/patterns-*.md`](docs/) | Nhãn nút, thao tác bảng, đổi trạng thái ở detail |
-| [`docs/view-types.md`](docs/view-types.md) | `VIEW_TYPE_REGISTRY`, `ViewTypeId` vs `DataTypeId` |

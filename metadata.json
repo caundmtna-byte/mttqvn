@@ -1,7 +1,0 @@
-{
-  "name": "MTTQVN",
-  "description": "Hệ thống nền tảng số",
-  "requestFramePermissions": [
-    "microphone"
-  ]
-}

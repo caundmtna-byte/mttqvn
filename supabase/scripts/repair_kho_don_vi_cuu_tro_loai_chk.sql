@@ -1,9 +1,0 @@
--- ĐÃ LỖI THỜI — KHÔNG CHẠY.
---
--- Script này vá CHECK `loai` về bộ 5 giá trị cũ
--- ('chua','giao_xu','co_quan','don_vi','ca_nhan') và đặt default 'don_vi'.
--- Migration 20260921100000_kho_don_vi_cuu_tro_mo_rong.sql đã đổi hẳn sang bộ 8
--- giá trị mới. Chạy lại file này sẽ khoá cứng ràng buộc cũ lên dữ liệu mới:
--- mọi bản ghi 'doanh_nghiep', 'cau_lac_bo', 'nhom_thien_nguyen'… đều bị chặn.
---
--- Cần sửa CHECK thì chạy lại chính migration nói trên (đã viết idempotent).

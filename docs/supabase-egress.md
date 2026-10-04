@@ -77,8 +77,7 @@ KHÔNG lưu base64 `data:image/...` trong cột `var_nhan_vien.hinh_anh`. Upload
 **Legacy** (row cũ chưa migrate):
 
 - Path Supabase bucket `avatars` private → hook `useSignedEmployeeAvatarSrc` ký URL tạm.
-- Migration một lần sang Cloudinary: `scripts/migrate-avatars-to-cloudinary.ts` (`DRY_RUN=1` trước).
-- Migration cũ (Storage path): `scripts/migrate-avatars-to-storage.ts`.
+- Script migrate một lần sang Cloudinary / sang Storage path đã chạy xong và được xoá khỏi repo (tra lịch sử git `scripts/archive/`).
 
 ### 6. RPC / View khi list cần aggregate hoặc full-table scan
 
@@ -219,3 +218,17 @@ nguyên bảng, nên `staleTime` ngắn hơn đồng nghĩa với tải lại to
   [Connecting to Postgres](https://supabase.com/docs/guides/database/connecting-to-postgres).
 - Trang report dùng nhiều RPC: dùng `refetchType: 'none'` khi invalidate
   từ mutation không thuộc trang report.
+
+## Checklist khi review
+
+Khi đổi service / hook / select, soát lần lượt:
+
+1. Có thêm cột nặng vào `SELECT_LIST` không? → chuyển sang `_FULL`.
+2. Có N+1 trong vòng lặp CRUD bảng con không? → batch (mục 10).
+3. Có `'*'` trong select / `returningSelect` không? (mục 4)
+4. Có `getById` trước `update` không? (mục 3)
+5. `onSuccess` của mutation có invalidate cả list lớn khi chỉ đổi 1 dòng không? (mục 7)
+6. Data tĩnh (`getXaPhuongAll`, lookups) đã đi qua cache chưa? (mục 9, 13)
+7. List đang mount mà mutation invalidate liên tục? → `refetchType: 'none'`.
+8. Mở detail từ list đã `setQueryData(detail, row)` trước `setViewingId` chưa? (`checklist-module.md` 5.1b)
+9. Đóng form bằng **Hủy** có `invalidateQueries(detail)` thừa không? (`checklist-module.md` 5.1b)

@@ -169,7 +169,6 @@ Dùng khi tạo mới hoặc rà soát một module CRUD trong app.
 - **Mobile list card**: `components/shared/MobileListCard.tsx`.
 - **`GenericTable` breakpoint list / card**: prop `listBreakpoint` (`sm` \| `md`) trong `components/shared/GenericTable.tsx` — ví dụ dùng `sm` tại `features/mat-tran-to-quoc/danh-sach-can-bo/components/mttq-can-bo-table.tsx`.
 - **Bảng con trong detail**: `components/shared/EmbeddedChildDataGrid.tsx`; ví dụ khen thưởng theo cán bộ: `getMttqKhenThuongLinesForCanBoId` + `useMttqKhenThuongLinesForCanBo` + `mttq-can-bo-khen-thuong-section.tsx`; mở quyết định: `?open=<id>` trên `danh-sach-khen-thuong/index.tsx`.
-- **Khung trang CRUD**: `lib/createFeatureModule.tsx` (module dùng factory).
 
 ---
 

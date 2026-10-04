@@ -34,8 +34,7 @@ export interface NumericFormatInputProps {
  * Hai component từng có hai bộ đọc chuỗi riêng và lệch nhau (`CurrencyInput`
  * bỏ mọi ký tự không phải chữ số nên `1,5` thành `15`). Nay chỉ còn một lõi;
  * file này giữ lại vì API của nó khác — `onChange` luôn trả `number`, thêm
- * `onValueChange` kiểu react-number-format — và `PercentInput` /
- * `NumberStepper` đang dựa vào đó.
+ * `onValueChange` kiểu react-number-format — và `PercentInput` đang dựa vào đó.
  */
 const NumericFormatInput = React.forwardRef<HTMLInputElement, NumericFormatInputProps>(
   ({ onChange, onValueChange, decimalScale = 2, ...rest }, ref) => {

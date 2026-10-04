@@ -1,8 +1,3 @@
----
-description: Checklist 6 lớp phân quyền cho mọi module — pattern chuẩn dựa trên reference implementation Phòng ban
-globs: "features/**/*.tsx,pages/dashboards/*.tsx,lib/nav-module-visibility.ts"
-alwaysApply: false
----
 
 # Checklist Phân Quyền Module
 
@@ -33,7 +28,7 @@ Module không có trong map → `can()` dùng `legacyCan` (view=true mọi ngư�
 
 **Ví dụ Chương trình BTT:** `annualPrograms: 'quan-ly-giao-viec/chuong-trinh-nam'` — trong màn **Phân quyền** mục này nằm nhóm **Hệ thống / Sơ đồ tổ chức** (cạnh Phòng ban) để gán quyền cùng luồng nghiệp vụ cấu hình; route ứng dụng vẫn `/quan-ly-giao-viec/chuong-trinh-nam`.
 
-**Lọc dòng client (không mirror RLS):** `useChuongTrinhNamViewer` + `canViewChuongTrinhNamRow` trong [`features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts`](mdc:features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts) — xem hết khi `cap_bac=1`, quan_tri (`admin`/`all`), mock admin, hoặc `!matrixActive`; user chỉ `xem`: **chỉ** dòng do mình tạo (`id_nguoi_tao`). `id_phong_ban` trên bản ghi/chip chỉ phục vụ nghiệp vụ phân công, không gate xem. Form công việc lọc combobox chương trình cùng helper.
+**Lọc dòng client (không mirror RLS):** `useChuongTrinhNamViewer` + `canViewChuongTrinhNamRow` trong [`features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts`](../features/quan-ly-giao-viec/chuong-trinh-nam/hooks/use-chuong-trinh-nam-viewer.ts) — xem hết khi `cap_bac=1`, quan_tri (`admin`/`all`), mock admin, hoặc `!matrixActive`; user chỉ `xem`: **chỉ** dòng do mình tạo (`id_nguoi_tao`). `id_phong_ban` trên bản ghi/chip chỉ phục vụ nghiệp vụ phân công, không gate xem. Form công việc lọc combobox chương trình cùng helper.
 
 ## Viết bài — tab "Tất cả" (danh sách bài + Nhuận bút)
 
@@ -231,9 +226,9 @@ Luật chuẩn qua `can()` — **không** dùng viewer hook lọc dòng:
 | `matTranReliefSupportUnits` | `…/don-vi-cuu-tro` | `/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro` |
 | `matTranReliefSupportReport` | `…/bao-cao-ho-tro` | `/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro` |
 
-**Quy tắc:** `cap_bac=1` hoặc `quan_tri` (`admin`/`all`) hoặc token `xem`/`them`/`sua`/`xoa` tương ứng action (xem [`lib/permissions.ts`](mdc:lib/permissions.ts)).
+**Quy tắc:** `cap_bac=1` hoặc `quan_tri` (`admin`/`all`) hoặc token `xem`/`them`/`sua`/`xoa` tương ứng action (xem [`lib/permissions.ts`](../lib/permissions.ts)).
 
-**Query gating:** mọi trang list dùng `listQueryEnabled` + `waitingMatrixHydrate` — reference [`features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx`](mdc:features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx). Tab con **Tồn kho** nhận `listQueryEnabled` từ parent.
+**Query gating:** mọi trang list dùng `listQueryEnabled` + `waitingMatrixHydrate` — reference [`features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx`](../features/mat-tran-to-quoc/don-vi-cuu-tro/index.tsx). Tab con **Tồn kho** nhận `listQueryEnabled` từ parent.
 
 **Cross-module:** form Nhập xuất kho gate combobox theo `useCan('view', …)` module liên quan; Báo cáo hỗ trợ mở drawer phiếu cần thêm `can('view', 'matTranReliefStockTransactions')`.
 

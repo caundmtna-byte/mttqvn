@@ -46,7 +46,7 @@ Dùng checklist này khi tạo một module mới để tránh sót bước và 
 - [ ] **hooks/use-xxx.ts**: `useQuery` list, `useQuery` detail theo `id`, `useMutation` create / update / delete (và import nếu có).
 - [ ] **queryKeys**: dùng `lib/query-keys.ts` — `all`, `detail(id)` (và nhánh có tham số nếu có) — đồng bộ với mutations (`setQueryData` / `removeQueries`), xem mục 14.
 - [ ] **Cấu hình stale**: dữ liệu CRUD Supabase có thể đổi ngoài app → spread **`transactionalCrudListQueryOptions`** từ `lib/supabase/query-config.ts` cho list **và** detail query; master data / lookup ít đổi → **`masterDataQueryOptions`** (không nhầm hai loại).
-- [ ] **Sau mutation**: ưu tiên **`setQueryData`** patch list + detail; xóa: **`removeQueries`** từng `detail(id)` đã xóa. Tránh **`invalidateQueries(listKey)`** sau mỗi sửa một dòng nếu đã patch được cache (xem `.cursor/rules/egress-checklist.mdc` C2).
+- [ ] **Sau mutation**: ưu tiên **`setQueryData`** patch list + detail; xóa: **`removeQueries`** từng `detail(id)` đã xóa. Tránh **`invalidateQueries(listKey)`** sau mỗi sửa một dòng nếu đã patch được cache (xem `docs/supabase-egress.md` mục 7).
 - [ ] **useImportXxx(onSuccess?)** (nếu có): invalidate hoặc setQueryData + toast tổng hợp lỗi từng dòng nếu API trả về.
 
 ---
@@ -333,4 +333,4 @@ code lúc đó.
 
 *File này tham chiếu chuẩn từ các module: Dự án, Phòng ban, Nhân viên, Công việc. Cập nhật khi có quy ước UI/API mới.*
 
-**TanStack Query (list + detail + form):** [`.cursor/rules/tanstack-query-list-detail-crud.mdc`](../.cursor/rules/tanstack-query-list-detail-crud.mdc), skill dự án `.cursor/skills/tanstack-query-crud-list-detail/SKILL.md`, và mục **C5–C6** trong [`.cursor/rules/egress-checklist.mdc`](../.cursor/rules/egress-checklist.mdc).
+**TanStack Query (list + detail + form):** mục **5.1b** ở trên và [`docs/supabase-egress.md`](supabase-egress.md) (mục 7–8, "TanStack Query default", "Checklist khi review").

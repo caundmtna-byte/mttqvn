@@ -227,4 +227,5 @@ File `.ts` cần DOM thì thêm `// @vitest-environment jsdom` đầu file.
 | `docs/UI-CONVENTIONS.md` | Quy ước giao diện |
 | `docs/checklist-module.md` | Chi tiết list + detail + form |
 | `docs/patterns-*.md` | Nút, thao tác bảng, đổi trạng thái ở detail |
+| `docs/permission-module-checklist.md` | 6 lớp phân quyền module + ghi chú phạm vi xem từng module |
 | `docs/PERMISSION-SUBMENU-PATTERN.md` | Ẩn/hiện menu theo quyền |
