@@ -23,7 +23,7 @@ import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
 import { useCan } from '@/hooks/use-can';
 import { useServerPagedList } from '@/hooks/use-server-paged-list';
 import { useTabSearchParam } from '@/hooks/use-tab-search-param';
-import { BarChart3, List } from 'lucide-react';
+import { BarChart3, HandCoins, List } from 'lucide-react';
 import TabGroup from '@/components/ui/TabGroup';
 import PageTabRow from '@/components/shared/PageTabRow';
 import ExportDialog from '@/components/shared/ExportDialog';
@@ -57,6 +57,7 @@ import { getHnghColumnDisplayValue } from './utils/column-display';
 import HoNgheoToolbar from './components/ho-ngheo-toolbar';
 import HoNgheoTable from './components/ho-ngheo-table';
 import HoNgheoThongKePanel from './components/ho-ngheo-thong-ke-panel';
+import HoNgheoNhanHoTroPanel from './components/ho-ngheo-nhan-ho-tro-panel';
 
 const HoNgheoForm = lazy(() => import('./components/ho-ngheo-form'));
 const HoNgheoDetail = lazy(() => import('./components/ho-ngheo-detail'));
@@ -457,6 +458,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
       tabs={[
         { id: 'danh_sach', label: txt('hoNgheo.tabs.danhSach'), icon: List },
         { id: 'thong_ke', label: txt('hoNgheo.tabs.thongKe'), icon: BarChart3 },
+        { id: 'nhan_ho_tro', label: txt('hoNgheo.tabs.nhanHoTro'), icon: HandCoins },
       ]}
       activeTab={mainTab}
       onChange={setMainTab}
@@ -484,6 +486,14 @@ const ThongTinHoNgheoPage: React.FC = () => {
           onPageBack={handlePageBack}
           canExport={canExport}
           queryEnabled={listQueryEnabled}
+        />
+      ) : mainTab === 'nhan_ho_tro' ? (
+        <HoNgheoNhanHoTroPanel
+          onPageBack={handlePageBack}
+          canExport={canExport}
+          queryEnabled={listQueryEnabled}
+          // Phạm vi hộ đã lọc tại máy chủ — mở thẳng chi tiết (tải bằng id).
+          onOpenHo={setViewingId}
         />
       ) : (
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">

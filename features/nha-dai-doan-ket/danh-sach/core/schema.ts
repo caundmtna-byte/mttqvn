@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { canNhaTaiTro, nddkThieuTien } from './luat-so-tien';
 import { txt } from '@/lib/text';
 import {
   NDDK_DOI_TUONG_VALUES,
@@ -142,6 +143,8 @@ export const nhaDaiDoanKetSchema = z.object({
     message: txt('nhaDaiDoanKet.validation.loaiHinhInvalid'),
   }),
   so_tien: optionalSoTien,
+  /** Nhà tài trợ (kho_don_vi_cuu_tro) — bắt buộc khi Nguồn hỗ trợ = "Ủng hộ trực tiếp". */
+  nha_tai_tro_id: optionalFk,
   trang_thai: z.enum(NDDK_TRANG_THAI_VALUES, {
     message: txt('nhaDaiDoanKet.validation.trangThaiInvalid'),
   }),
@@ -173,6 +176,18 @@ export const nhaDaiDoanKetSchema = z.object({
   lam_chung_chuc_vu: optionalText,
   so_quyet_dinh: optionalText,
   ngay_quyet_dinh: optionalDate,
+}).superRefine((v, ctx) => {
+  // Bản sao CHECK nddk_so_tien_theo_trang_thai_chk — xem core/luat-so-tien.ts.
+  if (nddkThieuTien(v.trang_thai, v.so_tien)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['so_tien'],
+      message: txt('nhaDaiDoanKet.validation.soTienBatBuoc', { trangThai: v.trang_thai }),
+    });
+  }
+  if (canNhaTaiTro(v.nguon_ho_tro) && !v.nha_tai_tro_id) {
+    ctx.addIssue({ code: 'custom', path: ['nha_tai_tro_id'], message: txt('nhaDaiDoanKet.validation.nhaTaiTroRequired') });
+  }
 });
 
 export type NhaDaiDoanKetFormValues = z.infer<typeof nhaDaiDoanKetSchema>;
@@ -214,6 +229,7 @@ export type NhaDaiDoanKetFormInput = {
   doi_tuong?: string;
   loai_hinh_ho_tro: string;
   so_tien?: string;
+  nha_tai_tro_id?: string;
   trang_thai: string;
   ghi_chu?: string;
   ngay_khao_sat?: string;
@@ -257,6 +273,7 @@ type BienBanFormInput = Omit<
   | 'doi_tuong'
   | 'loai_hinh_ho_tro'
   | 'so_tien'
+  | 'nha_tai_tro_id'
   | 'trang_thai'
   | 'ghi_chu'
 >;
@@ -310,6 +327,7 @@ export function nhaDaiDoanKetToFormInput(row: NhaDaiDoanKet | null): NhaDaiDoanK
       doi_tuong: '',
       loai_hinh_ho_tro: NDDK_LOAI_HINH_DEFAULT,
       so_tien: '',
+      nha_tai_tro_id: '',
       trang_thai: NDDK_TRANG_THAI_DEFAULT,
       ghi_chu: '',
       ...bienBanToFormInput(null),
@@ -327,6 +345,7 @@ export function nhaDaiDoanKetToFormInput(row: NhaDaiDoanKet | null): NhaDaiDoanK
     doi_tuong: row.doi_tuong ?? '',
     loai_hinh_ho_tro: row.loai_hinh_ho_tro ?? NDDK_LOAI_HINH_DEFAULT,
     so_tien: row.so_tien == null ? '' : String(row.so_tien),
+    nha_tai_tro_id: row.nha_tai_tro_id ?? '',
     trang_thai: row.trang_thai ?? NDDK_TRANG_THAI_DEFAULT,
     ghi_chu: row.ghi_chu ?? '',
     ...bienBanToFormInput(row),

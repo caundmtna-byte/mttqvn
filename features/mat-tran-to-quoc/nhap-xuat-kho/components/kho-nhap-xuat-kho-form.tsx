@@ -51,6 +51,7 @@ import { useKhoDanhSachKhoList } from '@/features/mat-tran-to-quoc/danh-sach-kho
 import type { KhoDanhSachKhoListRow } from '@/features/mat-tran-to-quoc/danh-sach-kho/core/types';
 import { useKhoDonViCuuTroList } from '@/features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro';
 import { useKhoDotCuuTroList } from '@/features/mat-tran-to-quoc/dot-cuu-tro/hooks/use-kho-dot-cuu-tro';
+import { DOT_TRANG_THAI_DANG_TRIEN_KHAI } from '@/features/mat-tran-to-quoc/dot-cuu-tro/core/constants';
 import { useKhoDanhSachHangHoaList } from '@/features/mat-tran-to-quoc/hang-hoa/hooks/use-kho-danh-sach-hang-hoa';
 import { nhapXuatKhoFormSchema, type NhapXuatKhoCtLineFormValues, type NhapXuatKhoFormValues } from '../core/schema';
 import { NHAP_XUAT_KHO_LOAI_PHIEU, type NhapXuatKhoLoaiPhieu } from '../core/constants';
@@ -318,9 +319,15 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
     [dviRows],
   );
 
+  // Chương trình đã kết thúc không nhận phiếu mới; phiếu cũ vẫn giữ chương trình đang gắn.
+  const dotDangGan = initialData?.dot_cuu_tro_id ?? null;
   const dotOpts = useMemo(
-    () => [...dotRows].sort((a, b) => a.ten.localeCompare(b.ten, 'vi')).map((d) => ({ label: d.ten, value: d.id })),
-    [dotRows],
+    () =>
+      [...dotRows]
+        .filter((d) => d.trang_thai === DOT_TRANG_THAI_DANG_TRIEN_KHAI || d.id === dotDangGan)
+        .sort((a, b) => a.ten.localeCompare(b.ten, 'vi'))
+        .map((d) => ({ label: d.ten, value: d.id })),
+    [dotRows, dotDangGan],
   );
 
   const hangHoaOptions = useMemo<NhapXuatKhoLineHangHoaOption[]>(

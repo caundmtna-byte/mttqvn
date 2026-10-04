@@ -7,7 +7,6 @@ import {
   Calendar,
   CalendarClock,
   CalendarRange,
-  Clock,
   Coins,
   Edit,
   ExternalLink,
@@ -15,12 +14,10 @@ import {
   HandHeart,
   Hash,
   Landmark,
-  Layers,
   ListChecks,
   MapPin,
   StickyNote,
   Trash2,
-  User,
   UserCheck,
   Users,
 } from 'lucide-react';
@@ -54,6 +51,8 @@ import KtntChuyenTrangThaiDialog from './ktnt-chuyen-trang-thai-dialog';
 import { useViNguoiNgheoByDonVi } from '../../vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
 import { vnnLinhVucBadge, vnnTrangThaiBadge } from '../../vi-nguoi-ngheo/core/display-badges';
 import type { ViNguoiNgheo } from '../../vi-nguoi-ngheo/core/types';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
+import { tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 
 const VNN_PATH = '/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach';
 const L = (k: string) => txt(`khenThuongNhaTaiTro.store.${k}`);
@@ -407,22 +406,12 @@ const KtntDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
           </DetailFieldGrid>
         </DetailSection>
 
-        <DetailSection title={txt('khenThuongNhaTaiTro.detail.systemInfo')} icon={<Clock size={14} />} variant="primary">
-          <DetailFieldGrid>
-            <DetailField
-              label={L('nguoiTaoCol')}
-              icon={<User size={12} />}
-              value={getKtntColumnDisplayValue(data, 'ho_va_ten_nguoi_tao') || undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={L('tgCapNhatCol')}
-              icon={<Layers size={12} />}
-              value={tabular(getKtntColumnDisplayValue(data, 'tg_cap_nhat'))}
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <DetailSystemInfo
+          nguoiTao={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_tao, ten_tai_khoan: data.ten_tai_khoan_nguoi_tao })}
+          tgTao={data.tg_tao}
+          nguoiCapNhat={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_cap_nhat, ten_tai_khoan: data.ten_tai_khoan_nguoi_cap_nhat })}
+          tgCapNhat={data.tg_cap_nhat}
+        />
       </div>
 
       <KtntChuyenTrangThaiDialog

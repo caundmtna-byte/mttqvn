@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users,
   HandHeart,
+  HandCoins,
   Package,
   ArrowLeftRight,
   Warehouse,
@@ -46,6 +47,13 @@ const AnSinhXaHoiDashboard: React.FC = () => {
             description: txt('page.matTranDashboard.reliefCampaignDesc'),
             icon: HandHeart,
             color: 'bg-rose-500',
+          },
+          {
+            path: '/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan',
+            title: txt('page.matTranDashboard.tiepNhan'),
+            description: txt('page.matTranDashboard.tiepNhanDesc'),
+            icon: HandCoins,
+            color: 'bg-pink-500',
           },
           {
             path: '/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa',

@@ -11,6 +11,7 @@ import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { DIALOG_SIZE } from '@/lib/dialog-sizes';
 import { nddkTrangThaiChonDuoc } from '../core/quyen-trang-thai';
+import { nddkThieuTien } from '../core/luat-so-tien';
 import {
   nhaDaiDoanKetStatusChangeSchema,
   type NhaDaiDoanKetStatusChangeValues,
@@ -25,6 +26,8 @@ interface Props {
   /** Có token `phe_duyet` không — không có thì không chọn được "Đã phê duyệt". */
   canApprove?: boolean;
   isSubmitting?: boolean;
+  /** Số tiền hiện có của hồ sơ — chặn chuyển sang trạng thái bắt buộc tiền khi còn trống. */
+  soTien?: number | null;
   onSave: (values: NhaDaiDoanKetStatusChangeValues) => void | Promise<void>;
 }
 
@@ -40,6 +43,7 @@ const NddkChuyenTrangThaiDialog: React.FC<Props> = ({
   initial,
   canApprove = false,
   isSubmitting = false,
+  soTien = null,
   onSave,
 }) => {
   // Chỉ đổ ra trạng thái người này thực sự đặt được. Bản sao ở client của
@@ -54,6 +58,7 @@ const NddkChuyenTrangThaiDialog: React.FC<Props> = ({
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<NhaDaiDoanKetStatusChangeValues>({
     resolver: zodResolver(
@@ -68,6 +73,11 @@ const NddkChuyenTrangThaiDialog: React.FC<Props> = ({
   }, [open, initial, reset]);
 
   const onSubmit: SubmitHandler<NhaDaiDoanKetStatusChangeValues> = async (values) => {
+    // Bản sao CHECK nddk_so_tien_theo_trang_thai_chk: nhập tiền ở form sửa trước.
+    if (nddkThieuTien(values.trang_thai, soTien)) {
+      setError('trang_thai', { message: txt('nhaDaiDoanKet.statusChangeModal.canNhapTien', { trangThai: values.trang_thai }) });
+      return;
+    }
     await Promise.resolve(onSave(values));
     onClose();
   };

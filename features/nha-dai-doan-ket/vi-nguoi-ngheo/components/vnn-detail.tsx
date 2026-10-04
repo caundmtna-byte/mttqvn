@@ -4,7 +4,6 @@ import {
   Edit,
   Trash2,
   HandHeart,
-  Clock,
   FileText,
   CalendarRange,
   CalendarClock,
@@ -15,7 +14,6 @@ import {
   ListChecks,
   MapPin,
   StickyNote,
-  User,
   Users,
   Building2,
   Package,
@@ -49,12 +47,12 @@ import { useUpdateViNguoiNgheoTrangThai } from '../hooks/use-vi-nguoi-ngheo';
 import VnnChuyenTrangThaiDialog from './vnn-chuyen-trang-thai-dialog';
 import type { ViNguoiNgheoStatusChangeValues } from '../core/schema';
 import {
-  formatVnnDateTimeDisplay,
   formatVnnNgayDisplay,
-  formatVnnNguoiTaoDisplay,
   formatVnnSoTienDisplay,
   trimmedVnnDisplay,
 } from '../utils/display-format';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
+import { tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 
 interface Props {
   data: ViNguoiNgheo;
@@ -359,26 +357,12 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
           </DetailFieldGrid>
         </DetailSection>
 
-        <DetailSection
-          title={txt('viNguoiNgheo.detail.systemInfo')}
-          icon={<Clock size={14} />}
-          variant="primary"
-        >
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('viNguoiNgheo.store.nguoiTaoCol')}
-              icon={<User size={12} />}
-              value={formatVnnNguoiTaoDisplay(data) || undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('viNguoiNgheo.store.tgCapNhatCol')}
-              icon={<CalendarClock size={12} />}
-              value={formatVnnDateTimeDisplay(data.tg_cap_nhat) || undefined}
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <DetailSystemInfo
+          nguoiTao={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_tao, ten_tai_khoan: data.ten_tai_khoan_nguoi_tao })}
+          tgTao={data.tg_tao}
+          nguoiCapNhat={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_cap_nhat, ten_tai_khoan: data.ten_tai_khoan_nguoi_cap_nhat })}
+          tgCapNhat={data.tg_cap_nhat}
+        />
       </div>
 
       <VnnChonPhieuInDialog item={chonPhieuOpen ? data : null} onClose={() => setChonPhieuOpen(false)} />
@@ -386,6 +370,7 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         initial={statusInitial}
+        tien={data}
         isSubmitting={statusMutation.isPending}
         onSave={async (values) => {
           await statusMutation.mutateAsync({ id: data.id, data: values });

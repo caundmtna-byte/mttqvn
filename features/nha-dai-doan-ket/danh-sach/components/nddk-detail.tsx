@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Building2,
   ArrowRightLeft,
   Edit,
   Trash2,
   Home,
-  Clock,
   FileText,
   CalendarRange,
   CalendarClock,
@@ -14,7 +14,6 @@ import {
   ListChecks,
   MapPin,
   StickyNote,
-  User,
   Users,
   ExternalLink,
   Printer,
@@ -43,12 +42,12 @@ import NddkChonPhieuInDialog from './nddk-chon-phieu-in-dialog';
 import NddkBienBanDetailSections from './nddk-bien-ban-detail-sections';
 import type { NhaDaiDoanKetStatusChangeValues } from '../core/schema';
 import {
-  formatNddkDateTimeDisplay,
   formatNddkNgayDisplay,
-  formatNddkNguoiTaoDisplay,
   formatNddkSoTienDisplay,
   trimmedNddkDisplay,
 } from '../utils/display-format';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
+import { tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 
 interface Props {
   data: NhaDaiDoanKet;
@@ -331,6 +330,12 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
               emptyText={emptyCell}
             />
             <DetailField
+              label={txt('nhaDaiDoanKet.store.nhaTaiTroCol')}
+              icon={<Building2 size={12} />}
+              value={trimmedNddkDisplay(data.ten_nha_tai_tro) ?? undefined}
+              emptyText={emptyCell}
+            />
+            <DetailField
               label={txt('nhaDaiDoanKet.store.soTienCol')}
               icon={<Coins size={12} />}
               value={
@@ -396,36 +401,19 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
           </DetailFieldGrid>
         </DetailSection>
 
-        <DetailSection
-          title={txt('nhaDaiDoanKet.detail.systemInfo')}
-          icon={<Clock size={14} />}
-          variant="primary"
-        >
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('nhaDaiDoanKet.store.nguoiTaoCol')}
-              icon={<User size={12} />}
-              value={formatNddkNguoiTaoDisplay(data) || undefined}
-              emptyText={emptyCell}
-            />
-            <DetailField
-              label={txt('nhaDaiDoanKet.store.tgCapNhatCol')}
-              icon={<CalendarClock size={12} />}
-              value={
-                formatNddkDateTimeDisplay(data.tg_cap_nhat) ? (
-                  <span className="tabular-nums">{formatNddkDateTimeDisplay(data.tg_cap_nhat)}</span>
-                ) : undefined
-              }
-              emptyText={emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <DetailSystemInfo
+          nguoiTao={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_tao, ten_tai_khoan: data.ten_tai_khoan_nguoi_tao })}
+          tgTao={data.tg_tao}
+          nguoiCapNhat={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_cap_nhat, ten_tai_khoan: data.ten_tai_khoan_nguoi_cap_nhat })}
+          tgCapNhat={data.tg_cap_nhat}
+        />
       </div>
 
       <NddkChuyenTrangThaiDialog
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         initial={statusInitial}
+        soTien={data.so_tien}
         canApprove={canApprove}
         isSubmitting={statusMutation.isPending}
         onSave={handleStatusSave}

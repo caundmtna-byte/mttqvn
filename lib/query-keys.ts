@@ -287,6 +287,11 @@ export const queryKeys = {
    */
   hoNgheo: {
     all: ['thong-tin-ho-ngheo'] as const,
+    /** Tab Thống kê nhận hỗ trợ — một trang / dòng tổng (RPC get_hngh_nhan_ho_tro_*). */
+    nhanHoTroPage: (args: unknown) => ['thong-tin-ho-ngheo', 'nhan-ho-tro', 'page', args] as const,
+    nhanHoTroTong: (args: unknown) => ['thong-tin-ho-ngheo', 'nhan-ho-tro', 'tong', args] as const,
+    /** Số đã nhận + phiếu xuất kho của một hộ — màn chi tiết hộ. */
+    nhanHoTroCuaHo: (id: string) => ['thong-tin-ho-ngheo', 'nhan-ho-tro', 'ho', id] as const,
     detail: (id: string) => ['thong-tin-ho-ngheo', 'detail', id] as const,
     /**
      * Một hộ ĐẦY ĐỦ (có nhân khẩu). Tách khỏi `detail` vì `detail` được mồi
@@ -326,6 +331,15 @@ export const queryKeys = {
     /** Các khoản của một nhà tài trợ trong kỳ — Khen thưởng nhà tài trợ. */
     byDonVi: (donViId: string, tuNam: number | null, denNam: number | null) =>
       ['vi-nguoi-ngheo', 'by-don-vi', donViId, tuNam, denNam] as const,
+  },
+  tiepNhan: {
+    all: ['tiep-nhan'] as const,
+    /** Một trang từ RPC `get_tn_tiep_nhan_page`. */
+    page: (args: unknown) => ['tiep-nhan', 'page', args] as const,
+    /** Bản đầy đủ (mục đích, phụ lục, phiếu kho gắn) — chi tiết, form sửa, trang in. */
+    full: (id: string) => ['tiep-nhan', 'full', id] as const,
+    /** Phiếu "Nhập từ ngoài" của một nhà tài trợ — ô gắn phiếu trong form. */
+    phieuKho: (nhaTaiTroId: string) => ['tiep-nhan', 'phieu-kho', nhaTaiTroId] as const,
   },
   khenThuongNhaTaiTro: {
     all: ['khen-thuong-nha-tai-tro'] as const,

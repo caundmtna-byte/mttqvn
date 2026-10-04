@@ -728,6 +728,59 @@ COMMENT ON FUNCTION public.fn_gan_id_nguoi_tao() IS 'Trigger BEFORE INSERT: ghi 
 
 
 --
+-- Name: fn_gan_ngay_trang_thai(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_gan_ngay_trang_thai() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    NEW.ngay_cap_nhat_trang_thai := now();
+  ELSIF NEW.trang_thai IS DISTINCT FROM OLD.trang_thai THEN
+    NEW.ngay_cap_nhat_trang_thai := now();
+  ELSE
+    NEW.ngay_cap_nhat_trang_thai := OLD.ngay_cap_nhat_trang_thai;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION fn_gan_ngay_trang_thai(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_gan_ngay_trang_thai() IS 'BEFORE INSERT OR UPDATE: ngay_cap_nhat_trang_thai = now() khi thêm mới hoặc khi trang_thai đổi; không thì giữ giá trị cũ.';
+
+
+--
+-- Name: fn_gan_nguoi_cap_nhat(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_gan_nguoi_cap_nhat() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public', 'auth'
+    AS $$
+BEGIN
+  -- Không nhận diện được (service role, job nền) ⇒ giữ người cũ / người tạo.
+  NEW.id_nguoi_cap_nhat := COALESCE(
+    public.fn_nhan_vien_id_hien_tai(),
+    CASE WHEN TG_OP = 'INSERT' THEN NEW.id_nguoi_tao ELSE OLD.id_nguoi_cap_nhat END
+  );
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION fn_gan_nguoi_cap_nhat(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_gan_nguoi_cap_nhat() IS 'BEFORE INSERT OR UPDATE: gán id_nguoi_cap_nhat = nhân viên đang đăng nhập. Bảng gắn trigger này phải có cả id_nguoi_tao.';
+
+
+--
 -- Name: fn_gan_nguoi_duyet_khen_thuong(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -905,6 +958,66 @@ $$;
 --
 
 COMMENT ON FUNCTION public.fn_hngh_lan_sang_nddk() IS 'AFTER UPDATE trên hộ nghèo: đồng bộ họ tên / xã / khối xóm / đối tượng sang các nhà đại đoàn kết gắn hộ.';
+
+
+--
+-- Name: fn_hngh_nhan_ho_tro_nguon(text, integer[], bigint[], text[], bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_hngh_nhan_ho_tro_nguon(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_ho_ngheo_id bigint) RETURNS TABLE(id bigint, ho_ten_dai_dien text, so_cccd text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, vnn_tien numeric, vnn_hien_vat numeric, vnn_so_khoan bigint, nddk_tien numeric, nddk_so_can bigint, kho_gia_tri numeric, kho_so_phieu bigint, tong_gia_tri numeric)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  WITH vnn AS (
+    SELECT v.ho_ngheo_id,
+           sum(COALESCE(v.so_tien, 0))           AS tien,
+           sum(COALESCE(v.tong_tien_quy_doi, 0)) AS hien_vat,
+           count(*)                              AS so_khoan
+    FROM public.vnn_chuong_trinh v
+    WHERE v.ho_ngheo_id IS NOT NULL
+      AND v.trang_thai = 'Đã nhận'
+      AND (p_nam IS NULL OR cardinality(p_nam) = 0 OR v.nam = ANY (p_nam))
+    GROUP BY v.ho_ngheo_id
+  ),
+  nddk AS (
+    SELECT n.ho_ngheo_id, sum(COALESCE(n.so_tien, 0)) AS tien, count(*) AS so_can
+    FROM public.nddk_nha_dai_doan_ket n
+    WHERE n.ho_ngheo_id IS NOT NULL
+      AND n.trang_thai = 'Đã bàn giao'
+      AND (p_nam IS NULL OR cardinality(p_nam) = 0 OR n.nam = ANY (p_nam))
+    GROUP BY n.ho_ngheo_id
+  ),
+  kho AS (
+    SELECT p.ho_ngheo_id, sum(ct.thanh_tien) AS gia_tri, count(DISTINCT p.id) AS so_phieu
+    FROM public.kho_nhap_xuat_kho p
+    JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = p.id
+    WHERE p.loai_phieu = 'xuat_ngoai'
+      AND p.ho_ngheo_id IS NOT NULL
+      AND (p_nam IS NULL OR cardinality(p_nam) = 0
+           OR extract(year FROM p.ngay_phieu)::int = ANY (p_nam))
+    GROUP BY p.ho_ngheo_id
+  )
+  SELECT
+    h.id, h.ho_ten_dai_dien, h.so_cccd, h.xa_phuong_id, xp.ten, h.khoi_xom, h.doi_tuong,
+    COALESCE(vnn.tien, 0), COALESCE(vnn.hien_vat, 0), COALESCE(vnn.so_khoan, 0),
+    COALESCE(nddk.tien, 0), COALESCE(nddk.so_can, 0),
+    COALESCE(kho.gia_tri, 0), COALESCE(kho.so_phieu, 0),
+    COALESCE(vnn.tien, 0) + COALESCE(vnn.hien_vat, 0) + COALESCE(nddk.tien, 0) + COALESCE(kho.gia_tri, 0)
+  FROM public.hngh_thong_tin_ho_ngheo h
+  LEFT JOIN public.var_ssn_xa_phuong xp ON xp.id = h.xa_phuong_id
+  LEFT JOIN vnn  ON vnn.ho_ngheo_id  = h.id
+  LEFT JOIN nddk ON nddk.ho_ngheo_id = h.id
+  LEFT JOIN kho  ON kho.ho_ngheo_id  = h.id
+  WHERE ((SELECT public.fn_kho_xem_tat_ca()) OR h.xa_phuong_id = (SELECT public.fn_don_vi_cua_toi()))
+    AND (p_ho_ngheo_id IS NULL OR h.id = p_ho_ngheo_id)
+    AND (p_xa_phuong_ids IS NULL OR cardinality(p_xa_phuong_ids) = 0 OR h.xa_phuong_id = ANY (p_xa_phuong_ids))
+    AND (p_doi_tuong     IS NULL OR cardinality(p_doi_tuong)     = 0 OR h.doi_tuong    = ANY (p_doi_tuong))
+    AND (
+      p_search IS NULL
+      OR public.fn_chuan_hoa_tim_kiem(concat_ws(' ', h.ho_ten_dai_dien, h.so_cccd, xp.ten, h.khoi_xom))
+         LIKE public.fn_mau_tim_kiem(p_search)
+    );
+$$;
 
 
 --
@@ -1743,24 +1856,6 @@ COMMENT ON FUNCTION public.fn_nddk_dong_bo_tu_ho_ngheo() IS 'BEFORE INSERT / UPD
 
 
 --
--- Name: fn_nddk_gan_nguoi_cap_nhat(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.fn_nddk_gan_nguoi_cap_nhat() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Không nhận diện được (service role, job nền) ⇒ giữ người cũ / người tạo.
-  NEW.id_nguoi_cap_nhat := COALESCE(
-    public.fn_nhan_vien_id_hien_tai(),
-    CASE WHEN TG_OP = 'INSERT' THEN NEW.id_nguoi_tao ELSE OLD.id_nguoi_cap_nhat END
-  );
-  RETURN NEW;
-END;
-$$;
-
-
---
 -- Name: fn_nddk_kiem_quyen_phe_duyet(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2110,6 +2205,90 @@ $_$;
 --
 
 COMMENT ON FUNCTION public.fn_thong_bao_sinh_nhac_viec(p_ngay date) IS 'Sinh thông báo nhắc việc cho ngày chỉ định (mặc định hôm nay). Idempotent, trả về số dòng đã thêm.';
+
+
+--
+-- Name: fn_tn_chan_doi_nha_tai_tro(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_tn_chan_doi_nha_tai_tro() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  IF NEW.nha_tai_tro_id IS DISTINCT FROM OLD.nha_tai_tro_id AND EXISTS (
+    SELECT 1 FROM public.tn_tiep_nhan_phieu_kho WHERE tiep_nhan_id = NEW.id
+  ) THEN
+    RAISE EXCEPTION 'TN_DOI_NHA_TAI_TRO: Gỡ các phiếu kho đã gắn trước khi đổi nhà tài trợ.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: fn_tn_gia_tri_phieu_kho(bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_tn_gia_tri_phieu_kho(p_tiep_nhan_id bigint) RETURNS numeric
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+  SELECT COALESCE(sum(ct.thanh_tien), 0)::numeric
+  FROM public.tn_tiep_nhan_phieu_kho l
+  JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = l.phieu_id
+  WHERE l.tiep_nhan_id = p_tiep_nhan_id;
+$$;
+
+
+--
+-- Name: fn_tn_kiem_phieu_kho(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_tn_kiem_phieu_kho() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public'
+    AS $$
+DECLARE
+  v_ok boolean;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.kho_nhap_xuat_kho p
+    JOIN public.tn_tiep_nhan t ON t.id = NEW.tiep_nhan_id
+    WHERE p.id = NEW.phieu_id
+      AND p.loai_phieu = 'nhap_ngoai'
+      AND p.don_vi_cuu_tro_id = t.nha_tai_tro_id
+  ) INTO v_ok;
+  IF NOT v_ok THEN
+    RAISE EXCEPTION 'TN_PHIEU_KHONG_HOP_LE: Phiếu kho phải là phiếu "Nhập từ ngoài" của đúng nhà tài trợ.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: fn_tn_sinh_so_phieu(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_tn_sinh_so_phieu() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.so_phieu IS NOT NULL AND length(trim(NEW.so_phieu)) > 0 THEN
+    RETURN NEW;
+  END IF;
+  NEW.so_phieu := format(
+    'TN-%s-%s',
+    to_char(COALESCE(NEW.ngay_tiep_nhan, CURRENT_DATE), 'YYYY'),
+    lpad(nextval('public.tn_tiep_nhan_so_phieu_seq')::text, 4, '0')
+  );
+  RETURN NEW;
+END;
+$$;
 
 
 --
@@ -2716,10 +2895,58 @@ $$;
 
 
 --
+-- Name: get_hngh_nhan_ho_tro_page(text, integer, integer, text, integer[], bigint[], text[], boolean, bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_hngh_nhan_ho_tro_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_nam integer[] DEFAULT NULL::integer[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_doi_tuong text[] DEFAULT NULL::text[], p_chi_ho_da_nhan boolean DEFAULT true, p_ho_ngheo_id bigint DEFAULT NULL::bigint) RETURNS TABLE(id bigint, ho_ten_dai_dien text, so_cccd text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, vnn_tien numeric, vnn_hien_vat numeric, vnn_so_khoan bigint, nddk_tien numeric, nddk_so_can bigint, kho_gia_tri numeric, kho_so_phieu bigint, tong_gia_tri numeric, total_count bigint)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT s.*, COUNT(*) OVER () AS total_count
+  FROM public.fn_hngh_nhan_ho_tro_nguon(p_search, p_nam, p_xa_phuong_ids, p_doi_tuong, p_ho_ngheo_id) s
+  WHERE NOT COALESCE(p_chi_ho_da_nhan, true) OR s.tong_gia_tri > 0
+  ORDER BY
+    CASE WHEN p_sort = 'ho_ten_dai_dien_asc'  THEN s.ho_ten_dai_dien END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'ho_ten_dai_dien_desc' THEN s.ho_ten_dai_dien END DESC NULLS LAST,
+    CASE WHEN p_sort = 'ten_xa_phuong_asc'    THEN s.ten_xa_phuong   END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'ten_xa_phuong_desc'   THEN s.ten_xa_phuong   END DESC NULLS LAST,
+    CASE WHEN p_sort = 'vnn_tong_asc'  THEN s.vnn_tien + s.vnn_hien_vat END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'vnn_tong_desc' THEN s.vnn_tien + s.vnn_hien_vat END DESC NULLS LAST,
+    CASE WHEN p_sort = 'nddk_tien_asc'        THEN s.nddk_tien       END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'nddk_tien_desc'       THEN s.nddk_tien       END DESC NULLS LAST,
+    CASE WHEN p_sort = 'kho_gia_tri_asc'      THEN s.kho_gia_tri     END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'kho_gia_tri_desc'     THEN s.kho_gia_tri     END DESC NULLS LAST,
+    CASE WHEN p_sort = 'tong_gia_tri_asc'     THEN s.tong_gia_tri    END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'tong_gia_tri_desc'    THEN s.tong_gia_tri    END DESC NULLS LAST,
+    -- Mặc định: hộ nhận nhiều nhất lên trước. Kết thúc bằng khoá chính.
+    s.tong_gia_tri DESC, s.id DESC
+  LIMIT greatest(p_limit, 1)
+  OFFSET greatest(p_offset, 0);
+$$;
+
+
+--
+-- Name: get_hngh_nhan_ho_tro_tong(text, integer[], bigint[], text[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_hngh_nhan_ho_tro_tong(p_search text DEFAULT NULL::text, p_nam integer[] DEFAULT NULL::integer[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_doi_tuong text[] DEFAULT NULL::text[]) RETURNS TABLE(so_ho bigint, so_ho_da_nhan bigint, vnn_tien numeric, vnn_hien_vat numeric, nddk_tien numeric, kho_gia_tri numeric, tong_gia_tri numeric)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT count(*)::bigint,
+         count(*) FILTER (WHERE s.tong_gia_tri > 0)::bigint,
+         COALESCE(sum(s.vnn_tien), 0), COALESCE(sum(s.vnn_hien_vat), 0),
+         COALESCE(sum(s.nddk_tien), 0), COALESCE(sum(s.kho_gia_tri), 0),
+         COALESCE(sum(s.tong_gia_tri), 0)
+  FROM public.fn_hngh_nhan_ho_tro_nguon(p_search, p_nam, p_xa_phuong_ids, p_doi_tuong, NULL) s;
+$$;
+
+
+--
 -- Name: get_hngh_page(text, integer, integer, text, boolean, bigint, text[], text[], text[], bigint[], bigint[], jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_doi_tuong text[] DEFAULT NULL::text[], p_ton_giao text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_dan_toc_ids bigint[] DEFAULT NULL::bigint[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, ho_ten_dai_dien text, so_cccd text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, dien_thoai text, dan_toc_id bigint, ten_dan_toc text, ton_giao text, so_tai_khoan text, ngan_hang text, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, total_count bigint)
+CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_doi_tuong text[] DEFAULT NULL::text[], p_ton_giao text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_dan_toc_ids bigint[] DEFAULT NULL::bigint[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, ho_ten_dai_dien text, so_cccd text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, dien_thoai text, dan_toc_id bigint, ten_dan_toc text, ton_giao text, so_tai_khoan text, ngan_hang text, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, total_count bigint)
     LANGUAGE sql STABLE
     AS $$
   WITH src AS (
@@ -2729,12 +2956,15 @@ CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit i
       dt.ten           AS ten_dan_toc,
       nt.ho_va_ten     AS ho_va_ten_nguoi_tao,
       nt.ten_tai_khoan AS ten_tai_khoan_nguoi_tao,
+      nc.ho_va_ten     AS ho_va_ten_nguoi_cap_nhat,
+      nc.ten_tai_khoan AS ten_tai_khoan_nguoi_cap_nhat,
       COALESCE(NULLIF(btrim(nt.ho_va_ten), ''), NULLIF(btrim(nt.ten_tai_khoan), ''), '')
         AS nguoi_tao_display
     FROM public.hngh_thong_tin_ho_ngheo t
     LEFT JOIN public.var_ssn_xa_phuong xp ON xp.id = t.xa_phuong_id
     LEFT JOIN public.mttq_thiet_lap    dt ON dt.id = t.dan_toc_id
     LEFT JOIN public.var_nhan_vien     nt ON nt.id = t.id_nguoi_tao
+    LEFT JOIN public.var_nhan_vien      nc ON nc.id = t.id_nguoi_cap_nhat
   )
   SELECT
     s.id, s.ho_ten_dai_dien, s.so_cccd,
@@ -2745,6 +2975,7 @@ CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit i
     s.trang_thai, s.ngay_cap_nhat_trang_thai, s.ghi_chu,
     s.id_nguoi_tao, s.ho_va_ten_nguoi_tao, s.ten_tai_khoan_nguoi_tao,
     s.tg_tao, s.tg_cap_nhat,
+    s.id_nguoi_cap_nhat, s.ho_va_ten_nguoi_cap_nhat, s.ten_tai_khoan_nguoi_cap_nhat,
     COUNT(*) OVER () AS total_count
   FROM src s
   WHERE (
@@ -2850,38 +3081,18 @@ $$;
 
 
 --
--- Name: FUNCTION get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb); Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON FUNCTION public.get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb) IS 'Một trang danh sách hộ nghèo kèm total_count và cột hiển thị đã join.';
-
-
---
 -- Name: get_kho_don_vi_cuu_tro_ket_qua(bigint); Type: FUNCTION; Schema: public; Owner: -
 --
 
 CREATE FUNCTION public.get_kho_don_vi_cuu_tro_ket_qua(p_don_vi_id bigint DEFAULT NULL::bigint) RETURNS TABLE(don_vi_id bigint, ket_qua_ung_ho numeric)
-    LANGUAGE sql STABLE
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
-  SELECT
-    dv.id AS don_vi_id,
-    COALESCE(kho.tong, 0) + COALESCE(vnn.tong, 0) AS ket_qua_ung_ho
+  SELECT dv.id, COALESCE(sum(n.tien_mat + n.hien_vat), 0)
   FROM public.kho_don_vi_cuu_tro dv
-  LEFT JOIN (
-    SELECT p.don_vi_cuu_tro_id AS id, sum(ct.thanh_tien) AS tong
-    FROM public.kho_nhap_xuat_kho p
-    JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = p.id
-    WHERE p.loai_phieu = 'nhap_ngoai' AND p.don_vi_cuu_tro_id IS NOT NULL
-    GROUP BY p.don_vi_cuu_tro_id
-  ) kho ON kho.id = dv.id
-  LEFT JOIN (
-    SELECT v.don_vi_ho_tro_id AS id,
-           sum(COALESCE(v.so_tien, 0) + COALESCE(v.tong_tien_quy_doi, 0)) AS tong
-    FROM public.vnn_chuong_trinh v
-    WHERE v.don_vi_ho_tro_id IS NOT NULL
-    GROUP BY v.don_vi_ho_tro_id
-  ) vnn ON vnn.id = dv.id
-  WHERE p_don_vi_id IS NULL OR dv.id = p_don_vi_id;
+  LEFT JOIN public.get_kho_don_vi_cuu_tro_ung_ho_nhom(NULL, NULL) n ON n.don_vi_id = dv.id
+  WHERE p_don_vi_id IS NULL OR dv.id = p_don_vi_id
+  GROUP BY dv.id;
 $$;
 
 
@@ -2890,7 +3101,8 @@ $$;
 --
 
 CREATE FUNCTION public.get_kho_don_vi_cuu_tro_ung_ho_nhom(p_tu_ngay date DEFAULT NULL::date, p_den_ngay date DEFAULT NULL::date) RETURNS TABLE(don_vi_id bigint, nguon text, nhom_key text, nhom_ten text, tien_mat numeric, hien_vat numeric, so_luot bigint)
-    LANGUAGE sql STABLE
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
   SELECT p.don_vi_cuu_tro_id,
          'kho'::text,
@@ -2910,6 +3122,21 @@ CREATE FUNCTION public.get_kho_don_vi_cuu_tro_ung_ho_nhom(p_tu_ngay date DEFAULT
 
   UNION ALL
 
+  SELECT t.nha_tai_tro_id,
+         'tiep_nhan'::text,
+         'dot:' || t.chuong_trinh_id::text,
+         max(d.ten),
+         COALESCE(sum(t.so_tien + COALESCE(t.giay_to_co_gia_gia_tri, 0)), 0),
+         COALESCE(sum(COALESCE(t.hien_vat_khac_gia_tri, 0)), 0),
+         count(*)
+  FROM public.tn_tiep_nhan t
+  JOIN public.kho_dot_cuu_tro d ON d.id = t.chuong_trinh_id
+  WHERE (p_tu_ngay  IS NULL OR t.ngay_tiep_nhan >= p_tu_ngay)
+    AND (p_den_ngay IS NULL OR t.ngay_tiep_nhan <= p_den_ngay)
+  GROUP BY t.nha_tai_tro_id, t.chuong_trinh_id
+
+  UNION ALL
+
   SELECT v.don_vi_ho_tro_id,
          'chuong_trinh'::text,
          'nd:' || lower(regexp_replace(btrim(v.noi_dung_ho_tro), '\s+', ' ', 'g')),
@@ -2919,9 +3146,26 @@ CREATE FUNCTION public.get_kho_don_vi_cuu_tro_ung_ho_nhom(p_tu_ngay date DEFAULT
          count(*)
   FROM public.vnn_chuong_trinh v
   WHERE v.don_vi_ho_tro_id IS NOT NULL
+    AND v.nguon_ho_tro = 'Ủng hộ trực tiếp'
     AND (p_tu_ngay  IS NULL OR (v.tg_tao AT TIME ZONE 'Asia/Ho_Chi_Minh')::date >= p_tu_ngay)
     AND (p_den_ngay IS NULL OR (v.tg_tao AT TIME ZONE 'Asia/Ho_Chi_Minh')::date <= p_den_ngay)
-  GROUP BY v.don_vi_ho_tro_id, lower(regexp_replace(btrim(v.noi_dung_ho_tro), '\s+', ' ', 'g'));
+  GROUP BY v.don_vi_ho_tro_id, lower(regexp_replace(btrim(v.noi_dung_ho_tro), '\s+', ' ', 'g'))
+
+  UNION ALL
+
+  SELECT n.nha_tai_tro_id,
+         'nddk'::text,
+         'nd:' || lower(regexp_replace(btrim(n.noi_dung_ho_tro), '\s+', ' ', 'g')),
+         min(regexp_replace(btrim(n.noi_dung_ho_tro), '\s+', ' ', 'g')),
+         COALESCE(sum(n.so_tien), 0),
+         0::numeric,
+         count(*)
+  FROM public.nddk_nha_dai_doan_ket n
+  WHERE n.nha_tai_tro_id IS NOT NULL
+    AND n.nguon_ho_tro = 'Ủng hộ trực tiếp'
+    AND (p_tu_ngay  IS NULL OR (n.tg_tao AT TIME ZONE 'Asia/Ho_Chi_Minh')::date >= p_tu_ngay)
+    AND (p_den_ngay IS NULL OR (n.tg_tao AT TIME ZONE 'Asia/Ho_Chi_Minh')::date <= p_den_ngay)
+  GROUP BY n.nha_tai_tro_id, lower(regexp_replace(btrim(n.noi_dung_ho_tro), '\s+', ' ', 'g'));
 $$;
 
 
@@ -2930,37 +3174,16 @@ $$;
 --
 
 CREATE FUNCTION public.get_kho_don_vi_cuu_tro_ung_ho_theo_ky(p_tu_ngay date DEFAULT NULL::date, p_den_ngay date DEFAULT NULL::date) RETURNS TABLE(don_vi_id bigint, tien_kho numeric, tien_chuong_trinh numeric, so_luot bigint)
-    LANGUAGE sql STABLE
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
-  WITH kho AS (
-    SELECT p.don_vi_cuu_tro_id AS id,
-           sum(ct.thanh_tien)   AS tong,
-           count(DISTINCT p.id) AS luot
-    FROM public.kho_nhap_xuat_kho p
-    JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = p.id
-    WHERE p.loai_phieu = 'nhap_ngoai'
-      AND p.don_vi_cuu_tro_id IS NOT NULL
-      AND (p_tu_ngay  IS NULL OR p.ngay_phieu >= p_tu_ngay)
-      AND (p_den_ngay IS NULL OR p.ngay_phieu <= p_den_ngay)
-    GROUP BY p.don_vi_cuu_tro_id
-  ),
-  vnn AS (
-    SELECT v.don_vi_ho_tro_id AS id,
-           sum(COALESCE(v.so_tien, 0) + COALESCE(v.tong_tien_quy_doi, 0)) AS tong,
-           count(*) AS luot
-    FROM public.vnn_chuong_trinh v
-    WHERE v.don_vi_ho_tro_id IS NOT NULL
-      AND (p_tu_ngay  IS NULL OR (v.tg_tao AT TIME ZONE 'Asia/Ho_Chi_Minh')::date >= p_tu_ngay)
-      AND (p_den_ngay IS NULL OR (v.tg_tao AT TIME ZONE 'Asia/Ho_Chi_Minh')::date <= p_den_ngay)
-    GROUP BY v.don_vi_ho_tro_id
-  )
-  SELECT
-    COALESCE(kho.id, vnn.id)        AS don_vi_id,
-    COALESCE(kho.tong, 0)           AS tien_kho,
-    COALESCE(vnn.tong, 0)           AS tien_chuong_trinh,
-    COALESCE(kho.luot, 0) + COALESCE(vnn.luot, 0) AS so_luot
-  FROM kho
-  FULL OUTER JOIN vnn ON vnn.id = kho.id;
+  -- tien_kho = hàng nhập kho; tien_chuong_trinh = mọi nguồn còn lại (tiếp nhận + trực tiếp).
+  SELECT n.don_vi_id,
+         COALESCE(sum(n.hien_vat) FILTER (WHERE n.nguon = 'kho'), 0),
+         COALESCE(sum(n.tien_mat + n.hien_vat) FILTER (WHERE n.nguon <> 'kho'), 0),
+         COALESCE(sum(n.so_luot), 0)::bigint
+  FROM public.get_kho_don_vi_cuu_tro_ung_ho_nhom(p_tu_ngay, p_den_ngay) n
+  GROUP BY n.don_vi_id;
 $$;
 
 
@@ -3210,7 +3433,7 @@ $$;
 -- Name: get_ktnt_page(text, integer, integer, text, boolean, bigint, integer[], text[], text[], bigint[], bigint[], text[], jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_cap_khen text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_nha_tai_tro_ids bigint[] DEFAULT NULL::bigint[], p_loai_nha_tai_tro text[] DEFAULT NULL::text[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, noi_dung_khen text, ngay_khen date, so_quyet_dinh text, cap_khen text, don_vi_khen text, xa_phuong_id bigint, ten_xa_phuong text, nha_tai_tro_id bigint, ten_nha_tai_tro text, loai_nha_tai_tro text, nam_thanh_tich_tu integer, nam_thanh_tich_den integer, gia_tri_dong_gop_khac numeric, so_khoan_ho_tro bigint, so_nguoi_duoc_ho_tro bigint, tong_tien_ho_tro numeric, hien_vat_quy_doi numeric, gia_tri_nhap_kho numeric, so_phieu_nhap_kho bigint, tong_gia_tri numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, nguoi_duyet_id bigint, ho_va_ten_nguoi_duyet text, tg_duyet timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, total_count bigint)
+CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_cap_khen text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_nha_tai_tro_ids bigint[] DEFAULT NULL::bigint[], p_loai_nha_tai_tro text[] DEFAULT NULL::text[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, noi_dung_khen text, ngay_khen date, so_quyet_dinh text, cap_khen text, don_vi_khen text, xa_phuong_id bigint, ten_xa_phuong text, nha_tai_tro_id bigint, ten_nha_tai_tro text, loai_nha_tai_tro text, nam_thanh_tich_tu integer, nam_thanh_tich_den integer, gia_tri_dong_gop_khac numeric, so_khoan_ho_tro bigint, so_nguoi_duoc_ho_tro bigint, tong_tien_ho_tro numeric, hien_vat_quy_doi numeric, gia_tri_nhap_kho numeric, so_phieu_nhap_kho bigint, tong_gia_tri numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, nguoi_duyet_id bigint, ho_va_ten_nguoi_duyet text, tg_duyet timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, total_count bigint)
     LANGUAGE sql STABLE
     AS $$
   WITH src AS (
@@ -3222,6 +3445,8 @@ CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit i
       nd.ho_va_ten     AS ho_va_ten_nguoi_duyet,
       nt.ho_va_ten     AS ho_va_ten_nguoi_tao,
       nt.ten_tai_khoan AS ten_tai_khoan_nguoi_tao,
+      nc.ho_va_ten     AS ho_va_ten_nguoi_cap_nhat,
+      nc.ten_tai_khoan AS ten_tai_khoan_nguoi_cap_nhat,
       COALESCE(NULLIF(btrim(nt.ho_va_ten), ''), NULLIF(btrim(nt.ten_tai_khoan), ''), '')
         AS nguoi_tao_display,
       tt.so_khoan_ho_tro,
@@ -3237,6 +3462,7 @@ CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit i
     LEFT JOIN public.kho_don_vi_cuu_tro dv ON dv.id = t.nha_tai_tro_id
     LEFT JOIN public.var_nhan_vien      nd ON nd.id = t.nguoi_duyet_id
     LEFT JOIN public.var_nhan_vien      nt ON nt.id = t.id_nguoi_tao
+    LEFT JOIN public.var_nhan_vien      nc ON nc.id = t.id_nguoi_cap_nhat
     -- Thành tích: một nguồn sự thật với màn chi tiết / form (get_ktnt_thanh_tich).
     CROSS JOIN LATERAL public.get_ktnt_thanh_tich(
       t.nha_tai_tro_id, t.nam_thanh_tich_tu, t.nam_thanh_tich_den
@@ -3251,6 +3477,7 @@ CREATE FUNCTION public.get_ktnt_page(p_search text DEFAULT NULL::text, p_limit i
     s.trang_thai, s.ngay_cap_nhat_trang_thai, s.nguoi_duyet_id, s.ho_va_ten_nguoi_duyet, s.tg_duyet,
     s.ghi_chu, s.id_nguoi_tao, s.ho_va_ten_nguoi_tao, s.ten_tai_khoan_nguoi_tao,
     s.tg_tao, s.tg_cap_nhat,
+    s.id_nguoi_cap_nhat, s.ho_va_ten_nguoi_cap_nhat, s.ten_tai_khoan_nguoi_cap_nhat,
     COUNT(*) OVER () AS total_count
   FROM src s
   WHERE (
@@ -3355,45 +3582,66 @@ $$;
 --
 
 CREATE FUNCTION public.get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_nam integer DEFAULT NULL::integer, p_den_nam integer DEFAULT NULL::integer) RETURNS TABLE(tien_mat numeric, hien_vat_quy_doi numeric, gia_tri_nhap_kho numeric, so_khoan_ho_tro bigint, so_nguoi_duoc_ho_tro bigint, so_phieu_nhap_kho bigint)
-    LANGUAGE sql STABLE
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
-  SELECT
-    vnn.tien_mat, vnn.hien_vat_quy_doi, kho.gia_tri_nhap_kho,
-    vnn.so_khoan_ho_tro, vnn.so_nguoi_duoc_ho_tro, kho.so_phieu_nhap_kho
-  FROM (
-    SELECT
-      COALESCE(sum(v.so_tien), 0)::numeric           AS tien_mat,
-      COALESCE(sum(v.tong_tien_quy_doi), 0)::numeric AS hien_vat_quy_doi,
-      count(*)::bigint                               AS so_khoan_ho_tro,
-      count(DISTINCT COALESCE(
-        'ho:' || v.ho_ngheo_id::text,
-        'ten:' || lower(regexp_replace(btrim(v.ho_ten_nguoi_nhan), '\s+', ' ', 'g'))
-          || '|' || COALESCE(v.xa_phuong_id::text, '')
-      ))::bigint                                     AS so_nguoi_duoc_ho_tro
+  WITH truc_tiep AS (
+    SELECT v.so_tien, v.tong_tien_quy_doi AS hien_vat,
+           COALESCE('ho:' || v.ho_ngheo_id::text,
+                    'ten:' || lower(regexp_replace(btrim(v.ho_ten_nguoi_nhan), '\s+', ' ', 'g'))
+                      || '|' || COALESCE(v.xa_phuong_id::text, '')) AS nguoi
     FROM public.vnn_chuong_trinh v
     WHERE v.don_vi_ho_tro_id = p_nha_tai_tro_id
+      AND v.nguon_ho_tro = 'Ủng hộ trực tiếp'
       AND (p_tu_nam  IS NULL OR v.nam >= p_tu_nam)
       AND (p_den_nam IS NULL OR v.nam <= p_den_nam)
-  ) vnn
-  CROSS JOIN (
-    SELECT
-      COALESCE(sum(ct.thanh_tien), 0)::numeric AS gia_tri_nhap_kho,
-      count(DISTINCT p.id)::bigint             AS so_phieu_nhap_kho
+    UNION ALL
+    SELECT n.so_tien, NULL::numeric,
+           COALESCE('ho:' || n.ho_ngheo_id::text,
+                    'ten:' || lower(regexp_replace(btrim(n.ho_ten_chu_ho), '\s+', ' ', 'g'))
+                      || '|' || COALESCE(n.xa_phuong_id::text, ''))
+    FROM public.nddk_nha_dai_doan_ket n
+    WHERE n.nha_tai_tro_id = p_nha_tai_tro_id
+      AND n.nguon_ho_tro = 'Ủng hộ trực tiếp'
+      AND (p_tu_nam  IS NULL OR n.nam >= p_tu_nam)
+      AND (p_den_nam IS NULL OR n.nam <= p_den_nam)
+  ),
+  tt AS (
+    SELECT COALESCE(sum(so_tien), 0)::numeric  AS tien,
+           COALESCE(sum(hien_vat), 0)::numeric AS hien_vat,
+           count(*)::bigint                    AS so_khoan,
+           count(DISTINCT nguoi)::bigint       AS so_nguoi
+    FROM truc_tiep
+  ),
+  tn AS (
+    SELECT COALESCE(sum(t.so_tien + COALESCE(t.giay_to_co_gia_gia_tri, 0)), 0)::numeric AS tien,
+           COALESCE(sum(COALESCE(t.hien_vat_khac_gia_tri, 0)), 0)::numeric           AS hien_vat
+    FROM public.tn_tiep_nhan t
+    WHERE t.nha_tai_tro_id = p_nha_tai_tro_id
+      AND (p_tu_nam  IS NULL OR extract(year FROM t.ngay_tiep_nhan)::int >= p_tu_nam)
+      AND (p_den_nam IS NULL OR extract(year FROM t.ngay_tiep_nhan)::int <= p_den_nam)
+  ),
+  kho AS (
+    SELECT COALESCE(sum(ct.thanh_tien), 0)::numeric AS gia_tri,
+           count(DISTINCT p.id)::bigint             AS so_phieu
     FROM public.kho_nhap_xuat_kho p
     JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = p.id
     WHERE p.loai_phieu = 'nhap_ngoai'
       AND p.don_vi_cuu_tro_id = p_nha_tai_tro_id
       AND (p_tu_nam  IS NULL OR extract(year FROM p.ngay_phieu)::int >= p_tu_nam)
       AND (p_den_nam IS NULL OR extract(year FROM p.ngay_phieu)::int <= p_den_nam)
-  ) kho;
+  )
+  SELECT tt.tien + tn.tien, tt.hien_vat + tn.hien_vat, kho.gia_tri,
+         tt.so_khoan, tt.so_nguoi, kho.so_phieu
+  FROM tt CROSS JOIN tn CROSS JOIN kho;
 $$;
 
 
 --
--- Name: get_nddk_page(text, integer, integer, text, boolean, bigint, integer[], text[], text[], text[], text[], text[], bigint[], jsonb); Type: FUNCTION; Schema: public; Owner: -
+-- Name: get_nddk_page(text, integer, integer, text, boolean, bigint, integer[], text[], text[], text[], text[], text[], bigint[], jsonb, bigint[]); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_nguon text[] DEFAULT NULL::text[], p_nguon_ho_tro text[] DEFAULT NULL::text[], p_doi_tuong text[] DEFAULT NULL::text[], p_loai_hinh text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, noi_dung_ho_tro text, nam integer, nguon text, nguon_ho_tro text, ho_ngheo_id bigint, ho_ten_chu_ho text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, loai_hinh_ho_tro text, so_tien numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, total_count bigint)
+CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_nguon text[] DEFAULT NULL::text[], p_nguon_ho_tro text[] DEFAULT NULL::text[], p_doi_tuong text[] DEFAULT NULL::text[], p_loai_hinh text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb, p_nha_tai_tro_ids bigint[] DEFAULT NULL::bigint[]) RETURNS TABLE(id bigint, noi_dung_ho_tro text, nam integer, nguon text, nguon_ho_tro text, ho_ngheo_id bigint, ho_ten_chu_ho text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, loai_hinh_ho_tro text, so_tien numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, nha_tai_tro_id bigint, ten_nha_tai_tro text, total_count bigint)
     LANGUAGE sql STABLE
     AS $$
   WITH src AS (
@@ -3404,12 +3652,14 @@ CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit i
       nt.ten_tai_khoan AS ten_tai_khoan_nguoi_tao,
       nc.ho_va_ten     AS ho_va_ten_nguoi_cap_nhat,
       nc.ten_tai_khoan AS ten_tai_khoan_nguoi_cap_nhat,
+      ntt.ten          AS ten_nha_tai_tro,
       COALESCE(NULLIF(btrim(nt.ho_va_ten), ''), NULLIF(btrim(nt.ten_tai_khoan), ''), '')
         AS nguoi_tao_display
     FROM public.nddk_nha_dai_doan_ket t
     LEFT JOIN public.var_ssn_xa_phuong xp ON xp.id = t.xa_phuong_id
     LEFT JOIN public.var_nhan_vien     nt ON nt.id = t.id_nguoi_tao
     LEFT JOIN public.var_nhan_vien     nc ON nc.id = t.id_nguoi_cap_nhat
+    LEFT JOIN public.kho_don_vi_cuu_tro ntt ON ntt.id = t.nha_tai_tro_id
   )
   SELECT
     s.id, s.noi_dung_ho_tro, s.nam, s.nguon, s.nguon_ho_tro,
@@ -3419,6 +3669,7 @@ CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit i
     s.id_nguoi_tao, s.ho_va_ten_nguoi_tao, s.ten_tai_khoan_nguoi_tao,
     s.tg_tao, s.tg_cap_nhat,
     s.id_nguoi_cap_nhat, s.ho_va_ten_nguoi_cap_nhat, s.ten_tai_khoan_nguoi_cap_nhat,
+    s.nha_tai_tro_id, s.ten_nha_tai_tro,
     COUNT(*) OVER () AS total_count
   FROM src s
   WHERE (
@@ -3435,6 +3686,7 @@ CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit i
         s.noi_dung_ho_tro,
         s.nguon,
         s.nguon_ho_tro,
+        s.ten_nha_tai_tro,
         s.doi_tuong,
         s.ghi_chu,
         s.nguoi_tao_display,
@@ -3454,6 +3706,7 @@ CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit i
     AND (p_loai_hinh     IS NULL OR cardinality(p_loai_hinh)     = 0 OR s.loai_hinh_ho_tro = ANY (p_loai_hinh))
     AND (p_trang_thai    IS NULL OR cardinality(p_trang_thai)    = 0 OR s.trang_thai       = ANY (p_trang_thai))
     AND (p_xa_phuong_ids IS NULL OR cardinality(p_xa_phuong_ids) = 0 OR s.xa_phuong_id     = ANY (p_xa_phuong_ids))
+    AND (p_nha_tai_tro_ids IS NULL OR cardinality(p_nha_tai_tro_ids) = 0 OR s.nha_tai_tro_id = ANY (p_nha_tai_tro_ids))
     -- Tìm theo từng cột: so khớp trên ĐÚNG chuỗi hiển thị của cột đó.
     AND (nullif(btrim(coalesce(p_column_search->>'nam','')),'') IS NULL
          OR s.nam::text ILIKE '%'||btrim(p_column_search->>'nam')||'%')
@@ -3463,6 +3716,8 @@ CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit i
          OR s.nguon ILIKE '%'||btrim(p_column_search->>'nguon')||'%')
     AND (nullif(btrim(coalesce(p_column_search->>'nguon_ho_tro','')),'') IS NULL
          OR s.nguon_ho_tro ILIKE '%'||btrim(p_column_search->>'nguon_ho_tro')||'%')
+    AND (nullif(btrim(coalesce(p_column_search->>'ten_nha_tai_tro','')),'') IS NULL
+         OR s.ten_nha_tai_tro ILIKE '%'||btrim(p_column_search->>'ten_nha_tai_tro')||'%')
     AND (nullif(btrim(coalesce(p_column_search->>'ho_ten_chu_ho','')),'') IS NULL
          OR s.ho_ten_chu_ho ILIKE '%'||btrim(p_column_search->>'ho_ten_chu_ho')||'%')
     AND (nullif(btrim(coalesce(p_column_search->>'ten_xa_phuong','')),'') IS NULL
@@ -3495,6 +3750,8 @@ CREATE FUNCTION public.get_nddk_page(p_search text DEFAULT NULL::text, p_limit i
     CASE WHEN p_sort = 'nguon_desc'                   THEN s.nguon                    END DESC NULLS LAST,
     CASE WHEN p_sort = 'nguon_ho_tro_asc'             THEN s.nguon_ho_tro             END ASC  NULLS LAST,
     CASE WHEN p_sort = 'nguon_ho_tro_desc'            THEN s.nguon_ho_tro             END DESC NULLS LAST,
+    CASE WHEN p_sort = 'ten_nha_tai_tro_asc'          THEN s.ten_nha_tai_tro          END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'ten_nha_tai_tro_desc'         THEN s.ten_nha_tai_tro          END DESC NULLS LAST,
     CASE WHEN p_sort = 'ho_ten_chu_ho_asc'            THEN s.ho_ten_chu_ho            END ASC  NULLS LAST,
     CASE WHEN p_sort = 'ho_ten_chu_ho_desc'           THEN s.ho_ten_chu_ho            END DESC NULLS LAST,
     CASE WHEN p_sort = 'ten_xa_phuong_asc'            THEN s.ten_xa_phuong            END ASC  NULLS LAST,
@@ -3806,6 +4063,127 @@ COMMENT ON FUNCTION public.get_tang_luong_sap_den_han_count(p_so_ngay integer, p
 
 
 --
+-- Name: get_tn_phieu_kho_cua_nha_tai_tro(bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_tn_phieu_kho_cua_nha_tai_tro(p_nha_tai_tro_id bigint) RETURNS TABLE(phieu_id bigint, so_phieu text, ngay_phieu date, ten_kho text, ten_chuong_trinh text, tong_tien numeric, so_dong bigint, tiep_nhan_id bigint, so_phieu_tiep_nhan text)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT
+    p.id, p.so_phieu, p.ngay_phieu, k.ten_kho, d.ten,
+    COALESCE(sum(ct.thanh_tien), 0), count(ct.id),
+    l.tiep_nhan_id, t.so_phieu
+  FROM public.kho_nhap_xuat_kho p
+  LEFT JOIN public.kho_danh_sach_kho k ON k.id = p.kho_nhap_id
+  LEFT JOIN public.kho_dot_cuu_tro d ON d.id = p.dot_cuu_tro_id
+  LEFT JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = p.id
+  LEFT JOIN public.tn_tiep_nhan_phieu_kho l ON l.phieu_id = p.id
+  LEFT JOIN public.tn_tiep_nhan t ON t.id = l.tiep_nhan_id
+  WHERE p.loai_phieu = 'nhap_ngoai'
+    AND p.don_vi_cuu_tro_id = p_nha_tai_tro_id
+    AND ((SELECT public.fn_kho_xem_tat_ca()) OR p.kho_nhap_id = ANY ((SELECT public.fn_kho_cua_toi())::bigint[]))
+  GROUP BY p.id, k.ten_kho, d.ten, l.tiep_nhan_id, t.so_phieu
+  ORDER BY p.ngay_phieu DESC, p.id DESC;
+$$;
+
+
+--
+-- Name: get_tn_tiep_nhan_page(text, integer, integer, text, bigint[], bigint[], text[], text[], date, date, bigint); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_tn_tiep_nhan_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_nha_tai_tro_ids bigint[] DEFAULT NULL::bigint[], p_chuong_trinh_ids bigint[] DEFAULT NULL::bigint[], p_hinh_thuc text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_tu_ngay date DEFAULT NULL::date, p_den_ngay date DEFAULT NULL::date, p_id bigint DEFAULT NULL::bigint) RETURNS TABLE(id bigint, so_phieu text, ngay_tiep_nhan date, nha_tai_tro_id bigint, ten_nha_tai_tro text, loai_nha_tai_tro text, chuong_trinh_id bigint, ten_chuong_trinh text, don_vi_chu_tri_loai text, don_vi_chu_tri_id bigint, ten_don_vi_tiep_nhan text, hinh_thuc text, so_tien numeric, giay_to_co_gia_gia_tri numeric, hien_vat_khac_gia_tri numeric, gia_tri_phieu_kho numeric, so_phieu_kho bigint, tong_gia_tri numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, total_count bigint)
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  WITH kho AS (
+    SELECT l.tiep_nhan_id, sum(ct.thanh_tien) AS gia_tri, count(DISTINCT l.phieu_id) AS so_phieu
+    FROM public.tn_tiep_nhan_phieu_kho l
+    JOIN public.kho_nhap_xuat_kho_ct ct ON ct.phieu_id = l.phieu_id
+    GROUP BY l.tiep_nhan_id
+  ),
+  src AS (
+    SELECT
+      t.*,
+      ntt.ten  AS ten_nha_tai_tro,
+      ntt.loai AS loai_nha_tai_tro,
+      d.ten    AS ten_chuong_trinh,
+      d.don_vi_chu_tri_loai,
+      d.don_vi_chu_tri_id,
+      CASE WHEN d.don_vi_chu_tri_loai = 'xa_phuong' THEN xp.ten ELSE 'MTTQ tỉnh' END AS ten_don_vi_tiep_nhan,
+      COALESCE(kho.gia_tri, 0)  AS gia_tri_phieu_kho,
+      COALESCE(kho.so_phieu, 0) AS so_phieu_kho,
+      t.so_tien + COALESCE(t.giay_to_co_gia_gia_tri, 0) + COALESCE(t.hien_vat_khac_gia_tri, 0)
+        + COALESCE(kho.gia_tri, 0) AS tong_gia_tri,
+      nt.ho_va_ten     AS ho_va_ten_nguoi_tao,
+      nt.ten_tai_khoan AS ten_tai_khoan_nguoi_tao,
+      nc.ho_va_ten     AS ho_va_ten_nguoi_cap_nhat,
+      nc.ten_tai_khoan AS ten_tai_khoan_nguoi_cap_nhat
+    FROM public.tn_tiep_nhan t
+    JOIN public.kho_don_vi_cuu_tro ntt ON ntt.id = t.nha_tai_tro_id
+    JOIN public.kho_dot_cuu_tro d      ON d.id = t.chuong_trinh_id
+    LEFT JOIN public.var_ssn_xa_phuong xp ON xp.id = d.don_vi_chu_tri_id
+    LEFT JOIN kho ON kho.tiep_nhan_id = t.id
+    LEFT JOIN public.var_nhan_vien nt ON nt.id = t.id_nguoi_tao
+    LEFT JOIN public.var_nhan_vien nc ON nc.id = t.id_nguoi_cap_nhat
+    -- Cùng luật policy tn_tiep_nhan_xem (hàm định nghĩa nên phải lọc tường minh).
+    WHERE (SELECT public.fn_kho_xem_tat_ca())
+       OR (d.don_vi_chu_tri_loai = 'xa_phuong' AND d.don_vi_chu_tri_id = (SELECT public.fn_don_vi_cua_toi()))
+  )
+  SELECT
+    s.id, s.so_phieu, s.ngay_tiep_nhan,
+    s.nha_tai_tro_id, s.ten_nha_tai_tro, s.loai_nha_tai_tro,
+    s.chuong_trinh_id, s.ten_chuong_trinh,
+    s.don_vi_chu_tri_loai, s.don_vi_chu_tri_id, s.ten_don_vi_tiep_nhan,
+    s.hinh_thuc, s.so_tien,
+    s.giay_to_co_gia_gia_tri, s.hien_vat_khac_gia_tri,
+    s.gia_tri_phieu_kho, s.so_phieu_kho, s.tong_gia_tri,
+    s.trang_thai, s.ngay_cap_nhat_trang_thai, s.ghi_chu,
+    s.id_nguoi_tao, s.ho_va_ten_nguoi_tao, s.ten_tai_khoan_nguoi_tao,
+    s.id_nguoi_cap_nhat, s.ho_va_ten_nguoi_cap_nhat, s.ten_tai_khoan_nguoi_cap_nhat,
+    s.tg_tao, s.tg_cap_nhat,
+    COUNT(*) OVER () AS total_count
+  FROM src s
+  WHERE (p_id IS NULL OR s.id = p_id)
+    AND (
+      p_search IS NULL
+      OR public.fn_chuan_hoa_tim_kiem(concat_ws(' ',
+        s.so_phieu, s.ten_nha_tai_tro, s.ten_chuong_trinh, s.ten_don_vi_tiep_nhan,
+        s.hinh_thuc, s.trang_thai, s.ghi_chu,
+        s.tong_gia_tri::text, replace(to_char(round(s.tong_gia_tri), 'FM999,999,999,999,990'), ',', '.'),
+        to_char(s.ngay_tiep_nhan, 'DD/MM/YYYY')
+      )) LIKE public.fn_mau_tim_kiem(p_search)
+    )
+    AND (p_nha_tai_tro_ids  IS NULL OR cardinality(p_nha_tai_tro_ids)  = 0 OR s.nha_tai_tro_id  = ANY (p_nha_tai_tro_ids))
+    AND (p_chuong_trinh_ids IS NULL OR cardinality(p_chuong_trinh_ids) = 0 OR s.chuong_trinh_id = ANY (p_chuong_trinh_ids))
+    AND (p_hinh_thuc        IS NULL OR cardinality(p_hinh_thuc)        = 0 OR s.hinh_thuc       = ANY (p_hinh_thuc))
+    AND (p_trang_thai       IS NULL OR cardinality(p_trang_thai)       = 0 OR s.trang_thai      = ANY (p_trang_thai))
+    AND (p_tu_ngay  IS NULL OR s.ngay_tiep_nhan >= p_tu_ngay)
+    AND (p_den_ngay IS NULL OR s.ngay_tiep_nhan <= p_den_ngay)
+  ORDER BY
+    CASE WHEN p_sort = 'so_phieu_asc'         THEN s.so_phieu         END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'so_phieu_desc'        THEN s.so_phieu         END DESC NULLS LAST,
+    CASE WHEN p_sort = 'ngay_tiep_nhan_asc'   THEN s.ngay_tiep_nhan   END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'ngay_tiep_nhan_desc'  THEN s.ngay_tiep_nhan   END DESC NULLS LAST,
+    CASE WHEN p_sort = 'ten_nha_tai_tro_asc'  THEN s.ten_nha_tai_tro  END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'ten_nha_tai_tro_desc' THEN s.ten_nha_tai_tro  END DESC NULLS LAST,
+    CASE WHEN p_sort = 'ten_chuong_trinh_asc' THEN s.ten_chuong_trinh END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'ten_chuong_trinh_desc' THEN s.ten_chuong_trinh END DESC NULLS LAST,
+    CASE WHEN p_sort = 'so_tien_asc'          THEN s.so_tien          END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'so_tien_desc'         THEN s.so_tien          END DESC NULLS LAST,
+    CASE WHEN p_sort = 'tong_gia_tri_asc'     THEN s.tong_gia_tri     END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'tong_gia_tri_desc'    THEN s.tong_gia_tri     END DESC NULLS LAST,
+    CASE WHEN p_sort = 'trang_thai_asc'       THEN s.trang_thai       END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'trang_thai_desc'      THEN s.trang_thai       END DESC NULLS LAST,
+    CASE WHEN p_sort = 'tg_cap_nhat_asc'      THEN s.tg_cap_nhat      END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'tg_cap_nhat_desc'     THEN s.tg_cap_nhat      END DESC NULLS LAST,
+    s.ngay_tiep_nhan DESC, s.id DESC
+  LIMIT greatest(p_limit, 1)
+  OFFSET greatest(p_offset, 0);
+$$;
+
+
+--
 -- Name: get_uy_vien_diem_danh_summary_for_don_vi(bigint[], bigint); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3833,7 +4211,7 @@ $$;
 -- Name: get_vnn_page(text, integer, integer, text, boolean, bigint, integer[], text[], text[], text[], text[], text[], text[], bigint[], jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.get_vnn_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_linh_vuc text[] DEFAULT NULL::text[], p_nguon text[] DEFAULT NULL::text[], p_nguon_ho_tro text[] DEFAULT NULL::text[], p_doi_tuong text[] DEFAULT NULL::text[], p_hinh_thuc text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, noi_dung_ho_tro text, nam integer, linh_vuc_ho_tro text, nguon text, nguon_ho_tro text, ho_ngheo_id bigint, ho_ten_nguoi_nhan text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, hinh_thuc_ho_tro text, so_tien numeric, so_luong integer, tong_tien_quy_doi numeric, tong_tien_ban_giao numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, don_vi_ho_tro_id bigint, ten_don_vi_ho_tro text, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, total_count bigint)
+CREATE FUNCTION public.get_vnn_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_nam integer[] DEFAULT NULL::integer[], p_linh_vuc text[] DEFAULT NULL::text[], p_nguon text[] DEFAULT NULL::text[], p_nguon_ho_tro text[] DEFAULT NULL::text[], p_doi_tuong text[] DEFAULT NULL::text[], p_hinh_thuc text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, noi_dung_ho_tro text, nam integer, linh_vuc_ho_tro text, nguon text, nguon_ho_tro text, ho_ngheo_id bigint, ho_ten_nguoi_nhan text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, hinh_thuc_ho_tro text, so_tien numeric, so_luong integer, tong_tien_quy_doi numeric, tong_tien_ban_giao numeric, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, don_vi_ho_tro_id bigint, ten_don_vi_ho_tro text, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, total_count bigint)
     LANGUAGE sql STABLE
     AS $$
   WITH src AS (
@@ -3843,12 +4221,15 @@ CREATE FUNCTION public.get_vnn_page(p_search text DEFAULT NULL::text, p_limit in
       dv.ten           AS ten_don_vi_ho_tro,
       nt.ho_va_ten     AS ho_va_ten_nguoi_tao,
       nt.ten_tai_khoan AS ten_tai_khoan_nguoi_tao,
+      nc.ho_va_ten     AS ho_va_ten_nguoi_cap_nhat,
+      nc.ten_tai_khoan AS ten_tai_khoan_nguoi_cap_nhat,
       COALESCE(NULLIF(btrim(nt.ho_va_ten), ''), NULLIF(btrim(nt.ten_tai_khoan), ''), '')
         AS nguoi_tao_display
     FROM public.vnn_chuong_trinh t
     LEFT JOIN public.var_ssn_xa_phuong  xp ON xp.id = t.xa_phuong_id
     LEFT JOIN public.kho_don_vi_cuu_tro dv ON dv.id = t.don_vi_ho_tro_id
     LEFT JOIN public.var_nhan_vien      nt ON nt.id = t.id_nguoi_tao
+    LEFT JOIN public.var_nhan_vien      nc ON nc.id = t.id_nguoi_cap_nhat
   )
   SELECT
     s.id, s.noi_dung_ho_tro, s.nam, s.linh_vuc_ho_tro, s.nguon, s.nguon_ho_tro,
@@ -3859,6 +4240,7 @@ CREATE FUNCTION public.get_vnn_page(p_search text DEFAULT NULL::text, p_limit in
     s.don_vi_ho_tro_id, s.ten_don_vi_ho_tro, s.ghi_chu,
     s.id_nguoi_tao, s.ho_va_ten_nguoi_tao, s.ten_tai_khoan_nguoi_tao,
     s.tg_tao, s.tg_cap_nhat,
+    s.id_nguoi_cap_nhat, s.ho_va_ten_nguoi_cap_nhat, s.ten_tai_khoan_nguoi_cap_nhat,
     COUNT(*) OVER () AS total_count
   FROM src s
   WHERE (
@@ -4579,6 +4961,83 @@ COMMENT ON FUNCTION public.rpc_thong_bao_danh_dau_tat_ca_da_doc() IS 'Đánh d�
 
 
 --
+-- Name: rpc_tn_luu_tiep_nhan(bigint, jsonb, bigint[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.rpc_tn_luu_tiep_nhan(p_id bigint, p_data jsonb, p_phieu_ids bigint[] DEFAULT ARRAY[]::bigint[]) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  v_id bigint := p_id;
+  v_tong numeric;
+BEGIN
+  IF v_id IS NULL THEN
+    INSERT INTO public.tn_tiep_nhan (
+      ngay_tiep_nhan, nha_tai_tro_id, chuong_trinh_id, hinh_thuc, so_tien,
+      giay_to_co_gia_mo_ta, giay_to_co_gia_gia_tri, hien_vat_khac_mo_ta, hien_vat_khac_gia_tri,
+      muc_dich, dia_diem_lap, phu_luc, trang_thai, ghi_chu
+    ) VALUES (
+      COALESCE((p_data->>'ngay_tiep_nhan')::date, CURRENT_DATE),
+      (p_data->>'nha_tai_tro_id')::bigint,
+      (p_data->>'chuong_trinh_id')::bigint,
+      NULLIF(p_data->>'hinh_thuc', ''),
+      COALESCE((p_data->>'so_tien')::numeric, 0),
+      NULLIF(btrim(p_data->>'giay_to_co_gia_mo_ta'), ''),
+      (p_data->>'giay_to_co_gia_gia_tri')::numeric,
+      NULLIF(btrim(p_data->>'hien_vat_khac_mo_ta'), ''),
+      (p_data->>'hien_vat_khac_gia_tri')::numeric,
+      COALESCE(ARRAY(SELECT jsonb_array_elements_text(p_data->'muc_dich')), ARRAY[]::text[]),
+      NULLIF(btrim(p_data->>'dia_diem_lap'), ''),
+      CASE WHEN jsonb_typeof(p_data->'phu_luc') = 'array' AND jsonb_array_length(p_data->'phu_luc') > 0
+           THEN p_data->'phu_luc' END,
+      COALESCE(NULLIF(p_data->>'trang_thai', ''), 'Đăng ký'),
+      NULLIF(btrim(p_data->>'ghi_chu'), '')
+    )
+    RETURNING id INTO v_id;
+  ELSE
+    -- Gỡ liên kết TRƯỚC khi sửa đầu phiếu: đổi nhà tài trợ bị chặn nếu còn phiếu gắn.
+    DELETE FROM public.tn_tiep_nhan_phieu_kho WHERE tiep_nhan_id = v_id;
+    UPDATE public.tn_tiep_nhan SET
+      ngay_tiep_nhan         = COALESCE((p_data->>'ngay_tiep_nhan')::date, ngay_tiep_nhan),
+      nha_tai_tro_id         = (p_data->>'nha_tai_tro_id')::bigint,
+      chuong_trinh_id        = (p_data->>'chuong_trinh_id')::bigint,
+      hinh_thuc              = NULLIF(p_data->>'hinh_thuc', ''),
+      so_tien                = COALESCE((p_data->>'so_tien')::numeric, 0),
+      giay_to_co_gia_mo_ta   = NULLIF(btrim(p_data->>'giay_to_co_gia_mo_ta'), ''),
+      giay_to_co_gia_gia_tri = (p_data->>'giay_to_co_gia_gia_tri')::numeric,
+      hien_vat_khac_mo_ta    = NULLIF(btrim(p_data->>'hien_vat_khac_mo_ta'), ''),
+      hien_vat_khac_gia_tri  = (p_data->>'hien_vat_khac_gia_tri')::numeric,
+      muc_dich               = COALESCE(ARRAY(SELECT jsonb_array_elements_text(p_data->'muc_dich')), ARRAY[]::text[]),
+      dia_diem_lap           = NULLIF(btrim(p_data->>'dia_diem_lap'), ''),
+      phu_luc                = CASE WHEN jsonb_typeof(p_data->'phu_luc') = 'array'
+                                     AND jsonb_array_length(p_data->'phu_luc') > 0
+                                    THEN p_data->'phu_luc' END,
+      ghi_chu                = NULLIF(btrim(p_data->>'ghi_chu'), '')
+    WHERE id = v_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'TN_KHONG_TIM_THAY: Không tìm thấy khoản tiếp nhận hoặc không có quyền sửa.';
+    END IF;
+  END IF;
+
+  INSERT INTO public.tn_tiep_nhan_phieu_kho (tiep_nhan_id, phieu_id)
+  SELECT v_id, x FROM unnest(COALESCE(p_phieu_ids, ARRAY[]::bigint[])) AS x;
+
+  -- Khoản tiếp nhận phải có giá trị — bản sao luật `tongGiaTriTiepNhan > 0` ở client.
+  SELECT t.so_tien + COALESCE(t.giay_to_co_gia_gia_tri, 0) + COALESCE(t.hien_vat_khac_gia_tri, 0)
+         + public.fn_tn_gia_tri_phieu_kho(t.id)
+    INTO v_tong
+  FROM public.tn_tiep_nhan t WHERE t.id = v_id;
+  IF COALESCE(v_tong, 0) <= 0 THEN
+    RAISE EXCEPTION 'TN_GIA_TRI_RONG: Khoản tiếp nhận phải có số tiền, giấy tờ có giá, hiện vật hoặc phiếu nhập kho.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN v_id;
+END;
+$$;
+
+
+--
 -- Name: set_tg_cap_nhat(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -5105,6 +5564,7 @@ CREATE TABLE public.hngh_thong_tin_ho_ngheo (
     tinh_trang_viec_lam text,
     doi_tuong_uu_tien text,
     tinh_trang_dat text,
+    id_nguoi_cap_nhat bigint,
     CONSTRAINT hngh_gioi_tinh_chk CHECK (((gioi_tinh IS NULL) OR (gioi_tinh = ANY (ARRAY['Nam'::text, 'Nữ'::text])))),
     CONSTRAINT hngh_ho_ten_dai_dien_chk CHECK ((btrim(ho_ten_dai_dien) <> ''::text)),
     CONSTRAINT hngh_nam_sinh_chk CHECK (((nam_sinh IS NULL) OR ((nam_sinh >= 1900) AND (nam_sinh <= 2100)))),
@@ -5224,6 +5684,13 @@ COMMENT ON COLUMN public.hngh_thong_tin_ho_ngheo.tinh_trang_dat IS 'Tình trạn
 
 
 --
+-- Name: COLUMN hngh_thong_tin_ho_ngheo.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.hngh_thong_tin_ho_ngheo.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
+
+
+--
 -- Name: CONSTRAINT hngh_so_cccd_chk ON hngh_thong_tin_ho_ngheo; Type: COMMENT; Schema: public; Owner: -
 --
 
@@ -5256,8 +5723,17 @@ CREATE TABLE public.kho_danh_muc_hang_hoa (
     trang_thai text DEFAULT 'Đang hoạt động'::text NOT NULL,
     tg_tao timestamp with time zone DEFAULT now() NOT NULL,
     tg_cap_nhat timestamp with time zone DEFAULT now() NOT NULL,
+    id_nguoi_tao bigint,
+    id_nguoi_cap_nhat bigint,
     CONSTRAINT kho_danh_muc_hang_hoa_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['Đang hoạt động'::text, 'Ngừng hoạt động'::text])))
 );
+
+
+--
+-- Name: COLUMN kho_danh_muc_hang_hoa.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_danh_muc_hang_hoa.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
 
 
 --
@@ -5289,8 +5765,17 @@ CREATE TABLE public.kho_danh_sach_hang_hoa (
     trang_thai text DEFAULT 'Đang hoạt động'::text NOT NULL,
     tg_tao timestamp with time zone DEFAULT now() NOT NULL,
     tg_cap_nhat timestamp with time zone DEFAULT now() NOT NULL,
+    id_nguoi_tao bigint,
+    id_nguoi_cap_nhat bigint,
     CONSTRAINT kho_danh_sach_hang_hoa_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['Đang hoạt động'::text, 'Ngừng hoạt động'::text])))
 );
+
+
+--
+-- Name: COLUMN kho_danh_sach_hang_hoa.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_danh_sach_hang_hoa.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
 
 
 --
@@ -5318,8 +5803,17 @@ CREATE TABLE public.kho_danh_sach_kho (
     mo_ta text,
     tg_tao timestamp with time zone DEFAULT now() NOT NULL,
     tg_cap_nhat timestamp with time zone DEFAULT now() NOT NULL,
-    tt integer NOT NULL
+    tt integer NOT NULL,
+    id_nguoi_tao bigint,
+    id_nguoi_cap_nhat bigint
 );
+
+
+--
+-- Name: COLUMN kho_danh_sach_kho.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_danh_sach_kho.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
 
 
 --
@@ -5375,6 +5869,9 @@ CREATE TABLE public.kho_don_vi_cuu_tro (
     chuc_vu text,
     don_vi_gioi_thieu_loai text DEFAULT 'tinh'::text NOT NULL,
     don_vi_gioi_thieu_id bigint,
+    id_nguoi_tao bigint,
+    id_nguoi_cap_nhat bigint,
+    ma_so_thue text,
     CONSTRAINT kho_don_vi_cuu_tro_dv_gioi_thieu_chk CHECK ((((don_vi_gioi_thieu_loai = 'tinh'::text) AND (don_vi_gioi_thieu_id IS NULL)) OR ((don_vi_gioi_thieu_loai = 'xa_phuong'::text) AND (don_vi_gioi_thieu_id IS NOT NULL)))),
     CONSTRAINT kho_don_vi_cuu_tro_loai_chk CHECK ((loai = ANY (ARRAY['doanh_nghiep'::text, 'cau_lac_bo'::text, 'cq_cap_tinh'::text, 'ca_nhan'::text, 'co_so_ton_giao'::text, 'nhom_thien_nguyen'::text, 'don_vi_su_nghiep'::text, 'cq_cap_xa'::text]))),
     CONSTRAINT kho_don_vi_cuu_tro_so_nguoi_chk CHECK (((so_nguoi IS NULL) OR (so_nguoi >= 0)))
@@ -5414,6 +5911,13 @@ COMMENT ON COLUMN public.kho_don_vi_cuu_tro.don_vi_gioi_thieu_loai IS 'Bắt bu�
 --
 
 COMMENT ON COLUMN public.kho_don_vi_cuu_tro.don_vi_gioi_thieu_id IS 'FK var_ssn_xa_phuong — chỉ có giá trị khi don_vi_gioi_thieu_loai = ''xa_phuong''.';
+
+
+--
+-- Name: COLUMN kho_don_vi_cuu_tro.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_don_vi_cuu_tro.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
 
 
 --
@@ -5460,8 +5964,45 @@ CREATE TABLE public.kho_dot_cuu_tro (
     mo_ta text,
     link text,
     tg_tao timestamp with time zone DEFAULT now() NOT NULL,
-    tg_cap_nhat timestamp with time zone DEFAULT now() NOT NULL
+    tg_cap_nhat timestamp with time zone DEFAULT now() NOT NULL,
+    id_nguoi_tao bigint,
+    id_nguoi_cap_nhat bigint,
+    loai text DEFAULT 'Cứu trợ'::text NOT NULL,
+    don_vi_chu_tri_loai text DEFAULT 'tinh'::text NOT NULL,
+    don_vi_chu_tri_id bigint,
+    tu_ngay date,
+    den_ngay date,
+    tai_khoan_tiep_nhan text,
+    ngan_hang text,
+    trang_thai text DEFAULT 'Đang triển khai'::text NOT NULL,
+    ngay_cap_nhat_trang_thai timestamp with time zone DEFAULT now() NOT NULL,
+    tien_do text,
+    CONSTRAINT kho_dot_cuu_tro_don_vi_chu_tri_chk CHECK ((((don_vi_chu_tri_loai = 'tinh'::text) AND (don_vi_chu_tri_id IS NULL)) OR ((don_vi_chu_tri_loai = 'xa_phuong'::text) AND (don_vi_chu_tri_id IS NOT NULL)))),
+    CONSTRAINT kho_dot_cuu_tro_loai_chk CHECK ((loai = ANY (ARRAY['Nghĩa tình dòng Lam'::text, 'Cứu trợ'::text]))),
+    CONSTRAINT kho_dot_cuu_tro_thoi_gian_chk CHECK (((tu_ngay IS NULL) OR (den_ngay IS NULL) OR (den_ngay >= tu_ngay))),
+    CONSTRAINT kho_dot_cuu_tro_trang_thai_chk CHECK ((trang_thai = ANY (ARRAY['Đang triển khai'::text, 'Kết thúc'::text])))
 );
+
+
+--
+-- Name: COLUMN kho_dot_cuu_tro.link; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_dot_cuu_tro.link IS 'Văn bản phát động (URL).';
+
+
+--
+-- Name: COLUMN kho_dot_cuu_tro.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_dot_cuu_tro.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
+
+
+--
+-- Name: COLUMN kho_dot_cuu_tro.tien_do; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_dot_cuu_tro.tien_do IS 'Ghi chú tiến độ, nhập tay.';
 
 
 --
@@ -5520,6 +6061,7 @@ CREATE TABLE public.kho_nhap_xuat_kho (
     id_nguoi_tao bigint,
     muc_dich text,
     ho_ngheo_id bigint,
+    id_nguoi_cap_nhat bigint,
     CONSTRAINT chk_kho_nxk_consistency CHECK ((((loai_phieu = 'nhap_ngoai'::text) AND (don_vi_cuu_tro_id IS NOT NULL) AND (kho_nhap_id IS NOT NULL) AND (kho_xuat_id IS NULL)) OR ((loai_phieu = 'xuat_ngoai'::text) AND (kho_xuat_id IS NOT NULL) AND (dot_cuu_tro_id IS NOT NULL) AND (kho_nhap_id IS NULL) AND (don_vi_cuu_tro_id IS NULL)) OR ((loai_phieu = 'chuyen_kho'::text) AND (kho_xuat_id IS NOT NULL) AND (kho_nhap_id IS NOT NULL) AND (kho_xuat_id <> kho_nhap_id) AND (don_vi_cuu_tro_id IS NULL) AND (dot_cuu_tro_id IS NULL)))),
     CONSTRAINT kho_nhap_xuat_kho_loai_phieu_check CHECK ((loai_phieu = ANY (ARRAY['nhap_ngoai'::text, 'xuat_ngoai'::text, 'chuyen_kho'::text]))),
     CONSTRAINT kho_nhap_xuat_kho_muc_dich_len_chk CHECK (((muc_dich IS NULL) OR (char_length(muc_dich) <= 500))),
@@ -5546,6 +6088,13 @@ COMMENT ON COLUMN public.kho_nhap_xuat_kho.muc_dich IS 'Mục đích nhập/xu�
 --
 
 COMMENT ON COLUMN public.kho_nhap_xuat_kho.ho_ngheo_id IS 'Đối tượng hỗ trợ nhận hàng — bắt buộc khi phiếu xuất có mục đích "Xuất cho hộ nghèo". RESTRICT: hộ đã nhận hàng thì không xoá mất vết.';
+
+
+--
+-- Name: COLUMN kho_nhap_xuat_kho.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.kho_nhap_xuat_kho.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
 
 
 --
@@ -5704,6 +6253,7 @@ CREATE TABLE public.ktnt_khen_thuong_nha_tai_tro (
     id_nguoi_tao bigint NOT NULL,
     tg_tao timestamp with time zone DEFAULT now() NOT NULL,
     tg_cap_nhat timestamp with time zone DEFAULT now() NOT NULL,
+    id_nguoi_cap_nhat bigint,
     CONSTRAINT ktnt_khen_thuong_nha_tai_tro_cap_khen_check CHECK ((cap_khen = ANY (ARRAY['Trung ương'::text, 'Cấp tỉnh'::text, 'Cấp xã'::text]))),
     CONSTRAINT ktnt_khen_thuong_nha_tai_tro_gia_tri_dong_gop_khac_check CHECK (((gia_tri_dong_gop_khac IS NULL) OR (gia_tri_dong_gop_khac >= (0)::numeric))),
     CONSTRAINT ktnt_khen_thuong_nha_tai_tro_nam_thanh_tich_den_check CHECK (((nam_thanh_tich_den >= 2000) AND (nam_thanh_tich_den <= 2100))),
@@ -5719,6 +6269,13 @@ CREATE TABLE public.ktnt_khen_thuong_nha_tai_tro (
 --
 
 COMMENT ON TABLE public.ktnt_khen_thuong_nha_tai_tro IS 'Khen thưởng nhà tài trợ — mỗi dòng một quyết định khen; thành tích đọc từ vnn_chuong_trinh.';
+
+
+--
+-- Name: COLUMN ktnt_khen_thuong_nha_tai_tro.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.ktnt_khen_thuong_nha_tai_tro.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
 
 
 --
@@ -6341,6 +6898,7 @@ CREATE TABLE public.nddk_nha_dai_doan_ket (
     so_quyet_dinh text,
     ngay_quyet_dinh date,
     id_nguoi_cap_nhat bigint,
+    nha_tai_tro_id bigint,
     CONSTRAINT nddk_dien_tich_san_chk CHECK (((dien_tich_san IS NULL) OR (dien_tich_san >= (0)::numeric))),
     CONSTRAINT nddk_nguon_khac_chk CHECK (((nguon_khac IS NULL) OR ((jsonb_typeof(nguon_khac) = 'array'::text) AND (jsonb_array_length(nguon_khac) <= 3)))),
     CONSTRAINT nddk_nha_dai_doan_ket_doi_tuong_check CHECK (((doi_tuong IS NULL) OR (doi_tuong = ANY (ARRAY['Hộ nghèo'::text, 'Cận nghèo'::text, 'Khó khăn'::text])))),
@@ -6525,6 +7083,13 @@ COMMENT ON COLUMN public.nddk_nha_dai_doan_ket.id_nguoi_cap_nhat IS 'Người th
 
 
 --
+-- Name: COLUMN nddk_nha_dai_doan_ket.nha_tai_tro_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nddk_nha_dai_doan_ket.nha_tai_tro_id IS 'Nhà tài trợ (kho_don_vi_cuu_tro). Bắt buộc ở client khi nguon_ho_tro = ''Ủng hộ trực tiếp''.';
+
+
+--
 -- Name: nddk_nha_dai_doan_ket_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -6669,6 +7234,93 @@ ALTER TABLE public.thong_bao ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );
+
+
+--
+-- Name: tn_tiep_nhan; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tn_tiep_nhan (
+    id bigint NOT NULL,
+    so_phieu text NOT NULL,
+    ngay_tiep_nhan date DEFAULT CURRENT_DATE NOT NULL,
+    nha_tai_tro_id bigint NOT NULL,
+    chuong_trinh_id bigint NOT NULL,
+    hinh_thuc text,
+    so_tien numeric(15,0) DEFAULT 0 NOT NULL,
+    giay_to_co_gia_mo_ta text,
+    giay_to_co_gia_gia_tri numeric(15,0),
+    hien_vat_khac_mo_ta text,
+    hien_vat_khac_gia_tri numeric(15,0),
+    muc_dich text[] DEFAULT ARRAY[]::text[] NOT NULL,
+    dia_diem_lap text,
+    phu_luc jsonb,
+    trang_thai text DEFAULT 'Đăng ký'::text NOT NULL,
+    ngay_cap_nhat_trang_thai timestamp with time zone DEFAULT now() NOT NULL,
+    ghi_chu text,
+    id_nguoi_tao bigint,
+    id_nguoi_cap_nhat bigint,
+    tg_tao timestamp with time zone DEFAULT now() NOT NULL,
+    tg_cap_nhat timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT tn_gtcg_chk CHECK (((giay_to_co_gia_gia_tri IS NULL) OR (giay_to_co_gia_gia_tri >= (0)::numeric))),
+    CONSTRAINT tn_hinh_thuc_chk CHECK (((hinh_thuc IS NULL) OR (hinh_thuc = ANY (ARRAY['Chuyển khoản'::text, 'Tiền mặt'::text])))),
+    CONSTRAINT tn_hinh_thuc_theo_tien_chk CHECK (((so_tien > (0)::numeric) = (hinh_thuc IS NOT NULL))),
+    CONSTRAINT tn_hv_khac_chk CHECK (((hien_vat_khac_gia_tri IS NULL) OR (hien_vat_khac_gia_tri >= (0)::numeric))),
+    CONSTRAINT tn_muc_dich_chk CHECK ((muc_dich <@ ARRAY['giao_duc_y_te_van_hoa'::text, 'thien_tai_dich_benh'::text, 'nha_dai_doan_ket'::text, 'dia_ban_dbkk'::text, 'khoa_hoc_cong_nghe'::text])),
+    CONSTRAINT tn_phu_luc_chk CHECK (((phu_luc IS NULL) OR ((jsonb_typeof(phu_luc) = 'array'::text) AND (jsonb_array_length(phu_luc) <= 30)))),
+    CONSTRAINT tn_so_tien_chk CHECK ((so_tien >= (0)::numeric)),
+    CONSTRAINT tn_trang_thai_chk CHECK ((trang_thai = ANY (ARRAY['Đăng ký'::text, 'Đã bàn giao'::text])))
+);
+
+
+--
+-- Name: TABLE tn_tiep_nhan; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.tn_tiep_nhan IS 'Khoản tài trợ tiếp nhận (module Tiếp nhận). Giá trị = so_tien + giay_to_co_gia_gia_tri + hien_vat_khac_gia_tri + Σ phiếu nhập kho gắn qua tn_tiep_nhan_phieu_kho.';
+
+
+--
+-- Name: tn_tiep_nhan_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.tn_tiep_nhan ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.tn_tiep_nhan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: tn_tiep_nhan_phieu_kho; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tn_tiep_nhan_phieu_kho (
+    tiep_nhan_id bigint NOT NULL,
+    phieu_id bigint NOT NULL
+);
+
+
+--
+-- Name: TABLE tn_tiep_nhan_phieu_kho; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.tn_tiep_nhan_phieu_kho IS 'Phiếu "Nhập từ ngoài" thuộc khoản tiếp nhận. Phiếu phải cùng nhà tài trợ; mỗi phiếu chỉ gắn một lần.';
+
+
+--
+-- Name: tn_tiep_nhan_so_phieu_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.tn_tiep_nhan_so_phieu_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
 --
@@ -7007,6 +7659,7 @@ CREATE TABLE public.vnn_chuong_trinh (
     tong_tien_ban_giao numeric(15,0),
     phieu_khao_sat jsonb,
     bien_ban_ban_giao jsonb,
+    id_nguoi_cap_nhat bigint,
     CONSTRAINT vnn_bien_ban_ban_giao_chk CHECK (((bien_ban_ban_giao IS NULL) OR (jsonb_typeof(bien_ban_ban_giao) = 'object'::text))),
     CONSTRAINT vnn_chuong_trinh_doi_tuong_check CHECK (((doi_tuong IS NULL) OR (doi_tuong = ANY (ARRAY['Hộ nghèo'::text, 'Cận nghèo'::text, 'Khó khăn'::text])))),
     CONSTRAINT vnn_chuong_trinh_hinh_thuc_check CHECK ((hinh_thuc_ho_tro = ANY (ARRAY['Tiền mặt'::text, 'Hiện vật và Tiền'::text, 'Hiện vật'::text]))),
@@ -7084,6 +7737,13 @@ COMMENT ON COLUMN public.vnn_chuong_trinh.phieu_khao_sat IS 'Dữ liệu phiếu
 --
 
 COMMENT ON COLUMN public.vnn_chuong_trinh.bien_ban_ban_giao IS 'Dữ liệu biên bản bàn giao in: ngày/địa điểm, bên giao, làm chứng, căn cứ, hiện vật[], mục đích. NULL khi chưa nhập.';
+
+
+--
+-- Name: COLUMN vnn_chuong_trinh.id_nguoi_cap_nhat; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.vnn_chuong_trinh.id_nguoi_cap_nhat IS 'Người thêm/sửa gần nhất — trigger fn_gan_nguoi_cap_nhat gán, form không có ô nhập.';
 
 
 --
@@ -7432,6 +8092,14 @@ ALTER TABLE ONLY public.nddk_nha_dai_doan_ket
 
 
 --
+-- Name: nddk_nha_dai_doan_ket nddk_so_tien_theo_trang_thai_chk; Type: CHECK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.nddk_nha_dai_doan_ket
+    ADD CONSTRAINT nddk_so_tien_theo_trang_thai_chk CHECK (((trang_thai <> ALL (ARRAY['Đã phê duyệt'::text, 'Đang thực hiện'::text, 'Đã bàn giao'::text])) OR (COALESCE(so_tien, (0)::numeric) > (0)::numeric))) NOT VALID;
+
+
+--
 -- Name: pbxh_thiet_lap pbxh_thiet_lap_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7453,6 +8121,38 @@ ALTER TABLE ONLY public.pbxh_thuc_hien_phan_bien_xa_hoi
 
 ALTER TABLE ONLY public.thong_bao
     ADD CONSTRAINT thong_bao_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tn_tiep_nhan_phieu_kho tn_phieu_kho_phieu_uq; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan_phieu_kho
+    ADD CONSTRAINT tn_phieu_kho_phieu_uq UNIQUE (phieu_id);
+
+
+--
+-- Name: tn_tiep_nhan tn_so_phieu_uq; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan
+    ADD CONSTRAINT tn_so_phieu_uq UNIQUE (so_phieu);
+
+
+--
+-- Name: tn_tiep_nhan_phieu_kho tn_tiep_nhan_phieu_kho_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan_phieu_kho
+    ADD CONSTRAINT tn_tiep_nhan_phieu_kho_pkey PRIMARY KEY (tiep_nhan_id, phieu_id);
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan
+    ADD CONSTRAINT tn_tiep_nhan_pkey PRIMARY KEY (id);
 
 
 --
@@ -7525,6 +8225,14 @@ ALTER TABLE ONLY public.var_thong_tin_to_chuc
 
 ALTER TABLE ONLY public.vnn_chuong_trinh
     ADD CONSTRAINT vnn_chuong_trinh_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: vnn_chuong_trinh vnn_so_tien_theo_trang_thai_chk; Type: CHECK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.vnn_chuong_trinh
+    ADD CONSTRAINT vnn_so_tien_theo_trang_thai_chk CHECK (((trang_thai <> 'Đã nhận'::text) OR (((hinh_thuc_ho_tro = 'Hiện vật'::text) OR (COALESCE(so_tien, (0)::numeric) > (0)::numeric)) AND ((hinh_thuc_ho_tro = 'Tiền mặt'::text) OR (COALESCE(tong_tien_quy_doi, (0)::numeric) > (0)::numeric))))) NOT VALID;
 
 
 --
@@ -7917,6 +8625,13 @@ CREATE INDEX idx_kho_don_vi_cuu_tro_loai ON public.kho_don_vi_cuu_tro USING btre
 --
 
 CREATE INDEX idx_kho_don_vi_cuu_tro_tt ON public.kho_don_vi_cuu_tro USING btree (tt);
+
+
+--
+-- Name: idx_kho_dot_cuu_tro_don_vi_chu_tri; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_kho_dot_cuu_tro_don_vi_chu_tri ON public.kho_dot_cuu_tro USING btree (don_vi_chu_tri_id);
 
 
 --
@@ -8375,6 +9090,13 @@ CREATE INDEX idx_nddk_nguon ON public.nddk_nha_dai_doan_ket USING btree (nguon);
 
 
 --
+-- Name: idx_nddk_nha_tai_tro; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_nddk_nha_tai_tro ON public.nddk_nha_dai_doan_ket USING btree (nha_tai_tro_id);
+
+
+--
 -- Name: idx_nddk_trang_thai; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8435,6 +9157,27 @@ CREATE INDEX idx_pbxh_thuc_hien_tinh_trang ON public.pbxh_thuc_hien_phan_bien_xa
 --
 
 CREATE INDEX idx_thong_bao_hop_cua_toi ON public.thong_bao USING btree (nhan_vien_id, da_doc, tg_tao DESC);
+
+
+--
+-- Name: idx_tn_chuong_trinh; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tn_chuong_trinh ON public.tn_tiep_nhan USING btree (chuong_trinh_id);
+
+
+--
+-- Name: idx_tn_ngay; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tn_ngay ON public.tn_tiep_nhan USING btree (ngay_tiep_nhan);
+
+
+--
+-- Name: idx_tn_nha_tai_tro; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tn_nha_tai_tro ON public.tn_tiep_nhan USING btree (nha_tai_tro_id);
 
 
 --
@@ -8788,6 +9531,13 @@ CREATE TRIGGER tg_audit_mttq_tang_luong AFTER INSERT OR DELETE OR UPDATE ON publ
 
 
 --
+-- Name: tn_tiep_nhan tg_audit_tn_tiep_nhan; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_audit_tn_tiep_nhan AFTER INSERT OR DELETE OR UPDATE ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.fn_ghi_nhat_ky();
+
+
+--
 -- Name: var_chuc_vu tg_audit_var_chuc_vu; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -8879,6 +9629,41 @@ CREATE TRIGGER tg_gan_id_nguoi_tao_hngh_thong_tin_ho_ngheo BEFORE INSERT ON publ
 
 
 --
+-- Name: kho_danh_muc_hang_hoa tg_gan_id_nguoi_tao_kho_danh_muc_hang_hoa; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_id_nguoi_tao_kho_danh_muc_hang_hoa BEFORE INSERT ON public.kho_danh_muc_hang_hoa FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
+-- Name: kho_danh_sach_hang_hoa tg_gan_id_nguoi_tao_kho_danh_sach_hang_hoa; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_id_nguoi_tao_kho_danh_sach_hang_hoa BEFORE INSERT ON public.kho_danh_sach_hang_hoa FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
+-- Name: kho_danh_sach_kho tg_gan_id_nguoi_tao_kho_danh_sach_kho; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_id_nguoi_tao_kho_danh_sach_kho BEFORE INSERT ON public.kho_danh_sach_kho FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
+-- Name: kho_don_vi_cuu_tro tg_gan_id_nguoi_tao_kho_don_vi_cuu_tro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_id_nguoi_tao_kho_don_vi_cuu_tro BEFORE INSERT ON public.kho_don_vi_cuu_tro FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
+-- Name: kho_dot_cuu_tro tg_gan_id_nguoi_tao_kho_dot_cuu_tro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_id_nguoi_tao_kho_dot_cuu_tro BEFORE INSERT ON public.kho_dot_cuu_tro FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
 -- Name: kho_nhap_xuat_kho tg_gan_id_nguoi_tao_kho_nhap_xuat_kho; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -8949,6 +9734,13 @@ CREATE TRIGGER tg_gan_id_nguoi_tao_mttq_uy_vien_uy_ban BEFORE INSERT ON public.m
 
 
 --
+-- Name: nddk_nha_dai_doan_ket tg_gan_id_nguoi_tao_nddk_nha_dai_doan_ket; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_id_nguoi_tao_nddk_nha_dai_doan_ket BEFORE INSERT ON public.nddk_nha_dai_doan_ket FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
 -- Name: pbxh_thuc_hien_phan_bien_xa_hoi tg_gan_id_nguoi_tao_pbxh_thuc_hien_phan_bien_xa_hoi; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -8956,10 +9748,94 @@ CREATE TRIGGER tg_gan_id_nguoi_tao_pbxh_thuc_hien_phan_bien_xa_hoi BEFORE INSERT
 
 
 --
+-- Name: tn_tiep_nhan tg_gan_id_nguoi_tao_tn_tiep_nhan; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_id_nguoi_tao_tn_tiep_nhan BEFORE INSERT ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
 -- Name: vnn_chuong_trinh tg_gan_id_nguoi_tao_vnn_chuong_trinh; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER tg_gan_id_nguoi_tao_vnn_chuong_trinh BEFORE INSERT ON public.vnn_chuong_trinh FOR EACH ROW EXECUTE FUNCTION public.fn_gan_id_nguoi_tao();
+
+
+--
+-- Name: hngh_thong_tin_ho_ngheo tg_gan_nguoi_cap_nhat_hngh_thong_tin_ho_ngheo; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_hngh_thong_tin_ho_ngheo BEFORE INSERT OR UPDATE ON public.hngh_thong_tin_ho_ngheo FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: kho_danh_muc_hang_hoa tg_gan_nguoi_cap_nhat_kho_danh_muc_hang_hoa; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_kho_danh_muc_hang_hoa BEFORE INSERT OR UPDATE ON public.kho_danh_muc_hang_hoa FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: kho_danh_sach_hang_hoa tg_gan_nguoi_cap_nhat_kho_danh_sach_hang_hoa; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_kho_danh_sach_hang_hoa BEFORE INSERT OR UPDATE ON public.kho_danh_sach_hang_hoa FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: kho_danh_sach_kho tg_gan_nguoi_cap_nhat_kho_danh_sach_kho; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_kho_danh_sach_kho BEFORE INSERT OR UPDATE ON public.kho_danh_sach_kho FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: kho_don_vi_cuu_tro tg_gan_nguoi_cap_nhat_kho_don_vi_cuu_tro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_kho_don_vi_cuu_tro BEFORE INSERT OR UPDATE ON public.kho_don_vi_cuu_tro FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: kho_dot_cuu_tro tg_gan_nguoi_cap_nhat_kho_dot_cuu_tro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_kho_dot_cuu_tro BEFORE INSERT OR UPDATE ON public.kho_dot_cuu_tro FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: kho_nhap_xuat_kho tg_gan_nguoi_cap_nhat_kho_nhap_xuat_kho; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_kho_nhap_xuat_kho BEFORE INSERT OR UPDATE ON public.kho_nhap_xuat_kho FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: ktnt_khen_thuong_nha_tai_tro tg_gan_nguoi_cap_nhat_ktnt_khen_thuong_nha_tai_tro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_ktnt_khen_thuong_nha_tai_tro BEFORE INSERT OR UPDATE ON public.ktnt_khen_thuong_nha_tai_tro FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: nddk_nha_dai_doan_ket tg_gan_nguoi_cap_nhat_nddk_nha_dai_doan_ket; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_nddk_nha_dai_doan_ket BEFORE INSERT OR UPDATE ON public.nddk_nha_dai_doan_ket FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: tn_tiep_nhan tg_gan_nguoi_cap_nhat_tn_tiep_nhan; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_tn_tiep_nhan BEFORE INSERT OR UPDATE ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
+
+
+--
+-- Name: vnn_chuong_trinh tg_gan_nguoi_cap_nhat_vnn_chuong_trinh; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_gan_nguoi_cap_nhat_vnn_chuong_trinh BEFORE INSERT OR UPDATE ON public.vnn_chuong_trinh FOR EACH ROW EXECUTE FUNCTION public.fn_gan_nguoi_cap_nhat();
 
 
 --
@@ -8991,6 +9867,13 @@ CREATE TRIGGER tg_lich_su_trang_thai_hngh_thong_tin_ho_ngheo AFTER UPDATE OF tra
 
 
 --
+-- Name: kho_dot_cuu_tro tg_lich_su_trang_thai_kho_dot_cuu_tro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_lich_su_trang_thai_kho_dot_cuu_tro AFTER UPDATE OF trang_thai ON public.kho_dot_cuu_tro FOR EACH ROW EXECUTE FUNCTION public.fn_ghi_lich_su_trang_thai();
+
+
+--
 -- Name: ktnt_khen_thuong_nha_tai_tro tg_lich_su_trang_thai_ktnt_khen_thuong_nha_tai_tro; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -9009,6 +9892,13 @@ CREATE TRIGGER tg_lich_su_trang_thai_mttq_khen_thuong AFTER UPDATE OF trang_thai
 --
 
 CREATE TRIGGER tg_lich_su_trang_thai_nddk_nha_dai_doan_ket AFTER UPDATE OF trang_thai ON public.nddk_nha_dai_doan_ket FOR EACH ROW EXECUTE FUNCTION public.fn_ghi_lich_su_trang_thai();
+
+
+--
+-- Name: tn_tiep_nhan tg_lich_su_trang_thai_tn_tiep_nhan; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER tg_lich_su_trang_thai_tn_tiep_nhan AFTER UPDATE OF trang_thai ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.fn_ghi_lich_su_trang_thai();
 
 
 --
@@ -9184,6 +10074,13 @@ CREATE TRIGGER trg_kho_danh_sach_kho_updated BEFORE UPDATE ON public.kho_danh_sa
 --
 
 CREATE TRIGGER trg_kho_don_vi_cuu_tro_updated BEFORE UPDATE ON public.kho_don_vi_cuu_tro FOR EACH ROW EXECUTE FUNCTION public.set_tg_cap_nhat();
+
+
+--
+-- Name: kho_dot_cuu_tro trg_kho_dot_cuu_tro_ngay_trang_thai; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_kho_dot_cuu_tro_ngay_trang_thai BEFORE INSERT OR UPDATE ON public.kho_dot_cuu_tro FOR EACH ROW EXECUTE FUNCTION public.fn_gan_ngay_trang_thai();
 
 
 --
@@ -9446,13 +10343,6 @@ CREATE TRIGGER trg_nddk_ngay_trang_thai BEFORE INSERT OR UPDATE ON public.nddk_n
 
 
 --
--- Name: nddk_nha_dai_doan_ket trg_nddk_nguoi_cap_nhat; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trg_nddk_nguoi_cap_nhat BEFORE INSERT OR UPDATE ON public.nddk_nha_dai_doan_ket FOR EACH ROW EXECUTE FUNCTION public.fn_nddk_gan_nguoi_cap_nhat();
-
-
---
 -- Name: nddk_nha_dai_doan_ket trg_nddk_updated; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -9478,6 +10368,41 @@ CREATE TRIGGER trg_pbxh_thuc_hien_sync_phan_tram BEFORE INSERT OR UPDATE OF so_l
 --
 
 CREATE TRIGGER trg_pbxh_thuc_hien_updated BEFORE UPDATE ON public.pbxh_thuc_hien_phan_bien_xa_hoi FOR EACH ROW EXECUTE FUNCTION public.set_tg_cap_nhat();
+
+
+--
+-- Name: tn_tiep_nhan trg_tn_chan_doi_nha_tai_tro; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_tn_chan_doi_nha_tai_tro BEFORE UPDATE OF nha_tai_tro_id ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.fn_tn_chan_doi_nha_tai_tro();
+
+
+--
+-- Name: tn_tiep_nhan_phieu_kho trg_tn_kiem_phieu_kho; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_tn_kiem_phieu_kho BEFORE INSERT OR UPDATE ON public.tn_tiep_nhan_phieu_kho FOR EACH ROW EXECUTE FUNCTION public.fn_tn_kiem_phieu_kho();
+
+
+--
+-- Name: tn_tiep_nhan trg_tn_ngay_trang_thai; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_tn_ngay_trang_thai BEFORE INSERT OR UPDATE ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.fn_gan_ngay_trang_thai();
+
+
+--
+-- Name: tn_tiep_nhan trg_tn_sinh_so_phieu; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_tn_sinh_so_phieu BEFORE INSERT ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.fn_tn_sinh_so_phieu();
+
+
+--
+-- Name: tn_tiep_nhan trg_tn_updated; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_tn_updated BEFORE UPDATE ON public.tn_tiep_nhan FOR EACH ROW EXECUTE FUNCTION public.set_tg_cap_nhat();
 
 
 --
@@ -9796,6 +10721,14 @@ ALTER TABLE ONLY public.hngh_thong_tin_ho_ngheo
 
 
 --
+-- Name: hngh_thong_tin_ho_ngheo hngh_thong_tin_ho_ngheo_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hngh_thong_tin_ho_ngheo
+    ADD CONSTRAINT hngh_thong_tin_ho_ngheo_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: hngh_thong_tin_ho_ngheo hngh_thong_tin_ho_ngheo_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9812,11 +10745,43 @@ ALTER TABLE ONLY public.hngh_thong_tin_ho_ngheo
 
 
 --
+-- Name: kho_danh_muc_hang_hoa kho_danh_muc_hang_hoa_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_danh_muc_hang_hoa
+    ADD CONSTRAINT kho_danh_muc_hang_hoa_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: kho_danh_muc_hang_hoa kho_danh_muc_hang_hoa_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_danh_muc_hang_hoa
+    ADD CONSTRAINT kho_danh_muc_hang_hoa_id_nguoi_tao_fkey FOREIGN KEY (id_nguoi_tao) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_id_danh_muc_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.kho_danh_sach_hang_hoa
     ADD CONSTRAINT kho_danh_sach_hang_hoa_id_danh_muc_fkey FOREIGN KEY (id_danh_muc) REFERENCES public.kho_danh_muc_hang_hoa(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_danh_sach_hang_hoa
+    ADD CONSTRAINT kho_danh_sach_hang_hoa_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: kho_danh_sach_hang_hoa kho_danh_sach_hang_hoa_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_danh_sach_hang_hoa
+    ADD CONSTRAINT kho_danh_sach_hang_hoa_id_nguoi_tao_fkey FOREIGN KEY (id_nguoi_tao) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -9828,11 +10793,67 @@ ALTER TABLE ONLY public.kho_danh_sach_kho
 
 
 --
+-- Name: kho_danh_sach_kho kho_danh_sach_kho_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_danh_sach_kho
+    ADD CONSTRAINT kho_danh_sach_kho_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: kho_danh_sach_kho kho_danh_sach_kho_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_danh_sach_kho
+    ADD CONSTRAINT kho_danh_sach_kho_id_nguoi_tao_fkey FOREIGN KEY (id_nguoi_tao) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_don_vi_gioi_thieu_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.kho_don_vi_cuu_tro
     ADD CONSTRAINT kho_don_vi_cuu_tro_don_vi_gioi_thieu_id_fkey FOREIGN KEY (don_vi_gioi_thieu_id) REFERENCES public.var_ssn_xa_phuong(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_don_vi_cuu_tro
+    ADD CONSTRAINT kho_don_vi_cuu_tro_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: kho_don_vi_cuu_tro kho_don_vi_cuu_tro_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_don_vi_cuu_tro
+    ADD CONSTRAINT kho_don_vi_cuu_tro_id_nguoi_tao_fkey FOREIGN KEY (id_nguoi_tao) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: kho_dot_cuu_tro kho_dot_cuu_tro_don_vi_chu_tri_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_dot_cuu_tro
+    ADD CONSTRAINT kho_dot_cuu_tro_don_vi_chu_tri_id_fkey FOREIGN KEY (don_vi_chu_tri_id) REFERENCES public.var_ssn_xa_phuong(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: kho_dot_cuu_tro kho_dot_cuu_tro_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_dot_cuu_tro
+    ADD CONSTRAINT kho_dot_cuu_tro_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: kho_dot_cuu_tro kho_dot_cuu_tro_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_dot_cuu_tro
+    ADD CONSTRAINT kho_dot_cuu_tro_id_nguoi_tao_fkey FOREIGN KEY (id_nguoi_tao) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -9876,6 +10897,14 @@ ALTER TABLE ONLY public.kho_nhap_xuat_kho
 
 
 --
+-- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.kho_nhap_xuat_kho
+    ADD CONSTRAINT kho_nhap_xuat_kho_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: kho_nhap_xuat_kho kho_nhap_xuat_kho_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9897,6 +10926,14 @@ ALTER TABLE ONLY public.kho_nhap_xuat_kho
 
 ALTER TABLE ONLY public.kho_nhap_xuat_kho
     ADD CONSTRAINT kho_nhap_xuat_kho_kho_xuat_id_fkey FOREIGN KEY (kho_xuat_id) REFERENCES public.kho_danh_sach_kho(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: ktnt_khen_thuong_nha_tai_tro ktnt_khen_thuong_nha_tai_tro_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ktnt_khen_thuong_nha_tai_tro
+    ADD CONSTRAINT ktnt_khen_thuong_nha_tai_tro_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -10260,6 +11297,14 @@ ALTER TABLE ONLY public.nddk_nha_dai_doan_ket
 
 
 --
+-- Name: nddk_nha_dai_doan_ket nddk_nha_dai_doan_ket_nha_tai_tro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.nddk_nha_dai_doan_ket
+    ADD CONSTRAINT nddk_nha_dai_doan_ket_nha_tai_tro_id_fkey FOREIGN KEY (nha_tai_tro_id) REFERENCES public.kho_don_vi_cuu_tro(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
 -- Name: nddk_nha_dai_doan_ket nddk_nha_dai_doan_ket_xa_phuong_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -10321,6 +11366,54 @@ ALTER TABLE ONLY public.pbxh_thuc_hien_phan_bien_xa_hoi
 
 ALTER TABLE ONLY public.thong_bao
     ADD CONSTRAINT thong_bao_nhan_vien_id_fkey FOREIGN KEY (nhan_vien_id) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_chuong_trinh_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan
+    ADD CONSTRAINT tn_tiep_nhan_chuong_trinh_id_fkey FOREIGN KEY (chuong_trinh_id) REFERENCES public.kho_dot_cuu_tro(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan
+    ADD CONSTRAINT tn_tiep_nhan_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_id_nguoi_tao_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan
+    ADD CONSTRAINT tn_tiep_nhan_id_nguoi_tao_fkey FOREIGN KEY (id_nguoi_tao) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_nha_tai_tro_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan
+    ADD CONSTRAINT tn_tiep_nhan_nha_tai_tro_id_fkey FOREIGN KEY (nha_tai_tro_id) REFERENCES public.kho_don_vi_cuu_tro(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: tn_tiep_nhan_phieu_kho tn_tiep_nhan_phieu_kho_phieu_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan_phieu_kho
+    ADD CONSTRAINT tn_tiep_nhan_phieu_kho_phieu_id_fkey FOREIGN KEY (phieu_id) REFERENCES public.kho_nhap_xuat_kho(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: tn_tiep_nhan_phieu_kho tn_tiep_nhan_phieu_kho_tiep_nhan_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tn_tiep_nhan_phieu_kho
+    ADD CONSTRAINT tn_tiep_nhan_phieu_kho_tiep_nhan_id_fkey FOREIGN KEY (tiep_nhan_id) REFERENCES public.tn_tiep_nhan(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -10393,6 +11486,14 @@ ALTER TABLE ONLY public.vnn_chuong_trinh
 
 ALTER TABLE ONLY public.vnn_chuong_trinh
     ADD CONSTRAINT vnn_chuong_trinh_ho_ngheo_id_fkey FOREIGN KEY (ho_ngheo_id) REFERENCES public.hngh_thong_tin_ho_ngheo(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: vnn_chuong_trinh vnn_chuong_trinh_id_nguoi_cap_nhat_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vnn_chuong_trinh
+    ADD CONSTRAINT vnn_chuong_trinh_id_nguoi_cap_nhat_fkey FOREIGN KEY (id_nguoi_cap_nhat) REFERENCES public.var_nhan_vien(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -11334,6 +12435,76 @@ CREATE POLICY thong_bao_select ON public.thong_bao FOR SELECT TO authenticated U
 
 
 --
+-- Name: tn_tiep_nhan_phieu_kho tn_phieu_kho_ghi; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tn_phieu_kho_ghi ON public.tn_tiep_nhan_phieu_kho TO authenticated USING (((( SELECT public.fn_co_quyen('tiep-nhan'::text, 'them'::text) AS fn_co_quyen) OR ( SELECT public.fn_co_quyen('tiep-nhan'::text, 'sua'::text) AS fn_co_quyen)) AND (EXISTS ( SELECT 1
+   FROM public.tn_tiep_nhan t
+  WHERE (t.id = tn_tiep_nhan_phieu_kho.tiep_nhan_id))))) WITH CHECK (((( SELECT public.fn_co_quyen('tiep-nhan'::text, 'them'::text) AS fn_co_quyen) OR ( SELECT public.fn_co_quyen('tiep-nhan'::text, 'sua'::text) AS fn_co_quyen)) AND (EXISTS ( SELECT 1
+   FROM public.tn_tiep_nhan t
+  WHERE (t.id = tn_tiep_nhan_phieu_kho.tiep_nhan_id)))));
+
+
+--
+-- Name: tn_tiep_nhan_phieu_kho tn_phieu_kho_xem; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tn_phieu_kho_xem ON public.tn_tiep_nhan_phieu_kho FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
+   FROM public.tn_tiep_nhan t
+  WHERE (t.id = tn_tiep_nhan_phieu_kho.tiep_nhan_id))));
+
+
+--
+-- Name: tn_tiep_nhan; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.tn_tiep_nhan ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: tn_tiep_nhan_phieu_kho; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.tn_tiep_nhan_phieu_kho ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_sua; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tn_tiep_nhan_sua ON public.tn_tiep_nhan FOR UPDATE TO authenticated USING ((( SELECT public.fn_co_quyen('tiep-nhan'::text, 'sua'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (chuong_trinh_id IN ( SELECT d.id
+   FROM public.kho_dot_cuu_tro d
+  WHERE ((d.don_vi_chu_tri_loai = 'xa_phuong'::text) AND (d.don_vi_chu_tri_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi)))))))) WITH CHECK ((( SELECT public.fn_co_quyen('tiep-nhan'::text, 'sua'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (chuong_trinh_id IN ( SELECT d.id
+   FROM public.kho_dot_cuu_tro d
+  WHERE ((d.don_vi_chu_tri_loai = 'xa_phuong'::text) AND (d.don_vi_chu_tri_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi))))))));
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_them; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tn_tiep_nhan_them ON public.tn_tiep_nhan FOR INSERT TO authenticated WITH CHECK ((( SELECT public.fn_co_quyen('tiep-nhan'::text, 'them'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (chuong_trinh_id IN ( SELECT d.id
+   FROM public.kho_dot_cuu_tro d
+  WHERE ((d.don_vi_chu_tri_loai = 'xa_phuong'::text) AND (d.don_vi_chu_tri_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi))))))));
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_xem; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tn_tiep_nhan_xem ON public.tn_tiep_nhan FOR SELECT TO authenticated USING ((( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (chuong_trinh_id IN ( SELECT d.id
+   FROM public.kho_dot_cuu_tro d
+  WHERE ((d.don_vi_chu_tri_loai = 'xa_phuong'::text) AND (d.don_vi_chu_tri_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi)))))));
+
+
+--
+-- Name: tn_tiep_nhan tn_tiep_nhan_xoa; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tn_tiep_nhan_xoa ON public.tn_tiep_nhan FOR DELETE TO authenticated USING ((( SELECT public.fn_co_quyen('tiep-nhan'::text, 'xoa'::text) AS fn_co_quyen) AND (( SELECT public.fn_kho_xem_tat_ca() AS fn_kho_xem_tat_ca) OR (chuong_trinh_id IN ( SELECT d.id
+   FROM public.kho_dot_cuu_tro d
+  WHERE ((d.don_vi_chu_tri_loai = 'xa_phuong'::text) AND (d.don_vi_chu_tri_id = ( SELECT public.fn_don_vi_cua_toi() AS fn_don_vi_cua_toi))))))));
+
+
+--
 -- Name: var_chuc_vu; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -11675,6 +12846,24 @@ GRANT ALL ON FUNCTION public.fn_gan_id_nguoi_tao() TO service_role;
 
 
 --
+-- Name: FUNCTION fn_gan_ngay_trang_thai(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_gan_ngay_trang_thai() TO anon;
+GRANT ALL ON FUNCTION public.fn_gan_ngay_trang_thai() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_gan_ngay_trang_thai() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_gan_nguoi_cap_nhat(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_gan_nguoi_cap_nhat() TO anon;
+GRANT ALL ON FUNCTION public.fn_gan_nguoi_cap_nhat() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_gan_nguoi_cap_nhat() TO service_role;
+
+
+--
 -- Name: FUNCTION fn_gan_nguoi_duyet_khen_thuong(); Type: ACL; Schema: public; Owner: -
 --
 
@@ -11726,6 +12915,14 @@ GRANT ALL ON FUNCTION public.fn_hngh_kiem_dan_toc_loai() TO service_role;
 GRANT ALL ON FUNCTION public.fn_hngh_lan_sang_nddk() TO anon;
 GRANT ALL ON FUNCTION public.fn_hngh_lan_sang_nddk() TO authenticated;
 GRANT ALL ON FUNCTION public.fn_hngh_lan_sang_nddk() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_hngh_nhan_ho_tro_nguon(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_ho_ngheo_id bigint); Type: ACL; Schema: public; Owner: -
+--
+
+REVOKE ALL ON FUNCTION public.fn_hngh_nhan_ho_tro_nguon(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_ho_ngheo_id bigint) FROM PUBLIC;
+GRANT ALL ON FUNCTION public.fn_hngh_nhan_ho_tro_nguon(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_ho_ngheo_id bigint) TO service_role;
 
 
 --
@@ -11945,15 +13142,6 @@ GRANT ALL ON FUNCTION public.fn_nddk_dong_bo_tu_ho_ngheo() TO service_role;
 
 
 --
--- Name: FUNCTION fn_nddk_gan_nguoi_cap_nhat(); Type: ACL; Schema: public; Owner: -
---
-
-GRANT ALL ON FUNCTION public.fn_nddk_gan_nguoi_cap_nhat() TO anon;
-GRANT ALL ON FUNCTION public.fn_nddk_gan_nguoi_cap_nhat() TO authenticated;
-GRANT ALL ON FUNCTION public.fn_nddk_gan_nguoi_cap_nhat() TO service_role;
-
-
---
 -- Name: FUNCTION fn_nddk_kiem_quyen_phe_duyet(); Type: ACL; Schema: public; Owner: -
 --
 
@@ -12021,6 +13209,42 @@ GRANT ALL ON FUNCTION public.fn_thong_bao_chi_cho_danh_dau_doc() TO service_role
 
 REVOKE ALL ON FUNCTION public.fn_thong_bao_sinh_nhac_viec(p_ngay date) FROM PUBLIC;
 GRANT ALL ON FUNCTION public.fn_thong_bao_sinh_nhac_viec(p_ngay date) TO service_role;
+
+
+--
+-- Name: FUNCTION fn_tn_chan_doi_nha_tai_tro(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_tn_chan_doi_nha_tai_tro() TO anon;
+GRANT ALL ON FUNCTION public.fn_tn_chan_doi_nha_tai_tro() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_tn_chan_doi_nha_tai_tro() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_tn_gia_tri_phieu_kho(p_tiep_nhan_id bigint); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_tn_gia_tri_phieu_kho(p_tiep_nhan_id bigint) TO anon;
+GRANT ALL ON FUNCTION public.fn_tn_gia_tri_phieu_kho(p_tiep_nhan_id bigint) TO authenticated;
+GRANT ALL ON FUNCTION public.fn_tn_gia_tri_phieu_kho(p_tiep_nhan_id bigint) TO service_role;
+
+
+--
+-- Name: FUNCTION fn_tn_kiem_phieu_kho(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_tn_kiem_phieu_kho() TO anon;
+GRANT ALL ON FUNCTION public.fn_tn_kiem_phieu_kho() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_tn_kiem_phieu_kho() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_tn_sinh_so_phieu(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_tn_sinh_so_phieu() TO anon;
+GRANT ALL ON FUNCTION public.fn_tn_sinh_so_phieu() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_tn_sinh_so_phieu() TO service_role;
 
 
 --
@@ -12114,6 +13338,24 @@ GRANT ALL ON FUNCTION public.get_dttg_tham_hoi_to_chuc_page(p_search text, p_lim
 
 
 --
+-- Name: FUNCTION get_hngh_nhan_ho_tro_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_chi_ho_da_nhan boolean, p_ho_ngheo_id bigint); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.get_hngh_nhan_ho_tro_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_chi_ho_da_nhan boolean, p_ho_ngheo_id bigint) TO anon;
+GRANT ALL ON FUNCTION public.get_hngh_nhan_ho_tro_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_chi_ho_da_nhan boolean, p_ho_ngheo_id bigint) TO authenticated;
+GRANT ALL ON FUNCTION public.get_hngh_nhan_ho_tro_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[], p_chi_ho_da_nhan boolean, p_ho_ngheo_id bigint) TO service_role;
+
+
+--
+-- Name: FUNCTION get_hngh_nhan_ho_tro_tong(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[]); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.get_hngh_nhan_ho_tro_tong(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[]) TO anon;
+GRANT ALL ON FUNCTION public.get_hngh_nhan_ho_tro_tong(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[]) TO authenticated;
+GRANT ALL ON FUNCTION public.get_hngh_nhan_ho_tro_tong(p_search text, p_nam integer[], p_xa_phuong_ids bigint[], p_doi_tuong text[]) TO service_role;
+
+
+--
 -- Name: FUNCTION get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb); Type: ACL; Schema: public; Owner: -
 --
 
@@ -12195,12 +13437,12 @@ GRANT ALL ON FUNCTION public.get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_n
 
 
 --
--- Name: FUNCTION get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb); Type: ACL; Schema: public; Owner: -
+-- Name: FUNCTION get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_nha_tai_tro_ids bigint[]); Type: ACL; Schema: public; Owner: -
 --
 
-GRANT ALL ON FUNCTION public.get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb) TO anon;
-GRANT ALL ON FUNCTION public.get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb) TO authenticated;
-GRANT ALL ON FUNCTION public.get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb) TO service_role;
+GRANT ALL ON FUNCTION public.get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_nha_tai_tro_ids bigint[]) TO anon;
+GRANT ALL ON FUNCTION public.get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_nha_tai_tro_ids bigint[]) TO authenticated;
+GRANT ALL ON FUNCTION public.get_nddk_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_nam integer[], p_nguon text[], p_nguon_ho_tro text[], p_doi_tuong text[], p_loai_hinh text[], p_trang_thai text[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_nha_tai_tro_ids bigint[]) TO service_role;
 
 
 --
@@ -12237,6 +13479,24 @@ GRANT ALL ON FUNCTION public.get_phong_ban_path_level(p_id bigint, p_cha_id bigi
 GRANT ALL ON FUNCTION public.get_tang_luong_sap_den_han_count(p_so_ngay integer, p_scope text, p_viewer_don_vi_id bigint) TO anon;
 GRANT ALL ON FUNCTION public.get_tang_luong_sap_den_han_count(p_so_ngay integer, p_scope text, p_viewer_don_vi_id bigint) TO authenticated;
 GRANT ALL ON FUNCTION public.get_tang_luong_sap_den_han_count(p_so_ngay integer, p_scope text, p_viewer_don_vi_id bigint) TO service_role;
+
+
+--
+-- Name: FUNCTION get_tn_phieu_kho_cua_nha_tai_tro(p_nha_tai_tro_id bigint); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.get_tn_phieu_kho_cua_nha_tai_tro(p_nha_tai_tro_id bigint) TO anon;
+GRANT ALL ON FUNCTION public.get_tn_phieu_kho_cua_nha_tai_tro(p_nha_tai_tro_id bigint) TO authenticated;
+GRANT ALL ON FUNCTION public.get_tn_phieu_kho_cua_nha_tai_tro(p_nha_tai_tro_id bigint) TO service_role;
+
+
+--
+-- Name: FUNCTION get_tn_tiep_nhan_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nha_tai_tro_ids bigint[], p_chuong_trinh_ids bigint[], p_hinh_thuc text[], p_trang_thai text[], p_tu_ngay date, p_den_ngay date, p_id bigint); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.get_tn_tiep_nhan_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nha_tai_tro_ids bigint[], p_chuong_trinh_ids bigint[], p_hinh_thuc text[], p_trang_thai text[], p_tu_ngay date, p_den_ngay date, p_id bigint) TO anon;
+GRANT ALL ON FUNCTION public.get_tn_tiep_nhan_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nha_tai_tro_ids bigint[], p_chuong_trinh_ids bigint[], p_hinh_thuc text[], p_trang_thai text[], p_tu_ngay date, p_den_ngay date, p_id bigint) TO authenticated;
+GRANT ALL ON FUNCTION public.get_tn_tiep_nhan_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_nha_tai_tro_ids bigint[], p_chuong_trinh_ids bigint[], p_hinh_thuc text[], p_trang_thai text[], p_tu_ngay date, p_den_ngay date, p_id bigint) TO service_role;
 
 
 --
@@ -12399,6 +13659,15 @@ GRANT ALL ON FUNCTION public.rpc_tap_huan_tao_lop(p_ten_lop_tap_huan text, p_nam
 REVOKE ALL ON FUNCTION public.rpc_thong_bao_danh_dau_tat_ca_da_doc() FROM PUBLIC;
 GRANT ALL ON FUNCTION public.rpc_thong_bao_danh_dau_tat_ca_da_doc() TO authenticated;
 GRANT ALL ON FUNCTION public.rpc_thong_bao_danh_dau_tat_ca_da_doc() TO service_role;
+
+
+--
+-- Name: FUNCTION rpc_tn_luu_tiep_nhan(p_id bigint, p_data jsonb, p_phieu_ids bigint[]); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.rpc_tn_luu_tiep_nhan(p_id bigint, p_data jsonb, p_phieu_ids bigint[]) TO anon;
+GRANT ALL ON FUNCTION public.rpc_tn_luu_tiep_nhan(p_id bigint, p_data jsonb, p_phieu_ids bigint[]) TO authenticated;
+GRANT ALL ON FUNCTION public.rpc_tn_luu_tiep_nhan(p_id bigint, p_data jsonb, p_phieu_ids bigint[]) TO service_role;
 
 
 --
@@ -13190,6 +14459,42 @@ GRANT SELECT,UPDATE ON TABLE public.thong_bao TO authenticated;
 GRANT ALL ON SEQUENCE public.thong_bao_id_seq TO anon;
 GRANT ALL ON SEQUENCE public.thong_bao_id_seq TO authenticated;
 GRANT ALL ON SEQUENCE public.thong_bao_id_seq TO service_role;
+
+
+--
+-- Name: TABLE tn_tiep_nhan; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.tn_tiep_nhan TO anon;
+GRANT ALL ON TABLE public.tn_tiep_nhan TO authenticated;
+GRANT ALL ON TABLE public.tn_tiep_nhan TO service_role;
+
+
+--
+-- Name: SEQUENCE tn_tiep_nhan_id_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.tn_tiep_nhan_id_seq TO anon;
+GRANT ALL ON SEQUENCE public.tn_tiep_nhan_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.tn_tiep_nhan_id_seq TO service_role;
+
+
+--
+-- Name: TABLE tn_tiep_nhan_phieu_kho; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON TABLE public.tn_tiep_nhan_phieu_kho TO anon;
+GRANT ALL ON TABLE public.tn_tiep_nhan_phieu_kho TO authenticated;
+GRANT ALL ON TABLE public.tn_tiep_nhan_phieu_kho TO service_role;
+
+
+--
+-- Name: SEQUENCE tn_tiep_nhan_so_phieu_seq; Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON SEQUENCE public.tn_tiep_nhan_so_phieu_seq TO anon;
+GRANT ALL ON SEQUENCE public.tn_tiep_nhan_so_phieu_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.tn_tiep_nhan_so_phieu_seq TO service_role;
 
 
 --

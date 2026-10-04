@@ -1,4 +1,5 @@
 import { createRepository } from '@/lib/data/create-repository';
+import { docNhanVienEmbed, tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import { khoDonViCuuTroLoaiLabel, parseKhoDonViCuuTroLoai } from '../core/loai';
@@ -9,7 +10,7 @@ import {
 } from '../utils/don-vi-gioi-thieu';
 import type { KhoDonViCuuTroDetail, KhoDonViCuuTroListRow } from '../core/types';
 import type { KhoDonViCuuTroFormValues } from '../core/schema';
-import type { DonViCuuTroUngHoNhom } from '../utils/ung-ho-nhom';
+import { NGUON_UNG_HO, type DonViCuuTroUngHoNhom, type NguonUngHo } from '../utils/ung-ho-nhom';
 import { KHO_DON_VI_CUU_TRO_RETURNING, KHO_DON_VI_CUU_TRO_SELECT } from '../core/supabase-select';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -59,9 +60,12 @@ export function flattenKhoDonViCuuTroRow(row: Record<string, unknown>): KhoDonVi
     ten_don_vi_gioi_thieu: tenDonViGioiThieu,
     don_vi_gioi_thieu_label: donViGioiThieuLabel(dvGioiThieuLoai, tenDonViGioiThieu),
     email: nullableStr(r.email),
+    ma_so_thue: nullableStr(r.ma_so_thue),
     ghi_chu: nullableStr(r.ghi_chu),
     tg_tao: String(r.tg_tao ?? ''),
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
+    ten_nguoi_tao: tenNguoiThaoTac(docNhanVienEmbed(r.nguoi_tao)),
+    ten_nguoi_cap_nhat: tenNguoiThaoTac(docNhanVienEmbed(r.nguoi_cap_nhat)),
     tien_mat_ung_ho: null,
     hien_vat_ung_ho: null,
     ket_qua_ung_ho: null,
@@ -84,6 +88,7 @@ export function khoDonViCuuTroFormToPayload(data: KhoDonViCuuTroFormValues): Rec
     dien_thoai: emptyToNull(data.dien_thoai),
     ...donViGioiThieuToPayload(data.don_vi_gioi_thieu),
     email: emptyToNull(data.email),
+    ma_so_thue: emptyToNull(data.ma_so_thue),
     ghi_chu: emptyToNull(data.ghi_chu),
   };
 }
@@ -111,7 +116,7 @@ export async function getKhoDonViCuuTroUngHoNhom(
   if (error) handleSupabaseError(error);
   return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
     donViId: String(r.don_vi_id),
-    nguon: r.nguon === 'kho' ? 'kho' : 'chuong_trinh',
+    nguon: (NGUON_UNG_HO as readonly string[]).includes(String(r.nguon)) ? (r.nguon as NguonUngHo) : 'chuong_trinh',
     nhomKey: String(r.nhom_key ?? ''),
     nhomTen: r.nhom_ten == null ? null : String(r.nhom_ten),
     tienMat: toSo(r.tien_mat),

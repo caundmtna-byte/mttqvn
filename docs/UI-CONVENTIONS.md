@@ -3,7 +3,7 @@
 ## Trang submenu (dashboard nhóm)
 
 - **Tên nhóm module** (vd. "Nhân sự", "Bảo mật & cấu hình" trên Hệ thống) **luôn dùng màu primary** (`text-primary`).
-- Áp dụng cho mọi trang submenu có danh sách nhóm + module (Hệ thống, Mặt trận tổ quốc, An sinh xã hội…).
+- Áp dụng cho mọi trang submenu có danh sách nhóm + module (Hệ thống, Mặt trận tổ quốc, Nghĩa tình dòng Lam…).
 - Cách làm: dùng component **`ModuleDashboardLayout`** (`components/dashboard/ModuleDashboardLayout.tsx`), truyền `groups` với `groupTitle` và `items`. Component đã style `groupTitle` bằng `text-primary`.
 - Trang placeholder submenu (chưa xây): tên nhóm cũng dùng primary qua **`ComingSoonLayout`** với prop `titlePrimary={true}` (vd. trong `SubmenuPlaceholder`).
 

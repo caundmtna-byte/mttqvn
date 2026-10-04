@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Calendar, Edit, FileText, ListOrdered, Package, Ruler, Trash2 } from 'lucide-react';
+import { Edit, FileText, ListOrdered, Package, Ruler, Trash2 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -7,12 +7,12 @@ import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/De
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
-import { formatDateTimeShort } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
 import type { BadgeConfig } from '@/components/ui/EnumBadge';
 import type { KhoDanhSachHangHoaDetail } from '../core/types';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
 
 interface Props {
   data: KhoDanhSachHangHoaDetail;
@@ -111,16 +111,12 @@ const KhoDanhSachHangHoaDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit
           </DetailFieldGrid>
         </DetailSection>
 
-        <DetailSection title={txt('matTranHangHoa.detailHang.system')} icon={<Package size={14} />}>
-          <DetailFieldGrid>
-            <DetailField label={txt('matTranHangHoa.store.tgTao')} value={formatDateTimeShort(data.tg_tao)} icon={<Calendar size={12} />} />
-            <DetailField
-              label={txt('matTranHangHoa.store.tgCapNhat')}
-              value={formatDateTimeShort(data.tg_cap_nhat)}
-              icon={<Calendar size={12} />}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <DetailSystemInfo
+          nguoiTao={data.ten_nguoi_tao}
+          tgTao={data.tg_tao}
+          nguoiCapNhat={data.ten_nguoi_cap_nhat}
+          tgCapNhat={data.tg_cap_nhat}
+        />
       </div>
     </GenericDrawer>
   );

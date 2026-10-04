@@ -312,6 +312,7 @@ function parseLine(
   rowNum: number,
   row: Record<string, unknown>,
   ctx: NhapXuatKhoImportCtx,
+  loaiPhieu: string,
 ): { ok: true; line: LineFields } | { ok: false; message: string } {
   const hhRaw = trimCell(row.hang_hoa_id);
   if (!hhRaw) {
@@ -355,6 +356,10 @@ function parseLine(
       return { ok: false, message: rowPrefix(rowNum) + txt('matTranNhapXuatKho.import.errDonGia', { gia_tri: donGiaRaw }) };
     }
     donGia = String(parsed.value);
+  }
+  // Hàng nhập từ nhà tài trợ là nguồn tính Kết quả hỗ trợ — phải có đơn giá cụ thể.
+  if (loaiPhieu === 'nhap_ngoai' && !(Number(donGia) > 0)) {
+    return { ok: false, message: rowPrefix(rowNum) + txt('matTranNhapXuatKho.import.errDonGiaNhapNgoai') };
   }
 
   // ĐVT để trống thì lấy theo hàng hóa trong danh mục — cán bộ khỏi gõ lại.
@@ -444,7 +449,7 @@ export function buildNhapXuatKhoImportPhieus(
       }
     }
 
-    const line = parseLine(src.rowNum, src.data, ctx);
+    const line = parseLine(src.rowNum, src.data, ctx, g.header.loai_phieu);
     if (!line.ok) {
       if (g.hongTaiDong == null) g.hongTaiDong = src.rowNum;
       errors.push({ rowNum: src.rowNum, data: src.data, message: line.message });

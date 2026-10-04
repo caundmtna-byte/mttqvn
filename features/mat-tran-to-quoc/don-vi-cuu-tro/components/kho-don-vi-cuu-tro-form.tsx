@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { BadgeCheck, Building2, FileText, Landmark, Mail, MapPin, Phone, Type, User, Users, UserRound } from 'lucide-react';
+import { BadgeCheck, Building2, FileText, Hash, Landmark, Mail, MapPin, Phone, Type, User, Users, UserRound } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { applyConstraintErrorToForm } from '@/lib/supabase/constraint-field-error';
 import Input from '@/components/ui/Input';
@@ -45,6 +45,7 @@ const DEFAULT_VALUES: KhoDonViCuuTroFormValues = {
   // Bắt buộc — không chọn xã/phường thì là MTTQ tỉnh.
   don_vi_gioi_thieu: DON_VI_GIOI_THIEU_TINH,
   email: '',
+  ma_so_thue: '',
   ghi_chu: '',
 };
 
@@ -103,6 +104,7 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
           initialData.don_vi_gioi_thieu_id,
         ),
         email: initialData.email ?? '',
+        ma_so_thue: initialData.ma_so_thue ?? '',
         ghi_chu: initialData.ghi_chu ?? '',
       });
     } else {
@@ -264,6 +266,15 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
                 icon={<Mail size={12} />}
                 {...register('email')}
                 error={errors.email?.message}
+              />
+            </div>
+            <div>
+              <Input
+                label={txt('matTranDonViCuuTro.form.maSoThue')}
+                icon={<Hash size={12} />}
+                inputMode="numeric"
+                {...register('ma_so_thue')}
+                error={errors.ma_so_thue?.message}
               />
             </div>
             <div className={FORM_GRID_SPAN_FULL}>

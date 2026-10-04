@@ -85,7 +85,9 @@ export type BienBanBlock =
        * `cells.length = cols.length - span + 1`.
        */
       footer?: { cells: string[]; span?: number };
-    };
+    }
+  /** Sang trang mới (phụ lục…). Excel không có trang ⇒ một dòng trống. */
+  | { kind: 'ngat-trang' };
 
 export interface BienBanModel {
   /** Tên cửa sổ in / tên file. */

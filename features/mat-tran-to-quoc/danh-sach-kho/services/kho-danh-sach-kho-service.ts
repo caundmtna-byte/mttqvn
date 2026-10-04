@@ -1,4 +1,5 @@
 import { createRepository } from '@/lib/data/create-repository';
+import { docNhanVienEmbed, tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -40,6 +41,8 @@ export function flattenKhoRow(row: Record<string, unknown>): KhoDanhSachKhoListR
     mo_ta: nullableStr(r.mo_ta),
     tg_tao: String(r.tg_tao ?? ''),
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
+    ten_nguoi_tao: tenNguoiThaoTac(docNhanVienEmbed(r.nguoi_tao)),
+    ten_nguoi_cap_nhat: tenNguoiThaoTac(docNhanVienEmbed(r.nguoi_cap_nhat)),
   };
 }
 

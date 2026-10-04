@@ -5,7 +5,6 @@ import {
   Trash2,
   Users,
   IdCard,
-  Clock,
   CalendarClock,
   ListChecks,
   MapPin,
@@ -16,8 +15,7 @@ import {
   Landmark,
   CreditCard,
   StickyNote,
-  User,
-} from 'lucide-react';
+  } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -39,11 +37,12 @@ import HoNgheoHoTroSection from './ho-ngheo-ho-tro-section';
 import HoNgheoNhaSection from './ho-ngheo-nha-section';
 import HoNgheoNhanKhauSection from './ho-ngheo-nhan-khau-section';
 import {
-  formatHnghDateTimeDisplay,
   formatHnghDienThoaiDisplay,
-  formatHnghNguoiTaoDisplay,
   trimmedHnghDisplay,
 } from '../utils/display-format';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
+import { tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
+import HoNgheoNhanHoTroSection from './ho-ngheo-nhan-ho-tro-section';
 
 interface Props {
   data: HoNgheo;
@@ -254,24 +253,18 @@ const HoNgheoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
 
         <HoNgheoNhanKhauSection hoNgheoId={data.id} />
 
+        <HoNgheoNhanHoTroSection hoNgheoId={data.id} />
+
         <HoNgheoHoTroSection hoNgheo={data} />
 
         <HoNgheoNhaSection hoNgheo={data} />
 
-        <DetailSection title={txt('hoNgheo.detail.systemInfo')} icon={<Clock size={14} />}>
-          <DetailFieldGrid>
-            <DetailField
-              label={txt('hoNgheo.store.nguoiTaoCol')}
-              icon={<User size={12} />}
-              value={formatHnghNguoiTaoDisplay(data) || emptyCell}
-            />
-            <DetailField
-              label={txt('hoNgheo.store.tgCapNhatCol')}
-              icon={<Clock size={12} />}
-              value={formatHnghDateTimeDisplay(data.tg_cap_nhat) || emptyCell}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <DetailSystemInfo
+          nguoiTao={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_tao, ten_tai_khoan: data.ten_tai_khoan_nguoi_tao })}
+          tgTao={data.tg_tao}
+          nguoiCapNhat={tenNguoiThaoTac({ ho_va_ten: data.ho_va_ten_nguoi_cap_nhat, ten_tai_khoan: data.ten_tai_khoan_nguoi_cap_nhat })}
+          tgCapNhat={data.tg_cap_nhat}
+        />
       </div>
 
       <HoNgheoChuyenTrangThaiDialog

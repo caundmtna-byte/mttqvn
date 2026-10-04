@@ -157,6 +157,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         groupTitleKey: 'page.matTranDashboard.groupReliefWarehouse',
         modules: [
           { id: 'an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro', nameKey: 'page.matTranDashboard.reliefCampaign' },
+          { id: 'an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan', nameKey: 'page.matTranDashboard.tiepNhan' },
           { id: 'an-sinh-xa-hoi/kho-cuu-tro/hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods' },
           { id: 'an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho', nameKey: 'page.matTranDashboard.reliefStockTransactions' },
           { id: 'an-sinh-xa-hoi/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory' },

@@ -94,6 +94,7 @@ export function flattenHoNgheoRow(row: Record<string, unknown>): HoNgheo {
   const xp = pickEmbedded<{ ten?: string }>(row.xa_phuong);
   const dt = pickEmbedded<{ ten?: string }>(row.dan_toc);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nc = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_cap_nhat);
   const r = row;
   return {
     id: String(r.id ?? ''),
@@ -117,6 +118,9 @@ export function flattenHoNgheoRow(row: Record<string, unknown>): HoNgheo {
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: embeddedName(nv?.ho_va_ten),
     ten_tai_khoan_nguoi_tao: embeddedName(nv?.ten_tai_khoan),
+    id_nguoi_cap_nhat: nullableStr(r.id_nguoi_cap_nhat),
+    ho_va_ten_nguoi_cap_nhat: embeddedName(nc?.ho_va_ten),
+    ten_tai_khoan_nguoi_cap_nhat: embeddedName(nc?.ten_tai_khoan),
     // Dòng từ RPC phân trang / select gọn không có các cột này ⇒ để `undefined`
     // ("chưa tải"). Gán null ở đây thì form sửa sẽ lưu đè rỗng lên dữ liệu thật.
     nhan_khau: 'gioi_tinh' in r ? flattenNhanKhau(r) : undefined,
@@ -235,6 +239,8 @@ function rpcRowToHoNgheo(raw: Record<string, unknown>): HoNgheo {
     ten_dan_toc,
     ho_va_ten_nguoi_tao,
     ten_tai_khoan_nguoi_tao,
+    ho_va_ten_nguoi_cap_nhat,
+    ten_tai_khoan_nguoi_cap_nhat,
     total_count: _totalCount,
     ...base
   } = raw;
@@ -243,6 +249,7 @@ function rpcRowToHoNgheo(raw: Record<string, unknown>): HoNgheo {
     xa_phuong: { ten: ten_xa_phuong },
     dan_toc: { ten: ten_dan_toc },
     nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+    nguoi_cap_nhat: { ho_va_ten: ho_va_ten_nguoi_cap_nhat, ten_tai_khoan: ten_tai_khoan_nguoi_cap_nhat },
   });
 }
 

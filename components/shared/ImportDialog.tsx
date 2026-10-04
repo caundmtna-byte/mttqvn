@@ -12,6 +12,11 @@ export interface ImportColumn {
   key: string;
   label: string;
   required?: boolean;
+  /**
+   * Tên cột cũ vẫn tự khớp khi đọc file — dùng khi đổi nhãn cột mà người dùng
+   * còn giữ file mẫu tải về trước đó.
+   */
+  aliases?: string[];
 }
 
 export interface ImportTemplateSheet {
@@ -234,11 +239,15 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
       const autoMap: Record<string, string> = {};
       const normHeaders = headers.map((h) => ({ raw: h, norm: chuanHoaKhoaSoKhop(h) }));
       columns.forEach(col => {
-        const target = chuanHoaKhoaSoKhop(col.label);
-        if (!target) return;
+        const targets = [col.label, ...(col.aliases ?? [])]
+          .map((l) => chuanHoaKhoaSoKhop(l))
+          .filter((t) => t !== '');
+        if (targets.length === 0) return;
         const match =
-          normHeaders.find((h) => h.norm === target) ??
-          normHeaders.find((h) => h.norm !== '' && (h.norm.includes(target) || target.includes(h.norm)));
+          normHeaders.find((h) => targets.includes(h.norm)) ??
+          normHeaders.find(
+            (h) => h.norm !== '' && targets.some((t) => h.norm.includes(t) || t.includes(h.norm)),
+          );
         if (match) autoMap[col.key] = match.raw;
       });
       setMapping(autoMap);

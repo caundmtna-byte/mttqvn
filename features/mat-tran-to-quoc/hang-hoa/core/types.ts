@@ -13,6 +13,9 @@ export interface KhoDanhMucHangHoaListRow {
   trang_thai: string;
   tg_tao: string;
   tg_cap_nhat: string;
+  /** Họ tên người tạo / người sửa gần nhất (trigger máy chủ gán) — `null` khi chưa có. */
+  ten_nguoi_tao?: string | null;
+  ten_nguoi_cap_nhat?: string | null;
 }
 
 export type KhoDanhMucHangHoaDetail = KhoDanhMucHangHoaListRow;
@@ -38,6 +41,9 @@ export interface KhoDanhSachHangHoaListRow {
   trang_thai: string;
   tg_tao: string;
   tg_cap_nhat: string;
+  /** Họ tên người tạo / người sửa gần nhất (trigger máy chủ gán) — `null` khi chưa có. */
+  ten_nguoi_tao?: string | null;
+  ten_nguoi_cap_nhat?: string | null;
 }
 
 export type KhoDanhSachHangHoaDetail = KhoDanhSachHangHoaListRow;

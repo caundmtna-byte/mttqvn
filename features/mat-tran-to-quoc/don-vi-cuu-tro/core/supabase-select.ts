@@ -1,3 +1,5 @@
+import { nhanVienEmbedSelect } from '@/lib/nguoi-thao-tac';
+
 /**
  * Tên khoá ngoại phải khớp CHÍNH XÁC ràng buộc trong migration
  * `20260921100000_kho_don_vi_cuu_tro_mo_rong.sql`; sai một ký tự là PostgREST
@@ -20,9 +22,12 @@ const LIST_COLS = [
   'don_vi_gioi_thieu_id',
   'email',
   'ghi_chu',
+  'ma_so_thue',
   'tg_tao',
   'tg_cap_nhat',
 ].join(',');
 
-export const KHO_DON_VI_CUU_TRO_SELECT = `${LIST_COLS},${DON_VI_GIOI_THIEU_EMBED}`;
+const NGUOI = `${nhanVienEmbedSelect('nguoi_tao', 'kho_don_vi_cuu_tro_id_nguoi_tao_fkey')},${nhanVienEmbedSelect('nguoi_cap_nhat', 'kho_don_vi_cuu_tro_id_nguoi_cap_nhat_fkey')}`;
+
+export const KHO_DON_VI_CUU_TRO_SELECT = `${LIST_COLS},${DON_VI_GIOI_THIEU_EMBED},${NGUOI}`;
 export const KHO_DON_VI_CUU_TRO_RETURNING = KHO_DON_VI_CUU_TRO_SELECT;

@@ -37,7 +37,7 @@ import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/Det
 import EnumBadge, { type BadgeConfig } from '@/components/ui/EnumBadge';
 import EmbeddedChildDataGrid from '@/components/shared/EmbeddedChildDataGrid';
 import { TableRowIconButton } from '@/components/shared/row-actions';
-import { formatCurrency, formatDate, formatDateTime, formatDecimal } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDecimal } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE, CONFIRM_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import { useConfirmStore } from '@/store/useConfirmStore';
@@ -60,6 +60,7 @@ import NhapXuatKhoCtLineDrawer, {
   type NhapXuatKhoLineHangHoaOption,
 } from './kho-nhap-xuat-kho-ct-line-drawer';
 import NhapXuatKhoCtLineDetailDrawer from './kho-nhap-xuat-kho-ct-line-detail-drawer';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
 
 interface Props {
   data: NhapXuatKhoDetail;
@@ -657,22 +658,12 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
             ) : null}
           </DetailSection>
 
-          <DetailSection title={txt('matTranNhapXuatKho.detail.systemInfo')} icon={<Calendar size={14} />}>
-            <DetailFieldGrid>
-              <DetailField
-                label={txt('matTranNhapXuatKho.detail.tgTao')}
-                value={data.tg_tao ? formatDateTime(data.tg_tao) : undefined}
-                icon={<Calendar size={12} />}
-                emptyText={txt('common.emptyCell')}
-              />
-              <DetailField
-                label={txt('matTranNhapXuatKho.detail.tgCapNhat')}
-                value={data.tg_cap_nhat ? formatDateTime(data.tg_cap_nhat) : undefined}
-                icon={<Calendar size={12} />}
-                emptyText={txt('common.emptyCell')}
-              />
-            </DetailFieldGrid>
-          </DetailSection>
+          <DetailSystemInfo
+            nguoiTao={data.ho_va_ten_nguoi_tao}
+            tgTao={data.tg_tao}
+            nguoiCapNhat={data.ho_va_ten_nguoi_cap_nhat}
+            tgCapNhat={data.tg_cap_nhat}
+          />
         </div>
       </GenericDrawer>
 

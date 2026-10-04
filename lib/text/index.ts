@@ -33,6 +33,7 @@ import { matTranHangHoa } from '../../features/mat-tran-to-quoc/hang-hoa/text';
 import { matTranNhapXuatKho } from '../../features/mat-tran-to-quoc/nhap-xuat-kho/text';
 import { matTranTonKho } from '../../features/mat-tran-to-quoc/ton-kho/text';
 import { matTranReliefSupportReport } from '../../features/mat-tran-to-quoc/bao-cao-ho-tro/text';
+import { matTranTiepNhan } from '../../features/mat-tran-to-quoc/tiep-nhan/text';
 import { matTranThietLapLuong } from '../../features/mat-tran-to-quoc/thiet-lap-luong/text';
 import { matTranTangLuong } from '../../features/mat-tran-to-quoc/danh-sach-tang-luong/text';
 import { danTocCaNhanTieuBieu } from '../../features/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu/text';
@@ -49,6 +50,7 @@ import { nhaDaiDoanKet } from '../../features/nha-dai-doan-ket/danh-sach/text';
 import { nhaDaiDoanKetThongKe } from '../../features/nha-dai-doan-ket/danh-sach/text-thong-ke';
 import { hoNgheo } from '../../features/nha-dai-doan-ket/thong-tin-ho-ngheo/text';
 import { hoNgheoThongKe } from '../../features/nha-dai-doan-ket/thong-tin-ho-ngheo/text-thong-ke';
+import { hoNgheoNhanHoTro } from '../../features/nha-dai-doan-ket/thong-tin-ho-ngheo/text-nhan-ho-tro';
 import { khenThuongNhaTaiTro } from '../../features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/text';
 import { khenThuongNhaTaiTroThongKe } from '../../features/nha-dai-doan-ket/khen-thuong-nha-tai-tro/text-thong-ke';
 import { viNguoiNgheo } from '../../features/nha-dai-doan-ket/vi-nguoi-ngheo/text';
@@ -102,6 +104,7 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('matTranNhapXuatKho', matTranNhapXuatKho),
   ...flatten('matTranTonKho', matTranTonKho),
   ...flatten('matTranReliefSupportReport', matTranReliefSupportReport),
+  ...flatten('matTranTiepNhan', matTranTiepNhan),
   ...flatten('matTranThietLapLuong', matTranThietLapLuong),
   ...flatten('matTranTangLuong', matTranTangLuong),
   ...flatten('danTocCaNhanTieuBieu', danTocCaNhanTieuBieu),
@@ -118,6 +121,7 @@ export const STRINGS: Readonly<Record<string, string>> = Object.freeze({
   ...flatten('nhaDaiDoanKetThongKe', nhaDaiDoanKetThongKe),
   ...flatten('hoNgheo', hoNgheo),
   ...flatten('hoNgheoThongKe', hoNgheoThongKe),
+  ...flatten('hoNgheoNhanHoTro', hoNgheoNhanHoTro),
   ...flatten('viNguoiNgheo', viNguoiNgheo),
   ...flatten('khenThuongNhaTaiTro', khenThuongNhaTaiTro),
   ...flatten('khenThuongNhaTaiTroThongKe', khenThuongNhaTaiTroThongKe),
@@ -184,11 +188,13 @@ export {
   matTranNhapXuatKho,
   matTranTonKho,
   matTranReliefSupportReport,
+  matTranTiepNhan,
   matTranThietLapLuong,
   nhaDaiDoanKet,
   nhaDaiDoanKetThongKe,
   hoNgheo,
   hoNgheoThongKe,
+  hoNgheoNhanHoTro,
   viNguoiNgheo,
   khenThuongNhaTaiTro,
   khenThuongNhaTaiTroThongKe,

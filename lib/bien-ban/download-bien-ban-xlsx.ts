@@ -52,6 +52,9 @@ export function bienBanToRows(model: BienBanModel): string[] {
         if (b.footer) rows.push(b.footer.cells.join(' | '));
         rows.push('');
         break;
+      case 'ngat-trang':
+        rows.push('');
+        break;
       default:
         break;
     }

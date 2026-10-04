@@ -71,6 +71,7 @@ export function flattenViNguoiNgheoRow(row: Record<string, unknown>): ViNguoiNgh
   const xp = pickEmbedded<{ ten?: string }>(row.xa_phuong);
   const dv = pickEmbedded<{ ten?: string }>(row.don_vi_ho_tro);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nc = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_cap_nhat);
   const r = row;
 
   return {
@@ -101,6 +102,9 @@ export function flattenViNguoiNgheoRow(row: Record<string, unknown>): ViNguoiNgh
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: embeddedName(nv?.ho_va_ten),
     ten_tai_khoan_nguoi_tao: embeddedName(nv?.ten_tai_khoan),
+    id_nguoi_cap_nhat: nullableStr(r.id_nguoi_cap_nhat),
+    ho_va_ten_nguoi_cap_nhat: embeddedName(nc?.ho_va_ten),
+    ten_tai_khoan_nguoi_cap_nhat: embeddedName(nc?.ten_tai_khoan),
     // Không có khoá ⇒ dòng đọc bằng select rút gọn / RPC: để `undefined` = "chưa tải".
     ...('phieu_khao_sat' in r ? { phieu_khao_sat: docPhieuKhaoSat(r.phieu_khao_sat) } : {}),
     ...('bien_ban_ban_giao' in r ? { bien_ban_ban_giao: docBienBanBanGiao(r.bien_ban_ban_giao) } : {}),
@@ -288,6 +292,8 @@ function rpcRowToViNguoiNgheo(raw: Record<string, unknown>): ViNguoiNgheo {
     ten_don_vi_ho_tro,
     ho_va_ten_nguoi_tao,
     ten_tai_khoan_nguoi_tao,
+    ho_va_ten_nguoi_cap_nhat,
+    ten_tai_khoan_nguoi_cap_nhat,
     total_count: _totalCount,
     ...base
   } = raw;
@@ -296,6 +302,7 @@ function rpcRowToViNguoiNgheo(raw: Record<string, unknown>): ViNguoiNgheo {
     xa_phuong: { ten: ten_xa_phuong },
     don_vi_ho_tro: { ten: ten_don_vi_ho_tro },
     nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+    nguoi_cap_nhat: { ho_va_ten: ho_va_ten_nguoi_cap_nhat, ten_tai_khoan: ten_tai_khoan_nguoi_cap_nhat },
   });
 }
 

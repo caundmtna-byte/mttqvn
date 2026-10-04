@@ -32,9 +32,14 @@ export interface KhoDonViCuuTroListRow {
   /** Chuỗi hiển thị gộp — bảng, chi tiết, xuất file, tìm và sắp xếp dùng chung. */
   don_vi_gioi_thieu_label: string;
   email: string | null;
+  /** Mã số thuế — in lên Biên bản xác nhận khoản tài trợ. */
+  ma_so_thue?: string | null;
   ghi_chu: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
+  /** Họ tên người tạo / người sửa gần nhất (trigger máy chủ gán) — `null` khi chưa có. */
+  ten_nguoi_tao?: string | null;
+  ten_nguoi_cap_nhat?: string | null;
   /** Tiền mặt ủng hộ (đồng). `null` = chưa tải số ủng hộ. */
   tien_mat_ung_ho: number | null;
   /** Hiện vật quy ra tiền (đồng): giá trị hàng nhập kho + hiện vật quy đổi ở Chương trình hỗ trợ. */

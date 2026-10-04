@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Calendar, Edit, FileText, FolderOpen, ListOrdered, Package, Plus, Trash2 } from 'lucide-react';
+import { Edit, FileText, FolderOpen, ListOrdered, Package, Plus, Trash2 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -7,7 +7,6 @@ import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/De
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
-import { formatDateTimeShort } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
@@ -16,6 +15,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import EmbeddedChildDataGrid from '@/components/shared/EmbeddedChildDataGrid';
 import type { KhoDanhMucHangHoaDetail, KhoDanhSachHangHoaListRow } from '../core/types';
 import { KhoDanhSachHangHoaTableRowActions } from './kho-danh-sach-hang-hoa-table-row-actions';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
 
 interface Props {
   data: KhoDanhMucHangHoaDetail;
@@ -237,16 +237,12 @@ const KhoDanhMucHangHoaDetailDrawer: React.FC<Props> = ({
           )}
         </DetailSection>
 
-        <DetailSection title={txt('matTranHangHoa.detailDanhMuc.system')} icon={<FolderOpen size={14} />} variant="muted">
-          <DetailFieldGrid>
-            <DetailField label={txt('matTranHangHoa.store.tgTao')} value={formatDateTimeShort(data.tg_tao)} icon={<Calendar size={12} />} />
-            <DetailField
-              label={txt('matTranHangHoa.store.tgCapNhat')}
-              value={formatDateTimeShort(data.tg_cap_nhat)}
-              icon={<Calendar size={12} />}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <DetailSystemInfo
+          nguoiTao={data.ten_nguoi_tao}
+          tgTao={data.tg_tao}
+          nguoiCapNhat={data.ten_nguoi_cap_nhat}
+          tgCapNhat={data.tg_cap_nhat}
+        />
       </div>
     </GenericDrawer>
   );

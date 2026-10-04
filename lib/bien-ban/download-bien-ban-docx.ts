@@ -9,6 +9,7 @@ import {
   BorderStyle,
   Document,
   Packer,
+  PageBreak,
   Paragraph,
   Table,
   TableCell,
@@ -265,6 +266,8 @@ function blockToDocx(b: BienBanBlock): (Paragraph | Table)[] {
     }
     case 'bang':
       return [bangToDocx(b), para([tr('')], { after: 0 })];
+    case 'ngat-trang':
+      return [new Paragraph({ children: [new PageBreak()] })];
     default:
       return [];
   }

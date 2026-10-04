@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { BadgeCheck, Building2, Calendar, Edit, FileText, Landmark, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User, Users, UserRound } from 'lucide-react';
+import { BadgeCheck, Building2, Edit, Hash, FileText, Landmark, ListOrdered, Mail, MapPin, Phone, Trash2, Type, User, Users, UserRound } from 'lucide-react';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
 import GenericDrawer, { DRAWER_WIDTH_DETAIL } from '@/components/shared/GenericDrawer';
@@ -7,24 +7,30 @@ import DetailSummaryCard, { DetailSummaryIconTile } from '@/components/shared/De
 import DetailSection from '@/components/shared/DetailSection';
 import DetailField from '@/components/shared/DetailField';
 import DetailFieldGrid, { DETAIL_FIELD_SPAN_FULL } from '@/components/shared/DetailFieldGrid';
-import { formatDateTimeShort, formatDecimal } from '@/lib/utils';
+import { formatDecimal } from '@/lib/utils';
 import { BTN_CLOSE, BTN_EDIT, BTN_DELETE } from '@/lib/button-labels';
 import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import EnumBadge from '@/components/ui/EnumBadge';
 import { buildKhoDonViCuuTroLoaiBadgeConfig, isKhoDonViCuuTroCaNhan } from '../core/loai';
 import type { KhoDonViCuuTroDetail } from '../core/types';
-import type { DonViCuuTroUngHoNhom } from '../utils/ung-ho-nhom';
+import type { nhomUngHoCuaDonVi } from '../utils/ung-ho-nhom';
+import { useNavigate } from 'react-router-dom';
+import { useCan } from '@/hooks/use-can';
+import { TN_LIST_PATH } from '../../tiep-nhan/core/constants';
+import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
 
 interface Props {
   data: KhoDonViCuuTroDetail;
   /** Số ủng hộ của đơn vị này theo từng đợt / nội dung (toàn thời gian), đã sắp. */
-  ungHoNhom: (DonViCuuTroUngHoNhom & { nhan: string; tong: number })[];
+  ungHoNhom: ReturnType<typeof nhomUngHoCuaDonVi>;
   onClose: () => void;
   onEdit: (item: KhoDonViCuuTroDetail) => void;
   onDelete: (id: string) => void;
 }
 
 const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, ungHoNhom, onClose, onEdit, onDelete }) => {
+  const navigate = useNavigate();
+  const canViewTiepNhan = useCan('view', 'matTranTiepNhan');
   const { canEdit, canDelete } = useResourcePermissions('matTranReliefSupportUnits');
 
   const loaiBadge = useMemo(() => buildKhoDonViCuuTroLoaiBadgeConfig(), []);
@@ -129,6 +135,7 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, ungHoNhom, onClose,
               icon={<Landmark size={12} />}
             />
             <DetailField label={txt('matTranDonViCuuTro.form.email')} value={data.email} icon={<Mail size={12} />} />
+            <DetailField label={txt('matTranDonViCuuTro.form.maSoThue')} value={data.ma_so_thue} icon={<Hash size={12} />} />
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}
               label={txt('matTranDonViCuuTro.form.ghiChu')}
@@ -138,7 +145,21 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, ungHoNhom, onClose,
           </DetailFieldGrid>
         </DetailSection>
 
-        <DetailSection title={U('bangTitle')}>
+        <DetailSection
+          title={U('bangTitle')}
+          headerRight={
+            canViewTiepNhan ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-primary"
+                onClick={() => navigate(`${TN_LIST_PATH}?nha_tai_tro=${encodeURIComponent(data.id)}`)}
+              >
+                {U('xemTiepNhan')}
+              </Button>
+            ) : undefined
+          }
+        >
           {ungHoNhom.length === 0 ? (
             <p className="text-body-sm text-muted-foreground">{U('trong')}</p>
           ) : (
@@ -179,16 +200,12 @@ const KhoDonViCuuTroDetailDrawer: React.FC<Props> = ({ data, ungHoNhom, onClose,
           <p className="mt-2 text-xs text-muted-foreground">{U('nguonHint')}</p>
         </DetailSection>
 
-        <DetailSection title={txt('matTranDonViCuuTro.detail.systemInfo')}>
-          <DetailFieldGrid>
-            <DetailField label={txt('matTranDonViCuuTro.detail.tgTao')} value={formatDateTimeShort(data.tg_tao)} icon={<Calendar size={12} />} />
-            <DetailField
-              label={txt('matTranDonViCuuTro.detail.tgCapNhat')}
-              value={formatDateTimeShort(data.tg_cap_nhat)}
-              icon={<Calendar size={12} />}
-            />
-          </DetailFieldGrid>
-        </DetailSection>
+        <DetailSystemInfo
+          nguoiTao={data.ten_nguoi_tao}
+          tgTao={data.tg_tao}
+          nguoiCapNhat={data.ten_nguoi_cap_nhat}
+          tgCapNhat={data.tg_cap_nhat}
+        />
       </div>
     </GenericDrawer>
   );

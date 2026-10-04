@@ -180,6 +180,8 @@ function Block({ block }: { block: BienBanBlock }) {
         </table>
       );
     }
+    case 'ngat-trang':
+      return <div className={`${B}__ngat-trang`} aria-hidden />;
     default:
       return null;
   }

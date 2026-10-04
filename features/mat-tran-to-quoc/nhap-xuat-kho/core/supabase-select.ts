@@ -1,3 +1,4 @@
+import { nhanVienEmbedSelect } from '@/lib/nguoi-thao-tac';
 /**
  * PostgREST select strings cho `kho_nhap_xuat_kho` (master) + `kho_nhap_xuat_kho_ct` (lines).
  *
@@ -59,6 +60,9 @@ export const NHAP_XUAT_KHO_SELECT_FULL = [
   'bo_phan',
   'chung_tu_goc',
   'ho_ngheo_id',
+  'id_nguoi_tao',
+  nhanVienEmbedSelect('nguoi_tao', 'kho_nhap_xuat_kho_id_nguoi_tao_fkey'),
+  nhanVienEmbedSelect('nguoi_cap_nhat', 'kho_nhap_xuat_kho_id_nguoi_cap_nhat_fkey'),
   KHO_XUAT,
   KHO_NHAP,
   DON_VI,

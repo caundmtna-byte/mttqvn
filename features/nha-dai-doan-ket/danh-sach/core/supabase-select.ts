@@ -1,6 +1,7 @@
 const XA_PHUONG = 'xa_phuong:var_ssn_xa_phuong!nddk_nha_dai_doan_ket_xa_phuong_id_fkey(ten)';
 const NGUOI_TAO =
   'nguoi_tao:var_nhan_vien!nddk_nha_dai_doan_ket_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan)';
+const NHA_TAI_TRO = 'nha_tai_tro:kho_don_vi_cuu_tro!nddk_nha_dai_doan_ket_nha_tai_tro_id_fkey(ten)';
 const NGUOI_CAP_NHAT =
   'nguoi_cap_nhat:var_nhan_vien!nddk_nha_dai_doan_ket_id_nguoi_cap_nhat_fkey(ho_va_ten,ten_tai_khoan)';
 
@@ -17,6 +18,7 @@ const LIST_COLS = [
   'doi_tuong',
   'loai_hinh_ho_tro',
   'so_tien',
+  'nha_tai_tro_id',
   'trang_thai',
   'ngay_cap_nhat_trang_thai',
   'ghi_chu',
@@ -26,7 +28,7 @@ const LIST_COLS = [
   'id_nguoi_cap_nhat',
 ].join(',');
 
-export const NDDK_SELECT = `${LIST_COLS},${XA_PHUONG},${NGUOI_TAO},${NGUOI_CAP_NHAT}`;
+export const NDDK_SELECT = `${LIST_COLS},${XA_PHUONG},${NHA_TAI_TRO},${NGUOI_TAO},${NGUOI_CAP_NHAT}`;
 
 /** Dữ liệu 3 biên bản — chỉ màn chi tiết / sửa / in mới cần. */
 export const NDDK_BIEN_BAN_COLS = [

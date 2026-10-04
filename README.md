@@ -24,13 +24,13 @@ các module con; route khai báo tập trung trong `App.tsx`.
 | **Quản lý giao việc** | `/quan-ly-giao-viec` | Chương trình năm · Công việc · Báo cáo công việc | `features/quan-ly-giao-viec/` |
 | **Kiểm tra, giám sát, phản biện xã hội** | `/phan-bien-xa-hoi` | Thực hiện phản biện xã hội · Thiết lập danh mục · Thống kê phản biện xã hội | `features/phan-bien-xa-hoi/` |
 | **Dân tộc, tôn giáo** | `/dan-toc-ton-giao` | Thăm hỏi (dịp thăm hỏi, thăm hỏi tổ chức, thăm hỏi cá nhân, thống kê thăm hỏi) · Thông tin (tổ chức quan trọng, cá nhân tiêu biểu, thống kê tổ chức — cá nhân) | `features/dan-toc-ton-giao/` |
-| **An sinh xã hội** | `/an-sinh-xa-hoi` | Kho cứu trợ: danh sách kho, hàng hoá, đợt cứu trợ, đơn vị cứu trợ, nhập xuất kho (có in phiếu), tồn kho, báo cáo hỗ trợ | `features/mat-tran-to-quoc/` (nhóm `kho-*`, `dot-cuu-tro`, `don-vi-cuu-tro`, `hang-hoa`, `ton-kho`, `nhap-xuat-kho`, `bao-cao-ho-tro`) |
+| **Nghĩa tình dòng Lam** | `/an-sinh-xa-hoi` | Chương trình & tiếp nhận: chương trình vận động, tiếp nhận (in biên bản xác nhận tài trợ), nhà tài trợ, danh mục hàng hoá, tiếp nhận & phân bổ hàng (phiếu kho, có in phiếu), tồn kho, danh sách kho, báo cáo tiếp nhận & phân bổ · Hỗ trợ & khen thưởng: nhà đại đoàn kết, chương trình hỗ trợ, đối tượng hỗ trợ, khen thưởng nhà tài trợ | `features/mat-tran-to-quoc/` (`dot-cuu-tro`, `tiep-nhan`, `don-vi-cuu-tro`, `hang-hoa`, `nhap-xuat-kho`, `ton-kho`, `danh-sach-kho`, `bao-cao-ho-tro`) · `features/nha-dai-doan-ket/` |
 | **Trang thông tin khác** | `/trang-thong-tin-khac` | Liên kết truy cập | `pages/dashboards/` |
 | **Hệ thống** | `/he-thong` | Nhân viên · Phòng ban · Chức vụ · Thông tin tổ chức · Phân quyền · Danh sách tỉnh thành (xã/phường) | `features/he-thong/` |
 
 Hai lưu ý về sơ đồ trên, đối chiếu trực tiếp từ `App.tsx`:
 
-- **Kho cứu trợ đã dời sang An sinh xã hội.** Các đường dẫn cũ `/mat-tran-to-quoc/kho-cuu-tro/*` vẫn
+- **Kho cứu trợ đã dời sang nhóm `/an-sinh-xa-hoi` (tên hiển thị: Nghĩa tình dòng Lam).** Các đường dẫn cũ `/mat-tran-to-quoc/kho-cuu-tro/*` vẫn
   còn nhưng chỉ `<Navigate>` sang `/an-sinh-xa-hoi/kho-cuu-tro/*`. Mã nguồn vẫn nằm trong
   `features/mat-tran-to-quoc/`.
 - Nhà đại đoàn kết đã là module thật (`features/nha-dai-doan-ket/`).

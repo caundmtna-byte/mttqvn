@@ -33,6 +33,7 @@ export const khoDonViCuuTroSchema = z.object({
     .trim()
     .max(320)
     .refine((s) => s === '' || z.string().email().safeParse(s).success, txt('matTranDonViCuuTro.validation.emailInvalid')),
+  ma_so_thue: z.string().trim().max(32),
   ghi_chu: z.string().max(10_000),
 });
 

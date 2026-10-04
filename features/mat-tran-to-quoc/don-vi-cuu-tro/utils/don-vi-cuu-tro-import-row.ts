@@ -80,6 +80,7 @@ export function parseDonViCuuTroImportRow(
     dien_thoai: trimCell(raw.dien_thoai),
     don_vi_gioi_thieu: dv.value,
     email: trimCell(raw.email),
+    ma_so_thue: trimCell(raw.ma_so_thue),
     ghi_chu: trimCell(raw.ghi_chu),
   });
   if (!parsed.success) return fail(rowNum, parsed.error.issues[0]?.message ?? parsed.error.message);

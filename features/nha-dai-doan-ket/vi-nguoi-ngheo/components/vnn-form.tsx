@@ -44,7 +44,9 @@ import {
   VNN_NGUON_HO_TRO_VALUES,
   VNN_NGUON_VALUES,
   VNN_TRANG_THAI_VALUES,
+  VNN_TRANG_THAI_DA_NHAN,
 } from '../core/constants';
+import { canNhaTaiTro } from '../../danh-sach/core/luat-so-tien';
 import type { ViNguoiNgheo } from '../core/types';
 import {
   useCreateViNguoiNgheo,
@@ -137,7 +139,11 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
     >,
   });
 
-  const coHienVat = vnnCoHienVat(useWatch({ control, name: 'hinh_thuc_ho_tro' }));
+  const hinhThuc = useWatch({ control, name: 'hinh_thuc_ho_tro' });
+  const coHienVat = vnnCoHienVat(hinhThuc);
+  // Đánh dấu ô bắt buộc theo luật tiền (core/luat-so-tien.ts); zod mới là nơi kiểm.
+  const daNhan = useWatch({ control, name: 'trang_thai' }) === VNN_TRANG_THAI_DA_NHAN;
+  const canNtt = canNhaTaiTro(useWatch({ control, name: 'nguon_ho_tro' }));
   const linhVuc = useWatch({ control, name: 'linh_vuc_ho_tro' });
   const loaiPhieu = vnnLoaiPhieu(linhVuc);
   const daGanHo = Boolean(useWatch({ control, name: 'ho_ngheo_id' }));
@@ -159,6 +165,7 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
           onChange={(n) => field.onChange(n == null ? '' : String(n))}
           onBlur={field.onBlur}
           min={0}
+          required={name === 'tong_tien_quy_doi' && daNhan}
           error={errors[name]?.message}
         />
       )}
@@ -380,6 +387,7 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                   onChange={(n) => field.onChange(n == null ? '' : String(n))}
                   onBlur={field.onBlur}
                   min={0}
+                  required={daNhan && hinhThuc !== 'Hiện vật'}
                   error={errors.so_tien?.message}
                 />
               )}
@@ -409,6 +417,8 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                     value={field.value ?? ''}
                     onChange={(v) => field.onChange(v == null ? '' : String(v))}
                     placeholder={txt('viNguoiNgheo.form.donViHoTroPlaceholder')}
+                    required={canNtt}
+                    error={errors.don_vi_ho_tro_id?.message}
                   />
                 )}
               />

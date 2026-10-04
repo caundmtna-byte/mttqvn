@@ -66,6 +66,16 @@ export const nhapXuatKhoFormSchema = baseFormSchema.superRefine((data, ctx) => {
           message: txt('matTranNhapXuatKho.validation.khoNhapRequired'),
         });
       }
+      // Giá trị hàng nhập từ nhà tài trợ được cộng vào Kết quả hỗ trợ — không được để 0.
+      data.chi_tiet.forEach((line, i) => {
+        if (!(Number(line.don_gia) > 0)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['chi_tiet', i, 'don_gia'],
+            message: txt('matTranNhapXuatKho.validation.donGiaNhapNgoaiRequired'),
+          });
+        }
+      });
       break;
     }
     case 'xuat_ngoai': {

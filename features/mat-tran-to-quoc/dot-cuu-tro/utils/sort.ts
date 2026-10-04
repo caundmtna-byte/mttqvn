@@ -31,8 +31,16 @@ export function sortKhoDotCuuTroList(rows: KhoDotCuuTroListRow[], sort: SortStat
         return cmpNum(a.tt, b.tt, dir);
       case 'ten':
         return cmpStr(a.ten, b.ten, dir);
+      case 'loai':
+      case 'don_vi_chu_tri_label':
+      case 'tai_khoan_tiep_nhan':
+      case 'ngan_hang':
+      case 'trang_thai':
+      case 'tien_do':
       case 'link':
-        return cmpStr(a.link, b.link, dir);
+        return cmpStr(a[col], b[col], dir);
+      case 'thoi_gian':
+        return cmpTime(a.tu_ngay, b.tu_ngay, dir);
       case 'tg_tao':
         return cmpTime(a.tg_tao, b.tg_tao, dir);
       case 'tg_cap_nhat':

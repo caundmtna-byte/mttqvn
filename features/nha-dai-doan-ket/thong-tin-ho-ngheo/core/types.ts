@@ -41,6 +41,10 @@ export interface HoNgheo {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
+  /** Trigger `fn_gan_nguoi_cap_nhat` gán — form không gửi. */
+  id_nguoi_cap_nhat?: string | null;
+  ho_va_ten_nguoi_cap_nhat?: string | null;
+  ten_tai_khoan_nguoi_cap_nhat?: string | null;
   /**
    * Nhân khẩu & đời sống — CHỈ có khi dòng được đọc bằng `HNGH_SELECT_FULL`
    * (chi tiết / sửa / in). Dòng từ RPC phân trang không có ⇒ `undefined`,

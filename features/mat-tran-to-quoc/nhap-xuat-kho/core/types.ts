@@ -45,6 +45,8 @@ export interface NhapXuatKhoListRow {
   ho_va_ten_nguoi_tao: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
+  /** Người sửa gần nhất — chỉ có khi đọc bằng `NHAP_XUAT_KHO_SELECT_FULL` (chi tiết). */
+  ho_va_ten_nguoi_cap_nhat?: string | null;
 }
 
 /** 1 dòng chi tiết hàng hóa của 1 phiếu. */

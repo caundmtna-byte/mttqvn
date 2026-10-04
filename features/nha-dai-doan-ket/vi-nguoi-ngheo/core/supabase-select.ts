@@ -7,6 +7,8 @@ const XA_PHUONG = 'xa_phuong:var_ssn_xa_phuong!vnn_chuong_trinh_xa_phuong_id_fke
 const DON_VI = 'don_vi_ho_tro:kho_don_vi_cuu_tro!vnn_chuong_trinh_don_vi_ho_tro_id_fkey(ten)';
 const NGUOI_TAO =
   'nguoi_tao:var_nhan_vien!vnn_chuong_trinh_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan)';
+const NGUOI_CAP_NHAT =
+  'nguoi_cap_nhat:var_nhan_vien!vnn_chuong_trinh_id_nguoi_cap_nhat_fkey(ho_va_ten,ten_tai_khoan)';
 
 const LIST_COLS = [
   'id',
@@ -32,9 +34,10 @@ const LIST_COLS = [
   'id_nguoi_tao',
   'tg_tao',
   'tg_cap_nhat',
+  'id_nguoi_cap_nhat',
 ].join(',');
 
-export const VNN_SELECT = `${LIST_COLS},${XA_PHUONG},${DON_VI},${NGUOI_TAO}`;
+export const VNN_SELECT = `${LIST_COLS},${XA_PHUONG},${DON_VI},${NGUOI_TAO},${NGUOI_CAP_NHAT}`;
 
 /**
  * Một khoản ĐẦY ĐỦ, kèm jsonb phiếu khảo sát + biên bản bàn giao — chỉ chi

@@ -22,6 +22,7 @@ import {
   NHAP_XUAT_KHO_CT_SELECT_FLAT_LIST,
   NHAP_XUAT_KHO_SELECT_FULL,
 } from '../core/supabase-select';
+import { docNhanVienEmbed, tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -111,9 +112,12 @@ export function flattenListRow(row: Record<string, unknown>): NhapXuatKhoListRow
     muc_dich: nullableStr(row.muc_dich),
     so_dong: countFromCtAggregate(row.kho_nhap_xuat_kho_ct),
     id_nguoi_tao: nullableStr(row.id_nguoi_tao),
-    ho_va_ten_nguoi_tao: nameFromEmbed(row.nguoi_tao, 'ho_va_ten'),
+    ho_va_ten_nguoi_tao: tenNguoiThaoTac(docNhanVienEmbed(row.nguoi_tao)),
     tg_tao: String(row.tg_tao ?? ''),
     tg_cap_nhat: String(row.tg_cap_nhat ?? ''),
+    ...('nguoi_cap_nhat' in row
+      ? { ho_va_ten_nguoi_cap_nhat: tenNguoiThaoTac(docNhanVienEmbed(row.nguoi_cap_nhat)) }
+      : {}),
   };
 }
 

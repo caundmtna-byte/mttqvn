@@ -73,8 +73,24 @@ Mỗi module trong `features/` theo cấu trúc:
    `kho_ton_kho_view`. Hàm phạm vi: `fn_kho_xem_tat_ca()` (chỉ cán bộ Xã phường không kiêm Tỉnh bị
    giới hạn), `fn_kho_cua_toi()`, `fn_don_vi_cua_toi()`, `fn_kho_phieu_ghi_duoc(...)`. Bản sao ở client:
    `features/mat-tran-to-quoc/danh-sach-kho/utils/pham-vi-kho.ts` (test đối chiếu `schema.sql`).
+
+   **Tiếp nhận** (`tn_tiep_nhan`, `tn_tiep_nhan_phieu_kho`) cũng chặn theo dòng cả ĐỌC lẫn GHI:
+   phạm vi theo **đơn vị chủ trì của chương trình vận động** (`kho_dot_cuu_tro.don_vi_chu_tri_*`) —
+   quản trị/Tỉnh thấy hết, cán bộ Xã phường chỉ đọc/ghi khoản của chương trình xã mình chủ trì.
+   Ghi gate thêm `fn_co_quyen('tiep-nhan', …)`. Ghi qua RPC `rpc_tn_luu_tiep_nhan` (SECURITY
+   INVOKER ⇒ RLS vẫn áp). Một phiếu "Nhập từ ngoài" chỉ gắn được vào MỘT khoản (UNIQUE) và phải
+   cùng nhà tài trợ (trigger `fn_tn_kiem_phieu_kho`). Bản sao client:
+   `features/mat-tran-to-quoc/dot-cuu-tro/utils/pham-vi-chuong-trinh.ts`. Riêng `kho_dot_cuu_tro`
+   đọc vẫn `USING (true)` — phiếu XUẤT ở kho xã phải chọn được chương trình của tỉnh.
+
    Hàm tổng hợp/kiểm tra phải thấy MỌI dòng (kiểm tồn âm…) thì để `SECURITY DEFINER` — chạy
-   invoker dưới RLS sẽ tính trên phần người gọi thấy và ra số sai.
+   invoker dưới RLS sẽ tính trên phần người gọi thấy và ra số sai. Hàm DEFINER phải **tự lọc
+   phạm vi tại máy chủ**, không nhận cờ "xem hết" từ client (mẫu: `get_tn_tiep_nhan_page`,
+   `get_hngh_nhan_ho_tro_page`).
+   ⚠️ **Gọi hàm phạm vi trong `WHERE` / policy phải bọc `(SELECT fn_...())`** để Postgres tính
+   MỘT lần. Gọi trần thì chạy lại cho từng dòng: thống kê 9.400 hộ từng mất 22 giây và bị
+   `statement_timeout` (migration `20261004170000_pham_vi_tinh_mot_lan`). Chạy thử bằng
+   `postgres` KHÔNG lộ lỗi này (không có JWT ⇒ hàm trả ngay) — luôn đo bằng JWT người dùng thật.
    Khi viết policy mới: gate bằng `fn_co_quyen(...)` để không chặn nhầm người dùng hợp lệ, và
    **luôn thử tấn công thật** bằng `SET ROLE authenticated` + `set_config('request.jwt.claims', …)`
    trước khi coi là xong.

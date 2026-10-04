@@ -99,10 +99,12 @@ function flattenBienBan(r: Record<string, unknown>): NddkBienBan {
 
 export function flattenNhaDaiDoanKetRow(row: Record<string, unknown>): NhaDaiDoanKet {
   const xp = pickEmbedded<{ ten?: string }>(row.xa_phuong);
+  const ntt = pickEmbedded<{ ten?: string }>(row.nha_tai_tro);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
   const nc = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_cap_nhat);
   const rest = { ...row };
   delete rest.xa_phuong;
+  delete rest.nha_tai_tro;
   delete rest.nguoi_tao;
   delete rest.nguoi_cap_nhat;
   const r = rest as Record<string, unknown>;
@@ -121,6 +123,8 @@ export function flattenNhaDaiDoanKetRow(row: Record<string, unknown>): NhaDaiDoa
     doi_tuong: (nullableStr(r.doi_tuong) as NddkDoiTuong | null) ?? null,
     loai_hinh_ho_tro: String(r.loai_hinh_ho_tro ?? NDDK_LOAI_HINH_DEFAULT) as NddkLoaiHinh,
     so_tien: nullableNum(r.so_tien),
+    nha_tai_tro_id: nullableStr(r.nha_tai_tro_id),
+    ten_nha_tai_tro: embeddedName(ntt?.ten),
     trang_thai: String(r.trang_thai ?? NDDK_TRANG_THAI_DEFAULT) as NddkTrangThai,
     ngay_cap_nhat_trang_thai: String(r.ngay_cap_nhat_trang_thai ?? ''),
     ghi_chu: nullableStr(r.ghi_chu),
@@ -157,6 +161,7 @@ function formToPayload(data: NhaDaiDoanKetFormValues): Record<string, unknown> {
     doi_tuong: data.doi_tuong ?? null,
     loai_hinh_ho_tro: data.loai_hinh_ho_tro,
     so_tien: data.so_tien ?? null,
+    nha_tai_tro_id: nullableFk(data.nha_tai_tro_id),
     trang_thai: data.trang_thai,
     ghi_chu: data.ghi_chu ?? null,
     // Biên bản — schema đã quy dòng rỗng về undefined.
@@ -203,6 +208,7 @@ export const NDDK_SERVER_SORT_COLUMNS = [
   'noi_dung_ho_tro',
   'nguon',
   'nguon_ho_tro',
+  'ten_nha_tai_tro',
   'ho_ten_chu_ho',
   'ten_xa_phuong',
   'khoi_xom',
@@ -281,6 +287,7 @@ function cleanColumnSearch(
 function rpcRowToNhaDaiDoanKet(raw: Record<string, unknown>): NhaDaiDoanKet {
   const {
     ten_xa_phuong,
+    ten_nha_tai_tro,
     ho_va_ten_nguoi_tao,
     ten_tai_khoan_nguoi_tao,
     ho_va_ten_nguoi_cap_nhat,
@@ -291,6 +298,7 @@ function rpcRowToNhaDaiDoanKet(raw: Record<string, unknown>): NhaDaiDoanKet {
   return flattenNhaDaiDoanKetRow({
     ...base,
     xa_phuong: { ten: ten_xa_phuong },
+    nha_tai_tro: { ten: ten_nha_tai_tro },
     nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
     nguoi_cap_nhat: {
       ho_va_ten: ho_va_ten_nguoi_cap_nhat,

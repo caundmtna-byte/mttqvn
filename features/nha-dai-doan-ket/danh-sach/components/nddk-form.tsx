@@ -12,6 +12,7 @@ import {
   Users,
   StickyNote,
   UserSearch,
+  Building2,
 } from 'lucide-react';
 import { txt } from '@/lib/text';
 import { toast } from 'sonner';
@@ -50,6 +51,8 @@ import NddkBienBanFormSections from './nddk-bien-ban-form-sections';
 import { isNddkScopedToXaPhuong, useNddkViewer } from '../hooks/use-nddk-viewer';
 import { useNddkXaPhuongOptions } from '../hooks/use-nddk-xa-phuong-options';
 import { useVnnHoNgheoOptions } from '../../vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
+import { useKhoDonViCuuTroList } from '@/features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro';
+import { canNhaTaiTro, nddkTrangThaiCanTien } from '../core/luat-so-tien';
 
 const FORM_ID = 'nddk-form';
 
@@ -134,6 +137,7 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<NhaDaiDoanKetFormInput, unknown, NhaDaiDoanKetFormValues>({
     defaultValues: nhaDaiDoanKetToFormInput(null),
@@ -143,6 +147,17 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
       NhaDaiDoanKetFormValues
     >,
   });
+
+  const trangThai = watch('trang_thai');
+  const nguonHoTro = watch('nguon_ho_tro');
+  const { data: nhaTaiTroRows = [] } = useKhoDonViCuuTroList();
+  const nhaTaiTroOptions = useMemo(
+    () =>
+      [...nhaTaiTroRows]
+        .sort((a, b) => a.ten.localeCompare(b.ten, 'vi'))
+        .map((d) => ({ label: d.ten, value: d.id, subLabel: d.loai_label })),
+    [nhaTaiTroRows],
+  );
 
   useEffect(() => {
     if (isEdit) {
@@ -372,7 +387,25 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
                   onChange={(n) => field.onChange(n == null ? '' : String(n))}
                   onBlur={field.onBlur}
                   min={0}
+                  required={nddkTrangThaiCanTien(trangThai)}
                   error={errors.so_tien?.message}
+                />
+              )}
+            />
+            <Controller
+              name="nha_tai_tro_id"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  label={txt('nhaDaiDoanKet.store.nhaTaiTroCol')}
+                  icon={Building2}
+                  options={nhaTaiTroOptions}
+                  value={field.value ?? ''}
+                  onChange={(v) => field.onChange(v == null ? '' : String(v))}
+                  placeholder={txt('nhaDaiDoanKet.form.nhaTaiTroPlaceholder')}
+                  required={canNhaTaiTro(nguonHoTro)}
+                  dropdownInPortal
+                  error={errors.nha_tai_tro_id?.message}
                 />
               )}
             />

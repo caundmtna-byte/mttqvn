@@ -184,6 +184,14 @@ const NddkTable = memo(function NddkTable({
           ) : (
             <span className="text-body-sm text-muted-foreground">{empty}</span>
           );
+        case 'ten_nha_tai_tro': {
+          const label = trimmedNddkDisplay(item.ten_nha_tai_tro);
+          return (
+            <span className="text-body-sm truncate" title={label ?? undefined}>
+              {label ?? empty}
+            </span>
+          );
+        }
         case 'nguon_ho_tro': {
           const label = trimmedNddkDisplay(item.nguon_ho_tro);
           return (

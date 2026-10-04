@@ -36,6 +36,9 @@ import type { KhoDotCuuTroDetail, KhoDotCuuTroListRow } from './core/types';
 import { KHO_DOT_CUU_TRO_SEARCHABLE_KEYS } from './utils/search-keys';
 import { countKhoDotCuuTroColumnSearchActive, khoDotCuuTroMatchesColumnSearch } from './utils/column-search';
 import { sortKhoDotCuuTroList } from './utils/sort';
+import { thoiGianChuongTrinh } from './utils/display';
+import { chuongTrinhTrongPhamVi } from './utils/pham-vi-chuong-trinh';
+import { useKhoPhamViViewer } from '../danh-sach-kho/hooks/use-kho-pham-vi-viewer';
 import KhoDotCuuTroToolbar from './components/kho-dot-cuu-tro-toolbar';
 import KhoDotCuuTroTable from './components/kho-dot-cuu-tro-table';
 
@@ -124,15 +127,18 @@ const KhoDotCuuTroPage: React.FC = () => {
         [...KHO_DOT_CUU_TRO_SEARCHABLE_KEYS],
       );
       if (!khoDotCuuTroMatchesColumnSearch(item, f.columnSearch)) return false;
-      const link = (item.link ?? '').trim();
-      if (f.link_bucket === 'has' && !link) return false;
-      if (f.link_bucket === 'empty' && link) return false;
+      if (f.loai && item.loai !== f.loai) return false;
+      if (f.trang_thai && item.trang_thai !== f.trang_thai) return false;
       return matchesSearch;
     },
     [],
   );
 
-  const filtered = useListWithFilter(rows, searchTerm, filters, filterFn);
+  // "Chương trình xã nào tạo chỉ xã đó thấy" — lọc trước mọi thứ khác (bảng, xuất file, chi tiết).
+  const viewer = useKhoPhamViViewer('matTranReliefCampaign');
+  const rowsTrongPhamVi = useMemo(() => rows.filter((r) => chuongTrinhTrongPhamVi(viewer, r)), [rows, viewer]);
+
+  const filtered = useListWithFilter(rowsTrongPhamVi, searchTerm, filters, filterFn);
 
   const sorted = useMemo(() => sortKhoDotCuuTroList(filtered, sort), [filtered, sort]);
 
@@ -140,6 +146,13 @@ const KhoDotCuuTroPage: React.FC = () => {
     () => [
       { key: 'tt', label: txt('matTranDotCuuTro.store.ttCol') },
       { key: 'ten', label: txt('matTranDotCuuTro.store.tenCol') },
+      { key: 'loai', label: txt('matTranDotCuuTro.store.loaiCol') },
+      { key: 'don_vi_chu_tri_label', label: txt('matTranDotCuuTro.store.donViChuTriCol') },
+      { key: 'thoi_gian', label: txt('matTranDotCuuTro.store.thoiGianCol') },
+      { key: 'tai_khoan_tiep_nhan', label: txt('matTranDotCuuTro.store.taiKhoanCol') },
+      { key: 'ngan_hang', label: txt('matTranDotCuuTro.store.nganHangCol') },
+      { key: 'trang_thai', label: txt('matTranDotCuuTro.store.trangThaiCol') },
+      { key: 'tien_do', label: txt('matTranDotCuuTro.store.tienDoCol') },
       { key: 'link', label: txt('matTranDotCuuTro.store.linkCol') },
       { key: 'tg_tao', label: txt('matTranDotCuuTro.store.tgTaoCol') },
       { key: 'tg_cap_nhat', label: txt('matTranDotCuuTro.store.tgCapNhatCol') },
@@ -151,6 +164,13 @@ const KhoDotCuuTroPage: React.FC = () => {
     (item: KhoDotCuuTroListRow) => ({
       tt: item.tt,
       ten: item.ten,
+      loai: item.loai,
+      don_vi_chu_tri_label: item.don_vi_chu_tri_label,
+      thoi_gian: thoiGianChuongTrinh(item),
+      tai_khoan_tiep_nhan: item.tai_khoan_tiep_nhan ?? '',
+      ngan_hang: item.ngan_hang ?? '',
+      trang_thai: item.trang_thai,
+      tien_do: item.tien_do ?? '',
       link: item.link ?? '',
       tg_tao: item.tg_tao,
       tg_cap_nhat: item.tg_cap_nhat,
@@ -177,34 +197,34 @@ const KhoDotCuuTroPage: React.FC = () => {
     return (
       Boolean(searchTerm?.trim()) ||
       countKhoDotCuuTroColumnSearchActive(cs) > 0 ||
-      filters.link_bucket === 'has' ||
-      filters.link_bucket === 'empty' ||
+      Boolean(filters.loai) ||
+      Boolean(filters.trang_thai) ||
       Boolean(sort.column)
     );
-  }, [searchTerm, filters.columnSearch, filters.link_bucket, sort.column]);
+  }, [searchTerm, filters.columnSearch, filters.loai, filters.trang_thai, sort.column]);
 
   const emptyTitleResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && rowsTrongPhamVi.length > 0 && hasListFilters
         ? txt('common.noResults')
         : txt('matTranDotCuuTro.emptyTitle'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, rowsTrongPhamVi.length, hasListFilters],
   );
 
   const emptyDescriptionResolved = useMemo(
     () =>
-      sorted.length === 0 && rows.length > 0 && hasListFilters
+      sorted.length === 0 && rowsTrongPhamVi.length > 0 && hasListFilters
         ? txt('matTranDotCuuTro.emptyFilteredHint')
         : txt('matTranDotCuuTro.emptyHint'),
-    [sorted.length, rows.length, hasListFilters],
+    [sorted.length, rowsTrongPhamVi.length, hasListFilters],
   );
 
   useEffect(() => {
     if (!viewingId) return;
-    if (!rows.some((r) => r.id === viewingId)) {
+    if (!rowsTrongPhamVi.some((r) => r.id === viewingId)) {
       setViewingId(null);
     }
-  }, [rows, viewingId]);
+  }, [rowsTrongPhamVi, viewingId]);
 
   const handleEditFromList = useCallback(
     (item: KhoDotCuuTroListRow) => {
@@ -315,7 +335,7 @@ const KhoDotCuuTroPage: React.FC = () => {
           }}
           onExport={handleExport}
           onDeleteMany={handleDeleteMany}
-          items={rows}
+          items={rowsTrongPhamVi}
         />
 
         <div className="flex-1 min-h-0">

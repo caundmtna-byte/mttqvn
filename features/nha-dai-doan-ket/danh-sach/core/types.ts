@@ -37,6 +37,9 @@ export interface NhaDaiDoanKet {
   loai_hinh_ho_tro: NddkLoaiHinh;
   /** VND, không phần lẻ. `null` khi hồ sơ còn ở bước khảo sát, chưa chốt mức hỗ trợ. */
   so_tien: number | null;
+  /** Nhà tài trợ (kho_don_vi_cuu_tro) — có khi nguồn "Ủng hộ trực tiếp". */
+  nha_tai_tro_id?: string | null;
+  ten_nha_tai_tro?: string | null;
   trang_thai: NddkTrangThai;
   /** Máy chủ gán khi `trang_thai` đổi — không có ô nhập trên form. */
   ngay_cap_nhat_trang_thai: string;
@@ -46,7 +49,7 @@ export interface NhaDaiDoanKet {
   tg_cap_nhat: string;
   ho_va_ten_nguoi_tao?: string | null;
   ten_tai_khoan_nguoi_tao?: string | null;
-  /** Trigger `fn_nddk_gan_nguoi_cap_nhat` gán — form không gửi. */
+  /** Trigger `fn_gan_nguoi_cap_nhat` gán — form không gửi. */
   id_nguoi_cap_nhat?: string | null;
   ho_va_ten_nguoi_cap_nhat?: string | null;
   ten_tai_khoan_nguoi_cap_nhat?: string | null;

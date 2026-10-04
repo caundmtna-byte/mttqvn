@@ -10,6 +10,7 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'ho_ten_chu_ho', label: txt('nhaDaiDoanKet.store.chuHoCol'), visible: true, ...P.personName, order: 1 },
   { id: 'noi_dung_ho_tro', label: txt('nhaDaiDoanKet.store.noiDungCol'), visible: true, minWidth: 200, maxWidth: 320, order: 2 },
   { id: 'nguon_ho_tro', label: txt('nhaDaiDoanKet.store.nguonHoTroCol'), visible: true, ...P.enumBadgeMedium, order: 3 },
+  { id: 'ten_nha_tai_tro', label: txt('nhaDaiDoanKet.store.nhaTaiTroCol'), visible: false, minWidth: 140, maxWidth: 240, order: 3 },
   { id: 'ten_xa_phuong', label: txt('nhaDaiDoanKet.store.xaPhuongCol'), visible: true, ...P.province, order: 4 },
   { id: 'khoi_xom', label: txt('nhaDaiDoanKet.store.khoiXomCol'), visible: true, minWidth: 110, maxWidth: 170, order: 5 },
   { id: 'loai_hinh_ho_tro', label: txt('nhaDaiDoanKet.store.loaiHinhCol'), visible: true, ...P.enumBadgeMedium, order: 6 },

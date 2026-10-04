@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { vnnOTienCanNhap } from './luat-so-tien';
+import { canNhaTaiTro } from '../../danh-sach/core/luat-so-tien';
 import { txt } from '@/lib/text';
 import { parseSoInput } from '@/lib/number';
 import {
@@ -124,6 +126,17 @@ export const viNguoiNgheoSchema = z.object({
   bien_ban_ban_giao: z.custom<BbbgFormInput>().optional(),
 })
   .superRefine((v, ctx) => {
+    // Bản sao CHECK vnn_so_tien_theo_trang_thai_chk — xem core/luat-so-tien.ts.
+    for (const o of vnnOTienCanNhap(v)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [o],
+        message: txt(o === 'so_tien' ? 'viNguoiNgheo.validation.soTienBatBuoc' : 'viNguoiNgheo.validation.quyDoiBatBuoc'),
+      });
+    }
+    if (canNhaTaiTro(v.nguon_ho_tro) && !v.don_vi_ho_tro_id) {
+      ctx.addIssue({ code: 'custom', path: ['don_vi_ho_tro_id'], message: txt('viNguoiNgheo.validation.nhaTaiTroRequired') });
+    }
     if (v.bien_ban_ban_giao) {
       const r = bbbgFormSchema.safeParse(v.bien_ban_ban_giao);
       if (!r.success) {

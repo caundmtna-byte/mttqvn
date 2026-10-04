@@ -1,3 +1,8 @@
+import { nhanVienEmbedSelect } from '@/lib/nguoi-thao-tac';
+
+const nguoi = (t: string) =>
+  `${nhanVienEmbedSelect('nguoi_tao', `${t}_id_nguoi_tao_fkey`)},${nhanVienEmbedSelect('nguoi_cap_nhat', `${t}_id_nguoi_cap_nhat_fkey`)}`;
+
 const DM_EMBED = 'kho_danh_muc_hang_hoa!kho_danh_sach_hang_hoa_id_danh_muc_fkey(ten_danh_muc)';
 
 const HANG_LIST_COLS = [
@@ -21,9 +26,10 @@ export const KHO_DANH_MUC_HANG_HOA_SELECT = [
   'trang_thai',
   'tg_tao',
   'tg_cap_nhat',
+  nguoi('kho_danh_muc_hang_hoa'),
 ].join(',');
 
 export const KHO_DANH_MUC_HANG_HOA_RETURNING = KHO_DANH_MUC_HANG_HOA_SELECT;
 
-export const KHO_DANH_SACH_HANG_HOA_SELECT = `${HANG_LIST_COLS},${DM_EMBED}`;
+export const KHO_DANH_SACH_HANG_HOA_SELECT = `${HANG_LIST_COLS},${DM_EMBED},${nguoi('kho_danh_sach_hang_hoa')}`;
 export const KHO_DANH_SACH_HANG_HOA_RETURNING = KHO_DANH_SACH_HANG_HOA_SELECT;

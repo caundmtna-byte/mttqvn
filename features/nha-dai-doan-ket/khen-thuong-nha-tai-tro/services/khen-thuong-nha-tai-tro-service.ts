@@ -49,10 +49,12 @@ const SELECT = [
   'id_nguoi_tao',
   'tg_tao',
   'tg_cap_nhat',
+  'id_nguoi_cap_nhat',
   'xa_phuong:var_ssn_xa_phuong!ktnt_khen_thuong_nha_tai_tro_xa_phuong_id_fkey(ten)',
   'nha_tai_tro:kho_don_vi_cuu_tro!ktnt_khen_thuong_nha_tai_tro_nha_tai_tro_id_fkey(ten,loai)',
   'nguoi_duyet:var_nhan_vien!ktnt_khen_thuong_nha_tai_tro_nguoi_duyet_id_fkey(ho_va_ten)',
   'nguoi_tao:var_nhan_vien!ktnt_khen_thuong_nha_tai_tro_id_nguoi_tao_fkey(ho_va_ten,ten_tai_khoan)',
+  'nguoi_cap_nhat:var_nhan_vien!ktnt_khen_thuong_nha_tai_tro_id_nguoi_cap_nhat_fkey(ho_va_ten,ten_tai_khoan)',
 ].join(',');
 
 const repo = createRepository<RepoRow>({ tableName: TABLE, select: SELECT });
@@ -81,6 +83,7 @@ export function flattenKhenThuongNhaTaiTroRow(row: Record<string, unknown>): Khe
   const nt = pickEmbedded<{ ten?: string; loai?: string }>(row.nha_tai_tro);
   const nd = pickEmbedded<{ ho_va_ten?: string }>(row.nguoi_duyet);
   const nv = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_tao);
+  const nc = pickEmbedded<{ ho_va_ten?: string; ten_tai_khoan?: string }>(row.nguoi_cap_nhat);
   const r = row;
   const tongTienHoTro = num0(r.tong_tien_ho_tro);
   const hienVatQuyDoi = num0(r.hien_vat_quy_doi);
@@ -126,6 +129,9 @@ export function flattenKhenThuongNhaTaiTroRow(row: Record<string, unknown>): Khe
     tg_cap_nhat: String(r.tg_cap_nhat ?? ''),
     ho_va_ten_nguoi_tao: nullableStr(nv?.ho_va_ten),
     ten_tai_khoan_nguoi_tao: nullableStr(nv?.ten_tai_khoan),
+    id_nguoi_cap_nhat: nullableStr(r.id_nguoi_cap_nhat),
+    ho_va_ten_nguoi_cap_nhat: nullableStr(nc?.ho_va_ten),
+    ten_tai_khoan_nguoi_cap_nhat: nullableStr(nc?.ten_tai_khoan),
   };
 }
 
@@ -227,6 +233,8 @@ function rpcRow(raw: Record<string, unknown>): KhenThuongNhaTaiTro {
     ho_va_ten_nguoi_duyet,
     ho_va_ten_nguoi_tao,
     ten_tai_khoan_nguoi_tao,
+    ho_va_ten_nguoi_cap_nhat,
+    ten_tai_khoan_nguoi_cap_nhat,
     total_count: _total,
     ...base
   } = raw;
@@ -236,6 +244,7 @@ function rpcRow(raw: Record<string, unknown>): KhenThuongNhaTaiTro {
     nha_tai_tro: { ten: ten_nha_tai_tro, loai: loai_nha_tai_tro },
     nguoi_duyet: { ho_va_ten: ho_va_ten_nguoi_duyet },
     nguoi_tao: { ho_va_ten: ho_va_ten_nguoi_tao, ten_tai_khoan: ten_tai_khoan_nguoi_tao },
+    nguoi_cap_nhat: { ho_va_ten: ho_va_ten_nguoi_cap_nhat, ten_tai_khoan: ten_tai_khoan_nguoi_cap_nhat },
   });
 }
 

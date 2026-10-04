@@ -17,6 +17,9 @@ export interface KhoDanhSachKhoListRow {
   mo_ta: string | null;
   tg_tao: string;
   tg_cap_nhat: string;
+  /** Họ tên người tạo / người sửa gần nhất (trigger máy chủ gán) — `null` khi chưa có. */
+  ten_nguoi_tao?: string | null;
+  ten_nguoi_cap_nhat?: string | null;
 }
 
 export type KhoDanhSachKhoDetail = KhoDanhSachKhoListRow;

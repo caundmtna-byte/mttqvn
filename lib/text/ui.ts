@@ -27,7 +27,7 @@ export const ui = {
     "quanLyGiaoViec": "Quản lý giao việc",
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
-    "anSinhXaHoi": "An sinh xã hội",
+    "anSinhXaHoi": "Nghĩa tình dòng Lam",
     "trangThongTinKhac": "Trang thông tin khác",
     "system": "Hệ thống",
     "skipToMain": "Chuyển đến nội dung chính",
@@ -60,10 +60,17 @@ export const ui = {
       "groupTaskMgmt": "Quản lý giao việc",
       "groupMatTranToQuoc": "Mặt trận tổ quốc",
       "groupPhanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
-      "groupAnSinhXaHoi": "An sinh xã hội"
+      "groupAnSinhXaHoi": "Nghĩa tình dòng Lam"
     }
   },
   "shared": {
+    "systemInfo": {
+      "title": "Thông tin hệ thống",
+      "nguoiTao": "Người tạo",
+      "tgTao": "Thời gian tạo",
+      "nguoiCapNhat": "Người cập nhật",
+      "tgCapNhat": "Thời gian cập nhật"
+    },
     "export": {
       "title": "Xuất dữ liệu",
       "format": "Định dạng",
@@ -345,7 +352,7 @@ export const ui = {
     "matTranDashboard": {
       "groupTrainingReward": "Tập huấn & Khen thưởng",
       "groupCommittee": "Ủy viên ủy ban",
-      "groupReliefWarehouse": "Kho cứu trợ",
+      "groupReliefWarehouse": "Chương trình & tiếp nhận",
       "groupSalaryManagement": "Quản lý lương",
       "groupOtherSettings": "Tổ chức cán bộ",
       "trainingList": "Tập huấn",
@@ -360,20 +367,22 @@ export const ui = {
       "committeeMembersDesc": "Hồ sơ và danh sách ủy viên.",
       "committeeMemberStatsReport": "Báo cáo ủy viên",
       "committeeMemberStatsReportDesc": "Thống kê, lọc và tra cứu ủy viên theo nhiệm kỳ, đơn vị và tiêu chí khác.",
-      "reliefCampaign": "Đợt cứu trợ",
-      "reliefCampaignDesc": "Quản lý các đợt tiếp nhận, phân bổ và theo dõi cứu trợ.",
-      "reliefGoods": "Hàng hóa",
+      "reliefCampaign": "Chương trình vận động",
+      "reliefCampaignDesc": "Các chương trình vận động ủng hộ: loại, đơn vị chủ trì, thời gian, tài khoản tiếp nhận.",
+      "tiepNhan": "Tiếp nhận",
+      "tiepNhanDesc": "Khoản tài trợ: tiền, hiện vật, giấy tờ có giá — in biên bản xác nhận.",
+      "reliefGoods": "Danh mục hàng hoá",
       "reliefGoodsDesc": "Danh mục hàng hóa, vật tư và đơn vị tính phục vụ cứu trợ.",
-      "reliefStockTransactions": "Nhập xuất kho",
-      "reliefStockTransactionsDesc": "Ghi nhận phiếu nhập, phiếu xuất và luân chuyển hàng cứu trợ.",
+      "reliefStockTransactions": "Tiếp nhận & phân bổ hàng",
+      "reliefStockTransactionsDesc": "Phiếu nhập hàng từ nhà tài trợ, phiếu xuất phân bổ và luân chuyển giữa các kho.",
       "reliefInventory": "Tồn kho",
       "reliefInventoryDesc": "Theo dõi số lượng tồn, giá trị và tình trạng hàng hóa trong kho.",
       "reliefWarehouseList": "Danh sách kho",
       "reliefWarehouseListDesc": "Quản lý danh sách kho, địa điểm lưu trữ và thông tin phụ trách.",
-      "reliefSupportUnits": "Đơn vị hỗ trợ",
-      "reliefSupportUnitsDesc": "Danh sách tổ chức và cá nhân tham gia quyên góp, hỗ trợ cứu trợ.",
-      "reliefSupportReport": "Báo cáo hỗ trợ",
-      "reliefSupportReportDesc": "Tổng hợp nhập – xuất cứu trợ theo đơn vị hỗ trợ, đợt cứu trợ và hàng hóa.",
+      "reliefSupportUnits": "Nhà tài trợ",
+      "reliefSupportUnitsDesc": "Doanh nghiệp, tổ chức và cá nhân ủng hộ — kèm kết quả hỗ trợ.",
+      "reliefSupportReport": "Báo cáo tiếp nhận & phân bổ",
+      "reliefSupportReportDesc": "Tổng hợp nhập – xuất theo nhà tài trợ, chương trình vận động và hàng hoá.",
       "officerList": "Danh sách cán bộ",
       "officerListDesc": "Cán bộ thuộc phạm vi thiết lập Mặt trận Tổ quốc.",
       "officerStatsReport": "Báo cáo cán bộ",
@@ -400,7 +409,7 @@ export const ui = {
        * Thẻ "Sửa chữa nâng cấp" đã bị gỡ: "Sửa chữa" là một giá trị của trường
        * Loại hình hỗ trợ trong chính bảng dữ liệu, không phải một module riêng.
        */
-      "backToParent": "Quay lại An sinh xã hội"
+      "backToParent": "Quay lại Nghĩa tình dòng Lam"
     },
     "phanBienXaHoiDashboard": {
       "groupMain": "Kiểm tra, giám sát, phản biện xã hội",
@@ -620,7 +629,7 @@ export const ui = {
     "quanLyGiaoViec": "Quản lý giao việc",
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
-    "anSinhXaHoi": "An sinh xã hội",
+    "anSinhXaHoi": "Nghĩa tình dòng Lam",
     "trangThongTinKhac": "Trang thông tin khác",
     "systemAdmin": "Hệ thống",
     "employee": "Nhân sự",
@@ -644,13 +653,14 @@ export const ui = {
     "matTranSession": "Kỳ họp",
     "matTranCommitteeMembers": "Ủy viên ủy ban",
     "matTranCommitteeMemberStats": "Báo cáo ủy viên",
-    "matTranReliefCampaign": "Đợt cứu trợ",
-    "matTranReliefGoods": "Hàng hóa",
-    "matTranReliefStockTransactions": "Nhập xuất kho",
+    "matTranReliefCampaign": "Chương trình vận động",
+    "matTranTiepNhan": "Tiếp nhận",
+    "matTranReliefGoods": "Danh mục hàng hoá",
+    "matTranReliefStockTransactions": "Tiếp nhận & phân bổ hàng",
     "matTranReliefInventory": "Tồn kho",
     "matTranReliefWarehouseList": "Danh sách kho",
-    "matTranReliefSupportUnits": "Đơn vị hỗ trợ",
-    "matTranReliefSupportReport": "Báo cáo hỗ trợ",
+    "matTranReliefSupportUnits": "Nhà tài trợ",
+    "matTranReliefSupportReport": "Báo cáo tiếp nhận & phân bổ",
     "matTranOfficerList": "Danh sách cán bộ",
     "matTranOfficerStats": "Báo cáo cán bộ",
     "matTranSetupSettings": "Thiết lập cài đặt",

@@ -43,6 +43,8 @@ const BASE = `
   .bien-ban-doc__lua-chon-luoi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12pt; padding-left: 1cm; }
   .bien-ban-doc__o { font-family: 'Segoe UI Symbol', 'DejaVu Sans', 'Arial Unicode MS', sans-serif; margin-right: 4pt; }
   .bien-ban-doc__ky { margin-top: 14pt; page-break-inside: avoid; break-inside: avoid; }
+  /* Phụ lục sang trang mới khi in; trên màn hình là một đường kẻ ngăn cách. */
+  .bien-ban-doc__ngat-trang { break-before: page; page-break-before: always; border-top: 1px dashed #bbb; margin: 18pt 0; }
   .bien-ban-doc__ky-ngay { text-align: right; font-style: italic; margin: 0 0 4pt !important; }
   .bien-ban-doc__ky-grid { display: grid; gap: 0 6pt; }
   .bien-ban-doc__ky-nhom { text-align: center; font-weight: 700; text-transform: uppercase; margin-bottom: 2pt; }
@@ -77,4 +79,5 @@ export const BIEN_BAN_PRINT_STYLES = `
   }
 ${BASE}
   .bien-ban-doc { padding: 0; max-width: 210mm; margin: 0 auto; }
+  .bien-ban-doc__ngat-trang { border: 0; margin: 0; }
 `;

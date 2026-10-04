@@ -2,16 +2,21 @@ import { txt } from '@/lib/text';
 import type { KhoDonViCuuTroListRow } from '../core/types';
 
 /**
- * Một dòng của RPC `get_kho_don_vi_cuu_tro_ung_ho_nhom`: số ủng hộ của MỘT đơn vị
- * trong MỘT nhóm.
- *   nguon 'kho'          — phiếu nhập từ ngoài, nhóm theo Đợt cứu trợ ('dot:<id>' | 'dot:none'),
- *                          toàn bộ là hiện vật (giá trị hàng).
- *   nguon 'chuong_trinh' — Chương trình hỗ trợ, nhóm theo Nội dung hỗ trợ ('nd:<chữ thường>'),
- *                          so_tien là tiền mặt, tong_tien_quy_doi là hiện vật quy tiền.
+ * Một dòng của RPC `get_kho_don_vi_cuu_tro_ung_ho_nhom`: số ủng hộ của MỘT nhà tài trợ
+ * trong MỘT nhóm, từ MỘT nguồn. Mỗi đồng chỉ đếm ở đúng một nguồn (migration
+ * `20261004140000_nha_tai_tro_ket_qua_khong_trung`):
+ *   'kho'          — phiếu nhập từ ngoài, nhóm theo chương trình ('dot:<id>' | 'dot:none'), toàn hiện vật.
+ *   'tiep_nhan'    — khoản Tiếp nhận, nhóm theo chương trình ('dot:<id>'): tiền + giấy tờ có giá
+ *                    là tiền mặt, hiện vật khác là hiện vật. Cùng khoá nhóm với 'kho'.
+ *   'chuong_trinh' — Chương trình hỗ trợ nguồn "Ủng hộ trực tiếp", nhóm theo nội dung ('nd:…').
+ *   'nddk'         — Nhà đại đoàn kết nguồn "Ủng hộ trực tiếp", nhóm theo nội dung ('nd:…').
  */
+export type NguonUngHo = 'kho' | 'tiep_nhan' | 'chuong_trinh' | 'nddk';
+export const NGUON_UNG_HO: readonly NguonUngHo[] = ['kho', 'tiep_nhan', 'chuong_trinh', 'nddk'];
+
 export interface DonViCuuTroUngHoNhom {
   donViId: string;
-  nguon: 'kho' | 'chuong_trinh';
+  nguon: NguonUngHo;
   nhomKey: string;
   nhomTen: string | null;
   tienMat: number;
@@ -101,14 +106,29 @@ export function ganUngHoVaoDanhSach(
   });
 }
 
-/** Các nhóm của một đơn vị, đúng thứ tự hiển thị — cho bảng ở màn chi tiết. */
+/**
+ * Các nhóm của một đơn vị, đúng thứ tự hiển thị — cho bảng ở màn chi tiết. Phiếu kho
+ * và khoản tiếp nhận cùng chương trình chung khoá nhóm ⇒ gộp về MỘT dòng.
+ */
 export function nhomUngHoCuaDonVi(
   rows: readonly DonViCuuTroUngHoNhom[],
   donViId: string | null | undefined,
-): (DonViCuuTroUngHoNhom & { nhan: string; tong: number })[] {
+): (Omit<DonViCuuTroUngHoNhom, 'nguon'> & { nhan: string; tong: number })[] {
   if (!donViId) return [];
-  return rows
-    .filter((r) => r.donViId === donViId)
+  const gop = new Map<string, Omit<DonViCuuTroUngHoNhom, 'nguon'>>();
+  for (const r of rows) {
+    if (r.donViId !== donViId) continue;
+    const g = gop.get(r.nhomKey);
+    if (g) {
+      g.tienMat += r.tienMat;
+      g.hienVat += r.hienVat;
+      g.soLuot += r.soLuot;
+      g.nhomTen = g.nhomTen ?? r.nhomTen;
+    } else {
+      gop.set(r.nhomKey, { donViId: r.donViId, nhomKey: r.nhomKey, nhomTen: r.nhomTen, tienMat: r.tienMat, hienVat: r.hienVat, soLuot: r.soLuot });
+    }
+  }
+  return [...gop.values()]
     .map((r) => ({ ...r, nhan: nhanNhomUngHo(r.nhomKey, r.nhomTen), tong: r.tienMat + r.hienVat }))
     .sort(soSanhNhom);
 }

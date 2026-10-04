@@ -65,24 +65,36 @@ describe('ganUngHoVaoDanhSach', () => {
 
 describe('nhãn và thứ tự nhóm', () => {
   it('nhãn theo loại nhóm', () => {
-    expect(nhanNhomUngHo('dot:7', 'Bão Yagi')).toBe('Đợt: Bão Yagi');
-    expect(nhanNhomUngHo(NHOM_KHONG_DOT, null)).toBe('Chưa gắn đợt');
+    expect(nhanNhomUngHo('dot:7', 'Bão Yagi')).toBe('Chương trình: Bão Yagi');
+    expect(nhanNhomUngHo(NHOM_KHONG_DOT, null)).toBe('Chưa gắn chương trình');
     expect(nhanNhomUngHo('nd:tết', 'Tết')).toBe('Nội dung: Tết');
   });
 
   it('chip lọc: đợt trước, "chưa gắn đợt" sau các đợt, nội dung cuối; đếm số đơn vị', () => {
     expect(buildNhomUngHoOptions(ROWS)).toEqual([
-      { value: 'dot:7', label: 'Đợt: Bão Yagi', count: 1 },
-      { value: NHOM_KHONG_DOT, label: 'Chưa gắn đợt', count: 1 },
+      { value: 'dot:7', label: 'Chương trình: Bão Yagi', count: 1 },
+      { value: NHOM_KHONG_DOT, label: 'Chưa gắn chương trình', count: 1 },
       { value: 'nd:tết', label: 'Nội dung: Tết', count: 2 },
     ]);
   });
 
   it('bảng của một đơn vị chỉ lấy nhóm của đơn vị đó', () => {
     expect(nhomUngHoCuaDonVi(ROWS, '1').map((r) => [r.nhan, r.tong])).toEqual([
-      ['Đợt: Bão Yagi', 300],
+      ['Chương trình: Bão Yagi', 300],
       ['Nội dung: Tết', 150],
     ]);
     expect(nhomUngHoCuaDonVi(ROWS, null)).toEqual([]);
+  });
+
+  it('phiếu kho và khoản tiếp nhận cùng chương trình gộp về một dòng', () => {
+    const gop = nhomUngHoCuaDonVi(
+      [
+        { donViId: '9', nguon: 'kho', nhomKey: 'dot:3', nhomTen: 'Bão số 1', tienMat: 0, hienVat: 400, soLuot: 1 },
+        { donViId: '9', nguon: 'tiep_nhan', nhomKey: 'dot:3', nhomTen: 'Bão số 1', tienMat: 1000, hienVat: 0, soLuot: 2 },
+      ],
+      '9',
+    );
+    expect(gop).toHaveLength(1);
+    expect(gop[0]).toMatchObject({ tienMat: 1000, hienVat: 400, tong: 1400, soLuot: 3 });
   });
 });

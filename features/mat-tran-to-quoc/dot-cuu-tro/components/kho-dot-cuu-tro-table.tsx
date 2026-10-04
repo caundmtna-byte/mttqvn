@@ -8,6 +8,9 @@ import GenericTable from '@/components/shared/GenericTable';
 import { formatDateTimeShort } from '@/lib/utils';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import { KhoDotCuuTroTableRowActions } from './kho-dot-cuu-tro-table-row-actions';
+import EnumBadge from '@/components/ui/EnumBadge';
+import { dotLoaiBadge, dotTrangThaiBadge } from '../core/display-badges';
+import { thoiGianChuongTrinh } from '../utils/display';
 
 interface Props {
   data: KhoDotCuuTroListRow[];
@@ -113,6 +116,31 @@ const KhoDotCuuTroTable = memo(function KhoDotCuuTroTable({
           ) : (
             <span className="text-body-sm text-muted-foreground">{txt('common.emptyCell')}</span>
           );
+        case 'loai':
+          return <EnumBadge value={item.loai} config={dotLoaiBadge} shape="pill" truncate />;
+        case 'trang_thai':
+          return <EnumBadge value={item.trang_thai} config={dotTrangThaiBadge} shape="pill" truncate />;
+        case 'thoi_gian': {
+          const tg = thoiGianChuongTrinh(item);
+          return (
+            <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap" title={tg}>
+              {tg || txt('common.emptyCell')}
+            </span>
+          );
+        }
+        case 'don_vi_chu_tri_label':
+        case 'tai_khoan_tiep_nhan':
+        case 'ngan_hang':
+        case 'tien_do': {
+          const v = (item[colId] ?? '').trim();
+          return v ? (
+            <span className={`block truncate text-sm ${colId === 'tai_khoan_tiep_nhan' ? 'tabular-nums' : ''}`} title={v}>
+              {v}
+            </span>
+          ) : (
+            <span className="text-body-sm text-muted-foreground">{txt('common.emptyCell')}</span>
+          );
+        }
         case 'tg_tao':
           return (
             <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">

@@ -1,4 +1,5 @@
 import { createRepository } from '@/lib/data/create-repository';
+import { docNhanVienEmbed, tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
@@ -29,6 +30,8 @@ export function normalizeDanhMucRow(row: Record<string, unknown>): KhoDanhMucHan
     trang_thai: String(row.trang_thai ?? 'Đang hoạt động'),
     tg_tao: String(row.tg_tao ?? ''),
     tg_cap_nhat: String(row.tg_cap_nhat ?? ''),
+    ten_nguoi_tao: tenNguoiThaoTac(docNhanVienEmbed(row.nguoi_tao)),
+    ten_nguoi_cap_nhat: tenNguoiThaoTac(docNhanVienEmbed(row.nguoi_cap_nhat)),
   };
 }
 

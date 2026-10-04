@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Link2 } from 'lucide-react';
+import { Plus, Download, Tag, Activity } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -10,6 +10,7 @@ import FilterChipSingleSelect from '@/components/shared/FilterChipSingleSelect';
 import { useKhoDotCuuTroStore } from '../store/useKhoDotCuuTroStore';
 import { countKhoDotCuuTroColumnSearchActive } from '../utils/column-search';
 import type { KhoDotCuuTroListRow } from '../core/types';
+import { DOT_LOAI_VALUES, DOT_TRANG_THAI_VALUES, type DotLoai, type DotTrangThai } from '../core/constants';
 
 interface Props {
   onPageBack: () => void;
@@ -21,7 +22,7 @@ interface Props {
 
 const KhoDotCuuTroToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDeleteMany, items }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranReliefCampaign');
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const {
     searchTerm,
@@ -39,69 +40,78 @@ const KhoDotCuuTroToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onD
 
   const selectedCount = selectedIds.size;
 
-  const linkCounts = useMemo(() => {
-    let has = 0;
-    let empty = 0;
-    for (const r of itemRows) {
-      const link = (r.link ?? '').trim();
-      if (link) has += 1;
-      else empty += 1;
-    }
-    return { has, empty };
+  const chipOptions = useMemo(() => {
+    const dem = (key: 'loai' | 'trang_thai', v: string) => itemRows.filter((r) => r[key] === v).length;
+    return {
+      loai: DOT_LOAI_VALUES.map((v) => ({ label: v, value: v, count: dem('loai', v) })),
+      trangThai: DOT_TRANG_THAI_VALUES.map((v) => ({ label: v, value: v, count: dem('trang_thai', v) })),
+    };
   }, [itemRows]);
 
-  const linkChipOptions = useMemo(
-    () => [
-      { label: txt('matTranDotCuuTro.filterLinkHas'), value: 'has', count: linkCounts.has },
-      { label: txt('matTranDotCuuTro.filterLinkEmpty'), value: 'empty', count: linkCounts.empty },
-    ],
-    [linkCounts.has, linkCounts.empty],
+  const activeFilterCount = useMemo(
+    () =>
+      (searchTerm ? 1 : 0) +
+      countKhoDotCuuTroColumnSearchActive(filters.columnSearch ?? {}) +
+      (filters.loai ? 1 : 0) +
+      (filters.trang_thai ? 1 : 0),
+    [searchTerm, filters],
   );
-
-  const activeFilterCount = useMemo(() => {
-    const bucketOn = filters.link_bucket === 'has' || filters.link_bucket === 'empty' ? 1 : 0;
-    return (searchTerm ? 1 : 0) + countKhoDotCuuTroColumnSearchActive(filters.columnSearch ?? {}) + bucketOn;
-  }, [searchTerm, filters]);
 
   const handleClearAllFilters = () => {
     setSearchTerm('');
     useKhoDotCuuTroStore.getState().setFilter('columnSearch', {});
-    setFilter('link_bucket', '');
+    setFilter('loai', '');
+    setFilter('trang_thai', '');
     setSort(null, null);
   };
 
-  const filtersSlot = useMemo(
-    () => (
-      <div className="flex flex-wrap items-center gap-2 min-w-0">
-        <FilterChipSingleSelect
-          options={linkChipOptions}
-          value={filters.link_bucket || null}
-          onChange={(v) => setFilter('link_bucket', v === 'has' || v === 'empty' ? v : '')}
-          placeholder={txt('matTranDotCuuTro.filterLinkChipPlaceholder')}
-          icon={Link2}
-          className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[280px]"
-        />
-      </div>
-    ),
-    [filters.link_bucket, linkChipOptions, setFilter],
+  const setLoai = (v: string | null | undefined) =>
+    setFilter('loai', (DOT_LOAI_VALUES as readonly string[]).includes(v ?? '') ? (v as DotLoai) : '');
+  const setTrangThai = (v: string | null | undefined) =>
+    setFilter(
+      'trang_thai',
+      (DOT_TRANG_THAI_VALUES as readonly string[]).includes(v ?? '') ? (v as DotTrangThai) : '',
+    );
+
+  const filtersSlot = (
+    <div className="flex flex-wrap items-center gap-2 min-w-0">
+      <FilterChipSingleSelect
+        options={chipOptions.loai}
+        value={filters.loai || null}
+        onChange={setLoai}
+        placeholder={txt('matTranDotCuuTro.filterLoaiPlaceholder')}
+        icon={Tag}
+        className="shrink-0 w-full min-w-0 sm:w-[min(220px,28vw)] sm:max-w-[260px]"
+      />
+      <FilterChipSingleSelect
+        options={chipOptions.trangThai}
+        value={filters.trang_thai || null}
+        onChange={setTrangThai}
+        placeholder={txt('matTranDotCuuTro.filterTrangThaiPlaceholder')}
+        icon={Activity}
+        className="shrink-0 w-full min-w-0 sm:w-[min(200px,26vw)] sm:max-w-[240px]"
+      />
+    </div>
   );
 
-  const filterGroups = useMemo(
-    () => [
-      {
-        key: 'link_bucket',
-        label: txt('matTranDotCuuTro.store.linkCol'),
-        icon: Link2,
-        options: linkChipOptions,
-        value: filters.link_bucket ? [filters.link_bucket] : [],
-        onChange: (vals: string[]) => {
-          const pick = vals.length ? vals[vals.length - 1] : '';
-          setFilter('link_bucket', pick === 'has' || pick === 'empty' ? pick : '');
-        },
-      },
-    ],
-    [linkChipOptions, filters.link_bucket, setFilter],
-  );
+  const filterGroups = [
+    {
+      key: 'loai',
+      label: txt('matTranDotCuuTro.store.loaiCol'),
+      icon: Tag,
+      options: chipOptions.loai,
+      value: filters.loai ? [filters.loai] : [],
+      onChange: (vals: string[]) => setLoai(vals[vals.length - 1]),
+    },
+    {
+      key: 'trang_thai',
+      label: txt('matTranDotCuuTro.store.trangThaiCol'),
+      icon: Activity,
+      options: chipOptions.trangThai,
+      value: filters.trang_thai ? [filters.trang_thai] : [],
+      onChange: (vals: string[]) => setTrangThai(vals[vals.length - 1]),
+    },
+  ];
 
   const mobileActions = useMemo<ActionItem[]>(
     () =>

@@ -44,6 +44,7 @@ export type AppResource =
   | 'matTranReliefWarehouseList'
   | 'matTranReliefSupportUnits'
   | 'matTranReliefSupportReport'
+  | 'matTranTiepNhan'
   | 'matTranSalaryIncreaseList'
   | 'matTranSalarySetup'
   | 'annualPrograms'
@@ -106,6 +107,8 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranReliefWarehouseList: 'an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho',
   matTranReliefSupportUnits: 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro',
   matTranReliefSupportReport: 'an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro',
+  /** Tiếp nhận — `module_key` DB: `tiep-nhan`; RLS `tn_tiep_nhan` gọi `fn_co_quyen('tiep-nhan', …)`. */
+  matTranTiepNhan: 'an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan',
   /** Danh sách tăng lương — `can()`: `cap_bac===1` hoặc `quan_tri` (`admin`/`all`) hoặc token `xem`/`them`/`sua`/`xoa`. */
   matTranSalaryIncreaseList: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong',
   /** Thiết lập lương — cùng luật `can()` như danh sách tăng lương. */

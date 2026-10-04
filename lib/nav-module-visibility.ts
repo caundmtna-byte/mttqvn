@@ -36,6 +36,7 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
   if (path === '/an-sinh-xa-hoi') {
     return [
       'matTranReliefCampaign',
+      'matTranTiepNhan',
       'matTranReliefGoods',
       'matTranReliefStockTransactions',
       'matTranReliefInventory',

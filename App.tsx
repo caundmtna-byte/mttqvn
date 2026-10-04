@@ -66,6 +66,8 @@ const KhoNhapXuatKhoInPhieuPage = lazy(
 );
 const TonKhoPage = lazy(() => import('./features/mat-tran-to-quoc/ton-kho/index'));
 const KhoBaoCaoHoTroPage = lazy(() => import('./features/mat-tran-to-quoc/bao-cao-ho-tro/index'));
+const TiepNhanPage = lazy(() => import('./features/mat-tran-to-quoc/tiep-nhan/index'));
+const TnInBienBanPage = lazy(() => import('./features/mat-tran-to-quoc/tiep-nhan/pages/tn-in-bien-ban-page'));
 const ThietLapLuongPage = lazy(() => import('./features/mat-tran-to-quoc/thiet-lap-luong/index'));
 const DanhSachTangLuongPage = lazy(() => import('./features/mat-tran-to-quoc/danh-sach-tang-luong/index'));
 const DtTgDipThamHoiPage = lazy(() => import('./features/dan-toc-ton-giao/tham-hoi/dip-tham-hoi/index'));
@@ -257,6 +259,8 @@ const App = () => {
           />
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
           <Route path="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" element={<KhoBaoCaoHoTroPage />} />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan" element={<TiepNhanPage />} />
+          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan/:tnId/in/:loaiPhieu" element={<TnInBienBanPage />} />
 
 
           {/*

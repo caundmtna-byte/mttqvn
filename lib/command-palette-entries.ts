@@ -20,6 +20,7 @@ export const COMMAND_PALETTE_ENTRIES: readonly CommandPaletteEntry[] = [
   { path: '/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien', nameKey: 'page.matTranDashboard.committeeMemberStatsReport', groupKey: 'nav.commandPalette.groupMatTranToQuoc' },
   { path: '/an-sinh-xa-hoi', nameKey: 'nav.anSinhXaHoi', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro', nameKey: 'page.matTranDashboard.reliefCampaign', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
+  { path: '/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan', nameKey: 'page.matTranDashboard.tiepNhan', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho', nameKey: 'page.matTranDashboard.reliefStockTransactions', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },
   { path: '/an-sinh-xa-hoi/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory', groupKey: 'nav.commandPalette.groupAnSinhXaHoi' },

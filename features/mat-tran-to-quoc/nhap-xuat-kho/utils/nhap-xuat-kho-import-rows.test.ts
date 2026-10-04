@@ -32,6 +32,8 @@ const nhapHeader = {
   ngay_phieu: '15/09/2026',
   kho_nhap_id: 'Kho xã Môn Sơn',
   don_vi_cuu_tro_id: 'Công ty ABC',
+  // Phiếu nhập từ ngoài bắt buộc đơn giá > 0 (giá trị cộng vào kết quả nhà tài trợ).
+  don_gia: 15000,
 };
 
 function src(rowNum: number, data: Record<string, unknown>): ImportSourceRow {
@@ -100,7 +102,7 @@ describe('buildNhapXuatKhoImportPhieus', () => {
     expect(phieus[0].values.kho_nhap_id).toBe('2');
     expect(phieus[0].values.don_vi_cuu_tro_id).toBe('50');
     expect(phieus[0].values.chi_tiet).toEqual([
-      { hang_hoa_id: '10', don_vi_tinh: 'kg', so_luong: '500', don_gia: '', ghi_chu: '' },
+      { hang_hoa_id: '10', don_vi_tinh: 'kg', so_luong: '500', don_gia: '15000', ghi_chu: '' },
       { hang_hoa_id: '11', don_vi_tinh: 'thùng', so_luong: '20', don_gia: '120000', ghi_chu: '' },
     ]);
   });
@@ -198,7 +200,7 @@ describe('buildNhapXuatKhoImportPhieus', () => {
       'Dòng 2: phiếu « PX1 » chưa hợp lệ: ' + errors[0].message.split('chưa hợp lệ: ')[1],
     );
     expect(errors[0].message).toContain('Dòng 2: phiếu « PX1 » chưa hợp lệ');
-    expect(errors[0].message).toContain('đợt cứu trợ');
+    expect(errors[0].message).toContain('chương trình vận động');
   });
 
   it('chuyển kho cùng một kho ⇒ bị chặn', () => {
@@ -275,5 +277,14 @@ describe('buildNhapXuatKhoImportPhieus', () => {
       ctx(),
     );
     expect(errors[0].message).toContain('phải lớn hơn 0');
+  });
+
+  it('phiếu nhập từ ngoài thiếu đơn giá ⇒ cả phiếu bị loại', () => {
+    const { phieus, errors } = buildNhapXuatKhoImportPhieus(
+      [src(2, { ...nhapHeader, hang_hoa_id: 'Gạo tẻ', so_luong: 5, don_gia: '' })],
+      ctx(),
+    );
+    expect(phieus).toHaveLength(0);
+    expect(errors[0].message).toContain('đơn giá lớn hơn 0');
   });
 });

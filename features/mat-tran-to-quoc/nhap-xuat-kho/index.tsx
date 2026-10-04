@@ -553,8 +553,9 @@ const NhapXuatKhoPage: React.FC = () => {
       { key: 'ngay_phieu', label: txt('matTranNhapXuatKho.import.colNgayPhieu'), required: true },
       { key: 'kho_xuat_id', label: txt('matTranNhapXuatKho.import.colKhoXuat') },
       { key: 'kho_nhap_id', label: txt('matTranNhapXuatKho.import.colKhoNhap') },
-      { key: 'don_vi_cuu_tro_id', label: txt('matTranNhapXuatKho.import.colDonViCuuTro') },
-      { key: 'dot_cuu_tro_id', label: txt('matTranNhapXuatKho.import.colDotCuuTro') },
+      // Tên cột trong file mẫu cũ (trước khi đổi tên nghiệp vụ) vẫn tự khớp.
+      { key: 'don_vi_cuu_tro_id', label: txt('matTranNhapXuatKho.import.colDonViCuuTro'), aliases: ['Đơn vị cứu trợ'] },
+      { key: 'dot_cuu_tro_id', label: txt('matTranNhapXuatKho.import.colDotCuuTro'), aliases: ['Đợt cứu trợ'] },
       { key: 'hang_hoa_id', label: txt('matTranNhapXuatKho.import.colHangHoa'), required: true },
       { key: 'don_vi_tinh', label: txt('matTranNhapXuatKho.import.colDonViTinh') },
       { key: 'so_luong', label: txt('matTranNhapXuatKho.import.colSoLuong'), required: true },

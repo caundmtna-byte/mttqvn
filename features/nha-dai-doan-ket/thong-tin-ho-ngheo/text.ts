@@ -2,6 +2,7 @@ export const hoNgheo = {
   tabs: {
     danhSach: 'Danh sách',
     thongKe: 'Thống kê',
+    nhanHoTro: 'Thống kê nhận hỗ trợ',
   },
   noViewPermission: 'Bạn không có quyền xem module Thông tin đối tượng hỗ trợ.',
   noViewRowPermission: 'Bạn không có quyền xem bản ghi này.',
