@@ -839,7 +839,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                           ['ho_va_ten_nguoi_tao', txt('articleStats.tableColNguoi')],
                         ] as const
                       ).map(([key, label]) => (
-                        <th key={key} className="py-2 pr-3 font-medium whitespace-nowrap">
+                        <th key={key} className="py-2 pr-3 first:pl-3 font-medium whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => toggleSort(key)}
@@ -853,7 +853,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                           </button>
                         </th>
                       ))}
-                      <th className="py-2 font-medium">{txt('articleStats.tableColLink')}</th>
+                      <th className="py-2 pr-3 font-medium">{txt('articleStats.tableColLink')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -863,7 +863,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                         className="border-b border-border/60 hover:bg-muted/40 cursor-pointer"
                         onClick={() => setViewing(row)}
                       >
-                        <td className="py-2 pr-3 max-w-[200px] truncate">{row.ten_bai}</td>
+                        <td className="py-2 pl-3 pr-3 max-w-[200px] truncate">{row.ten_bai}</td>
                         <td className="py-2 pr-3">{row.ten_the_loai ?? '—'}</td>
                         <td className="py-2 pr-3 tabular-nums whitespace-nowrap">{row.ngay_dang}</td>
                         <td className="py-2 pr-3 max-w-[120px] truncate">{row.ten_nguon_dang ?? '—'}</td>
@@ -871,7 +871,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
                         <td className="py-2 pr-3 max-w-[140px] truncate">
                           {row.ho_va_ten_nguoi_tao ?? row.ten_tai_khoan_nguoi_tao ?? '—'}
                         </td>
-                        <td className="py-2">
+                        <td className="py-2 pr-3">
                           {row.link ? (
                             <a
                               href={row.link}
