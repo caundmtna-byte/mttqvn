@@ -35,7 +35,7 @@ export function useNddkViewer(): NddkViewer {
 
   return useMemo(() => {
     const moduleId =
-      APP_RESOURCE_TO_MODULE.nhaDaiDoanKetList ?? 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach';
+      APP_RESOURCE_TO_MODULE.nhaDaiDoanKetList ?? 'nghia-tinh-dong-lam/nha-dai-doan-ket';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||

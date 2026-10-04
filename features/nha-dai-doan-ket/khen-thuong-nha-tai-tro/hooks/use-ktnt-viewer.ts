@@ -36,7 +36,7 @@ export function useKtntViewer(): KtntViewer {
   return useMemo(() => {
     const moduleId =
       APP_RESOURCE_TO_MODULE.khenThuongNhaTaiTroList ??
-      'an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach';
+      'nghia-tinh-dong-lam/khen-thuong-nha-tai-tro';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||

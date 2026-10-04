@@ -11,7 +11,7 @@ export interface ModuleItem {
   /** Tailwind bg class OR 'bg-primary' to use the system primary color */
   color: string;
   action: () => void;
-  /** Id duy nhất để ghim module yêu thích (vd. path: /an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach). Có thì mới hiện nút star. */
+  /** Id duy nhất để ghim module yêu thích (vd. path: /nghia-tinh-dong-lam/nha-dai-doan-ket). Có thì mới hiện nút star. */
   moduleId?: string;
 }
 

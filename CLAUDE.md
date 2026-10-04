@@ -63,7 +63,11 @@ Mỗi module trong `features/` theo cấu trúc:
 3. **RLS ở database** — lớp chặn thật, đang làm dần. Hai hàm dùng chung:
    `fn_la_quan_tri()` (cấp bậc 1 / quyền `quan_tri`) và `fn_co_quyen('<module_key>', '<hanh_dong>')`
    (tra đúng ma trận `var_phan_quyen` mà giao diện đang dùng; `hanh_dong` ∈ `xem|them|sua|xoa`).
-   `module_key` là segment cuối của đường dẫn module.
+   `module_key` là segment cuối của đường dẫn module — trừ khi module khai `storageKey` trong
+   `permission-modules-config.ts`. **Đổi đường dẫn module thì khai `storageKey` = khoá cũ**, đừng
+   đổi khoá dưới DB (RLS gọi `fn_co_quyen('<khoá>', …)` ở hàng chục policy/trigger). Mẫu: nhóm
+   `/nghia-tinh-dong-lam` (đổi từ `/an-sinh-xa-hoi`), bảng link cũ → mới ở
+   `lib/duong-dan-nghia-tinh.ts`, test chốt khoá ở `phan-quyen/core/module-storage-key.test.ts`.
 
    Đã siết **quyền GHI** cho: `var_phan_quyen`, `var_chuc_vu`, `var_nhan_vien` (sửa hồ sơ của
    chính mình vẫn được), `mttq_tang_luong`, `luong_thiet_lap_*`, các danh mục kho

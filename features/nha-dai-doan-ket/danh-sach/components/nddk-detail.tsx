@@ -222,7 +222,7 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
                     type="button"
                     className="inline-flex items-center gap-1 text-primary hover:underline"
                     onClick={() =>
-                      navigate(`/an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach?open=${encodeURIComponent(data.ho_ngheo_id!)}`)
+                      navigate(`/nghia-tinh-dong-lam/doi-tuong-ho-tro?open=${encodeURIComponent(data.ho_ngheo_id!)}`)
                     }
                   >
                     {txt('nhaDaiDoanKet.detail.moHoNgheo')}

@@ -149,50 +149,53 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
     ],
   },
   {
-    id: 'an-sinh-xa-hoi',
+    id: 'nghia-tinh-dong-lam',
     nameKey: 'nav.anSinhXaHoi',
     color: 'pink',
     groups: [
       {
+        /**
+         * Đường dẫn đổi ngày 2026-10-04 (xem `lib/duong-dan-nghia-tinh.ts`) nhưng `storageKey`
+         * GIỮ khoá cũ: đó là `module_key` trong `var_phan_quyen` và tham số
+         * `fn_co_quyen(...)` của RLS các bảng kho / tiếp nhận. Đổi khoá = phải đổi DB.
+         */
         groupTitleKey: 'page.matTranDashboard.groupReliefWarehouse',
         modules: [
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro', nameKey: 'page.matTranDashboard.reliefCampaign' },
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan', nameKey: 'page.matTranDashboard.tiepNhan' },
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods' },
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho', nameKey: 'page.matTranDashboard.reliefStockTransactions' },
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory' },
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList' },
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits' },
-          { id: 'an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro', nameKey: 'page.matTranDashboard.reliefSupportReport' },
+          { id: 'nghia-tinh-dong-lam/chuong-trinh-van-dong', nameKey: 'page.matTranDashboard.reliefCampaign', storageKey: 'dot-cuu-tro' },
+          { id: 'nghia-tinh-dong-lam/tiep-nhan', nameKey: 'page.matTranDashboard.tiepNhan', storageKey: 'tiep-nhan' },
+          { id: 'nghia-tinh-dong-lam/danh-muc-hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods', storageKey: 'hang-hoa' },
+          { id: 'nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang', nameKey: 'page.matTranDashboard.reliefStockTransactions', storageKey: 'nhap-xuat-kho' },
+          { id: 'nghia-tinh-dong-lam/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory', storageKey: 'ton-kho' },
+          { id: 'nghia-tinh-dong-lam/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList', storageKey: 'danh-sach-kho' },
+          { id: 'nghia-tinh-dong-lam/nha-tai-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits', storageKey: 'don-vi-cuu-tro' },
+          { id: 'nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo', nameKey: 'page.matTranDashboard.reliefSupportReport', storageKey: 'bao-cao-ho-tro' },
         ],
       },
       {
         /**
-         * Nhà đại đoàn kết. `storageKey` khai TƯỜNG MINH vì `module_key` lưu DB
-         * là segment cuối đường dẫn — ở đây là 'danh-sach' / 'thong-ke', quá
-         * chung và sẽ đụng module khác về sau. Hai chuỗi dưới cũng là tham số
-         * của `fn_co_quyen(...)` trong RLS bảng `nddk_nha_dai_doan_ket`, nên
-         * đổi ở đây là phải đổi cả migration.
+         * `storageKey` khai TƯỜNG MINH: đó là `module_key` lưu DB và tham số
+         * `fn_co_quyen(...)` trong RLS (`nddk_nha_dai_doan_ket`, `vnn_chuong_trinh`,
+         * `hngh_thong_tin_ho_ngheo`, `ktnt_…`) — đường dẫn đổi được, khoá thì không.
          */
         groupTitleKey: 'page.anSinhXaHoiDashboard.groupHoTroKhenThuong',
         modules: [
           {
-            id: 'an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach',
+            id: 'nghia-tinh-dong-lam/khen-thuong-nha-tai-tro',
             nameKey: 'page.anSinhXaHoiDashboard.khenThuongNhaTaiTro',
             storageKey: 'khen-thuong-nha-tai-tro',
           },
           {
-            id: 'an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach',
+            id: 'nghia-tinh-dong-lam/nha-dai-doan-ket',
             nameKey: 'page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet',
             storageKey: 'nha-dai-doan-ket',
           },
           {
-            id: 'an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach',
+            id: 'nghia-tinh-dong-lam/chuong-trinh-ho-tro',
             nameKey: 'page.anSinhXaHoiDashboard.viNguoiNgheo',
             storageKey: 'vi-nguoi-ngheo',
           },
           {
-            id: 'an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach',
+            id: 'nghia-tinh-dong-lam/doi-tuong-ho-tro',
             nameKey: 'page.anSinhXaHoiDashboard.thongTinHoNgheo',
             storageKey: 'thong-tin-ho-ngheo',
           },

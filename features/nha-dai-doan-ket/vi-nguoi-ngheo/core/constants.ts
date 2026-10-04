@@ -63,7 +63,7 @@ export const VNN_NAM_MIN = 2000;
 export const VNN_NAM_MAX = 2100;
 
 /** Đường dẫn trang danh sách — trang in nằm ở `${VNN_LIST_PATH}/:id/in/:loaiPhieu`. */
-export const VNN_LIST_PATH = '/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach';
+export const VNN_LIST_PATH = '/nghia-tinh-dong-lam/chuong-trinh-ho-tro';
 
 /**
  * Hai loại giấy in của một khoản hỗ trợ. Phiếu khảo sát chỉ có với lĩnh vực có

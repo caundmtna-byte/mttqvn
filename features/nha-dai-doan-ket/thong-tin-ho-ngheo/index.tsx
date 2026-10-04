@@ -102,7 +102,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('hoNgheo.noViewPermission'));
-    navigate('/an-sinh-xa-hoi', { replace: true });
+    navigate('/nghia-tinh-dong-lam', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -451,7 +451,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
     setEditing(null);
   };
 
-  const handlePageBack = () => navigate('/an-sinh-xa-hoi');
+  const handlePageBack = () => navigate('/nghia-tinh-dong-lam');
 
   const tabsSlot = (
     <TabGroup

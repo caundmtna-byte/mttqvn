@@ -16,7 +16,7 @@ export function useDonViGioiThieuScope(): DonViGioiThieuScope {
   const chucVuCapQuanLy = usePermissionGrantStore((s) => s.chucVuCapQuanLy);
 
   return useMemo(() => {
-    const moduleId = APP_RESOURCE_TO_MODULE.matTranReliefSupportUnits ?? 'an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro';
+    const moduleId = APP_RESOURCE_TO_MODULE.matTranReliefSupportUnits ?? 'nghia-tinh-dong-lam/nha-tai-tro';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||

@@ -116,7 +116,7 @@ const ViNguoiNgheoPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('viNguoiNgheo.noViewPermission'));
-    navigate('/an-sinh-xa-hoi', { replace: true });
+    navigate('/nghia-tinh-dong-lam', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -311,7 +311,7 @@ const ViNguoiNgheoPage: React.FC = () => {
     setEditing(null);
   };
 
-  const handlePageBack = () => navigate('/an-sinh-xa-hoi');
+  const handlePageBack = () => navigate('/nghia-tinh-dong-lam');
   const handlePrint = useCallback((item: ViNguoiNgheo) => setInPhieuItem(item), []);
 
   const tabsSlot = (

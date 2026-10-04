@@ -73,7 +73,7 @@ type LineDrawerState = null | { mode: 'add' } | { mode: 'edit'; index: number };
 
 type ChiTietDetailRow = NhapXuatKhoCtRow & { rowIndex: number; tenHangHoa: string };
 
-const IN_PHIEU_PATH_PREFIX = '/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho';
+const IN_PHIEU_PATH_PREFIX = '/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang';
 
 function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
   switch (loai) {

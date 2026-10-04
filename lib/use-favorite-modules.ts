@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
+import { chuyenDuongDanCu } from './duong-dan-nghia-tinh';
 
 const STORAGE_KEY = 'app-favorite-modules';
 
@@ -20,7 +21,10 @@ function getSnapshot(): string[] {
     if (raw === cachedRaw) return cachedSnapshot;
     const parsed = JSON.parse(raw) as unknown;
     const arr =
-      Array.isArray(parsed) && parsed.every((x) => typeof x === 'string') ? (parsed as string[]) : [];
+      Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')
+        ? // Mục đã ghim trước khi đổi đường dẫn (vd. /an-sinh-xa-hoi/...) quy về đường dẫn mới.
+          [...new Set((parsed as string[]).map((id) => chuyenDuongDanCu(id) ?? id))]
+        : [];
     cachedRaw = raw;
     cachedSnapshot = arr;
     return arr;

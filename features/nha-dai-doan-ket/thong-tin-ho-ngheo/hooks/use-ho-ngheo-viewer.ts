@@ -36,7 +36,7 @@ export function useHoNgheoViewer(): HoNgheoViewer {
 
   return useMemo(() => {
     const moduleId =
-      APP_RESOURCE_TO_MODULE.hoNgheoList ?? 'an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach';
+      APP_RESOURCE_TO_MODULE.hoNgheoList ?? 'nghia-tinh-dong-lam/doi-tuong-ho-tro';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||

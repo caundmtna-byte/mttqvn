@@ -21,7 +21,7 @@ const DashboardModulePlaceholder: React.FC = () => {
     <SubmenuPlaceholder
       title={title}
       icon={HeartHandshake}
-      backTo="/an-sinh-xa-hoi"
+      backTo="/nghia-tinh-dong-lam"
       backLabel={txt('page.anSinhXaHoiDashboard.backToParent')}
     />
   );

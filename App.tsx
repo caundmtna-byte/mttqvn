@@ -91,6 +91,7 @@ const VnnInPhieuPage = lazy(
 const ThongTinHoNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/thong-tin-ho-ngheo/index'));
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import ChuyenDuongDanCu from './components/routing/ChuyenDuongDanCu';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import {
   ThemeSynchronizer,
@@ -194,21 +195,8 @@ const App = () => {
             element={<MttqUyVienInDanhSachPage />}
           />
           <Route path="/mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien" element={<BaoCaoUyVienPage />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/dot-cuu-tro" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro" replace />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/hang-hoa" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa" replace />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho" replace />} />
-          <Route
-            path="/mat-tran-to-quoc/kho-cuu-tro/nhap-xuat-kho/:phieuId/in-phieu"
-            element={<KhoNhapXuatKhoInPhieuPage />}
-          />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/ton-kho" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/ton-kho" replace />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/danh-sach-kho" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho" replace />} />
-          <Route
-            path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-ho-tro"
-            element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" replace />}
-          />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/don-vi-cuu-tro" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" replace />} />
-          <Route path="/mat-tran-to-quoc/kho-cuu-tro/bao-cao-ho-tro" element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" replace />} />
+          {/* Link cũ của kho cứu trợ dưới Mặt trận tổ quốc — xem lib/duong-dan-nghia-tinh.ts. */}
+          <Route path="/mat-tran-to-quoc/kho-cuu-tro/*" element={<ChuyenDuongDanCu />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/danh-sach-can-bo" element={<DanhSachCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/bao-cao-can-bo" element={<BaoCaoCanBoPage />} />
           <Route path="/mat-tran-to-quoc/thiet-lap-khac/thiet-lap-cai-dat" element={<ThietLapCaiDatPage />} />
@@ -243,57 +231,42 @@ const App = () => {
           <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-to-chuc-quan-trong" element={<DtTgThongTinToChucQuanTrongPage />} />
           <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu" element={<DtTgThongTinCaNhanTieuBieuPage />} />
           <Route path="/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan" element={<DtTgThongKeToChucCaNhanPage />} />
-          <Route path="/an-sinh-xa-hoi" element={<AnSinhXaHoiDashboard />} />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro" element={<KhoDotCuuTroPage />} />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/hang-hoa" element={<HangHoaPage />} />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho" element={<NhapXuatKhoPage />} />
+          {/*
+            Nhóm "Nghĩa tình dòng Lam". Đường dẫn đổi từ /an-sinh-xa-hoi (2026-10-04); khoá
+            quyền giữ nguyên qua storageKey. Mọi link cũ đi qua <ChuyenDuongDanCu />.
+          */}
+          <Route path="/nghia-tinh-dong-lam" element={<AnSinhXaHoiDashboard />} />
+          <Route path="/nghia-tinh-dong-lam/chuong-trinh-van-dong" element={<KhoDotCuuTroPage />} />
+          <Route path="/nghia-tinh-dong-lam/tiep-nhan" element={<TiepNhanPage />} />
+          <Route path="/nghia-tinh-dong-lam/tiep-nhan/:tnId/in/:loaiPhieu" element={<TnInBienBanPage />} />
+          <Route path="/nghia-tinh-dong-lam/danh-muc-hang-hoa" element={<HangHoaPage />} />
+          <Route path="/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang" element={<NhapXuatKhoPage />} />
           <Route
-            path="/an-sinh-xa-hoi/kho-cuu-tro/nhap-xuat-kho/:phieuId/in-phieu"
+            path="/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang/:phieuId/in-phieu"
             element={<KhoNhapXuatKhoInPhieuPage />}
           />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/ton-kho" element={<TonKhoPage />} />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
+          <Route path="/nghia-tinh-dong-lam/ton-kho" element={<TonKhoPage />} />
+          <Route path="/nghia-tinh-dong-lam/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
+          <Route path="/nghia-tinh-dong-lam/nha-tai-tro" element={<KhoDonViCuuTroPage />} />
+          <Route path="/nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo" element={<KhoBaoCaoHoTroPage />} />
+          <Route path="/nghia-tinh-dong-lam/khen-thuong-nha-tai-tro" element={<KhenThuongNhaTaiTroPage />} />
+          <Route path="/nghia-tinh-dong-lam/nha-dai-doan-ket" element={<NhaDaiDoanKetPage />} />
           <Route
-            path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-ho-tro"
-            element={<Navigate to="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" replace />}
-          />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/don-vi-cuu-tro" element={<KhoDonViCuuTroPage />} />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/bao-cao-ho-tro" element={<KhoBaoCaoHoTroPage />} />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan" element={<TiepNhanPage />} />
-          <Route path="/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan/:tnId/in/:loaiPhieu" element={<TnInBienBanPage />} />
-
-
-          {/*
-            Nhà đại đoàn kết. Đường dẫn cũ `/sua-chua-nang-cap` không còn là một
-            module: "Sửa chữa" nay là một giá trị của trường Loại hình hỗ trợ,
-            nên chuyển hướng về danh sách thay vì để link cũ chết.
-          */}
-          <Route path="/an-sinh-xa-hoi/khen-thuong-nha-tai-tro/danh-sach" element={<KhenThuongNhaTaiTroPage />} />
-          <Route path="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach" element={<NhaDaiDoanKetPage />} />
-          <Route
-            path="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach/:nddkId/in/:loaiPhieu"
+            path="/nghia-tinh-dong-lam/nha-dai-doan-ket/:nddkId/in/:loaiPhieu"
             element={<NddkInBienBanPage />}
           />
-          <Route path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach" element={<ViNguoiNgheoPage />} />
+          <Route path="/nghia-tinh-dong-lam/chuong-trinh-ho-tro" element={<ViNguoiNgheoPage />} />
           <Route
-            path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach/:vnnId/in/:loaiPhieu"
+            path="/nghia-tinh-dong-lam/chuong-trinh-ho-tro/:vnnId/in/:loaiPhieu"
             element={<VnnInPhieuPage />}
           />
           {/* Link cũ (chỉ có phiếu khảo sát) — giữ khỏi chết. */}
           <Route
-            path="/an-sinh-xa-hoi/vi-nguoi-ngheo/danh-sach/:vnnId/in"
+            path="/nghia-tinh-dong-lam/chuong-trinh-ho-tro/:vnnId/in"
             element={<Navigate to="khao-sat" replace />}
           />
-          <Route path="/an-sinh-xa-hoi/thong-tin-ho-ngheo/danh-sach" element={<ThongTinHoNgheoPage />} />
-          {/* Thống kê nay là một tab của Danh sách — giữ link cũ khỏi chết. */}
-          <Route
-            path="/an-sinh-xa-hoi/nha-dai-doan-ket/thong-ke"
-            element={<Navigate to="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach?tab=thong_ke" replace />}
-          />
-          <Route
-            path="/an-sinh-xa-hoi/nha-dai-doan-ket/sua-chua-nang-cap"
-            element={<Navigate to="/an-sinh-xa-hoi/nha-dai-doan-ket/danh-sach" replace />}
-          />
+          <Route path="/nghia-tinh-dong-lam/doi-tuong-ho-tro" element={<ThongTinHoNgheoPage />} />
+          <Route path="/an-sinh-xa-hoi/*" element={<ChuyenDuongDanCu />} />
 
           {PLACEHOLDER_MODULE_PATHS.map((path) => (
             <Route key={path} path={path} element={<DashboardModulePlaceholder />} />
