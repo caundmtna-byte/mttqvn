@@ -787,7 +787,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
 
               <StatsCard title={txt('articleStats.tableDonViTitle')} icon={MapPin}>
                 <div className="overflow-x-auto max-h-[min(420px,50vh)] overflow-y-auto -m-4">
-                  <table className="w-full text-sm min-w-[520px]">
+                  <table className="w-full text-sm min-w-[520px] [&_th:first-child]:pl-4 [&_td:first-child]:pl-4 [&_th:last-child]:pr-4 [&_td:last-child]:pr-4">
                     <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                       <tr className="text-left text-muted-foreground">
                         <th className="py-2 px-3 font-medium">{txt('articleStats.tableColDonVi')}</th>
@@ -826,7 +826,7 @@ const BcThongKeBaiVietPage: React.FC = () => {
 
             <StatsCard title={txt('articleStats.tableLookupTitle')} icon={Layers}>
               <div className="overflow-x-auto max-h-[min(480px,50vh)] overflow-y-auto -m-4">
-                <table className="w-full text-sm min-w-[720px]">
+                <table className="w-full text-sm min-w-[720px] [&_th:first-child]:pl-4 [&_td:first-child]:pl-4 [&_th:last-child]:pr-4 [&_td:last-child]:pr-4">
                   <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                     <tr className="text-left text-muted-foreground">
                       {(

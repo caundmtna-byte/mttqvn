@@ -773,7 +773,7 @@ const PersonStatsTable: React.FC<{ rows: TaskReportPersonRow[]; showDoing?: bool
   }
   return (
     <div className="overflow-x-auto -m-4">
-      <table className="w-full text-sm min-w-[480px]">
+      <table className="w-full text-sm min-w-[480px] [&_th:first-child]:pl-4 [&_td:first-child]:pl-4 [&_th:last-child]:pr-4 [&_td:last-child]:pr-4">
         <thead className="sticky top-0 bg-card border-b border-border">
           <tr className="text-left text-muted-foreground">
             <th className="py-2 px-3 font-medium">{txt('taskReport.tableColPerson')}</th>

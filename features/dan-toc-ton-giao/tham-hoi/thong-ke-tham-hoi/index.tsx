@@ -619,7 +619,7 @@ const ThongKeThamHoiPage: React.FC = () => {
                   {byYearRows.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center px-4">{txt('dttgThongKeThamHoi.noData')}</p>
                   ) : (
-                    <table className="w-full text-sm min-w-[640px]">
+                    <table className="w-full text-sm min-w-[640px] [&_th:first-child]:pl-4 [&_td:first-child]:pl-4 [&_th:last-child]:pr-4 [&_td:last-child]:pr-4">
                       <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                         <tr className="text-left text-muted-foreground">
                           <th className="py-2 px-3 font-medium">{txt('dttgThongKeThamHoi.stats.tableColNam')}</th>
@@ -654,7 +654,7 @@ const ThongKeThamHoiPage: React.FC = () => {
 
             <StatsCard title={txt('dttgThongKeThamHoi.stats.tableLookupTitle')} icon={Layers}>
               <div className="overflow-x-auto max-h-[min(480px,50vh)] overflow-y-auto -m-4">
-                <table className="w-full text-sm min-w-[960px]">
+                <table className="w-full text-sm min-w-[960px] [&_th:first-child]:pl-4 [&_td:first-child]:pl-4 [&_th:last-child]:pr-4 [&_td:last-child]:pr-4">
                   <thead className="sticky top-0 z-[1] bg-card border-b border-border">
                     <tr className="text-left text-muted-foreground">
                       {(
