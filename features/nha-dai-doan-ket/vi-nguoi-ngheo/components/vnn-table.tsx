@@ -160,9 +160,7 @@ const VnnTable = memo(function VnnTable({
             </span>
           );
         }
-        case 'so_luong':
-        case 'tong_tien_quy_doi':
-        case 'tong_tien_ban_giao': {
+        case 'so_luong': {
           const label = getVnnColumnDisplayValue(item, colId);
           return (
             <span className="text-body-sm tabular-nums text-foreground whitespace-nowrap">{label || empty}</span>

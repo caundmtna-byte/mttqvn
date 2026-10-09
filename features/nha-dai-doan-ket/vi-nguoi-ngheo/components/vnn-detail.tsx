@@ -286,26 +286,12 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
               emptyText={emptyCell}
             />
             {vnnCoHienVat(data.hinh_thuc_ho_tro) ? (
-              <>
-                <DetailField
-                  label={txt('viNguoiNgheo.store.soLuongCol')}
-                  icon={<Package size={12} />}
-                  value={data.so_luong == null ? undefined : <span className="tabular-nums">{data.so_luong}</span>}
-                  emptyText={emptyCell}
-                />
-                <DetailField
-                  label={txt('viNguoiNgheo.store.tongTienQuyDoiCol')}
-                  icon={<Coins size={12} />}
-                  value={formatVnnSoTienDisplay(data.tong_tien_quy_doi) || undefined}
-                  emptyText={emptyCell}
-                />
-                <DetailField
-                  label={txt('viNguoiNgheo.store.tongTienBanGiaoCol')}
-                  icon={<Coins size={12} />}
-                  value={formatVnnSoTienDisplay(data.tong_tien_ban_giao) || undefined}
-                  emptyText={emptyCell}
-                />
-              </>
+              <DetailField
+                label={txt('viNguoiNgheo.store.soLuongCol')}
+                icon={<Package size={12} />}
+                value={data.so_luong == null ? undefined : <span className="tabular-nums">{data.so_luong}</span>}
+                emptyText={emptyCell}
+              />
             ) : null}
             <DetailField
               className={DETAIL_FIELD_SPAN_FULL}

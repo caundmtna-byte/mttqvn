@@ -26,7 +26,7 @@ import {
   type BienBanRun,
   type DanhMucLuaChon,
 } from '@/lib/bien-ban/bien-ban-model';
-import { vnnCoHienVat, type VnnLinhVuc } from '../../core/constants';
+import type { VnnLinhVuc } from '../../core/constants';
 import {
   BBBG_LINH_VUC_NHA,
   BBBG_LINH_VUC_SINH_KE,
@@ -51,7 +51,7 @@ const LINH_VUC: DanhMucLuaChon[] = [
   { value: 'Người chết', label: 'Thăm hỏi gia đình có người qua đời' },
 ];
 
-/** Hoả hoạn tick chung ô "Cứu trợ"; Tết vì người nghèo không có ô nào. */
+/** Hoả hoạn tick chung ô "Cứu trợ"; Tết vì người nghèo và Con nuôi không có ô nào. */
 export function oLinhVuc(linhVuc: VnnLinhVuc | string | null | undefined): string | null {
   if (linhVuc === 'Hoả hoạn') return 'Cứu trợ';
   return LINH_VUC.some((o) => o.value === linhVuc) ? (linhVuc as string) : null;
@@ -133,7 +133,7 @@ export interface BangHienVat {
 
 /**
  * Dòng bảng hiện vật. Chưa nhập dòng nào mà khoản có hiện vật ⇒ một dòng dựng
- * từ Nội dung / Số lượng / Tổng tiền quy đổi. Luôn đệm đủ 5 dòng như mẫu.
+ * từ Nội dung / Số lượng / Số tiền (chỉ hình thức "Hiện vật"). Luôn đệm đủ 5 dòng như mẫu.
  */
 export function bangHienVat({ vnn }: PhieuKhaoSatNguon): BangHienVat {
   const nhap: BbbgHienVat[] = vnn.bien_ban_ban_giao?.hien_vat ?? [];
@@ -157,15 +157,16 @@ export function bangHienVat({ vnn }: PhieuKhaoSatNguon): BangHienVat {
         d.ghi_chu ?? '',
       ]);
     });
-  } else if (vnnCoHienVat(vnn.hinh_thuc_ho_tro)) {
-    cong(vnn.tong_tien_quy_doi);
+  } else if (vnn.hinh_thuc_ho_tro === 'Hiện vật') {
+    // "Hiện vật và Tiền" không tách được phần hiện vật khỏi Số tiền ⇒ để bảng trống cho viết tay.
+    cong(vnn.so_tien);
     rows.push([
       '1',
       vnn.noi_dung_ho_tro?.trim() ?? '',
       '',
       soVN(vnn.so_luong) ?? '',
       '',
-      soVN(vnn.tong_tien_quy_doi) ?? '',
+      soVN(vnn.so_tien) ?? '',
       '',
     ]);
   }
@@ -185,6 +186,9 @@ export function buildBienBanBanGiao(nguon: PhieuKhaoSatNguon): BienBanModel {
   const nguoiNhan = vnn.ho_ten_nguoi_nhan?.trim() || null;
   const duocHoTro = nguoiDuocHoTro(nguon);
   const hienVat = bangHienVat(nguon);
+  // Số tiền là giá trị CẢ khoản ⇒ chỉ là tiền mặt khi hình thức "Tiền mặt".
+  // "Hiện vật và Tiền" không tách được hai phần ⇒ để trống cho viết tay.
+  const tienMat = vnn.hinh_thuc_ho_tro === 'Tiền mặt' ? vnn.so_tien : null;
   const lv = vnn.linh_vuc_ho_tro;
 
   const blocks: BienBanBlock[] = [
@@ -282,8 +286,8 @@ export function buildBienBanBanGiao(nguon: PhieuKhaoSatNguon): BienBanModel {
     doan([t('Hai bên thống nhất bàn giao các nội dung sau:')]),
 
     luaChon('1. Hình thức hỗ trợ:', HINH_THUC, vnn.hinh_thuc_ho_tro, 'inline'),
-    doan([t('2. Tiền mặt: Tổng số tiền '), f(soVN(vnn.so_tien), DOTS_SHORT), t(' đồng')]),
-    doan([t('(Bằng chữ: '), f(docSoTienVND(vnn.so_tien) || null, DOTS_LONG - 10), t(')')]),
+    doan([t('2. Tiền mặt: Tổng số tiền '), f(soVN(tienMat), DOTS_SHORT), t(' đồng')]),
+    doan([t('(Bằng chữ: '), f(docSoTienVND(tienMat) || null, DOTS_LONG - 10), t(')')]),
     doan([t('3. Hiện vật:')]),
     {
       kind: 'bang',

@@ -16,6 +16,7 @@ export const vnnLinhVucBadge: BadgeConfig = {
   'Nhà bị sập': { label: 'Nhà bị sập', color: 'violet' },
   'Người chết': { label: 'Người chết', color: 'slate' },
   'Hoả hoạn': { label: 'Hoả hoạn', color: 'pink' },
+  'Con nuôi': { label: 'Con nuôi', color: 'cyan' },
 };
 
 export const vnnNguonBadge: BadgeConfig = {

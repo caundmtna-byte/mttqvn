@@ -46,13 +46,13 @@ function row(over: Partial<ViNguoiNgheo> = {}): ViNguoiNgheo {
 }
 
 describe('computeVnnKpis', () => {
-  it('khoản chỉ có hiện vật (so_tien null) không cộng vào tổng tiền nhưng vẫn đếm khoản', () => {
+  it('khoản hiện vật cộng vào tổng theo số tiền (giá trị quy đổi)', () => {
     const k = computeVnnKpis([
       row({ so_tien: 500_000, trang_thai: 'Đã nhận' }),
-      row({ so_tien: null, hinh_thuc_ho_tro: 'Hiện vật' }),
+      row({ so_tien: 300_000, hinh_thuc_ho_tro: 'Hiện vật' }),
     ]);
     expect(k.tongSoKhoan).toBe(2);
-    expect(k.tongSoTien).toBe(500_000);
+    expect(k.tongSoTien).toBe(800_000);
     expect(k.daNhan).toBe(1);
     expect(k.dangKhaoSat).toBe(1);
     expect(k.tyLeDaNhan).toBe(50);

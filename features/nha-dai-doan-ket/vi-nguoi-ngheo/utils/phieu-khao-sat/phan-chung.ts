@@ -179,8 +179,11 @@ export function mucDeXuat(vnn: ViNguoiNgheo, chung: PksChung): string | null {
   if (chung.muc_de_xuat) return chung.muc_de_xuat;
   const parts = [
     vnn.noi_dung_ho_tro?.trim() || null,
-    vnn.so_tien != null ? `${soVN(vnn.so_tien)} đồng` : null,
-    vnn.tong_tien_quy_doi != null ? `hiện vật trị giá ${soVN(vnn.tong_tien_quy_doi)} đồng` : null,
+    vnn.so_tien == null
+      ? null
+      : vnn.hinh_thuc_ho_tro === 'Tiền mặt'
+        ? `${soVN(vnn.so_tien)} đồng`
+        : `${vnn.hinh_thuc_ho_tro === 'Hiện vật' ? 'hiện vật' : 'tiền và hiện vật'} trị giá ${soVN(vnn.so_tien)} đồng`,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join('; ') : null;
 }

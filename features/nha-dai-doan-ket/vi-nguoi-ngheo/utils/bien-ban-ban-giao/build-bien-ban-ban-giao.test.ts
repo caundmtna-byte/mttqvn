@@ -86,6 +86,12 @@ describe('buildBienBanBanGiao', () => {
     expect(dong(v, '(Bằng chữ')).toBe('(Bằng chữ: Hai triệu đồng)');
   });
 
+  it('khoản Hiện vật: Số tiền là giá trị hiện vật, KHÔNG in sang dòng tiền mặt', () => {
+    const v = vnn('Cứu trợ', { hinh_thuc_ho_tro: 'Hiện vật' });
+    expect(dong(v, '2. Tiền mặt')).not.toContain('2.000.000');
+    expect(dong(v, 'Tổng giá trị hiện vật')).toBe('Tổng giá trị hiện vật (bằng chữ): Hai triệu đồng');
+  });
+
   it('bên nhận lấy CCCD / năm sinh / SĐT từ hộ nghèo; trống ⇒ dòng chấm, không lọt "null"', () => {
     expect(dong(vnn('Cứu trợ'), 'Số Căn cước:', HO)).toBe(
       'Số Căn cước: 040123456789   Ngày cấp: 05/04/2021   Nơi cấp: Cục CS QLHC',
@@ -116,13 +122,17 @@ describe('buildBienBanBanGiao', () => {
     );
   });
 
-  it('chưa nhập dòng hiện vật nào nhưng khoản có hiện vật ⇒ một dòng từ Nội dung / Số lượng / Tổng quy đổi', () => {
+  it('chưa nhập dòng hiện vật nào, hình thức "Hiện vật" ⇒ một dòng từ Nội dung / Số lượng / Số tiền', () => {
     const { rows: r, tong } = bangHienVat({
-      vnn: vnn('Cứu trợ', { hinh_thuc_ho_tro: 'Hiện vật và Tiền', so_luong: 3, tong_tien_quy_doi: 900_000 }),
+      vnn: vnn('Cứu trợ', { hinh_thuc_ho_tro: 'Hiện vật', so_luong: 3, so_tien: 900_000 }),
       ho: null,
     });
     expect(r[0]).toEqual(['1', 'Gạo cứu đói', '', '3', '', '900.000', '']);
     expect(tong).toBe(900_000);
+    // "Hiện vật và Tiền" không tách được phần hiện vật ⇒ bảng trống cho viết tay.
+    expect(
+      bangHienVat({ vnn: vnn('Cứu trợ', { hinh_thuc_ho_tro: 'Hiện vật và Tiền', so_tien: 900_000 }), ho: null }).tong,
+    ).toBeNull();
     // Chỉ tiền mặt ⇒ bảng trống, tổng trống.
     expect(bangHienVat({ vnn: vnn('Cứu trợ'), ho: null }).tong).toBeNull();
   });

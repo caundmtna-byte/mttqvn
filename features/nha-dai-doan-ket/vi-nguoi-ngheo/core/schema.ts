@@ -45,7 +45,7 @@ const optionalText = z
 const optionalFk = optionalText;
 
 /**
- * Số tiền: để trống là hợp lệ (khoản chỉ có quà, hoặc chưa chốt mức).
+ * Số tiền: ô trống ⇒ `undefined` để `superRefine` báo "bắt buộc" đúng ô (luat-so-tien.ts).
  * Có nhập thì phải là số không âm — khớp `CHECK (so_tien >= 0)` ở DB.
  */
 const optionalSoTien = z.preprocess(
@@ -109,8 +109,6 @@ export const viNguoiNgheoSchema = z.object({
   }),
   so_tien: optionalSoTien,
   so_luong: optionalSoLuong,
-  tong_tien_quy_doi: optionalSoTien,
-  tong_tien_ban_giao: optionalSoTien,
   trang_thai: z.enum(VNN_TRANG_THAI_VALUES, {
     message: txt('viNguoiNgheo.validation.trangThaiInvalid'),
   }),
@@ -126,13 +124,9 @@ export const viNguoiNgheoSchema = z.object({
   bien_ban_ban_giao: z.custom<BbbgFormInput>().optional(),
 })
   .superRefine((v, ctx) => {
-    // Bản sao CHECK vnn_so_tien_theo_hinh_thuc_chk — xem core/luat-so-tien.ts.
+    // Bản sao so_tien NOT NULL dưới DB — xem core/luat-so-tien.ts.
     for (const o of vnnOTienCanNhap(v)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: [o],
-        message: txt(o === 'so_tien' ? 'viNguoiNgheo.validation.soTienBatBuoc' : 'viNguoiNgheo.validation.quyDoiBatBuoc'),
-      });
+      ctx.addIssue({ code: 'custom', path: [o], message: txt('viNguoiNgheo.validation.soTienBatBuoc') });
     }
     if (canNhaTaiTro(v.nguon_ho_tro) && !v.don_vi_ho_tro_id) {
       ctx.addIssue({ code: 'custom', path: ['don_vi_ho_tro_id'], message: txt('viNguoiNgheo.validation.nhaTaiTroRequired') });
@@ -160,10 +154,8 @@ export const viNguoiNgheoSchema = z.object({
     check(nhanh, pksFormSchema.shape[nhanh]);
   })
   .transform((v) => {
-    // Đổi từ "Hiện vật" về "Tiền mặt" thì bỏ số hiện vật cũ — ô đã ẩn, không để số rác.
-    const base = vnnCoHienVat(v.hinh_thuc_ho_tro)
-      ? v
-      : { ...v, so_luong: undefined, tong_tien_quy_doi: undefined, tong_tien_ban_giao: undefined };
+    // Đổi từ "Hiện vật" về "Tiền mặt" thì bỏ số lượng cũ — ô đã ẩn, không để số rác.
+    const base = vnnCoHienVat(v.hinh_thuc_ho_tro) ? v : { ...v, so_luong: undefined };
     return {
       ...base,
       phieu_khao_sat: chuanHoaPhieuForm(v.phieu_khao_sat, v.linh_vuc_ho_tro),
@@ -225,8 +217,6 @@ export type ViNguoiNgheoFormInput = {
   hinh_thuc_ho_tro: string;
   so_tien?: string;
   so_luong?: string;
-  tong_tien_quy_doi?: string;
-  tong_tien_ban_giao?: string;
   trang_thai: string;
   don_vi_ho_tro_id?: string;
   ghi_chu?: string;
@@ -251,8 +241,6 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
       hinh_thuc_ho_tro: VNN_HINH_THUC_DEFAULT,
       so_tien: '',
       so_luong: '',
-      tong_tien_quy_doi: '',
-      tong_tien_ban_giao: '',
       trang_thai: VNN_TRANG_THAI_DEFAULT,
       don_vi_ho_tro_id: '',
       ghi_chu: '',
@@ -274,8 +262,6 @@ export function viNguoiNgheoToFormInput(row: ViNguoiNgheo | null): ViNguoiNgheoF
     hinh_thuc_ho_tro: row.hinh_thuc_ho_tro ?? VNN_HINH_THUC_DEFAULT,
     so_tien: row.so_tien == null ? '' : String(row.so_tien),
     so_luong: row.so_luong == null ? '' : String(row.so_luong),
-    tong_tien_quy_doi: row.tong_tien_quy_doi == null ? '' : String(row.tong_tien_quy_doi),
-    tong_tien_ban_giao: row.tong_tien_ban_giao == null ? '' : String(row.tong_tien_ban_giao),
     trang_thai: row.trang_thai ?? VNN_TRANG_THAI_DEFAULT,
     don_vi_ho_tro_id: row.don_vi_ho_tro_id ?? '',
     ghi_chu: row.ghi_chu ?? '',

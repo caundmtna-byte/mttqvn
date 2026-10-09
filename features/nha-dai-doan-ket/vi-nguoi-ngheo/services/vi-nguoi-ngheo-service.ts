@@ -130,8 +130,6 @@ function formToPayload(data: ViNguoiNgheoFormValues): Record<string, unknown> {
     hinh_thuc_ho_tro: data.hinh_thuc_ho_tro,
     so_tien: data.so_tien ?? null,
     so_luong: data.so_luong ?? null,
-    tong_tien_quy_doi: data.tong_tien_quy_doi ?? null,
-    tong_tien_ban_giao: data.tong_tien_ban_giao ?? null,
     trang_thai: data.trang_thai,
     don_vi_ho_tro_id: nullableFk(data.don_vi_ho_tro_id),
     ghi_chu: data.ghi_chu ?? null,

@@ -15,9 +15,9 @@ export interface KhenThuongNhaTaiTroFilters {
  * nguồn của các cột thành tích trong `get_ktnt_page`.
  */
 export interface KtntThanhTich {
-  /** Σ `vnn_chuong_trinh.so_tien`. */
+  /** Σ `vnn_chuong_trinh.so_tien` của khoản "Tiền mặt". */
   tien_mat: number;
-  /** Σ `vnn_chuong_trinh.tong_tien_quy_doi`. */
+  /** Σ `vnn_chuong_trinh.so_tien` của khoản "Hiện vật" / "Hiện vật và Tiền". */
   hien_vat_quy_doi: number;
   /** Σ thành tiền các phiếu nhập kho (`nhap_ngoai`) từ nhà tài trợ. */
   gia_tri_nhap_kho: number;

@@ -970,8 +970,8 @@ CREATE FUNCTION public.fn_hngh_nhan_ho_tro_nguon(p_search text, p_nam integer[],
     AS $$
   WITH vnn AS (
     SELECT v.ho_ngheo_id,
-           sum(COALESCE(v.so_tien, 0))           AS tien,
-           sum(COALESCE(v.tong_tien_quy_doi, 0)) AS hien_vat,
+           COALESCE(sum(v.so_tien) FILTER (WHERE v.hinh_thuc_ho_tro =  'Tiền mặt'), 0) AS tien,
+           COALESCE(sum(v.so_tien) FILTER (WHERE v.hinh_thuc_ho_tro <> 'Tiền mặt'), 0) AS hien_vat,
            count(*)                              AS so_khoan
     FROM public.vnn_chuong_trinh v
     WHERE v.ho_ngheo_id IS NOT NULL
@@ -3261,8 +3261,8 @@ CREATE FUNCTION public.get_kho_don_vi_cuu_tro_ung_ho_nhom(p_tu_ngay date DEFAULT
          'chuong_trinh'::text,
          'nd:' || lower(regexp_replace(btrim(v.noi_dung_ho_tro), '\s+', ' ', 'g')),
          min(regexp_replace(btrim(v.noi_dung_ho_tro), '\s+', ' ', 'g')),
-         COALESCE(sum(v.so_tien), 0),
-         COALESCE(sum(v.tong_tien_quy_doi), 0),
+         COALESCE(sum(v.so_tien) FILTER (WHERE v.hinh_thuc_ho_tro =  'Tiền mặt'), 0),
+         COALESCE(sum(v.so_tien) FILTER (WHERE v.hinh_thuc_ho_tro <> 'Tiền mặt'), 0),
          count(*)
   FROM public.vnn_chuong_trinh v
   WHERE v.don_vi_ho_tro_id IS NOT NULL
@@ -3706,7 +3706,8 @@ CREATE FUNCTION public.get_ktnt_thanh_tich(p_nha_tai_tro_id bigint, p_tu_nam int
     SET search_path TO 'public'
     AS $$
   WITH truc_tiep AS (
-    SELECT v.so_tien, v.tong_tien_quy_doi AS hien_vat,
+    SELECT CASE WHEN v.hinh_thuc_ho_tro =  'Tiền mặt' THEN v.so_tien END AS so_tien,
+           CASE WHEN v.hinh_thuc_ho_tro <> 'Tiền mặt' THEN v.so_tien END AS hien_vat,
            COALESCE('ho:' || v.ho_ngheo_id::text,
                     'ten:' || lower(regexp_replace(btrim(v.ho_ten_nguoi_nhan), '\s+', ' ', 'g'))
                       || '|' || COALESCE(v.xa_phuong_id::text, '')) AS nguoi
@@ -7766,7 +7767,7 @@ CREATE TABLE public.vnn_chuong_trinh (
     khoi_xom text,
     doi_tuong text,
     hinh_thuc_ho_tro text DEFAULT 'Tiền mặt'::text NOT NULL,
-    so_tien numeric(15,0),
+    so_tien numeric(15,0) NOT NULL,
     trang_thai text DEFAULT 'Đang khảo sát'::text NOT NULL,
     ngay_cap_nhat_trang_thai timestamp with time zone DEFAULT now() NOT NULL,
     don_vi_ho_tro_id bigint,
@@ -7783,7 +7784,7 @@ CREATE TABLE public.vnn_chuong_trinh (
     CONSTRAINT vnn_bien_ban_ban_giao_chk CHECK (((bien_ban_ban_giao IS NULL) OR (jsonb_typeof(bien_ban_ban_giao) = 'object'::text))),
     CONSTRAINT vnn_chuong_trinh_doi_tuong_check CHECK (((doi_tuong IS NULL) OR (doi_tuong = ANY (ARRAY['Hộ nghèo'::text, 'Cận nghèo'::text, 'Khó khăn'::text, 'Trẻ mồ côi'::text, 'Khuyết tật'::text, 'Nạn nhân CĐDC'::text])))),
     CONSTRAINT vnn_chuong_trinh_hinh_thuc_check CHECK ((hinh_thuc_ho_tro = ANY (ARRAY['Tiền mặt'::text, 'Hiện vật và Tiền'::text, 'Hiện vật'::text]))),
-    CONSTRAINT vnn_chuong_trinh_linh_vuc_ho_tro_check CHECK ((linh_vuc_ho_tro = ANY (ARRAY['Tết vì người nghèo'::text, 'Cứu trợ'::text, 'Mô hình sinh kế'::text, 'Học sinh nghèo'::text, 'Chữa bệnh'::text, 'Nhà bị sập'::text, 'Người chết'::text, 'Hoả hoạn'::text]))),
+    CONSTRAINT vnn_chuong_trinh_linh_vuc_ho_tro_check CHECK ((linh_vuc_ho_tro = ANY (ARRAY['Tết vì người nghèo'::text, 'Cứu trợ'::text, 'Mô hình sinh kế'::text, 'Học sinh nghèo'::text, 'Chữa bệnh'::text, 'Nhà bị sập'::text, 'Người chết'::text, 'Hoả hoạn'::text, 'Con nuôi'::text]))),
     CONSTRAINT vnn_chuong_trinh_nam_check CHECK (((nam >= 2000) AND (nam <= 2100))),
     CONSTRAINT vnn_chuong_trinh_nguon_check CHECK ((nguon = ANY (ARRAY['Vì người nghèo'::text, 'Cứu trợ'::text, 'Ngân sách'::text]))),
     CONSTRAINT vnn_chuong_trinh_nguon_ho_tro_check CHECK ((nguon_ho_tro = ANY (ARRAY['Cấp tỉnh'::text, 'Cấp xã'::text, 'Ủng hộ trực tiếp'::text, 'Trung ương'::text]))),
@@ -7792,8 +7793,7 @@ CREATE TABLE public.vnn_chuong_trinh (
     CONSTRAINT vnn_chuong_trinh_tong_tien_ban_giao_check CHECK (((tong_tien_ban_giao IS NULL) OR (tong_tien_ban_giao >= (0)::numeric))),
     CONSTRAINT vnn_chuong_trinh_tong_tien_quy_doi_check CHECK (((tong_tien_quy_doi IS NULL) OR (tong_tien_quy_doi >= (0)::numeric))),
     CONSTRAINT vnn_chuong_trinh_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['Đang khảo sát'::text, 'Đã nhận'::text]))),
-    CONSTRAINT vnn_phieu_khao_sat_chk CHECK (((phieu_khao_sat IS NULL) OR (jsonb_typeof(phieu_khao_sat) = 'object'::text))),
-    CONSTRAINT vnn_so_tien_theo_hinh_thuc_chk CHECK ((((hinh_thuc_ho_tro = 'Hiện vật'::text) OR (so_tien IS NOT NULL)) AND ((hinh_thuc_ho_tro = 'Tiền mặt'::text) OR (tong_tien_quy_doi IS NOT NULL))))
+    CONSTRAINT vnn_phieu_khao_sat_chk CHECK (((phieu_khao_sat IS NULL) OR (jsonb_typeof(phieu_khao_sat) = 'object'::text)))
 );
 
 

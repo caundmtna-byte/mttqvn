@@ -145,31 +145,6 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
   const loaiPhieu = vnnLoaiPhieu(linhVuc);
   const daGanHo = Boolean(useWatch({ control, name: 'ho_ngheo_id' }));
 
-  /** Ô trống giữ '' chứ không quy về 0 — để zod báo "bắt buộc" đúng ô. */
-  const tienInput = (
-    name: 'tong_tien_quy_doi' | 'tong_tien_ban_giao',
-    label: string,
-  ) => (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => (
-        <CurrencyInput
-          label={label}
-          icon={Coins}
-          suffix="đ"
-          value={field.value === '' || field.value == null ? null : field.value}
-          onChange={(n) => field.onChange(n == null ? '' : String(n))}
-          onBlur={field.onBlur}
-          min={0}
-          // Đánh dấu theo luật tiền (core/luat-so-tien.ts); zod mới là nơi kiểm.
-          required={name === 'tong_tien_quy_doi'}
-          error={errors[name]?.message}
-        />
-      )}
-    />
-  );
-
   useEffect(() => {
     if (initialData) {
       // Bản đầy đủ về sau khi người dùng đã gõ: giữ các ô họ đã sửa.
@@ -379,29 +354,25 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                   label={txt('viNguoiNgheo.store.soTienCol')}
                   icon={Coins}
                   suffix="đ"
-                  // Chỉ "Hiện vật" mới được để trống; giữ '' chứ không quy về 0.
-                  placeholder={hinhThuc === 'Hiện vật' ? txt('viNguoiNgheo.form.soTienPlaceholder') : undefined}
+                  // Hiện vật ⇒ nhập giá trị quy ra tiền. Ô trống giữ '' chứ không quy về 0 — để zod báo đúng ô.
+                  placeholder={coHienVat ? txt('viNguoiNgheo.form.soTienPlaceholder') : undefined}
                   value={field.value === '' || field.value == null ? null : field.value}
                   onChange={(n) => field.onChange(n == null ? '' : String(n))}
                   onBlur={field.onBlur}
                   min={0}
-                  required={hinhThuc !== 'Hiện vật'}
+                  required
                   error={errors.so_tien?.message}
                 />
               )}
             />
             {coHienVat ? (
-              <>
-                <Input
-                  label={txt('viNguoiNgheo.store.soLuongCol')}
-                  icon={Package}
-                  inputMode="numeric"
-                  {...register('so_luong')}
-                  error={errors.so_luong?.message}
-                />
-                {tienInput('tong_tien_quy_doi', txt('viNguoiNgheo.store.tongTienQuyDoiCol'))}
-                {tienInput('tong_tien_ban_giao', txt('viNguoiNgheo.store.tongTienBanGiaoCol'))}
-              </>
+              <Input
+                label={txt('viNguoiNgheo.store.soLuongCol')}
+                icon={Package}
+                inputMode="numeric"
+                {...register('so_luong')}
+                error={errors.so_luong?.message}
+              />
             ) : null}
             <div className={FORM_GRID_SPAN_FULL}>
               <Controller

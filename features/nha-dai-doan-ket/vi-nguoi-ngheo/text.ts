@@ -43,8 +43,6 @@ export const viNguoiNgheo = {
     hinhThucCol: 'Hình thức hỗ trợ',
     soTienCol: 'Số tiền hỗ trợ',
     soLuongCol: 'Số lượng',
-    tongTienQuyDoiCol: 'Tổng tiền quy đổi',
-    tongTienBanGiaoCol: 'Tổng tiền khi bàn giao',
     trangThaiCol: 'Trạng thái',
     ngayTrangThaiCol: 'Ngày cập nhật trạng thái',
     donViHoTroCol: 'Nhà tài trợ',
@@ -63,7 +61,7 @@ export const viNguoiNgheo = {
     hoNgheoHint: 'Chỉ chọn được người trong danh sách hộ nghèo — họ tên, xã phường, khối xóm, đối tượng tự điền theo hộ. Chưa có thì thêm hộ ở Danh sách hộ nghèo trước.',
     hoNgheoPlaceholder: 'Tìm theo tên hoặc số căn cước…',
     donViHoTroPlaceholder: 'Chọn từ danh mục Nhà tài trợ',
-    soTienPlaceholder: 'Để trống nếu chỉ hỗ trợ bằng hiện vật',
+    soTienPlaceholder: 'Giá trị hiện vật quy ra tiền',
     ghiChuHint: 'Ghi chú cũng được lưu làm lý do cho lần đổi trạng thái này.',
   },
   phieuKhaoSat: {
@@ -224,7 +222,6 @@ export const viNguoiNgheo = {
   },
   validation: {
     soTienBatBuoc: 'Nhập số tiền hỗ trợ (chưa có thì nhập 0).',
-    quyDoiBatBuoc: 'Khoản có hiện vật phải nhập tổng tiền quy đổi (chưa có thì nhập 0).',
     nhaTaiTroRequired: 'Nguồn "Ủng hộ trực tiếp" phải chọn nhà tài trợ.',
     noiDungRequired: 'Nhập nội dung hỗ trợ',
     nguoiNhanRequired: 'Nhập họ tên người được hỗ trợ',

@@ -82,7 +82,7 @@ export function vnnNguoiNhanKey(r: ViNguoiNgheo): string {
 
 export interface VnnKpis {
   tongSoKhoan: number;
-  /** Cộng các khoản ĐÃ có số tiền; khoản chỉ có quà (`so_tien = null`) không tính. */
+  /** Σ `so_tien` — giá trị khoản (tiền mặt, hoặc hiện vật quy ra tiền). */
   tongSoTien: number;
   daNhan: number;
   dangKhaoSat: number;

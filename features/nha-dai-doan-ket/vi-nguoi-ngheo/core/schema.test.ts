@@ -37,10 +37,12 @@ describe('viNguoiNgheoSchema', () => {
     expect(parse({ so_tien: '500,000' }).data?.so_tien).toBe(500_000);
   });
 
-  it('để trống số tiền chỉ hợp lệ khi khoản chỉ có hiện vật (đã có tiền quy đổi)', () => {
-    const r = parse({ so_tien: '', hinh_thuc_ho_tro: 'Hiện vật', tong_tien_quy_doi: '300.000' });
-    expect(r.success).toBe(true);
-    expect(r.data!.so_tien).toBeUndefined();
+  it('hiện vật cũng phải nhập số tiền (giá trị quy ra tiền)', () => {
+    for (const hinh_thuc_ho_tro of ['Hiện vật', 'Hiện vật và Tiền']) {
+      const r = parse({ so_tien: '', hinh_thuc_ho_tro });
+      expect(r.success).toBe(false);
+      expect(r.error!.issues.map((i) => i.path.join('.'))).toEqual(['so_tien']);
+    }
   });
 
   it('tiền mặt để trống số tiền bị từ chối — kể cả khi đang khảo sát', () => {
@@ -54,16 +56,12 @@ describe('viNguoiNgheoSchema', () => {
     expect(parse({ hinh_thuc_ho_tro: 'Quà và Tiền' }).success).toBe(false);
   });
 
-  it('hình thức có hiện vật giữ số lượng + hai tổng tiền', () => {
+  it('hình thức có hiện vật giữ số lượng; không gửi hai cột tổng tiền cũ', () => {
     for (const hinh_thuc_ho_tro of ['Hiện vật', 'Hiện vật và Tiền']) {
-      const r = parse({
-        hinh_thuc_ho_tro,
-        so_luong: '10',
-        tong_tien_quy_doi: '2.000.000',
-        tong_tien_ban_giao: '1.800.000',
-      });
+      const r = parse({ hinh_thuc_ho_tro, so_tien: '2.000.000', so_luong: '10', tong_tien_quy_doi: '1' });
       expect(r.success).toBe(true);
-      expect(r.data).toMatchObject({ so_luong: 10, tong_tien_quy_doi: 2_000_000, tong_tien_ban_giao: 1_800_000 });
+      expect(r.data).toMatchObject({ so_tien: 2_000_000, so_luong: 10 });
+      expect(r.data).not.toHaveProperty('tong_tien_quy_doi');
     }
   });
 
@@ -71,8 +69,6 @@ describe('viNguoiNgheoSchema', () => {
     const r = parse({ hinh_thuc_ho_tro: 'Tiền mặt', so_luong: '10', tong_tien_quy_doi: '2000000' });
     expect(r.success).toBe(true);
     expect(r.data!.so_luong).toBeUndefined();
-    expect(r.data!.tong_tien_quy_doi).toBeUndefined();
-    expect(r.data!.tong_tien_ban_giao).toBeUndefined();
   });
 
   it('số lượng lẻ hoặc âm bị từ chối', () => {
@@ -194,9 +190,11 @@ describe('docPhieuKhaoSat — đọc jsonb phòng thủ', () => {
     expect(docPhieuKhaoSat([1])).toBeNull();
   });
 
-  it('mọi lĩnh vực trừ Tết đều có phiếu', () => {
+  it('mọi lĩnh vực trừ Tết và Con nuôi đều có phiếu', () => {
     const coPhieu = VNN_LINH_VUC_VALUES.filter((v) => vnnLoaiPhieu(v) != null);
-    expect(coPhieu).toEqual(VNN_LINH_VUC_VALUES.filter((v) => v !== 'Tết vì người nghèo'));
+    expect(coPhieu).toEqual(
+      VNN_LINH_VUC_VALUES.filter((v) => v !== 'Tết vì người nghèo' && v !== 'Con nuôi'),
+    );
     expect(new Set(coPhieu.map(vnnLoaiPhieu))).toEqual(new Set(VNN_LOAI_PHIEU));
   });
 });

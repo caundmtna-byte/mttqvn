@@ -65,8 +65,6 @@ const EXPORT_KEYS: readonly (readonly [string, string])[] = [
   ['hinh_thuc_ho_tro', 'hinhThucCol'],
   ['so_tien', 'soTienCol'],
   ['so_luong', 'soLuongCol'],
-  ['tong_tien_quy_doi', 'tongTienQuyDoiCol'],
-  ['tong_tien_ban_giao', 'tongTienBanGiaoCol'],
   ['trang_thai', 'trangThaiCol'],
   ['ngay_cap_nhat_trang_thai', 'ngayTrangThaiCol'],
   ['ten_don_vi_ho_tro', 'donViHoTroCol'],

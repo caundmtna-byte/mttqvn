@@ -22,6 +22,7 @@ export const VNN_LINH_VUC_VALUES = [
   'Nhà bị sập',
   'Người chết',
   'Hoả hoạn',
+  'Con nuôi',
 ] as const;
 export type VnnLinhVuc = (typeof VNN_LINH_VUC_VALUES)[number];
 export const VNN_LINH_VUC_DEFAULT: VnnLinhVuc = 'Tết vì người nghèo';

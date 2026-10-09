@@ -39,7 +39,7 @@ const LOAI_PHIEU_THEO_LINH_VUC: Partial<Record<VnnLinhVuc, VnnLoaiPhieu>> = {
   'Học sinh nghèo': 'hoc-sinh',
 };
 
-/** `null` ⇒ lĩnh vực không có phiếu in (Tết vì người nghèo). */
+/** `null` ⇒ lĩnh vực không có phiếu in (Tết vì người nghèo, Con nuôi). */
 export function vnnLoaiPhieu(linhVuc: string | null | undefined): VnnLoaiPhieu | null {
   return LOAI_PHIEU_THEO_LINH_VUC[linhVuc as VnnLinhVuc] ?? null;
 }
