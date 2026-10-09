@@ -23,7 +23,7 @@ export const ui = {
     "home": "Trang chủ",
     "back": "Quay lại",
     "matTranToQuoc": "Mặt trận tổ quốc",
-    "quanLyVietBai": "Quản lý viết bài",
+    "quanLyVietBai": "Tuyên giáo",
     "quanLyGiaoViec": "Quản lý giao việc",
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
@@ -56,7 +56,7 @@ export const ui = {
       "groupGeneral": "Chung",
       "groupSystem": "Hệ thống",
       "groupAccount": "Tài khoản",
-      "groupArticleMgmt": "Quản lý viết bài",
+      "groupArticleMgmt": "Tuyên giáo",
       "groupTaskMgmt": "Quản lý giao việc",
       "groupMatTranToQuoc": "Mặt trận tổ quốc",
       "groupPhanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
@@ -509,7 +509,7 @@ export const ui = {
       "statsReportDesc": "Báo cáo và thống kê hiệu quả nội dung.",
       "settings": "Thiết lập bài viết",
       "settingsDesc": "Danh mục, template và quy tắc đăng bài.",
-      "backToParent": "Quay lại Quản lý viết bài"
+      "backToParent": "Quay lại Tuyên giáo"
     },
     "externalLinksDashboard": {
       "groupMain": "Liên kết truy cập",
@@ -625,7 +625,7 @@ export const ui = {
     "home": "Trang chủ",
     "goHome": "Về trang chủ",
     "matTranToQuoc": "Mặt trận tổ quốc",
-    "quanLyVietBai": "Quản lý viết bài",
+    "quanLyVietBai": "Tuyên giáo",
     "quanLyGiaoViec": "Quản lý giao việc",
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
@@ -791,7 +791,7 @@ export const ui = {
           "Theo ma trận phân quyền chức vụ: Xem danh sách, Thêm, Sửa, Xóa, Xuất. Tab \"Của tôi\" chỉ lọc giao diện theo người tạo; quyền thao tác vẫn theo module.",
         "workflow": "Thêm bài → điền thông tin → Lưu. Sửa hoặc xóa từ danh sách hoặc từ màn chi tiết. Có thể xuất Excel từ thanh công cụ.",
         "quickStart":
-          "1) Vào Quản lý viết bài → Bài viết. 2) Chọn tab Tất cả hoặc Của tôi. 3) Thêm bài mới, chọn thể loại (đơn giá gợi ý theo thiết lập). 4) Lưu và kiểm tra trên danh sách.",
+          "1) Vào Tuyên giáo → Bài viết. 2) Chọn tab Tất cả hoặc Của tôi. 3) Thêm bài mới, chọn thể loại (đơn giá gợi ý theo thiết lập). 4) Lưu và kiểm tra trên danh sách.",
         "glossary":
           "Thể loại / Trang đăng / Nguồn đăng: cấu hình tại Thiết lập bài viết. Đơn giá: số tiền ghi trên từng bài (có thể khớp hoặc chỉnh so với đơn giá thể loại).",
         "faq":

@@ -46,7 +46,7 @@ export const permission = {
     "hrGroup": "Nhân sự & Tổ chức",
     "salaryGroup": "Tiền lương & Công",
     "systemGroup": "Hệ thống & Bảo mật",
-    "articleMgmtGroup": "Quản lý viết bài",
+    "articleMgmtGroup": "Tuyên giáo",
     "taskMgmtGroup": "Quản lý giao việc",
     "matTranTrainingRewardGroup": "Tập huấn & Khen thưởng",
     "matTranCommitteeGroup": "Ủy viên ủy ban",

@@ -20,7 +20,7 @@ các module con; route khai báo tập trung trong `App.tsx`.
 | Nhóm | Đường dẫn gốc | Module chính | Thư mục |
 |---|---|---|---|
 | **Mặt trận tổ quốc** | `/mat-tran-to-quoc` | Tập huấn & Khen thưởng (danh sách tập huấn, danh sách khen thưởng) · Uỷ viên uỷ ban (nhiệm kỳ + ma trận điểm danh, kỳ họp, danh sách uỷ viên, báo cáo uỷ viên) · Tổ chức cán bộ (danh sách cán bộ, báo cáo cán bộ, thiết lập cài đặt) · Quản lý lương (danh sách tăng lương, thiết lập lương) | `features/mat-tran-to-quoc/` |
-| **Quản lý viết bài** | `/quan-ly-viet-bai` | Bài viết · Nhuận bút viết bài · Báo cáo thống kê bài viết · Thiết lập bài viết | `features/quan-ly-viet-bai/` |
+| **Tuyên giáo** | `/quan-ly-viet-bai` | Bài viết · Nhuận bút viết bài · Báo cáo thống kê bài viết · Thiết lập bài viết | `features/quan-ly-viet-bai/` |
 | **Quản lý giao việc** | `/quan-ly-giao-viec` | Chương trình năm · Công việc · Báo cáo công việc | `features/quan-ly-giao-viec/` |
 | **Kiểm tra, giám sát, phản biện xã hội** | `/phan-bien-xa-hoi` | Thực hiện phản biện xã hội · Thiết lập danh mục · Thống kê phản biện xã hội | `features/phan-bien-xa-hoi/` |
 | **Dân tộc, tôn giáo** | `/dan-toc-ton-giao` | Thăm hỏi (dịp thăm hỏi, thăm hỏi tổ chức, thăm hỏi cá nhân, thống kê thăm hỏi) · Thông tin (tổ chức quan trọng, cá nhân tiêu biểu, thống kê tổ chức — cá nhân) | `features/dan-toc-ton-giao/` |
