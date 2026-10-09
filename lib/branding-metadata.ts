@@ -2,6 +2,8 @@ import {
   DEFAULT_BRANDING_APP_DESCRIPTION,
   DEFAULT_BRANDING_APP_NAME,
   DEFAULT_BRANDING_LOGO,
+  DEFAULT_PWA_ICON_192,
+  DEFAULT_PWA_ICON_512,
 } from './branding-defaults';
 import { cloudinaryPwaIconUrl, isCloudinaryUrl } from './cloudinary/pwa-icon-url';
 import type { CompanyInfo } from '../store/useStore';
@@ -67,8 +69,13 @@ export function buildWebManifestBody(
   options: { appOrigin: string; scopeUrl: string; themeColor?: string },
 ): Record<string, unknown> {
   const logo = resolveBrandingIconHref(branding, '/');
-  const icon192Src = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 192) : logo;
-  const icon512Src = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 512) : logo;
+  const isDefault = logo === DEFAULT_BRANDING_LOGO;
+  const icon192Src = isDefault
+    ? DEFAULT_PWA_ICON_192
+    : isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 192) : logo;
+  const icon512Src = isDefault
+    ? DEFAULT_PWA_ICON_512
+    : isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 512) : logo;
   const mime192 = guessImageMime(icon192Src);
   const mime512 = guessImageMime(icon512Src);
   const name = branding.appName?.trim() || DEFAULT_BRANDING_APP_NAME;
@@ -147,7 +154,7 @@ export function applyBrandingToDocument(
     apple.rel = 'apple-touch-icon';
     head.appendChild(apple);
   }
-  apple.href = iconHref;
+  apple.href = iconHref === DEFAULT_BRANDING_LOGO ? DEFAULT_PWA_ICON_192 : iconHref;
 
   setOrCreateMetaProperty('og:title', title);
   setOrCreateMetaProperty('og:description', branding.appDescription?.trim() || branding.appName);

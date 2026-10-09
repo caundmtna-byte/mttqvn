@@ -10,8 +10,8 @@
     <meta property="og:title" content="MTTQVN" />
     <meta property="og:description" content="Hệ thống nền tảng số" />
     <meta property="og:image" content="https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png" />
-    <link rel="icon" type="image/png" href="https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png" />
-    <link rel="apple-touch-icon" href="https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png" />
+    <link rel="icon" type="image/png" href="/quoc-huy.png" />
+    <link rel="apple-touch-icon" href="/pwa-192.png" />
     
     <!-- Default font (Inter) + Noto Sans fallback – other fonts lazy-loaded on demand -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,7 +98,7 @@
     <!-- Logo / favicon / PWA từ ui-storage (Thông tin tổ chức) trước khi React mount -->
     <script>
       (function() {
-        var DEFAULT_LOGO = 'https://datafiles.nghean.gov.vn/nan-ubnd/6556/Album/quochuy%20(1).png';
+        var DEFAULT_LOGO = '/quoc-huy.png';
         var DEFAULT_NAME = 'MTTQVN';
         var DEFAULT_DESC = 'Hệ thống nền tảng số';
         function guessMime(url) {
@@ -160,8 +160,9 @@
           }
         }
         function setManifestFromBranding(name, desc, logo) {
-          var icon192 = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 192) : logo;
-          var icon512 = isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 512) : logo;
+          var isDefault = logo === DEFAULT_LOGO;
+          var icon192 = isDefault ? '/pwa-192.png' : isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 192) : logo;
+          var icon512 = isDefault ? '/pwa-512.png' : isCloudinaryUrl(logo) ? cloudinaryPwaIconUrl(logo, 512) : logo;
           var icons = [
             { src: icon192, sizes: '192x192', purpose: 'any' },
             { src: icon512, sizes: '512x512', purpose: 'any maskable' }
@@ -204,10 +205,10 @@
           var mime = guessMime(logo);
           document.title = title;
           setIcon('icon', logo, mime);
-          setIcon('apple-touch-icon', logo, mime);
+          setIcon('apple-touch-icon', logo === DEFAULT_LOGO ? '/pwa-192.png' : logo, logo === DEFAULT_LOGO ? 'image/png' : mime);
           setMeta('og:title', title, false);
           setMeta('og:description', desc || name, false);
-          setMeta('og:image', logo, false);
+          setMeta('og:image', new URL(logo, location.href).href, false);
           setMeta('description', desc || name, true);
           setManifestFromBranding(name, desc, logo);
         } catch (e) {}

@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useScrollRestoration } from '../../hooks/useScrollRestoration';
 import {
-  User, Sparkles, LogOut, Key,
+  User, LogOut, Key,
   PanelLeftClose, PanelLeft, ChevronDown,
   Eye, EyeOff, Lock
 } from 'lucide-react';
@@ -18,6 +18,7 @@ import { signOutCompletely } from '@/lib/auth/sign-out';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/Button';
 import { cn } from '../../lib/utils';
+import { DEFAULT_BRANDING_LOGO } from '../../lib/branding-defaults';
 import Combobox, { type Option } from '../ui/Combobox';
 import { hslToHex, PRIMARY_COLOR_MAP } from '../../lib/theme-utils';
 import Breadcrumbs from '../shared/Breadcrumbs';
@@ -233,9 +234,11 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                 onError={() => setLogoLoadFailedForUrl(companyInfo.appLogo ?? '')}
               />
             ) : (
-              <div className="h-8 w-8 rounded-lg bg-primary shadow-sm flex items-center justify-center shrink-0">
-                <Sparkles size={16} className="text-white" />
-              </div>
+              <img
+                src={DEFAULT_BRANDING_LOGO}
+                alt="App Logo"
+                className="h-8 w-8 rounded-lg object-contain shadow-sm shrink-0 bg-card border border-border/50"
+              />
             )}
             <motion.div
               animate={{ opacity: sidebarOpen ? 1 : 0, x: sidebarOpen ? 0 : -10 }}

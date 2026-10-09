@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
-import { DEFAULT_BRANDING_LOGO, DEFAULT_BRANDING_APP_NAME, DEFAULT_BRANDING_APP_DESCRIPTION } from './lib/branding-defaults';
+import { DEFAULT_PWA_ICON_192, DEFAULT_PWA_ICON_512, DEFAULT_BRANDING_APP_NAME, DEFAULT_BRANDING_APP_DESCRIPTION } from './lib/branding-defaults';
 
 export default defineConfig(() => {
     return {
@@ -60,7 +60,7 @@ export default defineConfig(() => {
         viteCompression({ algorithm: 'gzip', ext: '.gz', threshold: 1024, verbose: false }),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: ['favicon.svg'],
+          includeAssets: ['favicon.svg', 'quoc-huy.png', 'pwa-192.png', 'pwa-512.png'],
           // Manifest build-time chỉ là fallback trước React; runtime dùng blob từ MetadataSynchronizer / index.html bootstrap.
           manifest: {
             name: DEFAULT_BRANDING_APP_NAME,
@@ -72,13 +72,13 @@ export default defineConfig(() => {
             start_url: '/',
             icons: [
               {
-                src: DEFAULT_BRANDING_LOGO,
+                src: DEFAULT_PWA_ICON_192,
                 sizes: '192x192',
                 type: 'image/png',
                 purpose: 'any',
               },
               {
-                src: DEFAULT_BRANDING_LOGO,
+                src: DEFAULT_PWA_ICON_512,
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'any maskable',
