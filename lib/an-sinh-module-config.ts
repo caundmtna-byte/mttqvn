@@ -19,7 +19,7 @@ export interface PlaceholderGroupDef {
  * riêng trong `pages/dashboards/AnSinhXaHoiDashboard.tsx`. Giữ chúng ở đây nữa
  * sẽ sinh `<Route>` placeholder đè lên route thật.
  *
- * Mảng rỗng là đúng: nhóm `/nghia-tinh-dong-lam` (Nghĩa tình dòng Lam) không còn màn hình "sắp có" nào.
+ * Mảng rỗng là đúng: nhóm `/cong-tac-xa-hoi` (Công tác xã hội) không còn màn hình "sắp có" nào.
  */
 export const AN_SINH_PLACEHOLDER_GROUPS: PlaceholderGroupDef[] = [];
 

@@ -33,7 +33,7 @@ export function getSidebarPathGateResources(path: string): AppResource[] | null 
       'matTranSalarySetup',
     ];
   }
-  if (path === '/nghia-tinh-dong-lam') {
+  if (path === '/cong-tac-xa-hoi') {
     return [
       'matTranReliefCampaign',
       'matTranTiepNhan',

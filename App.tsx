@@ -232,42 +232,44 @@ const App = () => {
           <Route path="/dan-toc-ton-giao/thong-tin/thong-tin-ca-nhan-tieu-bieu" element={<DtTgThongTinCaNhanTieuBieuPage />} />
           <Route path="/dan-toc-ton-giao/thong-tin/thong-ke-to-chuc-ca-nhan" element={<DtTgThongKeToChucCaNhanPage />} />
           {/*
-            Nhóm "Nghĩa tình dòng Lam". Đường dẫn đổi từ /an-sinh-xa-hoi (2026-10-04); khoá
-            quyền giữ nguyên qua storageKey. Mọi link cũ đi qua <ChuyenDuongDanCu />.
+            Nhóm "Công tác xã hội" (trước là "Nghĩa tình dòng Lam" /nghia-tinh-dong-lam, đổi
+            2026-10-09; trước nữa /an-sinh-xa-hoi). Khoá quyền giữ nguyên qua storageKey.
+            Mọi link cũ đi qua <ChuyenDuongDanCu />.
           */}
-          <Route path="/nghia-tinh-dong-lam" element={<AnSinhXaHoiDashboard />} />
-          <Route path="/nghia-tinh-dong-lam/chuong-trinh-van-dong" element={<KhoDotCuuTroPage />} />
-          <Route path="/nghia-tinh-dong-lam/tiep-nhan-tien" element={<TiepNhanPage />} />
-          <Route path="/nghia-tinh-dong-lam/tiep-nhan-tien/:tnId/in/:loaiPhieu" element={<TnInBienBanPage />} />
+          <Route path="/cong-tac-xa-hoi" element={<AnSinhXaHoiDashboard />} />
+          <Route path="/cong-tac-xa-hoi/chuong-trinh-van-dong" element={<KhoDotCuuTroPage />} />
+          <Route path="/cong-tac-xa-hoi/tiep-nhan-tien" element={<TiepNhanPage />} />
+          <Route path="/cong-tac-xa-hoi/tiep-nhan-tien/:tnId/in/:loaiPhieu" element={<TnInBienBanPage />} />
           {/* Đường dẫn cũ (đổi 2026-10-04) — giữ link đã gửi / bookmark / trang in. */}
-          <Route path="/nghia-tinh-dong-lam/tiep-nhan/*" element={<ChuyenDuongDanCu />} />
-          <Route path="/nghia-tinh-dong-lam/danh-muc-hang-hoa" element={<HangHoaPage />} />
-          <Route path="/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang" element={<NhapXuatKhoPage />} />
+          <Route path="/cong-tac-xa-hoi/tiep-nhan/*" element={<ChuyenDuongDanCu />} />
+          <Route path="/cong-tac-xa-hoi/danh-muc-hang-hoa" element={<HangHoaPage />} />
+          <Route path="/cong-tac-xa-hoi/tiep-nhan-phan-bo-hang" element={<NhapXuatKhoPage />} />
           <Route
-            path="/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang/:phieuId/in-phieu"
+            path="/cong-tac-xa-hoi/tiep-nhan-phan-bo-hang/:phieuId/in-phieu"
             element={<KhoNhapXuatKhoInPhieuPage />}
           />
-          <Route path="/nghia-tinh-dong-lam/ton-kho" element={<TonKhoPage />} />
-          <Route path="/nghia-tinh-dong-lam/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
-          <Route path="/nghia-tinh-dong-lam/nha-tai-tro" element={<KhoDonViCuuTroPage />} />
-          <Route path="/nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo" element={<KhoBaoCaoHoTroPage />} />
-          <Route path="/nghia-tinh-dong-lam/khen-thuong-nha-tai-tro" element={<KhenThuongNhaTaiTroPage />} />
-          <Route path="/nghia-tinh-dong-lam/nha-dai-doan-ket" element={<NhaDaiDoanKetPage />} />
+          <Route path="/cong-tac-xa-hoi/ton-kho" element={<TonKhoPage />} />
+          <Route path="/cong-tac-xa-hoi/danh-sach-kho" element={<KhoDanhSachKhoPage />} />
+          <Route path="/cong-tac-xa-hoi/nha-tai-tro" element={<KhoDonViCuuTroPage />} />
+          <Route path="/cong-tac-xa-hoi/bao-cao-tiep-nhan-phan-bo" element={<KhoBaoCaoHoTroPage />} />
+          <Route path="/cong-tac-xa-hoi/khen-thuong-nha-tai-tro" element={<KhenThuongNhaTaiTroPage />} />
+          <Route path="/cong-tac-xa-hoi/nha-dai-doan-ket" element={<NhaDaiDoanKetPage />} />
           <Route
-            path="/nghia-tinh-dong-lam/nha-dai-doan-ket/:nddkId/in/:loaiPhieu"
+            path="/cong-tac-xa-hoi/nha-dai-doan-ket/:nddkId/in/:loaiPhieu"
             element={<NddkInBienBanPage />}
           />
-          <Route path="/nghia-tinh-dong-lam/chuong-trinh-ho-tro" element={<ViNguoiNgheoPage />} />
+          <Route path="/cong-tac-xa-hoi/chuong-trinh-ho-tro" element={<ViNguoiNgheoPage />} />
           <Route
-            path="/nghia-tinh-dong-lam/chuong-trinh-ho-tro/:vnnId/in/:loaiPhieu"
+            path="/cong-tac-xa-hoi/chuong-trinh-ho-tro/:vnnId/in/:loaiPhieu"
             element={<VnnInPhieuPage />}
           />
           {/* Link cũ (chỉ có phiếu khảo sát) — giữ khỏi chết. */}
           <Route
-            path="/nghia-tinh-dong-lam/chuong-trinh-ho-tro/:vnnId/in"
+            path="/cong-tac-xa-hoi/chuong-trinh-ho-tro/:vnnId/in"
             element={<Navigate to="khao-sat" replace />}
           />
-          <Route path="/nghia-tinh-dong-lam/doi-tuong-ho-tro" element={<ThongTinHoNgheoPage />} />
+          <Route path="/cong-tac-xa-hoi/doi-tuong-ho-tro" element={<ThongTinHoNgheoPage />} />
+          <Route path="/nghia-tinh-dong-lam/*" element={<ChuyenDuongDanCu />} />
           <Route path="/an-sinh-xa-hoi/*" element={<ChuyenDuongDanCu />} />
 
           {PLACEHOLDER_MODULE_PATHS.map((path) => (

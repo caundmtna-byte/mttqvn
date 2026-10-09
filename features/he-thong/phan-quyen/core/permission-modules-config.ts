@@ -149,7 +149,7 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
     ],
   },
   {
-    id: 'nghia-tinh-dong-lam',
+    id: 'cong-tac-xa-hoi',
     nameKey: 'nav.anSinhXaHoi',
     color: 'pink',
     groups: [
@@ -161,14 +161,14 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
          */
         groupTitleKey: 'page.matTranDashboard.groupReliefWarehouse',
         modules: [
-          { id: 'nghia-tinh-dong-lam/chuong-trinh-van-dong', nameKey: 'page.matTranDashboard.reliefCampaign', storageKey: 'dot-cuu-tro' },
-          { id: 'nghia-tinh-dong-lam/tiep-nhan-tien', nameKey: 'page.matTranDashboard.tiepNhan', storageKey: 'tiep-nhan' },
-          { id: 'nghia-tinh-dong-lam/danh-muc-hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods', storageKey: 'hang-hoa' },
-          { id: 'nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang', nameKey: 'page.matTranDashboard.reliefStockTransactions', storageKey: 'nhap-xuat-kho' },
-          { id: 'nghia-tinh-dong-lam/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory', storageKey: 'ton-kho' },
-          { id: 'nghia-tinh-dong-lam/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList', storageKey: 'danh-sach-kho' },
-          { id: 'nghia-tinh-dong-lam/nha-tai-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits', storageKey: 'don-vi-cuu-tro' },
-          { id: 'nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo', nameKey: 'page.matTranDashboard.reliefSupportReport', storageKey: 'bao-cao-ho-tro' },
+          { id: 'cong-tac-xa-hoi/chuong-trinh-van-dong', nameKey: 'page.matTranDashboard.reliefCampaign', storageKey: 'dot-cuu-tro' },
+          { id: 'cong-tac-xa-hoi/tiep-nhan-tien', nameKey: 'page.matTranDashboard.tiepNhan', storageKey: 'tiep-nhan' },
+          { id: 'cong-tac-xa-hoi/danh-muc-hang-hoa', nameKey: 'page.matTranDashboard.reliefGoods', storageKey: 'hang-hoa' },
+          { id: 'cong-tac-xa-hoi/tiep-nhan-phan-bo-hang', nameKey: 'page.matTranDashboard.reliefStockTransactions', storageKey: 'nhap-xuat-kho' },
+          { id: 'cong-tac-xa-hoi/ton-kho', nameKey: 'page.matTranDashboard.reliefInventory', storageKey: 'ton-kho' },
+          { id: 'cong-tac-xa-hoi/danh-sach-kho', nameKey: 'page.matTranDashboard.reliefWarehouseList', storageKey: 'danh-sach-kho' },
+          { id: 'cong-tac-xa-hoi/nha-tai-tro', nameKey: 'page.matTranDashboard.reliefSupportUnits', storageKey: 'don-vi-cuu-tro' },
+          { id: 'cong-tac-xa-hoi/bao-cao-tiep-nhan-phan-bo', nameKey: 'page.matTranDashboard.reliefSupportReport', storageKey: 'bao-cao-ho-tro' },
         ],
       },
       {
@@ -180,22 +180,22 @@ export const PERMISSION_FUNCTIONS: PermissionFunction[] = [
         groupTitleKey: 'page.anSinhXaHoiDashboard.groupHoTroKhenThuong',
         modules: [
           {
-            id: 'nghia-tinh-dong-lam/khen-thuong-nha-tai-tro',
+            id: 'cong-tac-xa-hoi/khen-thuong-nha-tai-tro',
             nameKey: 'page.anSinhXaHoiDashboard.khenThuongNhaTaiTro',
             storageKey: 'khen-thuong-nha-tai-tro',
           },
           {
-            id: 'nghia-tinh-dong-lam/nha-dai-doan-ket',
+            id: 'cong-tac-xa-hoi/nha-dai-doan-ket',
             nameKey: 'page.anSinhXaHoiDashboard.danhSachNhaDaiDoanKet',
             storageKey: 'nha-dai-doan-ket',
           },
           {
-            id: 'nghia-tinh-dong-lam/chuong-trinh-ho-tro',
+            id: 'cong-tac-xa-hoi/chuong-trinh-ho-tro',
             nameKey: 'page.anSinhXaHoiDashboard.viNguoiNgheo',
             storageKey: 'vi-nguoi-ngheo',
           },
           {
-            id: 'nghia-tinh-dong-lam/doi-tuong-ho-tro',
+            id: 'cong-tac-xa-hoi/doi-tuong-ho-tro',
             nameKey: 'page.anSinhXaHoiDashboard.thongTinHoNgheo',
             storageKey: 'thong-tin-ho-ngheo',
           },

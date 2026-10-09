@@ -209,37 +209,37 @@ const RELIEF_WAREHOUSE_MODULES: {
 }[] = [
   {
     resource: 'matTranReliefCampaign',
-    moduleId: 'nghia-tinh-dong-lam/chuong-trinh-van-dong',
+    moduleId: 'cong-tac-xa-hoi/chuong-trinh-van-dong',
     label: 'dot-cuu-tro',
   },
   {
     resource: 'matTranReliefGoods',
-    moduleId: 'nghia-tinh-dong-lam/danh-muc-hang-hoa',
+    moduleId: 'cong-tac-xa-hoi/danh-muc-hang-hoa',
     label: 'hang-hoa',
   },
   {
     resource: 'matTranReliefStockTransactions',
-    moduleId: 'nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang',
+    moduleId: 'cong-tac-xa-hoi/tiep-nhan-phan-bo-hang',
     label: 'nhap-xuat-kho',
   },
   {
     resource: 'matTranReliefInventory',
-    moduleId: 'nghia-tinh-dong-lam/ton-kho',
+    moduleId: 'cong-tac-xa-hoi/ton-kho',
     label: 'ton-kho',
   },
   {
     resource: 'matTranReliefWarehouseList',
-    moduleId: 'nghia-tinh-dong-lam/danh-sach-kho',
+    moduleId: 'cong-tac-xa-hoi/danh-sach-kho',
     label: 'danh-sach-kho',
   },
   {
     resource: 'matTranReliefSupportUnits',
-    moduleId: 'nghia-tinh-dong-lam/nha-tai-tro',
+    moduleId: 'cong-tac-xa-hoi/nha-tai-tro',
     label: 'don-vi-cuu-tro',
   },
   {
     resource: 'matTranReliefSupportReport',
-    moduleId: 'nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo',
+    moduleId: 'cong-tac-xa-hoi/bao-cao-tiep-nhan-phan-bo',
     label: 'bao-cao-ho-tro',
   },
 ];
@@ -283,7 +283,7 @@ describe.each(RELIEF_WAREHOUSE_MODULES)(
 const NHA_DAI_DOAN_KET_MODULES: { resource: AppResource; moduleId: string; label: string }[] = [
   {
     resource: 'nhaDaiDoanKetList',
-    moduleId: 'nghia-tinh-dong-lam/nha-dai-doan-ket',
+    moduleId: 'cong-tac-xa-hoi/nha-dai-doan-ket',
     label: 'danh-sach',
   },
 ];

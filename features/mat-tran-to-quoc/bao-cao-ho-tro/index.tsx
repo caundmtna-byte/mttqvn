@@ -144,7 +144,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranReliefSupportReport.noViewPermission'));
-    navigate('/nghia-tinh-dong-lam', { replace: true });
+    navigate('/cong-tac-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const {
@@ -618,7 +618,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
     <div className="flex flex-col h-page relative min-h-0" aria-label={txt('matTranReliefSupportReport.title')}>
       <DashboardToolbar
         className="shrink-0 mb-3"
-        onBack={() => navigate('/nghia-tinh-dong-lam')}
+        onBack={() => navigate('/cong-tac-xa-hoi')}
         mobileRow2Content={
           <div className="min-w-0 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">{dateRangePicker}</div>
         }
@@ -816,7 +816,7 @@ const KhoBaoCaoHoTroPage: React.FC = () => {
             <KhoNhapXuatKhoDetailDrawer
               data={viewingPhieu}
               onClose={() => setViewingPhieuId(null)}
-              onEdit={() => navigate('/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang')}
+              onEdit={() => navigate('/cong-tac-xa-hoi/tiep-nhan-phan-bo-hang')}
               onDelete={() => setViewingPhieuId(null)}
             />
           </Suspense>

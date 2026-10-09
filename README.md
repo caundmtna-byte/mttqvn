@@ -24,13 +24,13 @@ các module con; route khai báo tập trung trong `App.tsx`.
 | **Quản lý giao việc** | `/quan-ly-giao-viec` | Chương trình năm · Công việc · Báo cáo công việc | `features/quan-ly-giao-viec/` |
 | **Kiểm tra, giám sát, phản biện xã hội** | `/phan-bien-xa-hoi` | Thực hiện phản biện xã hội · Thiết lập danh mục · Thống kê phản biện xã hội | `features/phan-bien-xa-hoi/` |
 | **Dân tộc, tôn giáo** | `/dan-toc-ton-giao` | Thăm hỏi (dịp thăm hỏi, thăm hỏi tổ chức, thăm hỏi cá nhân, thống kê thăm hỏi) · Thông tin (tổ chức quan trọng, cá nhân tiêu biểu, thống kê tổ chức — cá nhân) | `features/dan-toc-ton-giao/` |
-| **Nghĩa tình dòng Lam** | `/nghia-tinh-dong-lam` | Chương trình & tiếp nhận: chương trình vận động, tiếp nhận (in biên bản xác nhận tài trợ), nhà tài trợ, danh mục hàng hoá, tiếp nhận & phân bổ hàng (phiếu kho, có in phiếu), tồn kho, danh sách kho, báo cáo tiếp nhận & phân bổ · Hỗ trợ & khen thưởng: nhà đại đoàn kết, chương trình hỗ trợ, đối tượng hỗ trợ, khen thưởng nhà tài trợ | `features/mat-tran-to-quoc/` (`dot-cuu-tro`, `tiep-nhan`, `don-vi-cuu-tro`, `hang-hoa`, `nhap-xuat-kho`, `ton-kho`, `danh-sach-kho`, `bao-cao-ho-tro`) · `features/nha-dai-doan-ket/` |
+| **Công tác xã hội** | `/cong-tac-xa-hoi` | Chương trình & tiếp nhận: chương trình vận động, tiếp nhận (in biên bản xác nhận tài trợ), nhà tài trợ, danh mục hàng hoá, tiếp nhận & phân bổ hàng (phiếu kho, có in phiếu), tồn kho, danh sách kho, báo cáo tiếp nhận & phân bổ · Hỗ trợ & khen thưởng: nhà đại đoàn kết, chương trình hỗ trợ, đối tượng hỗ trợ, khen thưởng nhà tài trợ | `features/mat-tran-to-quoc/` (`dot-cuu-tro`, `tiep-nhan`, `don-vi-cuu-tro`, `hang-hoa`, `nhap-xuat-kho`, `ton-kho`, `danh-sach-kho`, `bao-cao-ho-tro`) · `features/nha-dai-doan-ket/` |
 | **Trang thông tin khác** | `/trang-thong-tin-khac` | Liên kết truy cập | `pages/dashboards/` |
 | **Hệ thống** | `/he-thong` | Nhân viên · Phòng ban · Chức vụ · Thông tin tổ chức · Phân quyền · Danh sách tỉnh thành (xã/phường) | `features/he-thong/` |
 
 Hai lưu ý về sơ đồ trên, đối chiếu trực tiếp từ `App.tsx`:
 
-- **Nhóm `/nghia-tinh-dong-lam`** (trước là `/an-sinh-xa-hoi`, trước nữa kho cứu trợ nằm ở
+- **Nhóm `/cong-tac-xa-hoi`** (trước là `/an-sinh-xa-hoi`, trước nữa kho cứu trợ nằm ở
   `/mat-tran-to-quoc/kho-cuu-tro/*`). Link cũ đều qua `<ChuyenDuongDanCu />` theo bảng
   `lib/duong-dan-nghia-tinh.ts`. Khoá quyền (`module_key`) KHÔNG đổi — xem `storageKey` trong
   `permission-modules-config.ts`. Mã nguồn kho vẫn nằm trong `features/mat-tran-to-quoc/`.

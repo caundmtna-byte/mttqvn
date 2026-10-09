@@ -99,16 +99,16 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
   matTranSession: 'mat-tran-to-quoc/uy-vien-uy-ban/ky-hop',
   matTranCommitteeMembers: 'mat-tran-to-quoc/uy-vien-uy-ban/danh-sach-uy-vien',
   matTranCommitteeMemberStats: 'mat-tran-to-quoc/uy-vien-uy-ban/bao-cao-uy-vien',
-  matTranReliefCampaign: 'nghia-tinh-dong-lam/chuong-trinh-van-dong',
+  matTranReliefCampaign: 'cong-tac-xa-hoi/chuong-trinh-van-dong',
   /** Hàng hóa cứu trợ — `module_key` DB: `hang-hoa`. Luật `can()`: `cap_bac===1` hoặc `quan_tri`→`admin`/`all` = toàn quyền UI; không thì từng hành động xem/thêm/sửa/xóa theo ma trận. */
-  matTranReliefGoods: 'nghia-tinh-dong-lam/danh-muc-hang-hoa',
-  matTranReliefStockTransactions: 'nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang',
-  matTranReliefInventory: 'nghia-tinh-dong-lam/ton-kho',
-  matTranReliefWarehouseList: 'nghia-tinh-dong-lam/danh-sach-kho',
-  matTranReliefSupportUnits: 'nghia-tinh-dong-lam/nha-tai-tro',
-  matTranReliefSupportReport: 'nghia-tinh-dong-lam/bao-cao-tiep-nhan-phan-bo',
+  matTranReliefGoods: 'cong-tac-xa-hoi/danh-muc-hang-hoa',
+  matTranReliefStockTransactions: 'cong-tac-xa-hoi/tiep-nhan-phan-bo-hang',
+  matTranReliefInventory: 'cong-tac-xa-hoi/ton-kho',
+  matTranReliefWarehouseList: 'cong-tac-xa-hoi/danh-sach-kho',
+  matTranReliefSupportUnits: 'cong-tac-xa-hoi/nha-tai-tro',
+  matTranReliefSupportReport: 'cong-tac-xa-hoi/bao-cao-tiep-nhan-phan-bo',
   /** Tiếp nhận — `module_key` DB: `tiep-nhan`; RLS `tn_tiep_nhan` gọi `fn_co_quyen('tiep-nhan', …)`. */
-  matTranTiepNhan: 'nghia-tinh-dong-lam/tiep-nhan-tien',
+  matTranTiepNhan: 'cong-tac-xa-hoi/tiep-nhan-tien',
   /** Danh sách tăng lương — `can()`: `cap_bac===1` hoặc `quan_tri` (`admin`/`all`) hoặc token `xem`/`them`/`sua`/`xoa`. */
   matTranSalaryIncreaseList: 'mat-tran-to-quoc/quan-ly-luong/danh-sach-tang-luong',
   /** Thiết lập lương — cùng luật `can()` như danh sách tăng lương. */
@@ -140,25 +140,25 @@ export const APP_RESOURCE_TO_MODULE: Partial<Record<AppResource, string>> = {
    * `permission-modules-config.ts`. RLS của bảng `nddk_nha_dai_doan_ket` gọi
    * `fn_co_quyen('nha-dai-doan-ket', …)` đúng khóa đó.
    */
-  nhaDaiDoanKetList: 'nghia-tinh-dong-lam/nha-dai-doan-ket',
+  nhaDaiDoanKetList: 'cong-tac-xa-hoi/nha-dai-doan-ket',
   /**
    * Thông tin đối tượng hỗ trợ. Segment cuối ('danh-sach') đụng module trên, nên
    * `storageKey: 'thong-tin-ho-ngheo'` khai tường minh trong
    * `permission-modules-config.ts`. RLS của `hngh_thong_tin_ho_ngheo` và
    * `hngh_ho_tro_ct` gọi `fn_co_quyen('thong-tin-ho-ngheo', …)` đúng khoá đó.
    */
-  hoNgheoList: 'nghia-tinh-dong-lam/doi-tuong-ho-tro',
+  hoNgheoList: 'cong-tac-xa-hoi/doi-tuong-ho-tro',
   /**
    * Chương trình hỗ trợ — một module, hai tab. `storageKey:
    * 'vi-nguoi-ngheo'` khai tường minh trong `permission-modules-config.ts`; RLS
    * của `vnn_chuong_trinh` gọi `fn_co_quyen('vi-nguoi-ngheo', …)` đúng khoá đó.
    */
-  viNguoiNgheoList: 'nghia-tinh-dong-lam/chuong-trinh-ho-tro',
+  viNguoiNgheoList: 'cong-tac-xa-hoi/chuong-trinh-ho-tro',
   /**
    * Khen thưởng nhà tài trợ — `storageKey: 'khen-thuong-nha-tai-tro'`; RLS và
    * trigger duyệt của `ktnt_khen_thuong_nha_tai_tro` gọi `fn_co_quyen` đúng khoá đó.
    */
-  khenThuongNhaTaiTroList: 'nghia-tinh-dong-lam/khen-thuong-nha-tai-tro',
+  khenThuongNhaTaiTroList: 'cong-tac-xa-hoi/khen-thuong-nha-tai-tro',
 };
 
 /** Module id cũ (Thông tin công ty) — vẫn tính quyền khi ma trận chưa cập nhật. */

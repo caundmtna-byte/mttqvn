@@ -1,5 +1,6 @@
 /**
- * Đường dẫn nhóm "Nghĩa tình dòng Lam" (đổi từ `/an-sinh-xa-hoi` ngày 2026-10-04).
+ * Đường dẫn nhóm "Công tác xã hội" — đổi từ `/nghia-tinh-dong-lam` ("Nghĩa tình dòng Lam")
+ * ngày 2026-10-09; trước đó đổi từ `/an-sinh-xa-hoi` ngày 2026-10-04.
  *
  * KHOÁ QUYỀN KHÔNG ĐỔI: `module_key` dưới DB vẫn là khoá cũ (`dot-cuu-tro`, `hang-hoa`,
  * `nhap-xuat-kho`, `don-vi-cuu-tro`, `bao-cao-ho-tro`, `vi-nguoi-ngheo`, `thong-tin-ho-ngheo`…)
@@ -9,13 +10,16 @@
  *
  * Bảng dưới đây là nguồn DUY NHẤT để chuyển link cũ (bookmark, link đã gửi, mục ghim).
  */
-export const NTDL_ROOT = '/nghia-tinh-dong-lam';
+export const NTDL_ROOT = '/cong-tac-xa-hoi';
 
 /** [tiền tố cũ, tiền tố mới] — xếp tiền tố DÀI trước để khớp đúng nhất. */
 const BANG_DUONG_DAN_CU: readonly (readonly [string, string])[] = [
   // 2026-10-04: Tiếp nhận → Tiếp nhận tiền (khoá quyền vẫn `tiep-nhan`). Khớp trọn segment
   // nên không đụng `/tiep-nhan-phan-bo-hang`.
   [`${NTDL_ROOT}/tiep-nhan`, `${NTDL_ROOT}/tiep-nhan-tien`],
+  // 2026-10-09: /nghia-tinh-dong-lam → /cong-tac-xa-hoi (đổi tên nhóm), phần đuôi giữ nguyên.
+  ['/nghia-tinh-dong-lam/tiep-nhan', `${NTDL_ROOT}/tiep-nhan-tien`],
+  ['/nghia-tinh-dong-lam', NTDL_ROOT],
   // Đợt 2026-10: /an-sinh-xa-hoi → /nghia-tinh-dong-lam, bỏ tầng /kho-cuu-tro và /danh-sach.
   ['/an-sinh-xa-hoi/kho-cuu-tro/dot-cuu-tro', `${NTDL_ROOT}/chuong-trinh-van-dong`],
   ['/an-sinh-xa-hoi/kho-cuu-tro/tiep-nhan', `${NTDL_ROOT}/tiep-nhan-tien`],

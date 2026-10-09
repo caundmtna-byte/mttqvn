@@ -35,7 +35,7 @@ export function useVnnViewer(): VnnViewer {
 
   return useMemo(() => {
     const moduleId =
-      APP_RESOURCE_TO_MODULE.viNguoiNgheoList ?? 'nghia-tinh-dong-lam/chuong-trinh-ho-tro';
+      APP_RESOURCE_TO_MODULE.viNguoiNgheoList ?? 'cong-tac-xa-hoi/chuong-trinh-ho-tro';
     const allowed = grantsByModule[moduleId] ?? [];
     const canViewAll =
       user?.role === 'admin' ||

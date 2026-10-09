@@ -64,7 +64,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
     gradient: 'bg-gradient-to-br from-indigo-600 to-indigo-900 dark:from-indigo-500 dark:to-indigo-800',
   },
   {
-    path: '/nghia-tinh-dong-lam',
+    path: '/cong-tac-xa-hoi',
     nameKey: 'nav.anSinhXaHoi',
     descriptionKey: 'page.home.anSinhXaHoiModuleDesc',
     icon: HeartHandshake,

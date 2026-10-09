@@ -85,4 +85,4 @@ export function isNddkLoaiPhieuIn(v: unknown): v is NddkLoaiPhieuIn {
   return typeof v === 'string' && (NDDK_LOAI_PHIEU_IN as readonly string[]).includes(v);
 }
 
-export const NDDK_LIST_PATH = '/nghia-tinh-dong-lam/nha-dai-doan-ket';
+export const NDDK_LIST_PATH = '/cong-tac-xa-hoi/nha-dai-doan-ket';

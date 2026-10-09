@@ -116,7 +116,7 @@ const NhapXuatKhoPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranNhapXuatKho.noViewPermission'));
-    navigate('/nghia-tinh-dong-lam', { replace: true });
+    navigate('/cong-tac-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -653,7 +653,7 @@ const NhapXuatKhoPage: React.FC = () => {
         {activeTab === TAB_LIST ? (
           <>
             <NhapXuatKhoToolbar
-              onPageBack={() => navigate('/nghia-tinh-dong-lam')}
+              onPageBack={() => navigate('/cong-tac-xa-hoi')}
               onAdd={() => {
                 startTransition(() => {
                   setFormOrigin('list');
@@ -685,7 +685,7 @@ const NhapXuatKhoPage: React.FC = () => {
         ) : (
           <>
             <NhapXuatKhoCtFlatToolbar
-              onPageBack={() => navigate('/nghia-tinh-dong-lam')}
+              onPageBack={() => navigate('/cong-tac-xa-hoi')}
               onExport={handleExportCt}
             />
             <div className="flex-1 min-h-0">

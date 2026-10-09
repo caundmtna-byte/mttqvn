@@ -22,7 +22,7 @@ import { downloadNhapXuatKhoPhieuPdf } from '../utils/download-nhap-xuat-kho-phi
 import { downloadNhapXuatKhoPhieuXlsx } from '../utils/download-nhap-xuat-kho-phieu-xlsx';
 import { printNhapXuatKhoPhieuDocument } from '../utils/print-nhap-xuat-kho-phieu';
 
-const LIST_PATH = '/nghia-tinh-dong-lam/tiep-nhan-phan-bo-hang';
+const LIST_PATH = '/cong-tac-xa-hoi/tiep-nhan-phan-bo-hang';
 const PREVIEW_PREFIX = 'nhap-xuat-kho-phieu-preview';
 
 const KhoNhapXuatKhoInPhieuPage: React.FC = () => {

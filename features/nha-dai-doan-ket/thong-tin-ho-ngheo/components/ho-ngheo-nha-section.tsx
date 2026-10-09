@@ -17,7 +17,7 @@ import type { NhaDaiDoanKetFormInput } from '../../danh-sach/core/schema';
 
 const NddkForm = lazy(() => import('../../danh-sach/components/nddk-form'));
 
-const NDDK_LIST_PATH = '/nghia-tinh-dong-lam/nha-dai-doan-ket';
+const NDDK_LIST_PATH = '/cong-tac-xa-hoi/nha-dai-doan-ket';
 
 interface Props {
   hoNgheo: HoNgheo;

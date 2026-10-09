@@ -27,7 +27,7 @@ export const ui = {
     "quanLyGiaoViec": "Quản lý giao việc",
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
-    "anSinhXaHoi": "Nghĩa tình dòng Lam",
+    "anSinhXaHoi": "Công tác xã hội",
     "trangThongTinKhac": "Trang thông tin khác",
     "system": "Hệ thống",
     "skipToMain": "Chuyển đến nội dung chính",
@@ -60,7 +60,7 @@ export const ui = {
       "groupTaskMgmt": "Quản lý giao việc",
       "groupMatTranToQuoc": "Mặt trận tổ quốc",
       "groupPhanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
-      "groupAnSinhXaHoi": "Nghĩa tình dòng Lam"
+      "groupAnSinhXaHoi": "Công tác xã hội"
     }
   },
   "shared": {
@@ -409,7 +409,7 @@ export const ui = {
        * Thẻ "Sửa chữa nâng cấp" đã bị gỡ: "Sửa chữa" là một giá trị của trường
        * Loại hình hỗ trợ trong chính bảng dữ liệu, không phải một module riêng.
        */
-      "backToParent": "Quay lại Nghĩa tình dòng Lam"
+      "backToParent": "Quay lại Công tác xã hội"
     },
     "phanBienXaHoiDashboard": {
       "groupMain": "Kiểm tra, giám sát, phản biện xã hội",
@@ -629,7 +629,7 @@ export const ui = {
     "quanLyGiaoViec": "Quản lý giao việc",
     "phanBienXaHoi": "Kiểm tra, giám sát, phản biện xã hội",
     "danTocTonGiao": "Dân tộc, tôn giáo",
-    "anSinhXaHoi": "Nghĩa tình dòng Lam",
+    "anSinhXaHoi": "Công tác xã hội",
     "trangThongTinKhac": "Trang thông tin khác",
     "systemAdmin": "Hệ thống",
     "employee": "Nhân sự",

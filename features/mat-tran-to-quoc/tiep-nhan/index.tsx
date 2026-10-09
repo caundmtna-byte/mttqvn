@@ -84,7 +84,7 @@ const TiepNhanPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranTiepNhan.noViewPermission'));
-    navigate('/nghia-tinh-dong-lam', { replace: true });
+    navigate('/cong-tac-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -232,7 +232,7 @@ const TiepNhanPage: React.FC = () => {
     setShowExport(true);
   };
 
-  const handlePageBack = () => navigate('/nghia-tinh-dong-lam');
+  const handlePageBack = () => navigate('/cong-tac-xa-hoi');
 
   if (!canView) {
     return (

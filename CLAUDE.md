@@ -66,7 +66,7 @@ Mỗi module trong `features/` theo cấu trúc:
    `module_key` là segment cuối của đường dẫn module — trừ khi module khai `storageKey` trong
    `permission-modules-config.ts`. **Đổi đường dẫn module thì khai `storageKey` = khoá cũ**, đừng
    đổi khoá dưới DB (RLS gọi `fn_co_quyen('<khoá>', …)` ở hàng chục policy/trigger). Mẫu: nhóm
-   `/nghia-tinh-dong-lam` (đổi từ `/an-sinh-xa-hoi`), bảng link cũ → mới ở
+   `/cong-tac-xa-hoi` (đổi từ `/an-sinh-xa-hoi` → `/nghia-tinh-dong-lam` → nay), bảng link cũ → mới ở
    `lib/duong-dan-nghia-tinh.ts`, test chốt khoá ở `phan-quyen/core/module-storage-key.test.ts`.
 
    Đã siết **quyền GHI** cho: `var_phan_quyen`, `var_chuc_vu`, `var_nhan_vien` (sửa hồ sơ của

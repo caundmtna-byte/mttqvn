@@ -93,7 +93,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('nhaDaiDoanKet.noViewPermission'));
-    navigate('/nghia-tinh-dong-lam', { replace: true });
+    navigate('/cong-tac-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -359,7 +359,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
     setEditing(null);
   };
 
-  const handlePageBack = () => navigate('/nghia-tinh-dong-lam');
+  const handlePageBack = () => navigate('/cong-tac-xa-hoi');
 
   const tabsSlot = (
     <TabGroup

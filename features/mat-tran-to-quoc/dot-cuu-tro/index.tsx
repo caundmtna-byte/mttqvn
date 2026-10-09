@@ -89,7 +89,7 @@ const KhoDotCuuTroPage: React.FC = () => {
     if (!user || canView || didRedirect.current) return;
     didRedirect.current = true;
     toast.error(txt('matTranDotCuuTro.noViewPermission'));
-    navigate('/nghia-tinh-dong-lam', { replace: true });
+    navigate('/cong-tac-xa-hoi', { replace: true });
   }, [user, canView, navigate]);
 
   const [showForm, setShowForm] = useState(false);
@@ -325,7 +325,7 @@ const KhoDotCuuTroPage: React.FC = () => {
     <div className="flex flex-col h-page relative">
       <div className="flex-1 min-h-0 flex flex-col mt-1.5 rounded-xl border border-border bg-card shadow-sm overflow-hidden relative z-0">
         <KhoDotCuuTroToolbar
-          onPageBack={() => navigate('/nghia-tinh-dong-lam')}
+          onPageBack={() => navigate('/cong-tac-xa-hoi')}
           onAdd={() => {
             startTransition(() => {
               setFormOrigin('list');

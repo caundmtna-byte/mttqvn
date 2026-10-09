@@ -54,7 +54,7 @@ import type { ViNguoiNgheo } from '../../vi-nguoi-ngheo/core/types';
 import DetailSystemInfo from '@/components/shared/DetailSystemInfo';
 import { tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
 
-const VNN_PATH = '/nghia-tinh-dong-lam/chuong-trinh-ho-tro';
+const VNN_PATH = '/cong-tac-xa-hoi/chuong-trinh-ho-tro';
 const L = (k: string) => txt(`khenThuongNhaTaiTro.store.${k}`);
 
 interface Props {
