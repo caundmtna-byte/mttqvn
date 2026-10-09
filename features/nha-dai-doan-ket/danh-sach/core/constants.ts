@@ -25,7 +25,14 @@ export const NDDK_NGUON_HO_TRO_VALUES = [
 export type NddkNguonHoTro = (typeof NDDK_NGUON_HO_TRO_VALUES)[number];
 export const NDDK_NGUON_HO_TRO_DEFAULT: NddkNguonHoTro = 'Cấp tỉnh';
 
-export const NDDK_DOI_TUONG_VALUES = ['Hộ nghèo', 'Cận nghèo', 'Khó khăn'] as const;
+export const NDDK_DOI_TUONG_VALUES = [
+  'Hộ nghèo',
+  'Cận nghèo',
+  'Khó khăn',
+  'Trẻ mồ côi',
+  'Khuyết tật',
+  'Nạn nhân CĐDC',
+] as const;
 export type NddkDoiTuong = (typeof NDDK_DOI_TUONG_VALUES)[number];
 
 /**

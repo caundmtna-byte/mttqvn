@@ -149,6 +149,9 @@ export interface HnghXaPhuongRow {
   hoNgheo: number;
   canNgheo: number;
   khoKhan: number;
+  treMoCoi: number;
+  khuyetTat: number;
+  nanNhanCddc: number;
 }
 
 /**
@@ -172,6 +175,9 @@ export function aggregateHnghByXaPhuong(
       hoNgheo: 0,
       canNgheo: 0,
       khoKhan: 0,
+      treMoCoi: 0,
+      khuyetTat: 0,
+      nanNhanCddc: 0,
     };
     const n = r.so_ho;
     cur.tongSoHo += n;
@@ -180,6 +186,9 @@ export function aggregateHnghByXaPhuong(
     if (r.doi_tuong === 'Hộ nghèo') cur.hoNgheo += n;
     else if (r.doi_tuong === 'Cận nghèo') cur.canNgheo += n;
     else if (r.doi_tuong === 'Khó khăn') cur.khoKhan += n;
+    else if (r.doi_tuong === 'Trẻ mồ côi') cur.treMoCoi += n;
+    else if (r.doi_tuong === 'Khuyết tật') cur.khuyetTat += n;
+    else if (r.doi_tuong === 'Nạn nhân CĐDC') cur.nanNhanCddc += n;
     byXa.set(id, cur);
   }
   return [...byXa.values()].sort(

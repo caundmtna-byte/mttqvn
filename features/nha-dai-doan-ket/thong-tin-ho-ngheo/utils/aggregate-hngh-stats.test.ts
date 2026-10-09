@@ -78,6 +78,9 @@ describe('buildHnghBarData', () => {
       { label: 'Hộ nghèo', soHo: 0 },
       { label: 'Cận nghèo', soHo: 0 },
       { label: 'Khó khăn', soHo: 1 },
+      { label: 'Trẻ mồ côi', soHo: 0 },
+      { label: 'Khuyết tật', soHo: 0 },
+      { label: 'Nạn nhân CĐDC', soHo: 0 },
     ]);
   });
 
@@ -131,6 +134,18 @@ describe('aggregateHnghByXaPhuong', () => {
     ]);
     expect(out[0]).toMatchObject({ dangKhoKhan: 1, hetKhoKhan: 1, canNgheo: 1, khoKhan: 1, hoNgheo: 0 });
     expect(out.reduce((s, r) => s + r.tongSoHo, 0)).toBe(4);
+  });
+
+  it('đếm đủ 3 đối tượng mới, không rơi khỏi bảng theo xã', () => {
+    const [xa] = aggregateHnghByXaPhuong(
+      [
+        ho({ xa_phuong_id: '1', doi_tuong: 'Trẻ mồ côi' }),
+        ho({ xa_phuong_id: '1', doi_tuong: 'Khuyết tật' }),
+        ho({ so_ho: 2, xa_phuong_id: '1', doi_tuong: 'Nạn nhân CĐDC' }),
+      ],
+      'Chưa gán xã',
+    );
+    expect(xa).toMatchObject({ tongSoHo: 4, treMoCoi: 1, khuyetTat: 1, nanNhanCddc: 2 });
   });
 });
 

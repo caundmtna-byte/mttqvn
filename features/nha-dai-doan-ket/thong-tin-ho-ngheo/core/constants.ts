@@ -12,7 +12,14 @@
  */
 
 /** Đối tượng hộ — dùng CHUNG bộ giá trị với Nhà đại đoàn kết. */
-export const HNGH_DOI_TUONG_VALUES = ['Hộ nghèo', 'Cận nghèo', 'Khó khăn'] as const;
+export const HNGH_DOI_TUONG_VALUES = [
+  'Hộ nghèo',
+  'Cận nghèo',
+  'Khó khăn',
+  'Trẻ mồ côi',
+  'Khuyết tật',
+  'Nạn nhân CĐDC',
+] as const;
 export type HnghDoiTuong = (typeof HNGH_DOI_TUONG_VALUES)[number];
 
 /** Tôn giáo — chỉ ghi nhận hộ có theo tôn giáo hay không, không ghi tên. */

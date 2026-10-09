@@ -66,6 +66,9 @@ export async function exportHnghThongKeReportToExcel(input: {
     'Hộ nghèo': r.hoNgheo,
     'Cận nghèo': r.canNgheo,
     'Khó khăn': r.khoKhan,
+    'Trẻ mồ côi': r.treMoCoi,
+    'Khuyết tật': r.khuyetTat,
+    'Nạn nhân CĐDC': r.nanNhanCddc,
     [txt('hoNgheoThongKe.kpi.dangKhoKhan')]: r.dangKhoKhan,
     [txt('hoNgheoThongKe.kpi.hetKhoKhan')]: r.hetKhoKhan,
   }));

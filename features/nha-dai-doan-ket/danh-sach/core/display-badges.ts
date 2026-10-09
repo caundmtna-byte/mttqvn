@@ -24,4 +24,7 @@ export const nddkDoiTuongBadge: BadgeConfig = {
   'Hộ nghèo': { label: 'Hộ nghèo', color: 'rose' },
   'Cận nghèo': { label: 'Cận nghèo', color: 'amber' },
   'Khó khăn': { label: 'Khó khăn', color: 'slate' },
+  'Trẻ mồ côi': { label: 'Trẻ mồ côi', color: 'sky' },
+  'Khuyết tật': { label: 'Khuyết tật', color: 'violet' },
+  'Nạn nhân CĐDC': { label: 'Nạn nhân CĐDC', color: 'indigo' },
 };
