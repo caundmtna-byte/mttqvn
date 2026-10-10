@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { useCan } from '@/hooks/use-can';
@@ -91,8 +91,8 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
     defaultValues: MTTQ_CAN_BO_FORM_DEFAULT_VALUES,
   });
 
-  const selectedPhongBan = watch('id_phong_ban');
-  const chucVuIdWatch = watch('chuc_vu_id');
+  const selectedPhongBan = useWatch({ control, name: 'id_phong_ban' });
+  const chucVuIdWatch = useWatch({ control, name: 'chuc_vu_id' });
 
   const optChucVu = useMemo(
     () =>
@@ -114,7 +114,7 @@ const MttqCanBoInlineEditor = forwardRef<MttqCanBoInlineEditorHandle, Props>(fun
     }
   }, [optChucVu, chucVuIdWatch, setValue]);
 
-  const watchedCapQuanLy = watch('cap_quan_ly') as string[];
+  const watchedCapQuanLy = useWatch({ control, name: 'cap_quan_ly' }) as string[];
   const needsDonViXaPhuong = Array.isArray(watchedCapQuanLy) && watchedCapQuanLy.includes('Xã phường');
 
   const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);

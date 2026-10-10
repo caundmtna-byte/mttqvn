@@ -19,7 +19,6 @@ import { countKhoDonViCuuTroColumnSearchActive } from '../utils/column-search';
 import {
   KHO_DON_VI_CUU_TRO_LOAI,
   khoDonViCuuTroLoaiLabel,
-  KhoDonViCuuTroLoai,
 } from '../core/loai';
 import type { KhoDonViCuuTroListRow } from '../core/types';
 
@@ -44,7 +43,7 @@ const KhoDonViCuuTroToolbar: React.FC<Props> = ({
   nhomUngHoOptions = [],
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('matTranReliefSupportUnits');
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const {
     searchTerm,

@@ -19,7 +19,7 @@ export function thongTinCaNhanTieuBieuMatchesColumnSearch(
   for (const [colId, q] of Object.entries(columnSearch)) {
     const trimmed = q.trim();
     if (!trimmed) continue;
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'ho_va_ten':
         haystack = row.ho_va_ten ?? '';

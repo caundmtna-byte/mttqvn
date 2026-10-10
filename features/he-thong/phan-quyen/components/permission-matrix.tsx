@@ -458,8 +458,11 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set(
     PERMISSION_FUNCTIONS.flatMap((fn) => fn.groups.map((gr) => `${fn.id}:${gr.groupTitleKey}`)),
   ));
-  const [mobileSelectedModule, setMobileSelectedModule] = useState<string | null>(null);
-  const didRestoreMobileModule = useRef(false);
+  // Desktop dùng `activeModuleId` từ URL; chỉ mobile mở overlay chi tiết khi reload (đọc URL một lần lúc mount).
+  const [mobileSelectedModule, setMobileSelectedModule] = useState<string | null>(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) return null;
+    return resolvePermissionModuleIdFromQuery(searchParams.get(PERMISSION_MODULE_QUERY_KEY));
+  });
   const [selectedDeptFilter, setSelectedDeptFilter] = useState<string | null>(null);
   const [localPermissions, setLocalPermissions] = useState<Record<string, ActionType[]>>({});
   const updateMutation = useUpdateModulePermissions();
@@ -469,24 +472,18 @@ const PermissionMatrix: React.FC<Props> = ({ roles, isLoading }) => {
     ensureModuleKeyInUrl();
   }, [ensureModuleKeyInUrl]);
 
-  useEffect(() => {
-    if (didRestoreMobileModule.current) return;
-    didRestoreMobileModule.current = true;
-    // Desktop dùng `activeModuleId` từ URL; chỉ mobile mở overlay chi tiết khi reload.
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) return;
-    const raw = searchParams.get(PERMISSION_MODULE_QUERY_KEY);
-    const moduleId = resolvePermissionModuleIdFromQuery(raw);
-    if (moduleId) setMobileSelectedModule(moduleId);
-  }, [searchParams]);
-
-  useEffect(() => {
+  // Đổi module đang chọn ⇒ mở nhánh chức năng/nhóm chứa nó — chỉnh state ngay lúc render thay cho effect.
+  const [moduleDaMo, setModuleDaMo] = useState<string | null>(null);
+  if (moduleDaMo !== selectedModuleId) {
+    setModuleDaMo(selectedModuleId);
     const loc = findFunctionGroupKeysForModule(selectedModuleId);
-    if (!loc) return;
-    setExpandedFunctions((prev) => new Set([...prev, loc.fnId]));
-    setExpandedGroups((prev) => new Set([...prev, loc.groupKey]));
-    const fn = PERMISSION_FUNCTIONS.find((f) => f.id === loc.fnId) ?? null;
-    setSelectedFunction(fn);
-  }, [selectedModuleId]);
+    if (loc) {
+      setExpandedFunctions((prev) => new Set([...prev, loc.fnId]));
+      setExpandedGroups((prev) => new Set([...prev, loc.groupKey]));
+      const fn = PERMISSION_FUNCTIONS.find((f) => f.id === loc.fnId) ?? null;
+      setSelectedFunction(fn);
+    }
+  }
 
   const handleDesktopSelectModule = (moduleId: string) => {
     setActiveModuleId(moduleId);

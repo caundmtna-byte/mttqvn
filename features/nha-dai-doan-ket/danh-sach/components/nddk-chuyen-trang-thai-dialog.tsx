@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightLeft, Calendar, FileSignature, ListChecks, StickyNote } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -60,7 +60,6 @@ const NddkChuyenTrangThaiDialog: React.FC<Props> = ({
     register,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = useForm<NhaDaiDoanKetStatusChangeValues>({
     resolver: zodResolver(
@@ -75,7 +74,8 @@ const NddkChuyenTrangThaiDialog: React.FC<Props> = ({
   }, [open, initial, reset]);
 
   // Ô bắt buộc của trạng thái đang chọn (điền sẵn giá trị hiện có của hồ sơ).
-  const truongBatBuoc = nddkTruongBatBuoc(watch('trang_thai'), initial.nguon_ho_tro);
+  const trangThaiDangChon = useWatch({ control, name: 'trang_thai' });
+  const truongBatBuoc = nddkTruongBatBuoc(trangThaiDangChon, initial.nguon_ho_tro);
 
   const onSubmit: SubmitHandler<NhaDaiDoanKetStatusChangeValues> = async (values) => {
     await Promise.resolve(onSave(values));

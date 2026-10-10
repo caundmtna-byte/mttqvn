@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useId, useRef } from 'react';
+import React, { useState, useCallback, useId } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { chuanHoaDangGo, formatSoInput, parseSoInput } from '../../lib/number';
@@ -83,22 +83,23 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
     );
 
     const [displayValue, setDisplayValue] = useState(() => hienThi(value));
-    const dangHienThi = useRef(displayValue);
-    dangHienThi.current = displayValue;
+    const [nguonTruoc, setNguonTruoc] = useState({ value, decimalScale });
 
     /**
-     * Đồng bộ khi giá trị bên ngoài đổi (nạp lại hồ sơ, reset form).
+     * Đồng bộ khi giá trị bên ngoài đổi (nạp lại hồ sơ, reset form) — chỉnh state
+     * ngay lúc render khi `value` / `decimalScale` khác lần trước (so bằng
+     * `Object.is` như mảng phụ thuộc của effect).
      *
      * Bỏ qua khi chuỗi đang hiện đã đúng bằng con số đưa vào — nếu không thì mỗi
      * lần gõ sẽ có một vòng format đè lên chuỗi dở dang và nuốt mất dấu phẩy vừa
      * gõ ("1.500," bị rút thành "1.500"), không nhập nổi phần thập phân.
      */
-    useEffect(() => {
+    if (!Object.is(nguonTruoc.value, value) || nguonTruoc.decimalScale !== decimalScale) {
+      setNguonTruoc({ value, decimalScale });
       const so = soHienTai(value);
-      const dangCo = parseSoInput(dangHienThi.current, { choThapPhan: decimalScale > 0 });
-      if (so === dangCo) return;
-      setDisplayValue(formatSoInput(so, { soLeToiDa: decimalScale }));
-    }, [value, soHienTai, decimalScale]);
+      const dangCo = parseSoInput(displayValue, { choThapPhan: decimalScale > 0 });
+      if (so !== dangCo) setDisplayValue(formatSoInput(so, { soLeToiDa: decimalScale }));
+    }
 
     const ep = useCallback(
       (n: number): number => {

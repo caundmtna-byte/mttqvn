@@ -22,7 +22,7 @@ describe('fetchAllPages', () => {
   });
 
   it('respects custom pageSize', async () => {
-    const fetchPage = vi.fn(async (from: number, to: number) => {
+    const fetchPage = vi.fn(async (from: number, _to: number) => {
       if (from === 0) return [1, 2, 3];
       return [];
     });

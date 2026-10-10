@@ -125,7 +125,7 @@ const KyHopPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!canViewKyHopRow(viewer, viewingData)) {
       toast.error(txt('matTranKyHop.noViewPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, viewer]);
 

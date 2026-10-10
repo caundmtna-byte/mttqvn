@@ -1,6 +1,6 @@
 import type { User } from '@/types';
 import type { ActionType } from '@/features/he-thong/phan-quyen/core/types';
-import { usePermissionGrantStore } from '@/store/usePermissionGrantStore';
+import { usePermissionGrantStore, type PermissionGrantState } from '@/store/usePermissionGrantStore';
 
 /**
  * Hành động gắn với UI (nút, route) — mở rộng theo nghiệp vụ.
@@ -232,14 +232,18 @@ function canDepartmentsWithCapBac(
   return grantsAllow(allowed, need);
 }
 
-function matrixCan(user: User, action: AppAction, resource: AppResource): boolean {
+function matrixCan(
+  user: User,
+  action: AppAction,
+  resource: AppResource,
+  grantsByModule: Record<string, ActionType[]>
+): boolean {
   void user;
   const moduleId = APP_RESOURCE_TO_MODULE[resource];
   if (moduleId === undefined) {
     return legacyCan(user, action, resource);
   }
   const need = mapAppActionToActionType(action);
-  const { grantsByModule } = usePermissionGrantStore.getState();
 
   if (resource === 'company') {
     const ids = [moduleId, COMPANY_MODULE_ID_LEGACY];
@@ -255,17 +259,26 @@ function matrixCan(user: User, action: AppAction, resource: AppResource): boolea
 }
 
 /**
+ * Phần ma trận quyền mà `can()` đọc. Component đã subscribe ba trường này từ
+ * `usePermissionGrantStore` thì truyền thẳng vào `can()` — để `useMemo` thấy chúng là
+ * phụ thuộc thật (tính lại khi quyền hydrate), thay vì `can()` đọc ngầm `getState()`.
+ */
+export type PermissionSnapshot = Pick<PermissionGrantState, 'matrixActive' | 'grantsByModule' | 'chucVuCapBac'>;
+
+/**
  * Kiểm tra quyền phía client (UX: ẩn nút). Không thay thế RLS / API.
  *
  * - Mock mode admin (`user.role === 'admin'`): toàn quyền UI (trừ xóa profile).
  * - Supabase mode: mọi user đều `role='user'`, quyền hoàn toàn từ `var_chuc_vu.cap_bac` + `var_phan_quyen`.
  * - Không có `id_chuc_vu` (matrix mode) → deny all.
  * - Khi `matrixActive === true`: đối chiếu `grantsByModule` theo `module_id` + `ActionType`.
+ * - `quyen`: ảnh chụp ma trận quyền; bỏ trống thì đọc `usePermissionGrantStore.getState()`.
  */
 export function can(
   user: User | null | undefined,
   action: AppAction,
-  resource: AppResource
+  resource: AppResource,
+  quyen?: PermissionSnapshot
 ): boolean {
   if (!user) return false;
 
@@ -279,7 +292,7 @@ export function can(
     return false;
   }
 
-  const { matrixActive, grantsByModule, chucVuCapBac } = usePermissionGrantStore.getState();
+  const { matrixActive, grantsByModule, chucVuCapBac } = quyen ?? usePermissionGrantStore.getState();
   if (matrixActive) {
     // cap_bac=1: bypass đủ thao tác UI (kể cả xuất/nhập) cho mọi module có trong APP_RESOURCE_TO_MODULE
     const capBypassActions: AppAction[] = ['view', 'create', 'edit', 'delete', 'export', 'import', 'approve'];
@@ -302,14 +315,14 @@ export function can(
     if (
       action === 'export' &&
       APP_RESOURCE_TO_MODULE[resource] !== undefined &&
-      matrixCan(user, 'view', resource)
+      matrixCan(user, 'view', resource, grantsByModule)
     ) {
       return true;
     }
     if (action === 'import') {
-      return matrixCan(user, 'create', resource);
+      return matrixCan(user, 'create', resource, grantsByModule);
     }
-    return matrixCan(user, action, resource);
+    return matrixCan(user, action, resource, grantsByModule);
   }
 
   return legacyCan(user, action, resource);

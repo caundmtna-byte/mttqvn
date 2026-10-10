@@ -162,22 +162,19 @@ const BaiVietDanhSachPage: React.FC = () => {
     return () => resetState();
   }, [resetState]);
 
+  const theLoaiKey = filters.id_the_loai.join(',');
+  const nguonDangKey = filters.id_nguon_dang.join(',');
+  const trangDangKey = filters.id_trang_dang.join(',');
+  const nguoiTaoKey = filters.id_nguoi_tao.join(',');
   useEffect(() => {
     setPage(1);
-  }, [
-    searchTerm,
-    filters.id_the_loai.join(','),
-    filters.id_nguon_dang.join(','),
-    filters.id_trang_dang.join(','),
-    filters.id_nguoi_tao.join(','),
-    setPage,
-  ]);
+  }, [searchTerm, theLoaiKey, nguonDangKey, trangDangKey, nguoiTaoKey, setPage]);
 
   useEffect(() => {
     if (!viewing) return;
     if (!rowVisibleOnArticleList(listViewer, viewing)) {
       toast.error(txt('articleList.noViewRowPermission'));
-      setViewing(null);
+      queueMicrotask(() => setViewing(null));
       return;
     }
     const fresh = rows.find((r) => r.id === viewing.id);

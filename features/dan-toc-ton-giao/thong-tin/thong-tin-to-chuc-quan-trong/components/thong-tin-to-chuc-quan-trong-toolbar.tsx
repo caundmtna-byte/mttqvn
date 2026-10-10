@@ -31,7 +31,7 @@ const ThongTinToChucQuanTrongToolbar: React.FC<Props> = ({
   items,
 }) => {
   const { canCreate, canImport, canExport, canDelete } = useResourcePermissions('danTocToChucQuanTrong');
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const {
     searchTerm,

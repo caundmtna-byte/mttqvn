@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightLeft, Calendar, FileSignature, ListChecks, StickyNote } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -51,7 +51,6 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
     register,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = useForm<ViNguoiNgheoStatusChangeValues>({
     resolver: zodResolver(viNguoiNgheoStatusChangeSchema) as Resolver<ViNguoiNgheoStatusChangeValues>,
@@ -64,7 +63,8 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
   }, [open, initial, reset]);
 
   // Ô bắt buộc của trạng thái đang chọn (điền sẵn giá trị hiện có của biên bản).
-  const truongBatBuoc = vnnTruongBatBuoc(watch('trang_thai'), initial.nguon_ho_tro);
+  const trangThaiDangChon = useWatch({ control, name: 'trang_thai' });
+  const truongBatBuoc = vnnTruongBatBuoc(trangThaiDangChon, initial.nguon_ho_tro);
 
   const onSubmit: SubmitHandler<ViNguoiNgheoStatusChangeValues> = async (values) => {
     await Promise.resolve(onSave(values));

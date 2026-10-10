@@ -284,7 +284,7 @@ const DanhSachTangLuongPage: React.FC = () => {
     if (!viewingId || !viewingRow) return;
     if (!canViewTangLuongRow(viewer, viewingRow)) {
       toast.error(txt('matTranTangLuong.noViewPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingRow, viewer]);
 
@@ -407,7 +407,7 @@ const DanhSachTangLuongPage: React.FC = () => {
     const raw = searchParams.get('open')?.trim();
     if (!raw) return;
     const row = viewableRows.find((r) => r.id === raw);
-    if (row) handleView(row);
+    if (row) queueMicrotask(() => handleView(row));
     const next = new URLSearchParams(searchParams);
     next.delete('open');
     setSearchParams(next, { replace: true });

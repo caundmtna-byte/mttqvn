@@ -27,7 +27,7 @@ interface Props {
 
 const DipThamHoiToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDeleteMany, items }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('danTocDipThamHoi');
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const {
     searchTerm,

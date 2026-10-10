@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Megaphone,
@@ -127,7 +127,6 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<ThucHienPhanBienFormInput, unknown, ThucHienPhanBienFormValues>({
     defaultValues: thucHienPhanBienToFormInput(null),
@@ -155,8 +154,8 @@ const ThucHienPhanBienForm: React.FC<Props> = ({ initialData, onClose }) => {
     );
   }, [initialData, reset, scopedToXa, viewer.viewerDonViId, user?.id_phong_ban, phongBanOptions]);
 
-  const soLanHoanThanh = watch('so_lan_hoan_thanh');
-  const soLanKhaoSat = watch('so_lan_khao_sat');
+  const soLanHoanThanh = useWatch({ control, name: 'so_lan_hoan_thanh' });
+  const soLanKhaoSat = useWatch({ control, name: 'so_lan_khao_sat' });
   const phanTramPreview = phanTramFromFormValues({
     so_lan_hoan_thanh: Number(soLanHoanThanh) || 0,
     so_lan_khao_sat: Number(soLanKhaoSat) || 0,

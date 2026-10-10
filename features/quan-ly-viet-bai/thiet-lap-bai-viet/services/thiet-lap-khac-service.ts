@@ -5,7 +5,6 @@ import {
   THIET_LAP_KHAC_RETURNING_FULL,
   THIET_LAP_KHAC_SELECT_FULL,
 } from '../core/supabase-select';
-import { txt } from '@/lib/text';
 
 const repo = createRepository<BaiVietThietLapKhac>({
   tableName: 'bai_viet_thiet_lap_khac',

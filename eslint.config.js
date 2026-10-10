@@ -6,7 +6,16 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', '*.min.js', '.npm-cache/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '*.min.js',
+      '.npm-cache/**',
+      // Sinh tự động bởi `npm run types:supabase` — không lint file sinh ra.
+      'lib/supabase/database.types.ts',
+    ],
+  },
   // Script Node (không dùng globals browser như file TSX)
   {
     files: ['scripts/**/*.mjs'],

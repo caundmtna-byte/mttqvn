@@ -17,7 +17,7 @@ export function luongBacMatchesColumnSearch(
   for (const [colId, q] of Object.entries(columnSearch)) {
     const trimmed = q.trim();
     if (!trimmed) continue;
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'ngach':
         haystack = row.ngach_search ?? row.ngach_label ?? '';

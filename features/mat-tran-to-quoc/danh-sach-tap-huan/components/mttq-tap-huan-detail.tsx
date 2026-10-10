@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Briefcase,
   Building2,
@@ -127,9 +127,12 @@ const MttqLopTapHuanDetail: React.FC<Props> = ({ data, viewer, onClose, onEdit, 
   /** Bấm vào dòng bảng con → drawer xem (read-only), không mở form. */
   const [viewLineIndex, setViewLineIndex] = useState<number | null>(null);
 
-  useEffect(() => {
+  /** Đổi lớp → đóng drawer xem dòng (chỉnh state ngay khi render, không qua effect). */
+  const [prevDataId, setPrevDataId] = useState(data.id);
+  if (data.id !== prevDataId) {
+    setPrevDataId(data.id);
     setViewLineIndex(null);
-  }, [data.id]);
+  }
 
   const capBadgeConfig = useMemo(() => getTapHuanCapBadgeConfig(), []);
   const thuocDienBadgeConfig = useMemo(() => getTapHuanThuocDienBadgeConfig(), []);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Activity,
   BookOpen,
@@ -72,9 +72,12 @@ const MttqUyVienUyBanDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelet
   const phoneHref = uyVienPhoneTelHref(data.so_dien_thoai);
   const [detailTab, setDetailTab] = useState<string>(TAB_INFO);
 
-  useEffect(() => {
+  /** Đổi bản ghi → về tab Thông tin (chỉnh state ngay khi render, không qua effect). */
+  const [prevDataId, setPrevDataId] = useState(data.id);
+  if (data.id !== prevDataId) {
+    setPrevDataId(data.id);
     setDetailTab(TAB_INFO);
-  }, [data.id]);
+  }
 
   const tabs = useMemo<Tab[]>(
     () => [

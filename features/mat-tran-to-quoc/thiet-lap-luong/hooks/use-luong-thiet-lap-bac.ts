@@ -76,7 +76,6 @@ export function useUpdateLuongThietLapBac(onSuccess?: () => void) {
   return useMutation({
     mutationFn: ({
       id,
-      ngachId,
       data,
     }: {
       id: string;

@@ -1,7 +1,7 @@
 import type { MttqTangLuongKeHoachRow, MttqTangLuongListRow, MttqTangLuongLoaiKy } from '../core/types';
 import { CHIP_FILTER_NULL } from '../../danh-sach-can-bo/core/constants';
 import { MTTQ_TANG_LUONG_LOAI_KY_OPTIONS } from '../core/constants';
-import { computeNextDueDate, getLatestRecordForCanBo } from './tang-luong-cycle';
+import { getLatestRecordForCanBo } from './tang-luong-cycle';
 import { buildKeHoachRows } from './build-year-plan';
 
 export interface TangLuongStatsKpis {
@@ -18,10 +18,6 @@ export interface NamedCount {
   label: string;
   value: number;
 }
-
-const LOAI_LABEL = Object.fromEntries(
-  MTTQ_TANG_LUONG_LOAI_KY_OPTIONS.map((o) => [o.value, o.label]),
-) as Record<MttqTangLuongLoaiKy, string>;
 
 export function computeTangLuongKpis(
   rows: MttqTangLuongListRow[],

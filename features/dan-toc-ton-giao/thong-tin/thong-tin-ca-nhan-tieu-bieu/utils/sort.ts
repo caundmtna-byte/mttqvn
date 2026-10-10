@@ -13,7 +13,7 @@ export function sortThongTinCaNhanTieuBieuList(
   const dir = sort.direction === 'asc' ? 1 : -1;
   const col = sort.column;
   return [...rows].sort((a, b) => {
-    let cmp = 0;
+    let cmp: number;
     switch (col) {
       case 'ho_va_ten':
         cmp = compareStr(a.ho_va_ten, b.ho_va_ten);

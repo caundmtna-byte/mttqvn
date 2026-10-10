@@ -155,11 +155,14 @@ const FilterChipOverflowMenu: React.FC<FilterChipOverflowMenuProps> = ({ chips, 
     setPanelRect({ top: rect.bottom + 4, left, width });
   }, [open]);
 
+  /** Đóng menu và bỏ vị trí cũ — lần mở sau đo lại từ đầu. */
+  const dongMenu = useCallback(() => {
+    setOpen(false);
+    setPanelRect(null);
+  }, []);
+
   useLayoutEffect(() => {
-    if (!open) {
-      setPanelRect(null);
-      return;
-    }
+    if (!open) return;
     updatePanelRect();
     window.addEventListener('scroll', updatePanelRect, true);
     window.addEventListener('resize', updatePanelRect);
@@ -175,20 +178,20 @@ const FilterChipOverflowMenu: React.FC<FilterChipOverflowMenuProps> = ({ chips, 
       const target = event.target as Node;
       if (triggerRef.current?.contains(target)) return;
       if (panelRef.current?.contains(target)) return;
-      setOpen(false);
+      dongMenu();
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open]);
+  }, [open, dongMenu]);
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') dongMenu();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  }, [open, dongMenu]);
 
   return (
     <>
@@ -198,7 +201,7 @@ const FilterChipOverflowMenu: React.FC<FilterChipOverflowMenuProps> = ({ chips, 
           type="button"
           aria-expanded={open}
           aria-haspopup="true"
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={() => (open ? dongMenu() : setOpen(true))}
           className={cn(
             'relative shrink-0 inline-flex h-7 w-8 items-center justify-center rounded-lg border transition-all',
             open || activeCount > 0

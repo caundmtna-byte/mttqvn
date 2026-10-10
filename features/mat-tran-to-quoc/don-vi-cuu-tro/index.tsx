@@ -117,7 +117,7 @@ const KhoDonViCuuTroPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<KhoDonViCuuTroListRow | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
-  const [formOrigin, setFormOrigin] = useState<FormOrigin>('list');
+  const [, setFormOrigin] = useState<FormOrigin>('list');
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
@@ -301,13 +301,13 @@ const KhoDonViCuuTroPage: React.FC = () => {
     [sorted.length, rows.length, hasListFilters],
   );
 
+  /** Bản ghi đang xem không còn trong danh sách → đóng drawer (chỉnh state ngay khi render). */
+  if (viewingId && !rows.some((r) => r.id === viewingId)) setViewingId(null);
+
   useEffect(() => {
     if (!viewingId) return;
     const fresh = rows.find((r) => r.id === viewingId);
-    if (!fresh) {
-      setViewingId(null);
-      return;
-    }
+    if (!fresh) return;
     queryClient.setQueryData(queryKeys.khoDonViCuuTro.detail(viewingId), fresh);
   }, [rows, viewingId, queryClient]);
 

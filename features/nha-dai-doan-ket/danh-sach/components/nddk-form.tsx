@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Home,
@@ -127,7 +127,6 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<NhaDaiDoanKetFormInput, unknown, NhaDaiDoanKetFormValues>({
     defaultValues: nhaDaiDoanKetToFormInput(null),
@@ -138,11 +137,11 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
     >,
   });
 
-  const nguon = watch('nguon');
-  const nguonHoTro = watch('nguon_ho_tro');
+  const nguon = useWatch({ control, name: 'nguon' });
+  const nguonHoTro = useWatch({ control, name: 'nguon_ho_tro' });
   const canNtt = nddkCanNhaTaiTro(nguon, nguonHoTro);
-  const nhaTaiTroId = watch('nha_tai_tro_id');
-  const trangThai = watch('trang_thai');
+  const nhaTaiTroId = useWatch({ control, name: 'nha_tai_tro_id' });
+  const trangThai = useWatch({ control, name: 'trang_thai' });
   const batBuoc = useMemo(
     () => new Set(nddkTruongBatBuoc(trangThai, nguonHoTro)),
     [trangThai, nguonHoTro],

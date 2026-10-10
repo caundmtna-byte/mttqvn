@@ -54,36 +54,11 @@ import { NHAN_VIEN_SEARCHABLE_KEYS } from './utils/search-keys';
 import { employeeMatchesColumnSearch } from './utils/column-search';
 import { mergeEmployeeChucVuFromPositions } from './utils/merge-employee-chuc-vu-from-positions';
 import { useNhanVienViewer, nhanVienRowVisible } from './hooks/use-nhan-vien-viewer';
-import ToggleSwitch from '@/components/ui/ToggleSwitch';
 
 const EmployeeForm = lazy(() => import('./components/nhan-vien-form'));
 const EmployeeDetail = lazy(() => import('./components/nhan-vien-detail'));
 const EmployeeStatusChangeDialog = lazy(() => import('./components/nhan-vien-status-change-dialog'));
 const EmployeeResetPasswordDialog = lazy(() => import('./components/nhan-vien-doi-mat-khau-dialog'));
-
-/** Chọn trạng thái Hoạt động / Khóa trong dialog xác nhận (có state để switch hiển thị đúng). */
-const EmployeeStatusSwitchPicker: React.FC<{
-  initial: TrangThaiNhanVien;
-  onSelectionChange: (s: TrangThaiNhanVien) => void;
-}> = ({ initial, onSelectionChange }) => {
-  const [st, setSt] = useState<TrangThaiNhanVien>(initial);
-  return (
-    <ToggleSwitch
-      checked={st === 'Hoạt động'}
-      onChange={(checked) => {
-        const next: TrangThaiNhanVien = checked ? 'Hoạt động' : 'Khóa';
-        setSt(next);
-        onSelectionChange(next);
-      }}
-      label={txt('common.status')}
-      description={
-        st === 'Hoạt động'
-          ? txt('employee.form.statusSwitchActiveHint')
-          : txt('employee.form.statusSwitchLockedHint')
-      }
-    />
-  );
-};
 
 const DrawerLazyFallback: React.FC = () => (
   <div
@@ -208,7 +183,6 @@ const EmployeePage: React.FC = () => {
   // Đồng bộ viewing với dữ liệu server khi list thay đổi; đóng drawer nếu bản ghi không còn.
   // viewingEmp KHÔNG trong deps — đọc qua ref để tránh infinite loop.
   // Merge { ...viewing, ...row } để giữ hinh_anh (chỉ có trong detail query, không có trong list).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const viewing = viewingEmpRef.current;
     if (!viewing) return;

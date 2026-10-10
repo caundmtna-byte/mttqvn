@@ -1,5 +1,5 @@
 import type { User } from '@/types';
-import { can, APP_RESOURCE_TO_MODULE, type AppResource } from '@/lib/permissions';
+import { can, APP_RESOURCE_TO_MODULE, type AppResource, type PermissionSnapshot } from '@/lib/permissions';
 
 const HE_THONG_PREFIX = 'he-thong/';
 
@@ -88,12 +88,17 @@ export function isSidebarPathAlwaysVisible(path: string): boolean {
   return path === '/';
 }
 
-export function isSidebarPathVisibleForUser(user: User | null | undefined, path: string): boolean {
+/** `quyen`: ảnh chụp ma trận quyền đã subscribe ở component (xem `PermissionSnapshot`). */
+export function isSidebarPathVisibleForUser(
+  user: User | null | undefined,
+  path: string,
+  quyen?: PermissionSnapshot,
+): boolean {
   if (!user) return false;
   if (isSidebarPathAlwaysVisible(path)) return true;
   const gated = getSidebarPathGateResources(path);
   if (gated == null) return true;
-  return gated.some((r) => can(user, 'view', r));
+  return gated.some((r) => can(user, 'view', r, quyen));
 }
 
 /** `navigate('/x')` với `/x` === '/' + `module_id` từ `APP_RESOURCE_TO_MODULE`. */

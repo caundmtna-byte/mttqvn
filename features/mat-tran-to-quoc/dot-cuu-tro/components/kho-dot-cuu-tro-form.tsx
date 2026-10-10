@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Controller, useForm, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { Controller, useForm, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Activity,
@@ -75,14 +75,13 @@ const KhoDotCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<KhoDotCuuTroFormValues>({
     defaultValues: DEFAULT_VALUES,
     resolver: zodResolver(khoDotCuuTroSchema) as Resolver<KhoDotCuuTroFormValues>,
   });
 
-  const donViChuTri = watch('don_vi_chu_tri');
+  const donViChuTri = useWatch({ control, name: 'don_vi_chu_tri' });
   const donViOptions = useMemo(
     () =>
       scope.khoa

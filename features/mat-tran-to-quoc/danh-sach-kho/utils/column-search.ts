@@ -17,7 +17,7 @@ export function khoDanhSachKhoMatchesColumnSearch(
   for (const [colId, q] of Object.entries(columnSearch)) {
     const trimmed = q.trim();
     if (!trimmed) continue;
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'tt':
         haystack = String(row.tt ?? '');

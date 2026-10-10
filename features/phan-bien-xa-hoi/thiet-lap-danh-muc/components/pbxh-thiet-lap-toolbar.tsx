@@ -30,7 +30,7 @@ const PbxhThietLapToolbar: React.FC<Props> = ({
   onExport,
   onDeleteMany,
 }) => {
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
   const { canCreate, canExport, canDelete } = useResourcePermissions('phanBienThietLapDanhMuc');
 
   const {

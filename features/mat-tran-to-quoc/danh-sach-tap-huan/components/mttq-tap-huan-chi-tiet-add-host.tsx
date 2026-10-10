@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -76,8 +76,25 @@ const MttqTapHuanChiTietAddHost: React.FC<Props> = ({
   lopOptions,
   presetLopId,
 }) => {
-  const [pickedLopId, setPickedLopId] = useState('');
+  const [pickedLopId, setPickedLopId] = useState(() => (open && presetLopId?.trim()) || '');
   const [pickerLopId, setPickerLopId] = useState('');
+
+  /**
+   * Đóng → xoá lớp đã chọn; mở kèm lớp gán sẵn → chọn lớp đó.
+   * Chỉnh state ngay khi render (không qua effect); lần render đầu đã xử lý ở giá trị khởi tạo.
+   */
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevPresetLopId, setPrevPresetLopId] = useState(presetLopId);
+  if (open !== prevOpen || presetLopId !== prevPresetLopId) {
+    setPrevOpen(open);
+    setPrevPresetLopId(presetLopId);
+    if (!open) {
+      setPickedLopId('');
+      setPickerLopId('');
+    } else if (presetLopId?.trim()) {
+      setPickedLopId(presetLopId.trim());
+    }
+  }
   const updateMutation = useUpdateMttqLopTapHuan();
   const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
@@ -88,16 +105,6 @@ const MttqTapHuanChiTietAddHost: React.FC<Props> = ({
 
   const { data: lopData, isLoading: isLoadingLop } = useMttqLopTapHuanDetail(activeLopId);
 
-  useEffect(() => {
-    if (!open) {
-      setPickedLopId('');
-      setPickerLopId('');
-      return;
-    }
-    if (presetLopId?.trim()) {
-      setPickedLopId(presetLopId.trim());
-    }
-  }, [open, presetLopId]);
 
   const sortedLopOptions = useMemo(
     () =>

@@ -151,7 +151,8 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   const { fields, append, remove, update } = useFieldArray({ control, name: 'chi_tiet' });
-  const watchedChiTiet = useWatch({ control, name: 'chi_tiet' }) ?? [];
+  const watchedChiTietRaw = useWatch({ control, name: 'chi_tiet' });
+  const watchedChiTiet = useMemo(() => watchedChiTietRaw ?? [], [watchedChiTietRaw]);
   const watchedLoaiPhieu = useWatch({ control, name: 'loai_phieu' });
   const watchedKhoXuatId = useWatch({ control, name: 'kho_xuat_id' });
 
@@ -797,7 +798,12 @@ const NhapXuatKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
                 header: txt('common.actions'),
                 widthClass: 'w-[5.5rem] min-w-[5.5rem]',
                 renderCell: (r) => (
-                  <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="flex items-center justify-end gap-0.5"
+                    role="presentation"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
                     <TableRowIconButton
                       icon={Edit}
                       label={txt('common.edit')}

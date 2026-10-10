@@ -493,7 +493,7 @@ const HangHoaPage: React.FC = () => {
 
   const tabSlot = useMemo(
     () => <TabGroup tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="shrink-0" />,
-    [activeTab, tabs],
+    [activeTab, tabs, setActiveTab],
   );
 
   const goBack = () => navigate('/cong-tac-xa-hoi');

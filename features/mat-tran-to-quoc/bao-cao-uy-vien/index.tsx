@@ -184,7 +184,7 @@ const BaoCaoUyVienPage: React.FC = () => {
     if (!viewing) return;
     if (!canViewUyVienUyBanRow(uyVienViewer, viewing)) {
       toast.error(txt('matTranUyVienUyBan.noViewPermission'));
-      setViewing(null);
+      queueMicrotask(() => setViewing(null));
       return;
     }
     const fresh = rowsEnriched.find((r) => r.id === viewing.id);

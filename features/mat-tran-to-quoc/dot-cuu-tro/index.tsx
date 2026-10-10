@@ -219,12 +219,8 @@ const KhoDotCuuTroPage: React.FC = () => {
     [sorted.length, rowsTrongPhamVi.length, hasListFilters],
   );
 
-  useEffect(() => {
-    if (!viewingId) return;
-    if (!rowsTrongPhamVi.some((r) => r.id === viewingId)) {
-      setViewingId(null);
-    }
-  }, [rowsTrongPhamVi, viewingId]);
+  /** Bản ghi đang xem không còn trong phạm vi → đóng drawer (chỉnh state ngay khi render). */
+  if (viewingId && !rowsTrongPhamVi.some((r) => r.id === viewingId)) setViewingId(null);
 
   const handleEditFromList = useCallback(
     (item: KhoDotCuuTroListRow) => {

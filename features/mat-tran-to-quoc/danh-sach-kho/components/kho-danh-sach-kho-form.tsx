@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, MapPin, Type, Warehouse } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -75,7 +75,6 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<KhoDanhSachKhoFormValues>({
@@ -101,7 +100,7 @@ const KhoDanhSachKhoForm: React.FC<Props> = ({ initialData, onClose }) => {
   }, [initialData, reset, defaultDonViFromViewer, viewer.viewerDonViId]);
 
   /** Gắn xã → tên kho = "MTTQ <tên xã>" (DB gán lại bằng trigger), ô tên bị khoá. */
-  const donViId = watch('don_vi_id');
+  const donViId = useWatch({ control, name: 'don_vi_id' });
   const tenKhoTuXa = useMemo(() => {
     if (!donViId) return null;
     return tenKhoTheoXa(xaList.find((x) => String(x.id) === donViId)?.ten);

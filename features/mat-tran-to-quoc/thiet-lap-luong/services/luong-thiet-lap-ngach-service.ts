@@ -1,5 +1,4 @@
 import { createRepository } from '@/lib/data/create-repository';
-import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { LuongThietLapNgachDetail, LuongThietLapNgachListRow } from '../core/types';

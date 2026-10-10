@@ -13,7 +13,7 @@ export function sortThongTinToChucQuanTrongList(
   const dir = sort.direction === 'asc' ? 1 : -1;
   const col = sort.column;
   return [...rows].sort((a, b) => {
-    let cmp = 0;
+    let cmp: number;
     switch (col) {
       case 'loai_hinh':
         cmp = compareStr(a.loai_hinh, b.loai_hinh);

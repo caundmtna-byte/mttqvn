@@ -227,7 +227,7 @@ const DipThamHoiPage: React.FC = () => {
       if (row && !dttgRowVisibleByDonVi(viewer, [row.don_vi_to_chuc_id])) {
         toast.error(txt('danTocDipThamHoi.noViewRowPermission'));
       }
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
       return;
     }
     queryClient.setQueryData(queryKeys.danTocDipThamHoi.detail(viewingId), fresh);

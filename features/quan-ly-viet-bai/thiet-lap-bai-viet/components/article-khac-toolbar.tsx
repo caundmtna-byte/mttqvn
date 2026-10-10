@@ -33,7 +33,7 @@ const sectionTitleSlot = (title: string) => (
 );
 
 const ArticleKhacToolbar: React.FC<Props> = ({ store, items, sectionTitle, onAdd, onExport, onDeleteMany }) => {
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const { canCreate, canExport, canDelete } = useResourcePermissions('articleSettings');
 

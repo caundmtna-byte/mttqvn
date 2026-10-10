@@ -17,7 +17,7 @@ export function luongThietLapNgachMatchesColumnSearch(
   for (const [colId, q] of Object.entries(columnSearch)) {
     const trimmed = q.trim();
     if (!trimmed) continue;
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'thu_tu':
         haystack = String(row.thu_tu ?? '');

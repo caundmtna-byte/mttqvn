@@ -205,13 +205,13 @@ const KhoDanhSachKhoPage: React.FC = () => {
     [sorted.length, rows.length, hasListFilters],
   );
 
+  /** Bản ghi đang xem không còn trong danh sách → đóng drawer (chỉnh state ngay khi render). */
+  if (viewingId && !rows.some((r) => r.id === viewingId)) setViewingId(null);
+
   useEffect(() => {
     if (!viewingId) return;
     const fresh = rows.find((r) => r.id === viewingId);
-    if (!fresh) {
-      setViewingId(null);
-      return;
-    }
+    if (!fresh) return;
     queryClient.setQueryData(queryKeys.khoDanhSachKho.detail(viewingId), fresh);
   }, [rows, viewingId, queryClient]);
 

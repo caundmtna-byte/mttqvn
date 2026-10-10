@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Tạo / cập nhật bucket Storage `avatars` qua API (service role).
  * RLS policies: chạy thêm file SQL — scripts/sql/create_avatars_storage_full.sql

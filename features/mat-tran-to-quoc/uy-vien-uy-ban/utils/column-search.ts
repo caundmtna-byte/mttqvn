@@ -35,7 +35,7 @@ export function mttqUyVienUyBanMatchesColumnSearch(
     const trimmed = q.trim();
     if (!trimmed) continue;
 
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'tg_cap_nhat':
         haystack = `${row.tg_cap_nhat ?? ''} ${

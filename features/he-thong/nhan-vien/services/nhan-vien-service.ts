@@ -507,7 +507,7 @@ export const updateEmployeeStatus = async (
 
 async function safeDeleteAuthUsersByIds(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  let usernames: string[] = [];
+  let usernames: string[];
   const supabase = getSupabase();
   if (supabase) {
     const idNums = ids.map(normInt8Fk).filter((n): n is number => n != null);

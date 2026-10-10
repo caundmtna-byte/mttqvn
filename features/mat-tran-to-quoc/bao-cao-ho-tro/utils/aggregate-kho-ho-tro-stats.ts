@@ -349,7 +349,7 @@ export function sortReliefLookupRows(
   const dir = direction === 'asc' ? 1 : -1;
   const sorted = [...rows];
   sorted.sort((a, b) => {
-    let cmp = 0;
+    let cmp: number;
     switch (sortKey) {
       case 'ngay_phieu':
         cmp = (a.ngay_phieu ?? '').localeCompare(b.ngay_phieu ?? '');

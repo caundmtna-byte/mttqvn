@@ -174,7 +174,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
   useEffect(() => {
     const raw = searchParams.get('open')?.trim();
     if (!raw) return;
-    setViewingId(raw);
+    queueMicrotask(() => setViewingId(raw));
     const next = new URLSearchParams(searchParams);
     next.delete('open');
     setSearchParams(next, { replace: true });
@@ -185,7 +185,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!canViewHoNgheoRow(viewer, viewingData)) {
       toast.error(txt('hoNgheo.noViewRowPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, viewer]);
   const isListLoading = isLoading || waitingMatrixHydrate;

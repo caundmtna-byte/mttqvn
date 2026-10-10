@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { txt } from '@/lib/text';
-import { getErrorMessage, getLanguage } from '@/lib/utils';
+import { getLanguage } from '@/lib/utils';
 import { matchesSearchTerm } from '@/lib/searchUtils';
 import { useListWithFilter } from '@/lib/hooks';
 import { useExportData } from '@/lib/useExportData';
@@ -123,6 +123,18 @@ const DanhSachKhenThuongPage: React.FC = () => {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
 
+  /** Sang tab Thống kê: đóng drawer / form / xuất (chỉnh state ngay khi render, không qua effect). */
+  const [prevMainTab, setPrevMainTab] = useState(mainTab);
+  if (mainTab !== prevMainTab) {
+    setPrevMainTab(mainTab);
+    if (mainTab === 'thong_ke') {
+      setViewingId(null);
+      setShowExport(false);
+      setShowForm(false);
+      setEditing(null);
+    }
+  }
+
   const { data: chiTietFlatRows = [], isLoading: isLoadingChiTietFlat } = useMttqKhenThuongChiTietFlatList({
     enabled: canView && mainTab === 'chi_tiet',
   });
@@ -181,10 +193,6 @@ const DanhSachKhenThuongPage: React.FC = () => {
     if (mainTab !== 'thong_ke') return;
     clearSelection();
     setSearchTerm('');
-    setViewingId(null);
-    setShowExport(false);
-    setShowForm(false);
-    setEditing(null);
   }, [mainTab, clearSelection, setSearchTerm]);
 
   /** Mở drawer chi tiết khi đi từ liên kết `?open=<id_khen_thuong>` (vd. từ detail cán bộ). */
@@ -194,7 +202,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
     if (!raw) return;
     if (viewableRows.length === 0) return;
     const exists = viewableRows.some((r) => r.id === raw);
-    if (exists) setViewingId(raw);
+    if (exists) queueMicrotask(() => setViewingId(raw));
     const next = new URLSearchParams(searchParams);
     next.delete('open');
     setSearchParams(next, { replace: true });
@@ -205,7 +213,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!canViewKhenThuongRow(viewer, viewingData)) {
       toast.error(txt('matTranKhenThuong.noViewPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, viewer]);
 
@@ -680,7 +688,7 @@ const DanhSachKhenThuongPage: React.FC = () => {
         className="shrink-0"
       />
     ),
-    [mainTab],
+    [mainTab, setMainTab],
   );
 
   if (!canView) {

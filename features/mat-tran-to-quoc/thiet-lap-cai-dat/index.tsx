@@ -33,7 +33,7 @@ const ThietLapCaiDatPage: React.FC = () => {
   const { data: allRowsRaw, isLoading, isError, refetch } = useMttqThietLapAll({ enabled: canView });
   const store = useMttqThietLapListStore();
 
-  const allRows = Array.isArray(allRowsRaw) ? allRowsRaw : [];
+  const allRows = useMemo(() => (Array.isArray(allRowsRaw) ? allRowsRaw : []), [allRowsRaw]);
   const items = useMemo(() => allRows.filter((r) => r.loai === activeLoai), [allRows, activeLoai]);
 
   const { resetState } = store;

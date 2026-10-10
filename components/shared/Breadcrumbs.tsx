@@ -163,7 +163,7 @@ const Breadcrumbs: React.FC = () => {
     }
 
     return items;
-  }, [location.pathname, ROUTE_CONFIG, txt]);
+  }, [location.pathname, ROUTE_CONFIG]);
 
   if (location.pathname === '/') {
     return (

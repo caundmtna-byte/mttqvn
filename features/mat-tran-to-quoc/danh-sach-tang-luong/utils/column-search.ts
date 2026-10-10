@@ -21,7 +21,7 @@ export function tangLuongMatchesColumnSearch(
     if (!trimmed) continue;
     if (colId === 'ten_chuc_vu' && chipFilters?.chuc_vu_id?.length) continue;
     if (colId === 'ten_don_vi' && chipFilters?.don_vi_id?.length) continue;
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'ngay_nang_luong':
         haystack = row.ngay_nang_luong ?? '';

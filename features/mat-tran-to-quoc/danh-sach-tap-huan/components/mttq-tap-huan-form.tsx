@@ -183,7 +183,8 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   const { fields, append, remove, update } = useFieldArray({ control, name: 'chi_tiet' });
-  const watchedChiTiet = useWatch({ control, name: 'chi_tiet' }) ?? [];
+  const watchedChiTietRaw = useWatch({ control, name: 'chi_tiet' });
+  const watchedChiTiet = useMemo(() => watchedChiTietRaw ?? [], [watchedChiTietRaw]);
   const watchedCap = useWatch({ control, name: 'cap_tap_huan' });
   const watchedDonVi = useWatch({ control, name: 'don_vi_id' }) ?? '';
   const isCapXa = watchedCap === 'Cấp xã';
@@ -288,11 +289,11 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const openAddLine = useCallback(() => {
     setLineDrawer({ mode: 'add' });
-  }, []);
+  }, [setLineDrawer]);
 
   const openEditLine = useCallback((index: number) => {
     setLineDrawer({ mode: 'edit', index });
-  }, []);
+  }, [setLineDrawer]);
 
   const handleRemoveLine = useCallback(
     (index: number) => {
@@ -597,7 +598,9 @@ const MttqLopTapHuanForm: React.FC<Props> = ({ initialData, onClose }) => {
                 renderCell: (r) => (
                   <div
                     className="flex items-center justify-end gap-0.5"
+                    role="presentation"
                     onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <TableRowIconButton
                       icon={Edit}

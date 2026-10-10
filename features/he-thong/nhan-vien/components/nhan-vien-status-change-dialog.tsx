@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { txt } from '@/lib/text';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
@@ -31,10 +31,17 @@ const EmployeeStatusChangeDialog: React.FC<Props> = ({
 }) => {
   const [status, setStatus] = useState<TrangThaiNhanVien>('Hoạt động');
 
-  useEffect(() => {
-    if (!open || !employee) return;
-    setStatus(employee.trang_thai);
-  }, [open, employee]);
+  // Nạp lại giá trị từ bản ghi mỗi lần mở dialog / đổi bản ghi — chỉnh state ngay lúc render thay cho effect.
+  const [dongBoTu, setDongBoTu] = useState<{ open: boolean; employee: Employee | null }>({
+    open: false,
+    employee: null,
+  });
+  if (dongBoTu.open !== open || dongBoTu.employee !== employee) {
+    setDongBoTu({ open, employee });
+    if (open && employee) {
+      setStatus(employee.trang_thai);
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

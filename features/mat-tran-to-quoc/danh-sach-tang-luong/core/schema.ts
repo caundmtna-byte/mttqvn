@@ -26,7 +26,7 @@ export const mttqTangLuongSchema = z
     ghi_chu: optionalText,
     file_quyet_dinh: optionalText,
   })
-  .superRefine((data, ctx) => {
+  .superRefine((data) => {
     if (data.loai_ky !== 'dung_han' && !data.ngay_nang_luong) return;
   });
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, Calculator, Coins, Hash, Package, Ruler, StickyNote } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -78,7 +78,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
     control,
     reset,
     setValue,
-    watch,
+    getValues,
     formState: { errors },
   } = useForm<NhapXuatKhoCtLineFormValues>({
     resolver: zodResolver(nhapXuatKhoCtLineSchema) as Resolver<NhapXuatKhoCtLineFormValues>,
@@ -99,9 +99,9 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
     });
   }, [open, initialLine, reset]);
 
-  const watchedHangHoaId = watch('hang_hoa_id');
-  const watchedSoLuong = watch('so_luong');
-  const watchedDonGia = watch('don_gia');
+  const watchedHangHoaId = useWatch({ control, name: 'hang_hoa_id' });
+  const watchedSoLuong = useWatch({ control, name: 'so_luong' });
+  const watchedDonGia = useWatch({ control, name: 'don_gia' });
 
   const autoFilledDonGia = useMemo(() => {
     const id = (watchedHangHoaId ?? '').trim();
@@ -189,7 +189,7 @@ const NhapXuatKhoCtLineDrawer: React.FC<Props> = ({
                       field.onChange(id);
                       const opt = hangHoaOptions.find((o) => o.value === id);
                       if (opt) setValue('don_vi_tinh', opt.don_vi_tinh, { shouldDirty: true, shouldValidate: true });
-                      const currentDonGia = watch('don_gia');
+                      const currentDonGia = getValues('don_gia');
                       if ((currentDonGia ?? '').trim() === '' && lastDonGia) {
                         const last = lastDonGia.get(id);
                         if (last != null && last > 0) {

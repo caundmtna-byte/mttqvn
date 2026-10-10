@@ -305,7 +305,7 @@ const ThamHoiCaNhanPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!dttgRowVisibleByDonVi(viewer, [viewingData.don_vi_tham_hoi_id, viewingData.xa_phuong_id])) {
       toast.error(txt('danTocThamHoiCaNhan.noViewRowPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, viewer]);
 
@@ -322,7 +322,7 @@ const ThamHoiCaNhanPage: React.FC = () => {
 
     const openId = searchParams.get('open')?.trim();
     if (openId) {
-      setViewingId(openId);
+      startTransition(() => setViewingId(openId));
       const next = new URLSearchParams(searchParams);
       next.delete('open');
       setSearchParams(next, { replace: true });

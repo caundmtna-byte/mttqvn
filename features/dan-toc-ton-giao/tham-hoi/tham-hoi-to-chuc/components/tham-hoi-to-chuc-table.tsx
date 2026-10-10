@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { Building2, ExternalLink } from 'lucide-react';
 import { txt } from '@/lib/text';
 import type { ColumnConfig } from '@/store/createGenericStore';

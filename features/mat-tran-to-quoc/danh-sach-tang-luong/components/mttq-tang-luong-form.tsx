@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Calendar,
@@ -124,7 +124,7 @@ const MttqTangLuongForm: React.FC<Props> = ({
   const {
     control,
     handleSubmit,
-    watch,
+    getValues,
     setValue,
     reset,
     formState: { errors, isSubmitting },
@@ -140,11 +140,11 @@ const MttqTangLuongForm: React.FC<Props> = ({
     prevBacForLuongRef.current = defaultValues.bac_luong_id_moi?.trim() || null;
   }, [defaultValues, reset]);
 
-  const canBoId = watch('can_bo_id');
-  const ngachMoiId = watch('ngach_luong_id_moi');
-  const ngachCuId = watch('ngach_luong_id_cu');
-  const bacMoiId = watch('bac_luong_id_moi');
-  const luongValue = watch('luong');
+  const canBoId = useWatch({ control, name: 'can_bo_id' });
+  const ngachMoiId = useWatch({ control, name: 'ngach_luong_id_moi' });
+  const ngachCuId = useWatch({ control, name: 'ngach_luong_id_cu' });
+  const bacMoiId = useWatch({ control, name: 'bac_luong_id_moi' });
+  const luongValue = useWatch({ control, name: 'luong' });
 
   const { data: bacList = [] } = useLuongThietLapBacByNgach(ngachMoiId || null);
   const { data: bacCuList = [] } = useLuongThietLapBacByNgach(ngachCuId || null);
@@ -234,9 +234,9 @@ const MttqTangLuongForm: React.FC<Props> = ({
 
   useEffect(() => {
     if (!ngachMoiId) return;
-    const stillValid = bacList.some((b) => b.id === watch('bac_luong_id_moi'));
+    const stillValid = bacList.some((b) => b.id === getValues('bac_luong_id_moi'));
     if (!stillValid) setValue('bac_luong_id_moi', '');
-  }, [bacList, ngachMoiId, setValue, watch]);
+  }, [bacList, ngachMoiId, setValue, getValues]);
 
   const submitCore = (data: MttqTangLuongFormValues) => {
     const dateErr = validateNgayTruocHan(data.ngay_nang_luong, ngayDenHanGoc, data.loai_ky);

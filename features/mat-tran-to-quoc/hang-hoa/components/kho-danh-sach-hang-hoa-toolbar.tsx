@@ -39,7 +39,7 @@ const KhoDanhSachHangHoaToolbar: React.FC<Props> = ({
   // `import`. Chỉ dựa vào `canImport` là chưa đủ — `can()` cho token `view` đi qua
   // cả export lẫn import, nghĩa là người chỉ được XEM cũng thấy nút Nhập.
   const showImportButton = canCreate && canImport && Boolean(onImport);
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const {
     searchTerm,

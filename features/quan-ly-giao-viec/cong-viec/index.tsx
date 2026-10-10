@@ -313,7 +313,7 @@ const CongViecPage: React.FC = () => {
         className="shrink-0"
       />
     ),
-    [tabs, listScope],
+    [tabs, listScope, setListScope],
   );
 
   const trangThaiChipOptions = useMemo(

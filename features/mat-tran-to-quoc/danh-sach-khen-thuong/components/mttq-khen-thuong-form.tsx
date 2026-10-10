@@ -133,7 +133,8 @@ const MttqKhenThuongForm: React.FC<Props> = ({ initialData, onClose }) => {
   });
 
   const { fields, append, remove, update } = useFieldArray({ control, name: 'chi_tiet' });
-  const watchedChiTiet = useWatch({ control, name: 'chi_tiet' }) ?? [];
+  const watchedChiTietRaw = useWatch({ control, name: 'chi_tiet' });
+  const watchedChiTiet = useMemo(() => watchedChiTietRaw ?? [], [watchedChiTietRaw]);
 
   const canBoOptions = useMemo(
     () =>
@@ -192,11 +193,11 @@ const MttqKhenThuongForm: React.FC<Props> = ({ initialData, onClose }) => {
 
   const openAddLine = useCallback(() => {
     setLineDrawer({ mode: 'add' });
-  }, []);
+  }, [setLineDrawer]);
 
   const openEditLine = useCallback((index: number) => {
     setLineDrawer({ mode: 'edit', index });
-  }, []);
+  }, [setLineDrawer]);
 
   const handleRemoveLine = useCallback(
     (index: number) => {
@@ -463,7 +464,12 @@ const MttqKhenThuongForm: React.FC<Props> = ({ initialData, onClose }) => {
                 header: txt('common.actions'),
                 widthClass: 'w-[5.5rem] min-w-[5.5rem]',
                 renderCell: (r) => (
-                  <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="flex items-center justify-end gap-0.5"
+                    role="presentation"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
                     <TableRowIconButton
                       icon={Edit}
                       label={txt('common.edit')}

@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { defaultServerQueryOptions } from '@/lib/supabase/query-config';
 import { txt } from '@/lib/text';
-import { getErrorMessage, getLanguage } from '@/lib/utils';
+import { getLanguage } from '@/lib/utils';
 import { formatTenDonViCongTacDisplay } from '@/lib/format-ten-don-vi-cap-quan-ly';
 import { formatLopTenDonViDisplay } from './utils/display-format';
 import { matchesSearchTerm } from '@/lib/searchUtils';
@@ -130,6 +130,24 @@ const DanhSachTapHuanPage: React.FC = () => {
   /** Tab khi mở ExportDialog — tránh lệch cột khi user đổi tab lúc dialog mở. */
   const [exportTab, setExportTab] = useState<TapHuanMainTab>('lop');
 
+  /**
+   * Đổi tab: sang Thống kê thì đóng drawer / form / xuất; rời Thống kê thì xoá bộ lọc thống kê.
+   * Chỉnh state ngay khi render, không qua effect.
+   */
+  const [prevMainTab, setPrevMainTab] = useState(mainTab);
+  if (mainTab !== prevMainTab) {
+    setPrevMainTab(mainTab);
+    if (mainTab === 'thong_ke') {
+      setViewingId(null);
+      setShowExport(false);
+      setShowForm(false);
+      setEditing(null);
+    } else {
+      setThongKeThuocDien([]);
+      setThongKeDonViLop([]);
+    }
+  }
+
   const {
     searchTerm,
     setSearchTerm,
@@ -182,7 +200,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!canViewLopTapHuanRow(viewer, viewingData)) {
       toast.error(txt('matTranTapHuan.noViewPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, viewer]);
 
@@ -196,17 +214,7 @@ const DanhSachTapHuanPage: React.FC = () => {
     if (mainTab !== 'thong_ke') return;
     clearSelection();
     setSearchTerm('');
-    setViewingId(null);
-    setShowExport(false);
-    setShowForm(false);
-    setEditing(null);
   }, [mainTab, clearSelection, setSearchTerm]);
-
-  useEffect(() => {
-    if (mainTab === 'thong_ke') return;
-    setThongKeThuocDien([]);
-    setThongKeDonViLop([]);
-  }, [mainTab]);
 
   useEffect(() => {
     return () => {
@@ -785,7 +793,7 @@ const DanhSachTapHuanPage: React.FC = () => {
         className="shrink-0"
       />
     ),
-    [mainTab],
+    [mainTab, setMainTab],
   );
 
   if (!canView) {

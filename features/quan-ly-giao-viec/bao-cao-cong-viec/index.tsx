@@ -163,7 +163,6 @@ const BaoCaoCongViecPage: React.FC = () => {
   const navigate = useNavigate();
   const confirm = useConfirmStore((s) => s.confirm);
   const user = useAuthStore((s) => s.user);
-  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
   const matrixLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const canViewReport = useCan('view', 'taskReports');
   const canViewTasks = useCan('view', 'tasks');
@@ -249,10 +248,16 @@ const BaoCaoCongViecPage: React.FC = () => {
     ],
   );
 
-  // Reset trang khi đổi filter / sort / pageSize
-  useEffect(() => {
+  // Reset trang khi đổi filter / sort / pageSize — chỉnh state ngay lúc render thay cho effect.
+  const [pageResetKey, setPageResetKey] = useState({ rpcArgs, sort, pageSize });
+  if (
+    pageResetKey.rpcArgs !== rpcArgs ||
+    pageResetKey.sort !== sort ||
+    pageResetKey.pageSize !== pageSize
+  ) {
+    setPageResetKey({ rpcArgs, sort, pageSize });
     setPage(1);
-  }, [rpcArgs, sort, pageSize]);
+  }
 
   /* ----- queries ----- */
   const kpiQuery = useTaskReportKpi(rpcArgs, { enabled: queriesEnabled });

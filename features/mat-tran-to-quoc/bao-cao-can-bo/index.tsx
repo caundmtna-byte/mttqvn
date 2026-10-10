@@ -184,7 +184,7 @@ const BaoCaoCanBoPage: React.FC = () => {
     if (!viewing) return;
     if (!canViewCanBoRow(viewer, viewing)) {
       toast.error(txt('matTranCanBo.noViewRowPermission'));
-      setViewing(null);
+      queueMicrotask(() => setViewing(null));
       return;
     }
     const fresh = viewableRowsEnriched.find((r) => r.id === viewing.id);

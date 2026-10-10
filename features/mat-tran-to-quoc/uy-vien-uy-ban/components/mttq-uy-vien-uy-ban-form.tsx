@@ -433,7 +433,7 @@ const MttqUyVienUyBanForm: React.FC<Props> = ({ initialData, onClose, defaultNhi
       }
       footerCompact
     >
-      <form id={FORM_ID} onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form id={FORM_ID} onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-6">
         <FormSection title={txt('matTranUyVienUyBan.form.sectionMain')} icon={<Type size={14} />}>
           <FormGrid>
             <Controller

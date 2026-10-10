@@ -95,11 +95,14 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
     if (!nestedKyHopId || !kyHopNestedData) return;
     if (!canViewKyHopRow(kyHopViewer, kyHopNestedData)) {
       toast.error(txt('matTranKyHop.noViewPermission'));
-      setNestedKyHopId(null);
+      queueMicrotask(() => setNestedKyHopId(null));
     }
   }, [nestedKyHopId, kyHopNestedData, kyHopViewer]);
 
-  useEffect(() => {
+  /** Đổi nhiệm kỳ → về tab Thông tin, đóng drawer / form con (chỉnh state ngay khi render). */
+  const [prevDataId, setPrevDataId] = useState(data.id);
+  if (data.id !== prevDataId) {
+    setPrevDataId(data.id);
     setDetailTab(TAB_INFO);
     setNestedKyHopId(null);
     setNestedUyVienId(null);
@@ -107,7 +110,7 @@ const MttqNhiemKyDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete })
     setKyHopEditing(null);
     setShowUyVienForm(false);
     setUyVienEditing(null);
-  }, [data.id]);
+  }
 
   const invalidateKyHopChildQueries = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.mttqKyHop.byNhiemKy(data.id) });

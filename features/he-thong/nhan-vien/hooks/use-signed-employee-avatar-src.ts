@@ -10,27 +10,24 @@ import {
  */
 export function useSignedEmployeeAvatarSrc(stored: string | null | undefined): string {
   const syncSrc = resolveImageDisplaySrcSync(stored);
-  const [legacySrc, setLegacySrc] = useState('');
+  const canKyLegacy = !syncSrc && isLegacySupabaseAvatarPath(stored);
+  // Kết quả ký gắn với đúng `stored` đã ký — đổi ảnh thì kết quả cũ tự bị bỏ qua, không cần reset state.
+  const [legacy, setLegacy] = useState<{ stored: string | null | undefined; src: string } | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (syncSrc) {
-      setLegacySrc('');
-      return;
-    }
-    if (!isLegacySupabaseAvatarPath(stored)) {
-      setLegacySrc('');
-      return;
-    }
-
+    if (!canKyLegacy) return;
     let cancelled = false;
     void (async () => {
       const signed = await resolveLegacySupabaseAvatarSrc(stored);
-      if (!cancelled) setLegacySrc(signed);
+      if (!cancelled) setLegacy({ stored, src: signed });
     })();
     return () => {
       cancelled = true;
     };
-  }, [stored, syncSrc]);
+  }, [stored, canKyLegacy]);
 
-  return syncSrc || legacySrc;
+  if (syncSrc) return syncSrc;
+  return canKyLegacy && legacy != null && legacy.stored === stored ? legacy.src : '';
 }

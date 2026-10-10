@@ -39,7 +39,7 @@ export function mttqTapHuanMatchesColumnSearch(
     const trimmed = q.trim();
     if (!trimmed) continue;
 
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'tg_cap_nhat':
         haystack = `${row.tg_cap_nhat ?? ''} ${
@@ -72,7 +72,7 @@ export function mttqTapHuanChiTietFlatMatchesColumnSearch(
     const trimmed = q.trim();
     if (!trimmed) continue;
 
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'tg_cap_nhat_lop':
         haystack = `${row.tg_cap_nhat_lop ?? ''} ${

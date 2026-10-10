@@ -2,7 +2,6 @@ import { createRepository } from '@/lib/data/create-repository';
 import type { MttqThietLap, MttqThietLapLoai } from '../core/types';
 import type { MttqThietLapFormValues } from '../core/schema';
 import { MTTQ_THIET_LAP_RETURNING_FULL, MTTQ_THIET_LAP_SELECT_FULL } from '../core/supabase-select';
-import { txt } from '@/lib/text';
 
 const repo = createRepository<MttqThietLap>({
   tableName: 'mttq_thiet_lap',

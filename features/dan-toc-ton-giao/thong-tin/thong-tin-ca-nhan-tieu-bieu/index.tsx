@@ -286,7 +286,7 @@ const ThongTinCaNhanTieuBieuPage: React.FC = () => {
       if (row && !dttgRowVisibleByDonVi(viewer, [row.don_vi_id])) {
         toast.error(txt('danTocCaNhanTieuBieu.noViewRowPermission'));
       }
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
       return;
     }
     queryClient.setQueryData(queryKeys.danTocCaNhanTieuBieu.detail(viewingId), fresh);

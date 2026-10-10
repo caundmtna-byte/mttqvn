@@ -22,7 +22,7 @@ interface Props {
 
 const KhoDanhSachKhoToolbar: React.FC<Props> = ({ onPageBack, onAdd, onExport, onDeleteMany, items }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranReliefWarehouseList');
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const {
     searchTerm,

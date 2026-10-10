@@ -1,6 +1,5 @@
 import { createRepository } from '@/lib/data/create-repository';
 import { docNhanVienEmbed, tenNguoiThaoTac } from '@/lib/nguoi-thao-tac';
-import { txt } from '@/lib/text';
 import { getSupabase } from '@/lib/supabase/client';
 import { handleSupabaseError } from '@/lib/supabase/errors';
 import type { KhoDanhSachKhoDetail, KhoDanhSachKhoListRow } from '../core/types';

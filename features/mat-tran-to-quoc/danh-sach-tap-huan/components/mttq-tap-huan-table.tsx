@@ -227,7 +227,7 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
           return null;
       }
     },
-    [onEdit, onDelete, rowMenuOpenId, capBadgeConfig, txt],
+    [onEdit, onDelete, rowMenuOpenId, capBadgeConfig],
   );
 
   const handleRowClick = useCallback(
@@ -302,7 +302,7 @@ const MttqLopTapHuanTable = memo(function MttqLopTapHuanTable({
         </div>
       </div>
     ),
-    [handleRowClick, onEdit, onDelete, rowMenuOpenId, toggleSelection, capBadgeConfig, txt],
+    [handleRowClick, onEdit, onDelete, rowMenuOpenId, toggleSelection, capBadgeConfig],
   );
 
   return (

@@ -168,7 +168,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
   useEffect(() => {
     const raw = searchParams.get('open')?.trim();
     if (!raw) return;
-    setViewingId(raw);
+    queueMicrotask(() => setViewingId(raw));
     const next = new URLSearchParams(searchParams);
     next.delete('open');
     setSearchParams(next, { replace: true });
@@ -179,7 +179,7 @@ const NhaDaiDoanKetPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!canViewNddkRow(viewer, viewingData)) {
       toast.error(txt('nhaDaiDoanKet.noViewRowPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, viewer]);
   const isListLoading = isLoading || waitingMatrixHydrate;

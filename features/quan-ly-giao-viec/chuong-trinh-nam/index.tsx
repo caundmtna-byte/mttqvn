@@ -121,7 +121,7 @@ const ChuongTrinhNamPage: React.FC = () => {
     columns,
   } = useChuongTrinhNamStore();
 
-  const { data: rows = [], isLoading, isError, refetch } = useChuongTrinhNamList({ enabled: canView });
+  const { data: rows = [], isLoading } = useChuongTrinhNamList({ enabled: canView });
   const { data: viewingData } = useChuongTrinhNamDetail(viewingId);
   const deleteMutation = useDeleteChuongTrinhNamMany();
   const chuongTrinhViewer = useChuongTrinhNamViewer();
@@ -135,7 +135,7 @@ const ChuongTrinhNamPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!canViewChuongTrinhNamRow(chuongTrinhViewer, viewingData)) {
       toast.error(txt('chuongTrinhNam.service.rowViewDenied'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, chuongTrinhViewer]);
 
@@ -428,7 +428,7 @@ const ChuongTrinhNamPage: React.FC = () => {
         className="shrink-0"
       />
     ),
-    [tabs, mainTab],
+    [tabs, mainTab, setMainTab],
   );
 
   const handleCloseForm = () => {

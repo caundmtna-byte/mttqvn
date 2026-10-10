@@ -11,7 +11,7 @@ import type { KhoDanhMucHangHoaListRow, KhoDanhSachHangHoaListRow } from '../../
 import { NHAP_XUAT_KHO_LOAI_PHIEU, loaiPhieuLabel } from '../../nhap-xuat-kho/core/constants';
 import type { NhapXuatKhoLoaiPhieu } from '../../nhap-xuat-kho/core/constants';
 import { useTonKhoNxtStore } from '../store/useTonKhoNxtStore';
-import { getDateRangeFromPreset, getPresetFromDates } from '../core/datePresets';
+import { getPresetFromDates } from '../core/datePresets';
 import { queryKeys } from '@/lib/query-keys';
 import { txt } from '@/lib/text';
 import { cn } from '@/lib/utils';

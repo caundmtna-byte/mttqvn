@@ -30,6 +30,7 @@ const CommandPalette = lazy(() =>
 import { SIDEBAR_MENU } from '../../lib/sidebar-menu';
 import { isSidebarPathVisibleForUser } from '../../lib/nav-module-visibility';
 import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
+import { usePermissionSnapshot } from '../../hooks/use-permission-snapshot';
 import { toast } from 'sonner';
 import {
   changePasswordValidationMessage,
@@ -44,11 +45,9 @@ const SIDEBAR_WIDTH_COLLAPSED = 64;
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
-  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
+  const quyen = usePermissionSnapshot();
   /** Quyền chưa về thì giữ nguyên danh sách cũ, đừng lọc rỗng rồi nhảy lại (xem Home.tsx). */
   const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
-  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
-  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
   const { sidebarOpen, toggleSidebar, companyInfo, primaryColor, setTheme } = useUIStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -175,13 +174,13 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     () =>
       // Trong lúc chờ quyền: chỉ hiện mục luôn-hiện (Trang chủ), không hiện danh sách
       // lọc dở dang rồi nhảy thêm mục khi quyền về.
-      (waitingPermissions ? SIDEBAR_MENU.filter((m) => m.path === '/') : SIDEBAR_MENU.filter((m) => isSidebarPathVisibleForUser(user, m.path)))
+      (waitingPermissions ? SIDEBAR_MENU.filter((m) => m.path === '/') : SIDEBAR_MENU.filter((m) => isSidebarPathVisibleForUser(user, m.path, quyen)))
         .map(({ path, nameKey, icon }) => ({
           name: txt(nameKey),
           icon,
           path,
         })),
-    [user, waitingPermissions, matrixActive, grantsByModule, chucVuCapBac],
+    [user, waitingPermissions, quyen],
   );
 
   const sidebarTransition = { duration: 0.15, ease: 'circOut' as const };

@@ -134,7 +134,7 @@ const UyVienUyBanPage: React.FC = () => {
     if (!viewingId || !viewingData) return;
     if (!canViewUyVienUyBanRow(viewer, viewingData)) {
       toast.error(txt('matTranUyVienUyBan.noViewPermission'));
-      setViewingId(null);
+      queueMicrotask(() => setViewingId(null));
     }
   }, [viewingId, viewingData, viewer]);
 

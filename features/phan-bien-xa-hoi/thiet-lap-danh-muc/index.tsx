@@ -33,7 +33,7 @@ const ThietLapDanhMucPage: React.FC = () => {
   const { data: allRowsRaw, isLoading, isError, refetch } = usePbxhThietLapAll({ enabled: canView });
   const store = usePbxhThietLapStore();
 
-  const allRows = Array.isArray(allRowsRaw) ? allRowsRaw : [];
+  const allRows = useMemo(() => (Array.isArray(allRowsRaw) ? allRowsRaw : []), [allRowsRaw]);
   const items = useMemo(() => allRows.filter((r) => r.loai === activeLoai), [allRows, activeLoai]);
 
   const { resetState } = store;

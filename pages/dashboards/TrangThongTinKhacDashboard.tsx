@@ -5,7 +5,7 @@ import ModuleDashboardLayout from '../../components/dashboard/ModuleDashboardLay
 import type { ModuleGroup } from '../../components/dashboard/ModuleDashboardLayout';
 import type { ModuleItem } from '../../components/dashboard/SubModuleCard';
 import { useAuthStore } from '../../store/useStore';
-import { usePermissionGrantStore } from '../../store/usePermissionGrantStore';
+import { usePermissionSnapshot } from '../../hooks/use-permission-snapshot';
 import { can } from '../../lib/permissions';
 import { appResourceForDashboardNavigatePath } from '../../lib/nav-module-visibility';
 
@@ -23,9 +23,7 @@ function openExternal(url: string) {
 
 const TrangThongTinKhacDashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
-  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
-  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
+  const quyen = usePermissionSnapshot();
 
   const groups = useMemo((): ModuleGroup[] => {
     type Draft = Omit<ModuleItem, 'action'> & { path: string; externalUrl: string };
@@ -100,7 +98,7 @@ const TrangThongTinKhacDashboard: React.FC = () => {
           .filter((item) => {
             const res = appResourceForDashboardNavigatePath(item.path);
             if (!user || res == null) return true;
-            return can(user, 'view', res);
+            return can(user, 'view', res, quyen);
           })
           .map(
             (item): ModuleItem => ({
@@ -114,7 +112,7 @@ const TrangThongTinKhacDashboard: React.FC = () => {
           ),
       }))
       .filter((g) => g.items.length > 0);
-  }, [user, matrixActive, grantsByModule, chucVuCapBac]);
+  }, [user, quyen]);
 
   return <ModuleDashboardLayout groups={groups} />;
 };

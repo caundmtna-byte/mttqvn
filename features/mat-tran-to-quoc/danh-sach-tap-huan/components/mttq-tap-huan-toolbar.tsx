@@ -86,7 +86,7 @@ const MttqLopTapHuanToolbar: React.FC<Props> = ({
   } = useMttqLopTapHuanStore();
 
   const selectedCount = selectedIds.size;
-  const toChucFilter = filters.to_chuc_id ?? [];
+  const toChucFilter = useMemo(() => filters.to_chuc_id ?? [], [filters.to_chuc_id]);
 
   const activeFilterCount = useMemo(() => {
     const columnSearchN = countTapHuanColumnSearchActive(filters.columnSearch);

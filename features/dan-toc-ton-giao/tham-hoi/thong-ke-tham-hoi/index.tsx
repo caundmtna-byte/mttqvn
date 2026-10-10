@@ -45,7 +45,6 @@ import {
 } from '@/components/shared/stats';
 import { chartFillForCategoricalBar } from '@/lib/constants/chart-colors';
 import FilterChipMultiSelect from '@/components/shared/FilterChipMultiSelect';
-import type { Option } from '@/components/ui/MultiSelect';
 import ExportDialog from '@/components/shared/ExportDialog';
 import { useExportData } from '@/lib/useExportData';
 import { useAuthStore } from '@/store/useStore';
@@ -99,22 +98,6 @@ const loaiThamHoiBadge = {
   [txt('dttgThongKeThamHoi.stats.filterLoaiToChuc')]: { label: txt('dttgThongKeThamHoi.stats.filterLoaiToChuc'), color: 'blue' as const },
   [txt('dttgThongKeThamHoi.stats.filterLoaiCaNhan')]: { label: txt('dttgThongKeThamHoi.stats.filterLoaiCaNhan'), color: 'sky' as const },
 };
-
-function buildDimOptions(
-  rows: ThamHoiThongKeRow[],
-  pick: (r: ThamHoiThongKeRow) => { id: string; label: string },
-): Option[] {
-  const m = new Map<string, { label: string; count: number }>();
-  for (const r of rows) {
-    const { id, label } = pick(r);
-    const prev = m.get(id);
-    if (prev) prev.count += 1;
-    else m.set(id, { label: label || id, count: 1 });
-  }
-  return [...m.entries()]
-    .map(([value, v]) => ({ value, label: v.label, count: v.count }))
-    .sort((a, b) => a.label.localeCompare(b.label, getLanguage()));
-}
 
 const ThongKeThamHoiPage: React.FC = () => {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { Users } from 'lucide-react';
@@ -122,8 +122,8 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
     defaultValues: viewerDefaultValues,
   });
 
-  const selectedPhongBan = watch('id_phong_ban');
-  const chucVuIdWatch = watch('chuc_vu_id');
+  const selectedPhongBan = useWatch({ control, name: 'id_phong_ban' });
+  const chucVuIdWatch = useWatch({ control, name: 'chuc_vu_id' });
 
   const optChucVu = useMemo(
     () =>
@@ -145,7 +145,7 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
     }
   }, [optChucVu, chucVuIdWatch, setValue]);
 
-  const watchedCapQuanLy = watch('cap_quan_ly') as string[];
+  const watchedCapQuanLy = useWatch({ control, name: 'cap_quan_ly' }) as string[];
   const needsDonViXaPhuong = Array.isArray(watchedCapQuanLy) && watchedCapQuanLy.includes('Xã phường');
 
   const tinhById = useMemo(() => new Map(tinhList.map((t) => [t.id, t.ten])), [tinhList]);
@@ -171,7 +171,7 @@ const MttqCanBoForm: React.FC<Props> = ({ initialData, onClose, stackLevel = 0, 
     }
   }, [needsDonViXaPhuong, setValue]);
 
-  const donViIdWatch = watch('don_vi_id');
+  const donViIdWatch = useWatch({ control, name: 'don_vi_id' });
   useEffect(() => {
     if (isEdit) return;
     if (needsDonViXaPhuong && defaultDonViFromViewer && viewerDonViId && !donViIdWatch) {

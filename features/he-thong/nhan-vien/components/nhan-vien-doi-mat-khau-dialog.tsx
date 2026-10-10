@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { KeyRound, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { txt } from '@/lib/text';
 import GenericDrawer from '@/components/shared/GenericDrawer';
@@ -44,11 +44,21 @@ const EmployeeResetPasswordDialog: React.FC<Props> = ({
   const [hien, setHien] = useState({ matKhau: false, xacNhan: false });
   const [loi, setLoi] = useState<string | null>(null);
 
-  useEffect(() => {
+  const matKhauRef = useRef<HTMLInputElement>(null);
+
+  // Đổi sang nhân viên khác thì xoá trắng ô nhập — chỉnh state ngay lúc render thay cho effect.
+  const [employeeIdTruoc, setEmployeeIdTruoc] = useState(employee.id);
+  if (employeeIdTruoc !== employee.id) {
+    setEmployeeIdTruoc(employee.id);
     setMatKhau('');
     setXacNhan('');
     setLoi(null);
-  }, [employee.id]);
+  }
+
+  // Thay `autoFocus`: đặt con trỏ vào ô mật khẩu mới khi hộp thoại vừa mở.
+  useEffect(() => {
+    matKhauRef.current?.focus();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,13 +122,13 @@ const EmployeeResetPasswordDialog: React.FC<Props> = ({
           </label>
           <div className="relative">
             <input
+              ref={matKhauRef}
               id="nhan-vien-mat-khau-moi"
               type={hien.matKhau ? 'text' : 'password'}
               value={matKhau}
               onChange={(e) => setMatKhau(e.target.value)}
               placeholder={txt('employee.resetPassword.placeholder')}
               autoComplete="new-password"
-              autoFocus
               className={cn(INPUT_CLASS)}
             />
             <button

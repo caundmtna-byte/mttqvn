@@ -72,8 +72,7 @@ interface Props {
 
 const ChuongTrinhNamDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const { canEdit, canDelete } = useResourcePermissions('annualPrograms');
-  const { canCreate: canCreateTask, canEdit: canEditTask, canDelete: canDeleteTask } =
-    useResourcePermissions('tasks');
+  const { canCreate: canCreateTask } = useResourcePermissions('tasks');
   const confirm = useConfirmStore((s) => s.confirm);
   const trangThaiBadgeConfig = useMemo(() => getChuongTrinhNamTrangThaiBadgeConfig(), []);
   const tienDoLabel = formatChuongTrinhNamTienDo(data);
@@ -102,7 +101,7 @@ const ChuongTrinhNamDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete
   useEffect(() => {
     if (!cvViewing) return;
     const fresh = rowsEnriched.find((r) => r.id === cvViewing.id);
-    if (fresh && fresh !== cvViewing) setCvViewing(fresh);
+    if (fresh && fresh !== cvViewing) queueMicrotask(() => setCvViewing(fresh));
   }, [rowsEnriched, cvViewing]);
 
   const closeCvForm = useCallback(() => {

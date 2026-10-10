@@ -61,7 +61,7 @@ export function mttqKhenThuongMatchesColumnSearch(
     const trimmed = q.trim();
     if (!trimmed) continue;
 
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'ngay_khen_thuong':
         haystack = `${row.ngay_khen_thuong ?? ''} ${
@@ -111,7 +111,7 @@ export function mttqKhenThuongChiTietFlatMatchesColumnSearch(
     const trimmed = q.trim();
     if (!trimmed) continue;
 
-    let haystack = '';
+    let haystack: string;
     switch (colId) {
       case 'ngay_khen_thuong':
         haystack = `${row.ngay_khen_thuong ?? ''} ${

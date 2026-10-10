@@ -14,7 +14,7 @@ export function dipThamHoiMatchesColumnSearch(row: DipThamHoi, columnSearch: Rec
   for (const key of keys) {
     const needle = cs[key]?.trim().toLowerCase();
     if (!needle) continue;
-    let haystack = '';
+    let haystack: string;
     switch (key) {
       case 'ten_dip':
         haystack = row.ten_dip ?? '';

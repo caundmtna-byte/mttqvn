@@ -29,7 +29,7 @@ const LuongNgachToolbar: React.FC<Props> = ({
   items,
 }) => {
   const { canCreate, canExport, canDelete } = useResourcePermissions('matTranSalarySetup');
-  const itemRows = Array.isArray(items) ? items : [];
+  const itemRows = useMemo(() => (Array.isArray(items) ? items : []), [items]);
 
   const {
     searchTerm,

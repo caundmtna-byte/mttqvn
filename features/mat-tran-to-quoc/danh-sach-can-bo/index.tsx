@@ -156,7 +156,7 @@ const DanhSachCanBoPage: React.FC = () => {
     if (!viewing) return;
     if (!canViewCanBoRow(viewer, viewing)) {
       toast.error(txt('matTranCanBo.noViewRowPermission'));
-      setViewing(null);
+      queueMicrotask(() => setViewing(null));
       return;
     }
     const fresh = viewableRowsEnriched.find((r) => r.id === viewing.id);
@@ -187,17 +187,18 @@ const DanhSachCanBoPage: React.FC = () => {
   } = useMttqCanBoFilterCounts(viewableRowsEnriched, searchTerm, filters, departments);
 
   useEffect(() => {
-    const F = normalizeMttqCanBoFilters(filters);
-    if (F.phong_ban_id.length === 0 || F.chuc_vu_id.length === 0) return;
-    const pruned = F.chuc_vu_id.filter((cvId) => {
+    const phongBanIds = filters.phong_ban_id ?? [];
+    const chucVuIds = filters.chuc_vu_id ?? [];
+    if (phongBanIds.length === 0 || chucVuIds.length === 0) return;
+    const pruned = chucVuIds.filter((cvId) => {
       if (cvId === CHIP_FILTER_NULL) return true;
       return viewableRowsEnriched.some(
         (r) =>
           r.chuc_vu_id === cvId &&
-          rowMatchesPhongBanFilter(r.phong_ban_id, F.phong_ban_id, departments),
+          rowMatchesPhongBanFilter(r.phong_ban_id, phongBanIds, departments),
       );
     });
-    if (pruned.length !== F.chuc_vu_id.length) setFilter('chuc_vu_id', pruned);
+    if (pruned.length !== chucVuIds.length) setFilter('chuc_vu_id', pruned);
   }, [filters.phong_ban_id, filters.chuc_vu_id, viewableRowsEnriched, departments, setFilter]);
 
   const sorted = useMemo(() => {

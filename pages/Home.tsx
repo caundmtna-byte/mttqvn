@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/useStore';
 import { usePermissionGrantStore } from '../store/usePermissionGrantStore';
 import { SIDEBAR_MENU } from '../lib/sidebar-menu';
 import { isSidebarPathVisibleForUser } from '../lib/nav-module-visibility';
+import { usePermissionSnapshot } from '../hooks/use-permission-snapshot';
 import 'dayjs/locale/vi';
 
 function getGreetingKey(hour: number): string {
@@ -25,11 +26,9 @@ const Home: React.FC = () => {
    */
   const permissionsLoading = usePermissionGrantStore((s) => s.matrixLoading);
   const waitingPermissions = user != null && user.role !== 'admin' && permissionsLoading;
-  const matrixActive = usePermissionGrantStore((s) => s.matrixActive);
-  const grantsByModule = usePermissionGrantStore((s) => s.grantsByModule);
-  const chucVuCapBac = usePermissionGrantStore((s) => s.chucVuCapBac);
+  const quyen = usePermissionSnapshot();
   const hour = new Date().getHours();
-  const greetingKey = getGreetingKey(hour);
+  const greeting = txt(getGreetingKey(hour));
 
   const container = {
     hidden: { opacity: 0 },
@@ -50,21 +49,21 @@ const Home: React.FC = () => {
 
   const modules = useMemo(
     () =>
-      SIDEBAR_MENU.filter((m) => m.path !== '/' && isSidebarPathVisibleForUser(user, m.path)).map((m) => ({
+      SIDEBAR_MENU.filter((m) => m.path !== '/' && isSidebarPathVisibleForUser(user, m.path, quyen)).map((m) => ({
         title: txt(m.nameKey),
         description: m.descriptionKey ? txt(m.descriptionKey) : '',
         icon: m.icon,
         path: m.path,
         gradient: m.gradient,
       })),
-    [user, matrixActive, permissionsLoading, grantsByModule, chucVuCapBac],
+    [user, quyen],
   );
 
   return (
     <div className="pb-10 pt-2 shrink-0">
       <div className="mb-6">
         <h1 className="text-lg md:text-xl font-semibold text-foreground tracking-tight">
-          {txt(greetingKey)},{' '}
+          {greeting},{' '}
           <span className="text-primary">{user?.full_name || txt('page.home.adminFallback')}</span> 👋
         </h1>
       </div>

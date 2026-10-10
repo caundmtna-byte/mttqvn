@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRightLeft, X } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -30,11 +30,18 @@ const ChuongTrinhNamChangeStatusDialog: React.FC<Props> = ({ open, program, onCl
     [],
   );
 
-  useEffect(() => {
-    if (!open || !program) return;
-    setTrangThai(program.trang_thai);
-    setGhiChu(program.ghi_chu ?? '');
-  }, [open, program]);
+  // Nạp lại giá trị từ bản ghi mỗi lần mở dialog / đổi bản ghi — chỉnh state ngay lúc render thay cho effect.
+  const [dongBoTu, setDongBoTu] = useState<{ open: boolean; program: ChuongTrinhNam | null }>({
+    open: false,
+    program: null,
+  });
+  if (dongBoTu.open !== open || dongBoTu.program !== program) {
+    setDongBoTu({ open, program });
+    if (open && program) {
+      setTrangThai(program.trang_thai);
+      setGhiChu(program.ghi_chu ?? '');
+    }
+  }
 
   if (!open || !program) return null;
 

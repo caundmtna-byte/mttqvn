@@ -24,6 +24,7 @@ import {
   UserSearch,
   Warehouse,
   Target,
+  type LucideProps,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { txt } from '@/lib/text';
@@ -75,16 +76,17 @@ type ChiTietDetailRow = NhapXuatKhoCtRow & { rowIndex: number; tenHangHoa: strin
 
 const IN_PHIEU_PATH_PREFIX = '/cong-tac-xa-hoi/tiep-nhan-phan-bo-hang';
 
-function loaiPhieuIcon(loai: NhapXuatKhoLoaiPhieu) {
+/** Icon theo loại phiếu — khai ở cấp module để không tạo component mới mỗi lần render. */
+const LoaiPhieuIcon: React.FC<LucideProps & { loai: NhapXuatKhoLoaiPhieu }> = ({ loai, ...iconProps }) => {
   switch (loai) {
     case 'nhap_ngoai':
-      return ArrowDownToLine;
+      return <ArrowDownToLine {...iconProps} />;
     case 'xuat_ngoai':
-      return ArrowUpFromLine;
+      return <ArrowUpFromLine {...iconProps} />;
     case 'chuyen_kho':
-      return ArrowLeftRight;
+      return <ArrowLeftRight {...iconProps} />;
   }
-}
+};
 
 const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const navigate = useNavigate();
@@ -278,8 +280,6 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
     });
   };
 
-  const HeaderIcon = loaiPhieuIcon(data.loai_phieu);
-
   const toolbarActions: DetailToolbarAction[] = useMemo(
     () => [
       {
@@ -343,7 +343,7 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
         onClose={onClose}
         title={txt('matTranNhapXuatKho.detail.title')}
         subtitle={subtitleParts.join(' · ')}
-        icon={<HeaderIcon size={18} />}
+        icon={<LoaiPhieuIcon loai={data.loai_phieu} size={18} />}
         maxWidthClass={DRAWER_WIDTH_DETAIL}
         footer={footer}
         footerCompact
@@ -352,7 +352,7 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
           <DetailSummaryCard
             leading={
               <DetailSummaryIconTile>
-                <HeaderIcon size={26} className="text-white" aria-hidden />
+                <LoaiPhieuIcon loai={data.loai_phieu} size={26} className="text-white" aria-hidden />
               </DetailSummaryIconTile>
             }
             title={data.so_phieu}
@@ -385,7 +385,7 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
               <DetailField
                 label={txt('matTranNhapXuatKho.detail.loaiPhieu')}
                 value={<EnumBadge value={data.loai_phieu} config={loaiBadge} shape="pill" truncate />}
-                icon={<HeaderIcon size={12} />}
+                icon={<LoaiPhieuIcon loai={data.loai_phieu} size={12} />}
               />
               <DetailField
                 label={txt('matTranNhapXuatKho.detail.ngayPhieu')}
@@ -626,7 +626,12 @@ const KhoNhapXuatKhoDetailDrawer: React.FC<Props> = ({ data, onClose, onEdit, on
                     widthClass: 'w-[5.5rem] min-w-[5.5rem]',
                     renderCell: (r) =>
                       canEdit ? (
-                        <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex items-center justify-end gap-0.5"
+                          role="presentation"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
                           <TableRowIconButton
                             icon={Edit}
                             label={txt('common.edit')}

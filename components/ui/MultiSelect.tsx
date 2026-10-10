@@ -413,7 +413,6 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       {dropdownOnly && renderDropdownTrigger
         ? renderDropdownTrigger({ open: isOpen, toggle, hasValue, listboxId })
         : !dropdownOnly && (
-      /* eslint-disable-next-line jsx-a11y/interactive-supports-focus */
       <div
         role="button"
         tabIndex={0}

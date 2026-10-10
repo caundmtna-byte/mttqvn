@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { BadgeCheck, Building2, FileText, Hash, Landmark, Mail, MapPin, Phone, Type, User, Users, UserRound } from 'lucide-react';
@@ -67,7 +67,6 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
     control,
     handleSubmit,
     reset,
-    watch,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<KhoDonViCuuTroFormValues>({
@@ -75,11 +74,11 @@ const KhoDonViCuuTroForm: React.FC<Props> = ({ initialData, onClose }) => {
     resolver: zodResolver(khoDonViCuuTroSchema) as Resolver<KhoDonViCuuTroFormValues>,
   });
 
-  const loai = watch('loai');
+  const loai = useWatch({ control, name: 'loai' });
 
   const loaiOptions = useMemo(() => khoDonViCuuTroLoaiComboboxOptions(), []);
   const { options: tatCaDonViGioiThieu } = useDonViGioiThieuOptions();
-  const donViGioiThieu = watch('don_vi_gioi_thieu');
+  const donViGioiThieu = useWatch({ control, name: 'don_vi_gioi_thieu' });
   // Cấp xã chỉ thấy xã mình (khi sửa: giữ cả giá trị đang có của bản ghi).
   const donViGioiThieuOptions = useMemo(
     () =>

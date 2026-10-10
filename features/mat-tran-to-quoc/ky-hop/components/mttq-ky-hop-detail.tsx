@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, ClipboardList, Edit, FileText, Hash, Info, MapPin, Printer, StickyNote, Trash2, Type, User } from 'lucide-react';
 import { txt } from '@/lib/text';
@@ -42,9 +42,12 @@ const MttqKyHopDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete, sta
   const tinhCap = txt('matTranKyHop.tinhCap');
   const [detailTab, setDetailTab] = useState<string>(TAB_INFO);
 
-  useEffect(() => {
+  /** Đổi bản ghi → về tab Thông tin (chỉnh state ngay khi render, không qua effect). */
+  const [prevDataId, setPrevDataId] = useState(data.id);
+  if (data.id !== prevDataId) {
+    setPrevDataId(data.id);
     setDetailTab(TAB_INFO);
-  }, [data.id]);
+  }
 
   const tabs = useMemo<Tab[]>(
     () => [

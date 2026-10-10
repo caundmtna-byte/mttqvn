@@ -4,12 +4,6 @@ import type { MttqLopTapHuan } from '../../core/types';
 import type { MttqLopTapHuanViewer } from '../../hooks/use-mttq-tap-huan-viewer';
 import { buildTapHuanInDanhSachRows, buildTapHuanInDanhSachMeta } from '../build-tap-huan-in-danh-sach-rows';
 
-const viewerAll: MttqLopTapHuanViewer = {
-  canViewAll: true,
-  chucVuCapQuanLy: null,
-  viewerDonViId: null,
-};
-
 const viewerXa: MttqLopTapHuanViewer = {
   canViewAll: false,
   chucVuCapQuanLy: 'Xã phường',
