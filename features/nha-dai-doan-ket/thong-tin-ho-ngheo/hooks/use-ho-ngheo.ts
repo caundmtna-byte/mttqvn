@@ -19,6 +19,7 @@ import {
   deleteHoNgheoMany,
   getHoNgheoById,
   getHoNgheoThongKeRows,
+  getSoCccdTheoHoNgheo,
   type HoNgheoThongKeScope,
   updateHoNgheo,
   updateHoNgheoTrangThai,
@@ -46,6 +47,16 @@ export function useHoNgheoFull(id: string | null | undefined, options?: { enable
     queryKey: queryKeys.hoNgheo.full(key || '__'),
     queryFn: () => getHoNgheoById(key),
     enabled: key !== '' && options?.enabled !== false,
+    ...transactionalCrudListQueryOptions,
+  });
+}
+
+/** Số CCCD theo id hộ (`id → so_cccd`) — trang in danh sách nhận hỗ trợ. `ids` đã sắp xếp. */
+export function useSoCccdTheoHoNgheo(ids: readonly string[]) {
+  return useQuery({
+    queryKey: queryKeys.hoNgheo.soCccd(ids),
+    queryFn: () => getSoCccdTheoHoNgheo(ids),
+    enabled: ids.length > 0,
     ...transactionalCrudListQueryOptions,
   });
 }

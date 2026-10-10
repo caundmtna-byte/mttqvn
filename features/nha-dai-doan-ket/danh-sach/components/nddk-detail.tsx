@@ -36,7 +36,7 @@ import {
   nddkNguonBadge,
   nddkTrangThaiBadge,
 } from '../core/display-badges';
-import { useUpdateNhaDaiDoanKetTrangThai } from '../hooks/use-nha-dai-doan-ket';
+import { useNhaDaiDoanKetFull, useUpdateNhaDaiDoanKetTrangThai } from '../hooks/use-nha-dai-doan-ket';
 import NddkChuyenTrangThaiDialog from './nddk-chuyen-trang-thai-dialog';
 import NddkChonPhieuInDialog from './nddk-chon-phieu-in-dialog';
 import NddkBienBanDetailSections from './nddk-bien-ban-detail-sections';
@@ -58,7 +58,7 @@ interface Props {
 
 const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
   const navigate = useNavigate();
-  const { canEdit, canDelete, canApprove } = useResourcePermissions('nhaDaiDoanKetList');
+  const { canEdit, canDelete } = useResourcePermissions('nhaDaiDoanKetList');
   const emptyCell = txt('common.emptyCell');
   const soTienLabel = formatNddkSoTienDisplay(data.so_tien);
 
@@ -70,10 +70,8 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
    * Hành động nghiệp vụ nằm trên toolbar; Đóng / Sửa / Xóa vẫn ở footer —
    * đúng quy ước các màn detail khác trong repo.
    *
-   * Nút mở hộp thoại gác bằng `canEdit` chứ không phải `canApprove`: người nhập
-   * liệu phải tự đẩy hồ sơ qua các bước khảo sát → thực hiện → bàn giao. Riêng
-   * "Đã phê duyệt" bị lọc khỏi danh sách bên trong hộp thoại khi thiếu quyền
-   * Duyệt, và DB chặn lần nữa bằng trigger `fn_nddk_kiem_quyen_phe_duyet`.
+   * Nút mở hộp thoại gác bằng `canEdit`: người nhập liệu tự đẩy hồ sơ qua các
+   * bước khảo sát → thực hiện → bàn giao (không có bước phê duyệt).
    *
    * Nút In chỉ cần quyền xem — đã mở được màn chi tiết là đã có quyền đó.
    */
@@ -96,9 +94,22 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
     return actions;
   }, [canEdit]);
 
+  // Bản đầy đủ (có biên bản) — cùng cache với NddkBienBanDetailSections, không tốn
+  // thêm request. Hộp thoại cần các ngày hiện có để điền sẵn ô bắt buộc.
+  const { data: full } = useNhaDaiDoanKetFull(data.id);
+  const bienBan = full?.bien_ban;
   const statusInitial: NhaDaiDoanKetStatusChangeValues = useMemo(
-    () => ({ trang_thai: data.trang_thai, ghi_chu: data.ghi_chu ?? undefined }),
-    [data.trang_thai, data.ghi_chu],
+    () => ({
+      trang_thai: data.trang_thai,
+      ghi_chu: data.ghi_chu ?? undefined,
+      nguon_ho_tro: data.nguon_ho_tro ?? undefined,
+      ngay_khao_sat: bienBan?.ngay_khao_sat ?? undefined,
+      ngay_kiem_tra_hoan_thanh: bienBan?.ngay_kiem_tra_hoan_thanh ?? undefined,
+      ngay_ban_giao: bienBan?.ngay_ban_giao ?? undefined,
+      so_quyet_dinh: bienBan?.so_quyet_dinh ?? undefined,
+      ngay_quyet_dinh: bienBan?.ngay_quyet_dinh ?? undefined,
+    }),
+    [data.trang_thai, data.ghi_chu, data.nguon_ho_tro, bienBan],
   );
 
   const handleStatusSave = async (values: NhaDaiDoanKetStatusChangeValues) => {
@@ -413,7 +424,6 @@ const NddkDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
         initial={statusInitial}
-        canApprove={canApprove}
         isSubmitting={statusMutation.isPending}
         onSave={handleStatusSave}
       />

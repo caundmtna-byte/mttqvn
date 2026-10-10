@@ -1856,23 +1856,33 @@ COMMENT ON FUNCTION public.fn_nddk_dong_bo_tu_ho_ngheo() IS 'BEFORE INSERT / UPD
 
 
 --
--- Name: fn_nddk_kiem_quyen_phe_duyet(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: fn_nddk_kiem_truong_bat_buoc(); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.fn_nddk_kiem_quyen_phe_duyet() RETURNS trigger
+CREATE FUNCTION public.fn_nddk_kiem_truong_bat_buoc() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
+DECLARE
+  thieu text[] := ARRAY[]::text[];
 BEGIN
-  -- Chỉ chặn lúc ĐƯA hồ sơ VÀO 'Đã phê duyệt'. Hồ sơ đang ở trạng thái đó mà
-  -- sửa các trường khác thì không đụng tới, nếu không người nhập liệu sẽ không
-  -- sửa nổi một lỗi chính tả trên hồ sơ đã duyệt.
-  IF NEW.trang_thai = 'Đã phê duyệt'
-     AND (TG_OP = 'INSERT' OR OLD.trang_thai IS DISTINCT FROM NEW.trang_thai) THEN
-    -- fn_co_quyen đã bao gồm lối tắt cho quản trị / cap_bac = 1.
-    IF NOT public.fn_co_quyen('nha-dai-doan-ket', 'phe_duyet') THEN
-      RAISE EXCEPTION
-        'PHE_DUYET_KHONG_DU_QUYEN: Bạn không có quyền Duyệt hồ sơ nhà đại đoàn kết.';
+  IF TG_OP = 'UPDATE' AND OLD.trang_thai IS NOT DISTINCT FROM NEW.trang_thai THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.trang_thai = 'Đang khảo sát' THEN
+    IF NEW.ngay_khao_sat IS NULL THEN thieu := array_append(thieu, 'ngày khảo sát'); END IF;
+  ELSIF NEW.trang_thai = 'Đã bàn giao' THEN
+    IF NEW.ngay_kiem_tra_hoan_thanh IS NULL THEN thieu := array_append(thieu, 'ngày kiểm tra hoàn thành'); END IF;
+    IF NEW.ngay_ban_giao IS NULL THEN thieu := array_append(thieu, 'ngày bàn giao'); END IF;
+    IF NEW.nguon_ho_tro IN ('Cấp tỉnh', 'Cấp xã', 'Trung ương') THEN
+      IF NULLIF(btrim(NEW.so_quyet_dinh), '') IS NULL THEN thieu := array_append(thieu, 'số quyết định'); END IF;
+      IF NEW.ngay_quyet_dinh IS NULL THEN thieu := array_append(thieu, 'ngày quyết định'); END IF;
     END IF;
+  END IF;
+
+  IF cardinality(thieu) > 0 THEN
+    RAISE EXCEPTION 'NDDK_THIEU_TRUONG_BAT_BUOC: Trạng thái "%" phải nhập %.',
+      NEW.trang_thai, array_to_string(thieu, ', ');
   END IF;
   RETURN NEW;
 END;
@@ -1880,10 +1890,10 @@ $$;
 
 
 --
--- Name: FUNCTION fn_nddk_kiem_quyen_phe_duyet(); Type: COMMENT; Schema: public; Owner: -
+-- Name: FUNCTION fn_nddk_kiem_truong_bat_buoc(); Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON FUNCTION public.fn_nddk_kiem_quyen_phe_duyet() IS 'Chặn đưa hồ sơ nhà đại đoàn kết vào trạng thái "Đã phê duyệt" nếu thiếu quyền phe_duyet.';
+COMMENT ON FUNCTION public.fn_nddk_kiem_truong_bat_buoc() IS 'Chặn thêm mới / đổi trạng thái hồ sơ nhà đại đoàn kết khi thiếu trường biên bản bắt buộc của trạng thái đích. Bản sao client: core/luat-truong-bat-buoc.ts.';
 
 
 --
@@ -2367,6 +2377,50 @@ $$;
 --
 
 COMMENT ON FUNCTION public.fn_var_phong_ban_lan_nhanh() IS 'AFTER UPDATE khi duong_dan đổi: thay tiền tố đường dẫn và cap_do cho toàn bộ phòng con cháu.';
+
+
+--
+-- Name: fn_vnn_kiem_truong_bat_buoc(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.fn_vnn_kiem_truong_bat_buoc() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  thieu text[] := ARRAY[]::text[];
+BEGIN
+  IF TG_OP = 'UPDATE' AND OLD.trang_thai IS NOT DISTINCT FROM NEW.trang_thai THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.trang_thai = 'Đã nhận' THEN
+    IF NULLIF(btrim(NEW.bien_ban_ban_giao->>'ngay_ban_giao'), '') IS NULL THEN
+      thieu := array_append(thieu, 'ngày bàn giao');
+    END IF;
+    IF NEW.nguon_ho_tro IN ('Cấp tỉnh', 'Cấp xã', 'Trung ương') THEN
+      IF NULLIF(btrim(NEW.bien_ban_ban_giao->>'so_quyet_dinh'), '') IS NULL THEN
+        thieu := array_append(thieu, 'số quyết định');
+      END IF;
+      IF NULLIF(btrim(NEW.bien_ban_ban_giao->>'ngay_quyet_dinh'), '') IS NULL THEN
+        thieu := array_append(thieu, 'ngày quyết định');
+      END IF;
+    END IF;
+  END IF;
+
+  IF cardinality(thieu) > 0 THEN
+    RAISE EXCEPTION 'VNN_THIEU_TRUONG_BAT_BUOC: Trạng thái "%" phải nhập %.',
+      NEW.trang_thai, array_to_string(thieu, ', ');
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: FUNCTION fn_vnn_kiem_truong_bat_buoc(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.fn_vnn_kiem_truong_bat_buoc() IS 'Chặn thêm mới / đổi trạng thái khoản hỗ trợ sang "Đã nhận" khi biên bản bàn giao thiếu ngày bàn giao (và số + ngày quyết định với nguồn Cấp tỉnh/Cấp xã/Trung ương). Bản sao client: vi-nguoi-ngheo/core/luat-truong-bat-buoc.ts.';
 
 
 --
@@ -7028,7 +7082,8 @@ CREATE TABLE public.nddk_nha_dai_doan_ket (
     CONSTRAINT nddk_nha_dai_doan_ket_nguon_check CHECK ((nguon = ANY (ARRAY['Vì người nghèo'::text, 'Cứu trợ'::text, 'Ngân sách'::text, 'Giới thiệu'::text]))),
     CONSTRAINT nddk_nha_dai_doan_ket_nguon_ho_tro_check CHECK ((nguon_ho_tro = ANY (ARRAY['Cấp tỉnh'::text, 'Cấp xã'::text, 'Ủng hộ trực tiếp'::text, 'Trung ương'::text]))),
     CONSTRAINT nddk_nha_dai_doan_ket_so_tien_check CHECK (((so_tien IS NULL) OR (so_tien >= (0)::numeric))),
-    CONSTRAINT nddk_nha_dai_doan_ket_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['Đang khảo sát'::text, 'Đã phê duyệt'::text, 'Đang thực hiện'::text, 'Đã bàn giao'::text, 'Tạm dừng'::text]))),
+    CONSTRAINT nddk_nha_dai_doan_ket_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['Đang khảo sát'::text, 'Đang thực hiện'::text, 'Đã bàn giao'::text, 'Tạm dừng'::text]))),
+    CONSTRAINT nddk_nha_tai_tro_theo_nguon_chk CHECK (((nha_tai_tro_id IS NULL) OR ((nguon = 'Giới thiệu'::text) AND (nguon_ho_tro = 'Ủng hộ trực tiếp'::text)))),
     CONSTRAINT nddk_nhu_cau_ho_tro_chk CHECK (((nhu_cau_ho_tro IS NULL) OR (nhu_cau_ho_tro = ANY (ARRAY['Xây dựng nhà lắp ghép'::text, 'Gia đình tự xây mới'::text, 'Gia đình tự sửa chữa'::text])))),
     CONSTRAINT nddk_thanh_phan_kiem_tra_chk CHECK (((thanh_phan_kiem_tra IS NULL) OR ((jsonb_typeof(thanh_phan_kiem_tra) = 'object'::text) AND ((NOT (thanh_phan_kiem_tra ? 'thon'::text)) OR ((jsonb_typeof((thanh_phan_kiem_tra -> 'thon'::text)) = 'array'::text) AND (jsonb_array_length((thanh_phan_kiem_tra -> 'thon'::text)) <= 3)))))),
     CONSTRAINT nddk_tong_gia_tri_chk CHECK (((tong_gia_tri IS NULL) OR (tong_gia_tri >= (0)::numeric)))
@@ -7207,7 +7262,7 @@ COMMENT ON COLUMN public.nddk_nha_dai_doan_ket.id_nguoi_cap_nhat IS 'Người th
 -- Name: COLUMN nddk_nha_dai_doan_ket.nha_tai_tro_id; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.nddk_nha_dai_doan_ket.nha_tai_tro_id IS 'Nhà tài trợ (kho_don_vi_cuu_tro). Bắt buộc ở client khi nguon_ho_tro = ''Ủng hộ trực tiếp''.';
+COMMENT ON COLUMN public.nddk_nha_dai_doan_ket.nha_tai_tro_id IS 'Nhà tài trợ (kho_don_vi_cuu_tro). Chỉ có khi nguon = ''Giới thiệu'' và nguon_ho_tro = ''Ủng hộ trực tiếp'' (CHECK nddk_nha_tai_tro_theo_nguon_chk).';
 
 
 --
@@ -7793,6 +7848,7 @@ CREATE TABLE public.vnn_chuong_trinh (
     CONSTRAINT vnn_chuong_trinh_tong_tien_ban_giao_check CHECK (((tong_tien_ban_giao IS NULL) OR (tong_tien_ban_giao >= (0)::numeric))),
     CONSTRAINT vnn_chuong_trinh_tong_tien_quy_doi_check CHECK (((tong_tien_quy_doi IS NULL) OR (tong_tien_quy_doi >= (0)::numeric))),
     CONSTRAINT vnn_chuong_trinh_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['Đang khảo sát'::text, 'Đã nhận'::text]))),
+    CONSTRAINT vnn_don_vi_ho_tro_theo_nguon_chk CHECK (((don_vi_ho_tro_id IS NULL) OR (nguon_ho_tro = 'Ủng hộ trực tiếp'::text))),
     CONSTRAINT vnn_phieu_khao_sat_chk CHECK (((phieu_khao_sat IS NULL) OR (jsonb_typeof(phieu_khao_sat) = 'object'::text)))
 );
 
@@ -10434,10 +10490,10 @@ CREATE TRIGGER trg_nddk_dong_bo_tu_ho_ngheo BEFORE INSERT OR UPDATE OF ho_ngheo_
 
 
 --
--- Name: nddk_nha_dai_doan_ket trg_nddk_kiem_quyen_phe_duyet; Type: TRIGGER; Schema: public; Owner: -
+-- Name: nddk_nha_dai_doan_ket trg_nddk_kiem_truong_bat_buoc; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_nddk_kiem_quyen_phe_duyet BEFORE INSERT OR UPDATE OF trang_thai ON public.nddk_nha_dai_doan_ket FOR EACH ROW EXECUTE FUNCTION public.fn_nddk_kiem_quyen_phe_duyet();
+CREATE TRIGGER trg_nddk_kiem_truong_bat_buoc BEFORE INSERT OR UPDATE OF trang_thai ON public.nddk_nha_dai_doan_ket FOR EACH ROW EXECUTE FUNCTION public.fn_nddk_kiem_truong_bat_buoc();
 
 
 --
@@ -10578,6 +10634,13 @@ CREATE TRIGGER trg_var_ssn_xa_phuong_updated BEFORE UPDATE ON public.var_ssn_xa_
 --
 
 CREATE TRIGGER trg_var_thong_tin_to_chuc_updated BEFORE UPDATE ON public.var_thong_tin_to_chuc FOR EACH ROW EXECUTE FUNCTION public.set_tg_cap_nhat();
+
+
+--
+-- Name: vnn_chuong_trinh trg_vnn_kiem_truong_bat_buoc; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_vnn_kiem_truong_bat_buoc BEFORE INSERT OR UPDATE OF trang_thai ON public.vnn_chuong_trinh FOR EACH ROW EXECUTE FUNCTION public.fn_vnn_kiem_truong_bat_buoc();
 
 
 --
@@ -13247,12 +13310,12 @@ GRANT ALL ON FUNCTION public.fn_nddk_dong_bo_tu_ho_ngheo() TO service_role;
 
 
 --
--- Name: FUNCTION fn_nddk_kiem_quyen_phe_duyet(); Type: ACL; Schema: public; Owner: -
+-- Name: FUNCTION fn_nddk_kiem_truong_bat_buoc(); Type: ACL; Schema: public; Owner: -
 --
 
-GRANT ALL ON FUNCTION public.fn_nddk_kiem_quyen_phe_duyet() TO anon;
-GRANT ALL ON FUNCTION public.fn_nddk_kiem_quyen_phe_duyet() TO authenticated;
-GRANT ALL ON FUNCTION public.fn_nddk_kiem_quyen_phe_duyet() TO service_role;
+GRANT ALL ON FUNCTION public.fn_nddk_kiem_truong_bat_buoc() TO anon;
+GRANT ALL ON FUNCTION public.fn_nddk_kiem_truong_bat_buoc() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_nddk_kiem_truong_bat_buoc() TO service_role;
 
 
 --
@@ -13368,6 +13431,15 @@ GRANT ALL ON FUNCTION public.fn_var_phong_ban_doi_cha() TO service_role;
 GRANT ALL ON FUNCTION public.fn_var_phong_ban_lan_nhanh() TO anon;
 GRANT ALL ON FUNCTION public.fn_var_phong_ban_lan_nhanh() TO authenticated;
 GRANT ALL ON FUNCTION public.fn_var_phong_ban_lan_nhanh() TO service_role;
+
+
+--
+-- Name: FUNCTION fn_vnn_kiem_truong_bat_buoc(); Type: ACL; Schema: public; Owner: -
+--
+
+GRANT ALL ON FUNCTION public.fn_vnn_kiem_truong_bat_buoc() TO anon;
+GRANT ALL ON FUNCTION public.fn_vnn_kiem_truong_bat_buoc() TO authenticated;
+GRANT ALL ON FUNCTION public.fn_vnn_kiem_truong_bat_buoc() TO service_role;
 
 
 --

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { applyZodVietnameseErrors } from '@/lib/validation/zod-vi';
 import { viNguoiNgheoSchema } from './schema';
+import { bienBanBanGiaoToFormInput } from './bien-ban-ban-giao';
 import { docPhieuKhaoSat, phieuKhaoSatToFormInput, VNN_LOAI_PHIEU, vnnLoaiPhieu } from './phieu-khao-sat';
 import { checkValuesTrongSchema } from '@/lib/db-schema-snapshot';
 import {
@@ -215,5 +216,30 @@ describe('danh mục khớp CHECK dưới DB (supabase/schema.sql)', () => {
     ['trang_thai', VNN_TRANG_THAI_VALUES],
   ] as const)('%s', (col, values) => {
     expect(checkValues(col)).toEqual([...values]);
+  });
+});
+
+describe('ô bắt buộc khi "Đã nhận"', () => {
+  const bienBan = (over: Record<string, string> = {}) => ({ ...bienBanBanGiaoToFormInput(null), ...over });
+  const loiTai = (r: ReturnType<typeof parse>) => (r.error?.issues ?? []).map((i) => i.path.join('.')).sort();
+
+  it('nguồn Cấp tỉnh thiếu ngày bàn giao + quyết định ⇒ lỗi đúng 3 ô', () => {
+    expect(loiTai(parse({ trang_thai: 'Đã nhận', bien_ban_ban_giao: bienBan() }))).toEqual([
+      'bien_ban_ban_giao.ngay_ban_giao',
+      'bien_ban_ban_giao.ngay_quyet_dinh',
+      'bien_ban_ban_giao.so_quyet_dinh',
+    ]);
+  });
+
+  it('Ủng hộ trực tiếp chỉ cần ngày bàn giao; form chưa có biên bản thì không kiểm', () => {
+    expect(
+      parse({
+        trang_thai: 'Đã nhận',
+        nguon_ho_tro: 'Ủng hộ trực tiếp',
+        don_vi_ho_tro_id: '5',
+        bien_ban_ban_giao: bienBan({ ngay_ban_giao: '2026-05-10' }),
+      }).success,
+    ).toBe(true);
+    expect(parse({ trang_thai: 'Đã nhận' }).success).toBe(true);
   });
 });

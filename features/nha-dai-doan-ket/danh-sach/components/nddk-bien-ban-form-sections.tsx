@@ -40,6 +40,7 @@ import {
   NDDK_THON_KIEM_TRA_MAX,
 } from '../core/constants';
 import type { NhaDaiDoanKetFormInput, NhaDaiDoanKetFormValues } from '../core/schema';
+import type { NddkTruongBatBuoc } from '../core/luat-truong-bat-buoc';
 import NddkNguoiThamGiaInput, {
   NDDK_CAN_BO_OPTION_PREFIX,
   type NddkCanBoGoiY,
@@ -50,13 +51,17 @@ interface Props {
   register: UseFormRegister<NhaDaiDoanKetFormInput>;
   setValue: UseFormSetValue<NhaDaiDoanKetFormInput>;
   errors: FieldErrors<NhaDaiDoanKetFormInput>;
+  /** Ô bắt buộc theo trạng thái + nguồn hỗ trợ đang chọn — `luat-truong-bat-buoc.ts`. */
+  batBuoc: ReadonlySet<NddkTruongBatBuoc>;
 }
 
 /**
  * Ba section dữ liệu của 3 biên bản in (khảo sát / kiểm tra hoàn thành / bàn
- * giao). Mọi ô đều không bắt buộc — ô trống thì biên bản in dòng chấm.
+ * giao). Ô trống thì biên bản in dòng chấm. Chỉ ngày khảo sát / kiểm tra hoàn
+ * thành / bàn giao và số + ngày quyết định bị bắt buộc theo trạng thái
+ * (`batBuoc`) — schema mới là nơi chặn, prop này chỉ để hiện dấu `*`.
  */
-const NddkBienBanFormSections: React.FC<Props> = ({ control, register, setValue, errors }) => {
+const NddkBienBanFormSections: React.FC<Props> = ({ control, register, setValue, errors, batBuoc }) => {
   const canViewCanBo = useCan('view', 'matTranOfficerList');
   const { data: canBoList = [] } = useMttqCanBoList({ enabled: canViewCanBo });
 
@@ -91,6 +96,7 @@ const NddkBienBanFormSections: React.FC<Props> = ({ control, register, setValue,
             label={txt('nhaDaiDoanKet.bienBan.ngayKhaoSat')}
             type="date"
             icon={Calendar}
+            required={batBuoc.has('ngay_khao_sat')}
             {...register('ngay_khao_sat')}
             error={errors.ngay_khao_sat?.message}
           />
@@ -146,6 +152,7 @@ const NddkBienBanFormSections: React.FC<Props> = ({ control, register, setValue,
             label={txt('nhaDaiDoanKet.bienBan.ngayKiemTra')}
             type="date"
             icon={Calendar}
+            required={batBuoc.has('ngay_kiem_tra_hoan_thanh')}
             {...register('ngay_kiem_tra_hoan_thanh')}
             error={errors.ngay_kiem_tra_hoan_thanh?.message}
           />
@@ -326,6 +333,7 @@ const NddkBienBanFormSections: React.FC<Props> = ({ control, register, setValue,
             label={txt('nhaDaiDoanKet.bienBan.ngayBanGiao')}
             type="date"
             icon={Calendar}
+            required={batBuoc.has('ngay_ban_giao')}
             {...register('ngay_ban_giao')}
             error={errors.ngay_ban_giao?.message}
           />
@@ -350,12 +358,15 @@ const NddkBienBanFormSections: React.FC<Props> = ({ control, register, setValue,
             label={txt('nhaDaiDoanKet.bienBan.soQuyetDinh')}
             icon={FileSignature}
             placeholder={txt('nhaDaiDoanKet.form.soQuyetDinhPlaceholder')}
+            required={batBuoc.has('so_quyet_dinh')}
             {...register('so_quyet_dinh')}
+            error={errors.so_quyet_dinh?.message}
           />
           <Input
             label={txt('nhaDaiDoanKet.bienBan.ngayQuyetDinh')}
             type="date"
             icon={Calendar}
+            required={batBuoc.has('ngay_quyet_dinh')}
             {...register('ngay_quyet_dinh')}
             error={errors.ngay_quyet_dinh?.message}
           />

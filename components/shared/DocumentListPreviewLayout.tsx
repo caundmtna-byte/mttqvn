@@ -16,6 +16,8 @@ export interface DocumentListPreviewLayoutProps {
   onPrint?: () => void;
   onDownload?: (format: DocumentListDownloadFormat) => void;
   downloadDisabled?: boolean;
+  /** Khổ khung xem trước — mặc định A4 dọc. */
+  orientation?: 'portrait' | 'landscape';
   children: React.ReactNode;
   className?: string;
 }
@@ -31,6 +33,7 @@ const DocumentListPreviewLayout: React.FC<DocumentListPreviewLayoutProps> = ({
   onPrint,
   onDownload,
   downloadDisabled,
+  orientation = 'portrait',
   children,
   className,
 }) => {
@@ -157,7 +160,8 @@ const DocumentListPreviewLayout: React.FC<DocumentListPreviewLayoutProps> = ({
           <div
             className={cn(
               contentClass,
-              'bg-white text-black w-full max-w-[210mm] min-h-[297mm] print:max-w-none print:min-h-0',
+              'bg-white text-black w-full print:max-w-none print:min-h-0',
+              orientation === 'landscape' ? 'max-w-[297mm] min-h-[210mm]' : 'max-w-[210mm] min-h-[297mm]',
             )}
           >
             {children}

@@ -14,6 +14,10 @@
 
 /** Câu theo TÊN RÀNG BUỘC — cụ thể nhất, ưu tiên cao nhất. */
 const BY_CONSTRAINT: Record<string, string> = {
+  // Nhà tài trợ chỉ gắn được khi đúng nguồn — bản sao client `danh-sach/core/luat-so-tien.ts`.
+  nddk_nha_tai_tro_theo_nguon_chk:
+    'Chỉ chọn nhà tài trợ khi Nguồn là "Giới thiệu" và Nguồn hỗ trợ là "Ủng hộ trực tiếp".',
+  vnn_don_vi_ho_tro_theo_nguon_chk: 'Chỉ chọn nhà tài trợ khi Nguồn hỗ trợ là "Ủng hộ trực tiếp".',
   vnn_so_tien_theo_hinh_thuc_chk:
     'Khoản hỗ trợ phải nhập số tiền (tiền mặt) và/hoặc tổng tiền quy đổi (hiện vật); chưa có thì nhập 0.',
   // --- UNIQUE: trùng dữ liệu (mã 23505) ---
@@ -119,10 +123,18 @@ const BY_RPC_CODE: Record<string, string> = {
   // thể); câu dưới chỉ là lưới an toàn khi lỗi đi đường khác và còn nguyên mã.
   TRANG_THAI_KHONG_HOP_LE:
     'Không chuyển sang trạng thái đó được từ trạng thái hiện tại. Hãy tải lại trang để xem trạng thái mới nhất.',
-  // Nhà đại đoàn kết: đưa hồ sơ vào "Đã phê duyệt" đòi quyền Duyệt (`phe_duyet`),
-  // tách khỏi quyền Sửa — xem `20260913103000_nddk_quyen_phe_duyet.sql`.
+  // Đưa hồ sơ vào trạng thái cần duyệt đòi quyền Duyệt (`phe_duyet`), tách khỏi
+  // quyền Sửa — hiện dùng ở Khen thưởng nhà tài trợ (`fn_ktnt_kiem_quyen_phe_duyet`).
   PHE_DUYET_KHONG_DU_QUYEN:
     'Bạn không có quyền Duyệt hồ sơ này. Hãy chuyển cho người có quyền phê duyệt, hoặc liên hệ quản trị hệ thống.',
+  // Nhà đại đoàn kết: trường bắt buộc theo trạng thái — trigger
+  // `fn_nddk_kiem_truong_bat_buoc`, bản sao client `core/luat-truong-bat-buoc.ts`.
+  // Chương trình hỗ trợ: cùng luật, ô nằm trong jsonb biên bản bàn giao —
+  // trigger `fn_vnn_kiem_truong_bat_buoc`, bản sao `vi-nguoi-ngheo/core/luat-truong-bat-buoc.ts`.
+  VNN_THIEU_TRUONG_BAT_BUOC:
+    'Khoản hỗ trợ "Đã nhận" phải có ngày bàn giao (và số, ngày quyết định với nguồn Cấp tỉnh / Cấp xã / Trung ương). Hãy nhập đủ rồi lưu lại.',
+  NDDK_THIEU_TRUONG_BAT_BUOC:
+    'Hồ sơ còn thiếu thông tin bắt buộc của trạng thái này (ngày khảo sát / ngày kiểm tra hoàn thành / ngày bàn giao / số và ngày quyết định). Hãy nhập đủ rồi lưu lại.',
 };
 
 /** Câu theo MÃ LỖI — lưới an toàn khi không nhận ra tên ràng buộc. */

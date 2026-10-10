@@ -1,7 +1,8 @@
 import { getTodayISODate } from '@/lib/utils';
 
-const PAGE_W_MM = 210;
-const PAGE_H_MM = 297;
+/** Cạnh ngắn / dài của khổ A4 (mm). */
+const A4_NGAN_MM = 210;
+const A4_DAI_MM = 297;
 const MARGIN = { top: 10, right: 10, bottom: 10, left: 10 };
 /** Nén JPEG: giữ chữ sắc nét nhưng nhẹ hơn PNG khoảng 20 lần. */
 const JPEG_QUALITY = 0.92;
@@ -17,7 +18,14 @@ const JPEG_QUALITY = 0.92;
  * cách dán cả ảnh khiến phần thừa tràn ra ngoài mép giấy và mỗi trang phải mang
  * trọn bộ ảnh, làm file phồng lên hàng chục MB.
  */
-export async function downloadVanBanPdf(element: HTMLElement, fileName: string): Promise<void> {
+export async function downloadVanBanPdf(
+  element: HTMLElement,
+  fileName: string,
+  opts?: { orientation?: 'portrait' | 'landscape' },
+): Promise<void> {
+  const orientation = opts?.orientation ?? 'portrait';
+  const pageWMm = orientation === 'landscape' ? A4_DAI_MM : A4_NGAN_MM;
+  const pageHMm = orientation === 'landscape' ? A4_NGAN_MM : A4_DAI_MM;
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
     import('jspdf'),
     import('html2canvas'),
@@ -33,9 +41,9 @@ export async function downloadVanBanPdf(element: HTMLElement, fileName: string):
     windowWidth: element.scrollWidth,
   });
 
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  const contentW = PAGE_W_MM - MARGIN.left - MARGIN.right;
-  const contentH = PAGE_H_MM - MARGIN.top - MARGIN.bottom;
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation });
+  const contentW = pageWMm - MARGIN.left - MARGIN.right;
+  const contentH = pageHMm - MARGIN.top - MARGIN.bottom;
   const pxPerMm = canvas.width / contentW;
   const pageHeightPx = Math.max(1, Math.floor(contentH * pxPerMm));
 

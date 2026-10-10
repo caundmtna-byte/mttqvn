@@ -56,6 +56,7 @@ import {
 import { vnnLoaiPhieu } from '../core/phieu-khao-sat';
 import VnnPhieuKhaoSatSection from './phieu-khao-sat/vnn-phieu-khao-sat-section';
 import VnnBienBanBanGiaoSection from './bien-ban-ban-giao/vnn-bien-ban-ban-giao-section';
+import { vnnTruongBatBuoc } from '../core/luat-truong-bat-buoc';
 import { isVnnScopedToXaPhuong, useVnnViewer } from '../hooks/use-vnn-viewer';
 import { useNddkXaPhuongOptions } from '../../danh-sach/hooks/use-nddk-xa-phuong-options';
 
@@ -140,7 +141,15 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
 
   const hinhThuc = useWatch({ control, name: 'hinh_thuc_ho_tro' });
   const coHienVat = vnnCoHienVat(hinhThuc);
-  const canNtt = canNhaTaiTro(useWatch({ control, name: 'nguon_ho_tro' }));
+  const nguonHoTro = useWatch({ control, name: 'nguon_ho_tro' });
+  const canNtt = canNhaTaiTro(nguonHoTro);
+  const donViHoTroId = useWatch({ control, name: 'don_vi_ho_tro_id' });
+  // Nhà tài trợ chỉ có khi Nguồn hỗ trợ "Ủng hộ trực tiếp"; đổi nguồn thì xoá luôn.
+  useEffect(() => {
+    if (!canNtt && donViHoTroId) setValue('don_vi_ho_tro_id', '', { shouldDirty: true });
+  }, [canNtt, donViHoTroId, setValue]);
+  const trangThai = useWatch({ control, name: 'trang_thai' });
+  const batBuoc = useMemo(() => new Set(vnnTruongBatBuoc(trangThai, nguonHoTro)), [trangThai, nguonHoTro]);
   const linhVuc = useWatch({ control, name: 'linh_vuc_ho_tro' });
   const loaiPhieu = vnnLoaiPhieu(linhVuc);
   const daGanHo = Boolean(useWatch({ control, name: 'ho_ngheo_id' }));
@@ -387,6 +396,7 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
                     onChange={(v) => field.onChange(v == null ? '' : String(v))}
                     placeholder={txt('viNguoiNgheo.form.donViHoTroPlaceholder')}
                     required={canNtt}
+                    disabled={!canNtt}
                     error={errors.don_vi_ho_tro_id?.message}
                   />
                 )}
@@ -405,7 +415,12 @@ const VnnForm: React.FC<Props> = ({ initialData, prefill, onClose }) => {
           />
         ) : null}
 
-        <VnnBienBanBanGiaoSection control={control} linhVuc={linhVuc} dangTai={waitingFull} />
+        <VnnBienBanBanGiaoSection
+          control={control}
+          linhVuc={linhVuc}
+          dangTai={waitingFull}
+          batBuoc={batBuoc}
+        />
 
         <FormSection title={txt('viNguoiNgheo.form.sectionTrangThai')} icon={<ListChecks size={14} />}>
           <FormGrid cols={2}>

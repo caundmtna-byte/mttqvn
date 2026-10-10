@@ -178,6 +178,19 @@ phạm vi "Tất cả" vẫn chỉ xuất đúng trang đang xem.
   luật chuyển trạng thái: một căn đang tạm dừng quay lại thực hiện là chuyện
   bình thường. Cột `ngay_cap_nhat_trang_thai` do trigger
   `fn_nddk_set_ngay_trang_thai` gán, form **không có ô nhập** cho nó.
+  **Trường bắt buộc theo trạng thái**: "Đang khảo sát" ⇒ ngày khảo sát; "Đã bàn giao" ⇒
+  ngày kiểm tra hoàn thành + ngày bàn giao, thêm số + ngày quyết định nếu nguồn Cấp tỉnh /
+  Cấp xã / Trung ương. Client `core/luat-truong-bat-buoc.ts` (form Sửa luôn kiểm) ↔ trigger
+  `fn_nddk_kiem_truong_bat_buoc` (chỉ kiểm lúc thêm / đổi trạng thái, để trigger đồng bộ
+  từ hộ nghèo không vấp hồ sơ cũ thiếu ngày).
+- **Nhà tài trợ theo nguồn** (CHECK dưới DB, bản sao `danh-sach/core/luat-so-tien.ts`): NĐĐK chỉ gắn
+  `nha_tai_tro_id` khi Nguồn "Giới thiệu" + Nguồn hỗ trợ "Ủng hộ trực tiếp"; Chương trình hỗ trợ chỉ gắn
+  `don_vi_ho_tro_id` khi Nguồn hỗ trợ "Ủng hộ trực tiếp". Form khoá + xoá ô khi đổi sang nguồn khác.
+  NĐĐK **không còn** trạng thái "Đã phê duyệt" (bỏ 2026-10-10).
+- `vnn_chuong_trinh` (Chương trình hỗ trợ) cùng luật: "Đã nhận" ⇒ ngày bàn giao, thêm số +
+  ngày quyết định nếu nguồn Cấp tỉnh / Cấp xã / Trung ương. Ba ô nằm trong jsonb
+  `bien_ban_ban_giao`. Client `vi-nguoi-ngheo/core/luat-truong-bat-buoc.ts` ↔ trigger
+  `fn_vnn_kiem_truong_bat_buoc`. Hộp thoại đổi trạng thái gộp ô mới vào jsonb hiện có.
 
 > ⚠️ **Quyền `approve` vẫn chưa được kiểm ở client.** `ActionType` có `'approve'`,
 > ma trận phân quyền có cột đó, nhưng **không một lời gọi `can(user,'approve',…)`

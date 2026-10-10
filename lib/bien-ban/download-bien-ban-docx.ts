@@ -10,6 +10,7 @@ import {
   Document,
   Packer,
   PageBreak,
+  PageOrientation,
   Paragraph,
   Table,
   TableCell,
@@ -43,6 +44,10 @@ const LINE = 312; // 1.3
 
 /** Twip: 20mm / 15mm / 20mm / 30mm. */
 const PAGE_MARGIN = { top: 1134, right: 850, bottom: 1134, left: 1701 };
+/** Khổ ngang (danh sách nhiều cột) — twip: 12mm / 10mm / 12mm / 12mm. */
+const PAGE_MARGIN_NGANG = { top: 680, right: 567, bottom: 680, left: 680 };
+/** Chữ trong bảng khổ ngang: 11pt, cho vừa 11 cột. */
+const BANG_NGANG = 22;
 
 const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' } as const;
 const TABLE_NO_BORDERS = {
@@ -130,24 +135,28 @@ function doRongCot(cols: BienBanCotBang[]): number[] {
   return cols.map((c) => c.widthPct ?? deu);
 }
 
-function oBang(text: string, widthPct: number, o?: { bold?: boolean; align?: BienBanAlign; span?: number }) {
+function oBang(
+  text: string,
+  widthPct: number,
+  o?: { bold?: boolean; align?: BienBanAlign; span?: number; size?: number },
+) {
   return new TableCell({
     width: { size: widthPct, type: WidthType.PERCENTAGE },
     columnSpan: o?.span,
-    children: [para([tr(text, { bold: o?.bold, size: SMALL })], { align: o?.align, after: 0 })],
+    children: [para([tr(text, { bold: o?.bold, size: o?.size ?? SMALL })], { align: o?.align, after: 0 })],
   });
 }
 
-function bangToDocx(b: Extract<BienBanBlock, { kind: 'bang' }>): Table {
+function bangToDocx(b: Extract<BienBanBlock, { kind: 'bang' }>, size: number): Table {
   const w = doRongCot(b.cols);
   const alignOf = (i: number) => b.cols[i]?.align ?? 'left';
   const rows: TableRow[] = [
     new TableRow({
       tableHeader: true,
-      children: b.cols.map((c, i) => oBang(c.title, w[i], { bold: true, align: 'center' })),
+      children: b.cols.map((c, i) => oBang(c.title, w[i], { bold: true, align: 'center', size })),
     }),
     ...b.rows.map(
-      (r) => new TableRow({ children: r.map((cell, i) => oBang(cell, w[i], { align: alignOf(i) })) }),
+      (r) => new TableRow({ children: r.map((cell, i) => oBang(cell, w[i], { align: alignOf(i), size })) }),
     ),
   ];
   if (b.footer) {
@@ -157,8 +166,8 @@ function bangToDocx(b: Extract<BienBanBlock, { kind: 'bang' }>): Table {
       new TableRow({
         children: b.footer.cells.map((cell, i) =>
           i === 0
-            ? oBang(cell, wDau, { bold: true, align: 'center', span: span > 1 ? span : undefined })
-            : oBang(cell, w[i + span - 1], { bold: true, align: alignOf(i + span - 1) }),
+            ? oBang(cell, wDau, { bold: true, align: 'center', span: span > 1 ? span : undefined, size })
+            : oBang(cell, w[i + span - 1], { bold: true, align: alignOf(i + span - 1), size }),
         ),
       }),
     );
@@ -168,7 +177,7 @@ function bangToDocx(b: Extract<BienBanBlock, { kind: 'bang' }>): Table {
 
 function cotKy(c: BienBanCotKy): Paragraph[] {
   const out = [
-    para([tr(c.title, { bold: true })], { align: 'center', after: 0 }),
+    ...c.title.split('\n').map((dong) => para([tr(dong, { bold: true })], { align: 'center', after: 0 })),
     para([tr(c.note, { italic: true, size: SMALL })], { align: 'center', after: 0 }),
     // Chỗ ký tay: ~4 dòng trống.
     para([tr('')], { after: 0 }),
@@ -180,7 +189,7 @@ function cotKy(c: BienBanCotKy): Paragraph[] {
   return out;
 }
 
-function blockToDocx(b: BienBanBlock): (Paragraph | Table)[] {
+function blockToDocx(b: BienBanBlock, ngang: boolean): (Paragraph | Table)[] {
   switch (b.kind) {
     case 'quoc-hieu':
       return [
@@ -265,7 +274,7 @@ function blockToDocx(b: BienBanBlock): (Paragraph | Table)[] {
       return out;
     }
     case 'bang':
-      return [bangToDocx(b), para([tr('')], { after: 0 })];
+      return [bangToDocx(b, ngang ? BANG_NGANG : SMALL), para([tr('')], { after: 0 })];
     case 'ngat-trang':
       return [new Paragraph({ children: [new PageBreak()] })];
     default:
@@ -274,14 +283,24 @@ function blockToDocx(b: BienBanBlock): (Paragraph | Table)[] {
 }
 
 export function buildBienBanDocxChildren(model: BienBanModel): (Paragraph | Table)[] {
-  return model.blocks.flatMap(blockToDocx);
+  const ngang = model.khoGiay === 'ngang';
+  return model.blocks.flatMap((b) => blockToDocx(b, ngang));
 }
 
 export async function downloadBienBanDocx(model: BienBanModel, fileName: string): Promise<void> {
   const doc = new Document({
     sections: [
       {
-        properties: { page: { size: { width: 11906, height: 16838 }, margin: PAGE_MARGIN } },
+        properties: {
+          page:
+            model.khoGiay === 'ngang'
+              ? {
+                  // docx tự đảo rộng/cao khi LANDSCAPE — vẫn truyền số của khổ dọc.
+                  size: { width: 11906, height: 16838, orientation: PageOrientation.LANDSCAPE },
+                  margin: PAGE_MARGIN_NGANG,
+                }
+              : { size: { width: 11906, height: 16838 }, margin: PAGE_MARGIN },
+        },
         children: buildBienBanDocxChildren(model),
       },
     ],

@@ -304,6 +304,8 @@ export const queryKeys = {
     nhaDaiDoanKet: (hoId: string) => ['thong-tin-ho-ngheo', 'nha-ddk', hoId] as const,
     /** Tab Thống kê — toàn bộ hộ trong phạm vi xem, chỉ cột phân loại. */
     thongKe: (scope: unknown) => ['thong-tin-ho-ngheo', 'thong-ke', scope] as const,
+    /** Số CCCD theo danh sách id hộ — trang in danh sách nhận hỗ trợ. */
+    soCccd: (ids: readonly string[]) => ['thong-tin-ho-ngheo', 'so-cccd', ids] as const,
   },
   nhaDaiDoanKet: {
     all: ['nha-dai-doan-ket'] as const,

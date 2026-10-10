@@ -84,7 +84,13 @@ const NhaDaiDoanKetPage = lazy(() => import('./features/nha-dai-doan-ket/danh-sa
 const NddkInBienBanPage = lazy(
   () => import('./features/nha-dai-doan-ket/danh-sach/pages/nddk-in-bien-ban-page'),
 );
+const NddkInDanhSachPage = lazy(
+  () => import('./features/nha-dai-doan-ket/danh-sach/pages/nddk-in-danh-sach-page'),
+);
 const ViNguoiNgheoPage = lazy(() => import('./features/nha-dai-doan-ket/vi-nguoi-ngheo/index'));
+const VnnInDanhSachPage = lazy(
+  () => import('./features/nha-dai-doan-ket/vi-nguoi-ngheo/pages/vnn-in-danh-sach-page'),
+);
 const VnnInPhieuPage = lazy(
   () => import('./features/nha-dai-doan-ket/vi-nguoi-ngheo/pages/vnn-in-phieu-page'),
 );
@@ -254,11 +260,13 @@ const App = () => {
           <Route path="/cong-tac-xa-hoi/bao-cao-tiep-nhan-phan-bo" element={<KhoBaoCaoHoTroPage />} />
           <Route path="/cong-tac-xa-hoi/khen-thuong-nha-tai-tro" element={<KhenThuongNhaTaiTroPage />} />
           <Route path="/cong-tac-xa-hoi/nha-dai-doan-ket" element={<NhaDaiDoanKetPage />} />
+          <Route path="/cong-tac-xa-hoi/nha-dai-doan-ket/in-danh-sach" element={<NddkInDanhSachPage />} />
           <Route
             path="/cong-tac-xa-hoi/nha-dai-doan-ket/:nddkId/in/:loaiPhieu"
             element={<NddkInBienBanPage />}
           />
           <Route path="/cong-tac-xa-hoi/chuong-trinh-ho-tro" element={<ViNguoiNgheoPage />} />
+          <Route path="/cong-tac-xa-hoi/chuong-trinh-ho-tro/in-danh-sach" element={<VnnInDanhSachPage />} />
           <Route
             path="/cong-tac-xa-hoi/chuong-trinh-ho-tro/:vnnId/in/:loaiPhieu"
             element={<VnnInPhieuPage />}

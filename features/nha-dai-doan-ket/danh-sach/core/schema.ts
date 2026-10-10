@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { canNhaTaiTro, nddkThieuTien } from './luat-so-tien';
+import { nddkCanNhaTaiTro, nddkThieuTien } from './luat-so-tien';
+import { nddkTruongConThieu, type NddkTruongBatBuoc } from './luat-truong-bat-buoc';
 import { txt } from '@/lib/text';
 import {
   NDDK_DOI_TUONG_VALUES,
@@ -86,6 +87,24 @@ const optionalDienTich = z.preprocess(
     .optional(),
 );
 
+/** Câu báo lỗi cho từng trường bắt buộc theo trạng thái — xem `luat-truong-bat-buoc.ts`. */
+const TRUONG_BAT_BUOC_MSG_KEY: Record<NddkTruongBatBuoc, string> = {
+  ngay_khao_sat: 'nhaDaiDoanKet.validation.ngayKhaoSatBatBuoc',
+  ngay_kiem_tra_hoan_thanh: 'nhaDaiDoanKet.validation.ngayKiemTraHoanThanhBatBuoc',
+  ngay_ban_giao: 'nhaDaiDoanKet.validation.ngayBanGiaoBatBuoc',
+  so_quyet_dinh: 'nhaDaiDoanKet.validation.soQuyetDinhBatBuoc',
+  ngay_quyet_dinh: 'nhaDaiDoanKet.validation.ngayQuyetDinhBatBuoc',
+};
+
+function kiemTruongBatBuoc(
+  v: { trang_thai: string; nguon_ho_tro?: string } & Partial<Record<NddkTruongBatBuoc, string>>,
+  ctx: z.RefinementCtx,
+) {
+  for (const truong of nddkTruongConThieu(v.trang_thai, v.nguon_ho_tro, v)) {
+    ctx.addIssue({ code: 'custom', path: [truong], message: txt(TRUONG_BAT_BUOC_MSG_KEY[truong]) });
+  }
+}
+
 const trimmedString = z
   .string()
   .optional()
@@ -143,7 +162,7 @@ export const nhaDaiDoanKetSchema = z.object({
     message: txt('nhaDaiDoanKet.validation.loaiHinhInvalid'),
   }),
   so_tien: optionalSoTien,
-  /** Nhà tài trợ (kho_don_vi_cuu_tro) — bắt buộc khi Nguồn hỗ trợ = "Ủng hộ trực tiếp". */
+  /** Nhà tài trợ (kho_don_vi_cuu_tro) — chỉ có (và bắt buộc) khi Nguồn "Giới thiệu" + Nguồn hỗ trợ "Ủng hộ trực tiếp". */
   nha_tai_tro_id: optionalFk,
   trang_thai: z.enum(NDDK_TRANG_THAI_VALUES, {
     message: txt('nhaDaiDoanKet.validation.trangThaiInvalid'),
@@ -181,9 +200,10 @@ export const nhaDaiDoanKetSchema = z.object({
   if (nddkThieuTien(v.so_tien)) {
     ctx.addIssue({ code: 'custom', path: ['so_tien'], message: txt('nhaDaiDoanKet.validation.soTienBatBuoc') });
   }
-  if (canNhaTaiTro(v.nguon_ho_tro) && !v.nha_tai_tro_id) {
+  if (nddkCanNhaTaiTro(v.nguon, v.nguon_ho_tro) && !v.nha_tai_tro_id) {
     ctx.addIssue({ code: 'custom', path: ['nha_tai_tro_id'], message: txt('nhaDaiDoanKet.validation.nhaTaiTroRequired') });
   }
+  kiemTruongBatBuoc(v, ctx);
 });
 
 export type NhaDaiDoanKetFormValues = z.infer<typeof nhaDaiDoanKetSchema>;
@@ -195,18 +215,34 @@ export type NhaDaiDoanKetFormValues = z.infer<typeof nhaDaiDoanKetSchema>;
  * `fn_ghi_lich_su_trang_thai` chụp lại nó vào `lich_su_trang_thai`, nên mỗi lần
  * đổi giữ được lý do riêng dù cột `ghi_chu` của bản ghi bị ghi đè sau đó.
  */
-export const nhaDaiDoanKetStatusChangeSchema = z.object({
-  trang_thai: z.enum(NDDK_TRANG_THAI_VALUES, {
-    message: txt('nhaDaiDoanKet.validation.trangThaiInvalid'),
-  }),
-  ghi_chu: optionalText,
-});
+export const nhaDaiDoanKetStatusChangeSchema = z
+  .object({
+    trang_thai: z.enum(NDDK_TRANG_THAI_VALUES, {
+      message: txt('nhaDaiDoanKet.validation.trangThaiInvalid'),
+    }),
+    ghi_chu: optionalText,
+    /** Chỉ làm ngữ cảnh cho luật bắt buộc số/ngày quyết định — KHÔNG ghi xuống DB. */
+    nguon_ho_tro: optionalText,
+    // Trường bắt buộc của trạng thái đích; hộp thoại chỉ hiện ô thuộc trạng thái đang chọn.
+    ngay_khao_sat: optionalDate,
+    ngay_kiem_tra_hoan_thanh: optionalDate,
+    ngay_ban_giao: optionalDate,
+    so_quyet_dinh: optionalText,
+    ngay_quyet_dinh: optionalDate,
+  })
+  .superRefine(kiemTruongBatBuoc);
 
 export type NhaDaiDoanKetStatusChangeValues = z.infer<typeof nhaDaiDoanKetStatusChangeSchema>;
 
 export type NhaDaiDoanKetStatusChangeInput = {
   trang_thai: string;
   ghi_chu?: string;
+  nguon_ho_tro?: string;
+  ngay_khao_sat?: string;
+  ngay_kiem_tra_hoan_thanh?: string;
+  ngay_ban_giao?: string;
+  so_quyet_dinh?: string;
+  ngay_quyet_dinh?: string;
 };
 
 /**

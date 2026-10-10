@@ -368,12 +368,12 @@ const ThongTinHoNgheoPage: React.FC = () => {
   const importColumns = useMemo(
     () => [
       { key: 'ho_ten_dai_dien', label: txt('hoNgheo.store.hoTenCol'), required: true },
-      { key: 'so_cccd', label: txt('hoNgheo.store.soCccdCol') },
+      { key: 'so_cccd', label: txt('hoNgheo.store.soCccdCol'), required: true },
       { key: 'xa_phuong_id', label: txt('hoNgheo.store.xaPhuongCol') },
-      { key: 'khoi_xom', label: txt('hoNgheo.store.khoiXomCol') },
-      { key: 'doi_tuong', label: txt('hoNgheo.store.doiTuongCol') },
+      { key: 'khoi_xom', label: txt('hoNgheo.store.khoiXomCol'), required: true },
+      { key: 'doi_tuong', label: txt('hoNgheo.store.doiTuongCol'), required: true },
       { key: 'dien_thoai', label: txt('hoNgheo.store.dienThoaiCol') },
-      { key: 'dan_toc_id', label: txt('hoNgheo.store.danTocCol') },
+      { key: 'dan_toc_id', label: txt('hoNgheo.store.danTocCol'), required: true },
       { key: 'ton_giao', label: txt('hoNgheo.store.tonGiaoCol') },
       { key: 'so_tai_khoan', label: txt('hoNgheo.store.soTaiKhoanCol') },
       { key: 'ngan_hang', label: txt('hoNgheo.store.nganHangCol') },

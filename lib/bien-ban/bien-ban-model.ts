@@ -34,7 +34,7 @@ export interface BienBanLuaChon {
 export type BienBanLuaChonLayout = 'inline' | 'stack' | 'luoi';
 
 export interface BienBanCotKy {
-  /** Chức danh in đậm, vd "BÊN GIAO TIỀN". */
+  /** Chức danh in đậm, vd "BÊN GIAO TIỀN". `\n` ⇒ xuống dòng ("TM. BAN THƯỜNG TRỰC\nCHỦ TỊCH"). */
   title: string;
   /** Dòng nghiêng dưới chức danh, vd "(Ký, ghi rõ họ tên)". */
   note: string;
@@ -89,10 +89,15 @@ export type BienBanBlock =
   /** Sang trang mới (phụ lục…). Excel không có trang ⇒ một dòng trống. */
   | { kind: 'ngat-trang' };
 
+/** Khổ A4 dọc (mặc định, biên bản) hay ngang (danh sách nhiều cột). */
+export type BienBanKhoGiay = 'doc' | 'ngang';
+
 export interface BienBanModel {
   /** Tên cửa sổ in / tên file. */
   tieuDe: string;
   blocks: BienBanBlock[];
+  /** Bỏ trống ⇒ dọc. */
+  khoGiay?: BienBanKhoGiay;
 }
 
 /* ------------------------------------------------------------------ *

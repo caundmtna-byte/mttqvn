@@ -28,6 +28,8 @@ import {
   NDDK_TRANG_THAI_DEFAULT,
 } from '../core/constants';
 import { NDDK_RETURNING, NDDK_SELECT, NDDK_SELECT_FULL } from '../core/supabase-select';
+import { nddkCanNhaTaiTro } from '../core/luat-so-tien';
+import { nddkTruongBatBuoc } from '../core/luat-truong-bat-buoc';
 import { parseNguonKhac, parseThanhPhanKiemTra } from '../utils/bien-ban-json';
 
 type RepoRow = { id: string } & Record<string, unknown>;
@@ -161,7 +163,8 @@ function formToPayload(data: NhaDaiDoanKetFormValues): Record<string, unknown> {
     doi_tuong: data.doi_tuong ?? null,
     loai_hinh_ho_tro: data.loai_hinh_ho_tro,
     so_tien: data.so_tien ?? null,
-    nha_tai_tro_id: nullableFk(data.nha_tai_tro_id),
+    // Nguồn khác ⇒ luôn để trống (CHECK `nddk_nha_tai_tro_theo_nguon_chk`).
+    nha_tai_tro_id: nddkCanNhaTaiTro(data.nguon, data.nguon_ho_tro) ? nullableFk(data.nha_tai_tro_id) : null,
     trang_thai: data.trang_thai,
     ghi_chu: data.ghi_chu ?? null,
     // Biên bản — schema đã quy dòng rỗng về undefined.
@@ -404,18 +407,24 @@ export async function updateNhaDaiDoanKet(
  * nếu ai đó đang mở hộp thoại trong lúc bản ghi được sửa ở nơi khác thì bấm Lưu
  * sẽ ghi đè cả những trường mình không hề chạm vào.
  *
- * `ngay_cap_nhat_trang_thai` do trigger gán; quyền Duyệt do trigger
- * `fn_nddk_kiem_quyen_phe_duyet` kiểm — client gửi thẳng, DB từ chối nếu thiếu.
+ * `ngay_cap_nhat_trang_thai` do trigger gán.
+ * Trường bắt buộc theo trạng thái do trigger `fn_nddk_kiem_truong_bat_buoc` kiểm.
  */
 export async function updateNhaDaiDoanKetTrangThai(
   id: string,
   data: NhaDaiDoanKetStatusChangeValues,
 ): Promise<NhaDaiDoanKet> {
+  // Chỉ ghi các trường bắt buộc của trạng thái đích (hộp thoại vừa cho nhập) —
+  // trường khác không gửi để không ghi đè thứ người dùng không chạm tới.
+  const truongBatBuoc = Object.fromEntries(
+    nddkTruongBatBuoc(data.trang_thai, data.nguon_ho_tro).map((k) => [k, data[k] ?? null]),
+  );
   const updated = await repo.update(
     id,
     {
       trang_thai: data.trang_thai,
       ghi_chu: data.ghi_chu ?? null,
+      ...truongBatBuoc,
       tg_cap_nhat: new Date().toISOString(),
     },
     { returningSelect: NDDK_RETURNING },

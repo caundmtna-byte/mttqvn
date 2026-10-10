@@ -46,7 +46,6 @@ export const NDDK_LOAI_HINH_DEFAULT: NddkLoaiHinh = 'Xây mới';
 /** Thứ tự liệt kê theo vòng đời hồ sơ, không theo bảng chữ cái. */
 export const NDDK_TRANG_THAI_VALUES = [
   'Đang khảo sát',
-  'Đã phê duyệt',
   'Đang thực hiện',
   'Đã bàn giao',
   'Tạm dừng',

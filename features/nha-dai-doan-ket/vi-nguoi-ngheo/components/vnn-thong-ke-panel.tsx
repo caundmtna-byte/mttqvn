@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
   LineChart,
@@ -22,11 +23,13 @@ import {
   ListChecks,
   MapPin,
   Download,
+  Printer,
   TrendingUp,
   Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { encodeStatsFilters } from '@/lib/stats-filter-search-params';
 import { txt } from '@/lib/text';
 import { formatCurrency, formatDecimal, formatAxisTick } from '@/lib/utils';
 import DashboardToolbar from '@/components/shared/DashboardToolbar';
@@ -62,6 +65,7 @@ import {
   VNN_NGUON_HO_TRO_VALUES,
   VNN_NGUON_VALUES,
   VNN_TRANG_THAI_VALUES,
+  VNN_LIST_PATH,
 } from '../core/constants';
 import {
   vnnDoiTuongBadge,
@@ -300,17 +304,40 @@ const VnnThongKePanel: React.FC<Props> = ({ tabsSlot, onPageBack, canExport, que
     });
   }, [rows, kpis, namSeries, linhVucRows, hinhThucRows, trangThaiRows, nguonRows, nguonHoTroRows, doiTuongRows, xaPhuongRows, khongGanDonVi]);
 
+  const navigate = useNavigate();
+  /** Trang xem trước danh sách ký nhận — bộ lọc đi theo query string. */
+  const handlePrintList = useCallback(() => {
+    if (rows.length === 0) {
+      toast.warning(txt('viNguoiNgheoThongKe.inDanhSachTrong'));
+      return;
+    }
+    navigate(`${VNN_LIST_PATH}/in-danh-sach?${encodeStatsFilters(dims, dateRange).toString()}`);
+  }, [rows.length, navigate, dims, dateRange]);
+
   const actions = canExport ? (
-    <Tooltip content={txt('common.export')} placement="bottom">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleExport}
-        className="inline-flex h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
-      >
-        <Download className="w-4 h-4" />
-      </Button>
-    </Tooltip>
+    <>
+      <Tooltip content={txt('viNguoiNgheoThongKe.inDanhSach')} placement="bottom">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePrintList}
+          aria-label={txt('viNguoiNgheoThongKe.inDanhSach')}
+          className="inline-flex h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+        >
+          <Printer className="w-4 h-4" />
+        </Button>
+      </Tooltip>
+      <Tooltip content={txt('common.export')} placement="bottom">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExport}
+          className="inline-flex h-9 w-9 p-0 items-center justify-center border-border text-muted-foreground hover:bg-muted/50"
+        >
+          <Download className="w-4 h-4" />
+        </Button>
+      </Tooltip>
+    </>
   ) : undefined;
 
   return (

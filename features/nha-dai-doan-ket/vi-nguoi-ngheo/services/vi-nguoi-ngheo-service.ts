@@ -27,8 +27,10 @@ import {
   VNN_TRANG_THAI_DEFAULT,
 } from '../core/constants';
 import { VNN_RETURNING, VNN_SELECT, VNN_SELECT_FULL } from '../core/supabase-select';
+import { canNhaTaiTro } from '../../danh-sach/core/luat-so-tien';
 import { docPhieuKhaoSat } from '../core/phieu-khao-sat';
 import { docBienBanBanGiao } from '../core/bien-ban-ban-giao';
+import { vnnTruongBatBuoc } from '../core/luat-truong-bat-buoc';
 
 type RepoRow = { id: string } & Record<string, unknown>;
 
@@ -131,7 +133,8 @@ function formToPayload(data: ViNguoiNgheoFormValues): Record<string, unknown> {
     so_tien: data.so_tien ?? null,
     so_luong: data.so_luong ?? null,
     trang_thai: data.trang_thai,
-    don_vi_ho_tro_id: nullableFk(data.don_vi_ho_tro_id),
+    // Nguồn hỗ trợ khác "Ủng hộ trực tiếp" ⇒ luôn để trống (CHECK `vnn_don_vi_ho_tro_theo_nguon_chk`).
+    don_vi_ho_tro_id: canNhaTaiTro(data.nguon_ho_tro) ? nullableFk(data.don_vi_ho_tro_id) : null,
     ghi_chu: data.ghi_chu ?? null,
     // Form chưa có bản đầy đủ ⇒ không gửi, để DB giữ nguyên phiếu đang lưu.
     ...(data.phieu_khao_sat !== undefined ? { phieu_khao_sat: data.phieu_khao_sat } : {}),
@@ -403,18 +406,47 @@ export async function updateViNguoiNgheo(
 }
 
 /**
+ * Đọc riêng jsonb biên bản bàn giao (một cột, một dòng) để gộp ô mới vào — chỉ
+ * gọi khi đổi trạng thái có ô bắt buộc. Đọc tươi thay vì dùng bản trong cache
+ * để không ghi đè phần biên bản người khác vừa sửa.
+ */
+async function getBienBanBanGiaoHienTai(id: string): Promise<Record<string, unknown> | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { data, error } = await supabase.from(TABLE).select('bien_ban_ban_giao').eq('id', id).single();
+  if (error) handleSupabaseError(error);
+  const b = (data as { bien_ban_ban_giao?: unknown } | null)?.bien_ban_ban_giao;
+  return b && typeof b === 'object' ? (b as Record<string, unknown>) : null;
+}
+
+/**
  * Đổi RIÊNG trạng thái + lý do. Không đi qua `updateViNguoiNgheo` để khỏi ghi
  * đè những trường người dùng không hề chạm vào.
+ *
+ * Trạng thái đích có ô bắt buộc (`luat-truong-bat-buoc.ts`) ⇒ gộp đúng các ô đó
+ * vào jsonb `bien_ban_ban_giao`, giữ nguyên phần còn lại. Trigger
+ * `fn_vnn_kiem_truong_bat_buoc` kiểm lại dưới DB.
  */
 export async function updateViNguoiNgheoTrangThai(
   id: string,
   data: ViNguoiNgheoStatusChangeValues,
 ): Promise<ViNguoiNgheo> {
+  const truong = vnnTruongBatBuoc(data.trang_thai, data.nguon_ho_tro);
+  const bienBan =
+    truong.length > 0
+      ? {
+          bien_ban_ban_giao: {
+            ...(await getBienBanBanGiaoHienTai(id)),
+            ...Object.fromEntries(truong.map((k) => [k, data[k]])),
+          },
+        }
+      : {};
   const updated = await repo.update(
     id,
     {
       trang_thai: data.trang_thai,
       ghi_chu: data.ghi_chu ?? null,
+      ...bienBan,
       tg_cap_nhat: new Date().toISOString(),
     },
     { returningSelect: VNN_RETURNING },

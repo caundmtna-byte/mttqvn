@@ -110,8 +110,8 @@ export const hoNgheoSchema = z.object({
 export type HoNgheoFormValues = z.infer<typeof hoNgheoSchema>;
 
 /**
- * Form nhập tay: bắt buộc thêm Số căn cước, Khối xóm, Đối tượng, Dân tộc.
- * Import Excel vẫn dùng `hoNgheoSchema` (cho phép trống) để không chặn file cũ.
+ * Form nhập tay VÀ import Excel: bắt buộc thêm Số căn cước, Khối xóm, Đối tượng, Dân tộc.
+ * (Import từng dùng `hoNgheoSchema` cho phép trống ⇒ hàng nghìn hộ lọt vào thiếu CCCD / dân tộc.)
  */
 export const hoNgheoFormSchema = hoNgheoSchema.extend({
   so_cccd: z

@@ -2,7 +2,6 @@ import type { BadgeConfig } from '@/components/ui/EnumBadge';
 
 export const nddkTrangThaiBadge: BadgeConfig = {
   'Đang khảo sát': { label: 'Đang khảo sát', color: 'slate' },
-  'Đã phê duyệt': { label: 'Đã phê duyệt', color: 'amber' },
   'Đang thực hiện': { label: 'Đang thực hiện', color: 'sky' },
   'Đã bàn giao': { label: 'Đã bàn giao', color: 'emerald' },
   'Tạm dừng': { label: 'Tạm dừng', color: 'rose' },

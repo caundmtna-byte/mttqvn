@@ -48,4 +48,6 @@ export const nhaDaiDoanKetThongKe = {
     doiTuongLabel: 'Đối tượng',
   },
   noExportData: 'Không có dữ liệu để xuất.',
+  inDanhSach: 'In danh sách',
+  inDanhSachTrong: 'Không có dòng nào để in theo bộ lọc hiện tại.',
 };

@@ -29,6 +29,7 @@ export const viNguoiNgheo = {
     lyDoLabel: 'Lý do / ghi chú',
     lyDoPlaceholder: 'Vì sao chuyển sang trạng thái này?',
     hint: 'Mỗi lần đổi đều được lưu vết: từ trạng thái nào sang trạng thái nào, ai đổi, lúc nào.',
+    sectionBatBuoc: 'Thông tin bắt buộc của trạng thái này',
   },
   store: {
     namCol: 'Năm',
@@ -223,6 +224,9 @@ export const viNguoiNgheo = {
   validation: {
     soTienBatBuoc: 'Nhập số tiền hỗ trợ (chưa có thì nhập 0).',
     nhaTaiTroRequired: 'Nguồn "Ủng hộ trực tiếp" phải chọn nhà tài trợ.',
+    ngayBanGiaoBatBuoc: 'Trạng thái "Đã nhận" phải nhập ngày bàn giao.',
+    soQuyetDinhBatBuoc: 'Nguồn Cấp tỉnh / Cấp xã / Trung ương phải nhập số quyết định khi đã nhận.',
+    ngayQuyetDinhBatBuoc: 'Nguồn Cấp tỉnh / Cấp xã / Trung ương phải nhập ngày quyết định khi đã nhận.',
     noiDungRequired: 'Nhập nội dung hỗ trợ',
     nguoiNhanRequired: 'Nhập họ tên người được hỗ trợ',
     hoNgheoRequired: 'Chọn người được hỗ trợ từ danh sách hộ nghèo',

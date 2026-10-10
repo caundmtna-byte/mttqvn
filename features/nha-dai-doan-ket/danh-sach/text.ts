@@ -44,8 +44,7 @@ export const nhaDaiDoanKet = {
     lyDoLabel: 'Lý do / ghi chú',
     lyDoPlaceholder: 'Vì sao chuyển sang trạng thái này?',
     hint: 'Mỗi lần đổi đều được lưu vết: từ trạng thái nào sang trạng thái nào, ai đổi, lúc nào.',
-    noApproveHint:
-      'Bạn không có quyền Duyệt nên không chọn được "Đã phê duyệt". Các bước còn lại vẫn đổi được.',
+    sectionBatBuoc: 'Thông tin bắt buộc của trạng thái này',
   },
   store: {
     namCol: 'Năm',
@@ -144,6 +143,11 @@ export const nhaDaiDoanKet = {
     ngayInvalid: 'Ngày không hợp lệ',
     dienTichInvalid: 'Diện tích phải là số không âm',
     soTienBatBuoc: 'Nhập số tiền hỗ trợ (chưa có thì nhập 0).',
-    nhaTaiTroRequired: 'Nguồn "Ủng hộ trực tiếp" phải chọn nhà tài trợ.',
+    nhaTaiTroRequired: 'Nguồn "Giới thiệu" + Nguồn hỗ trợ "Ủng hộ trực tiếp" phải chọn nhà tài trợ.',
+    ngayKhaoSatBatBuoc: 'Trạng thái "Đang khảo sát" phải nhập ngày khảo sát.',
+    ngayKiemTraHoanThanhBatBuoc: 'Trạng thái "Đã bàn giao" phải nhập ngày kiểm tra hoàn thành.',
+    ngayBanGiaoBatBuoc: 'Trạng thái "Đã bàn giao" phải nhập ngày bàn giao.',
+    soQuyetDinhBatBuoc: 'Nguồn Cấp tỉnh / Cấp xã / Trung ương phải nhập số quyết định khi bàn giao.',
+    ngayQuyetDinhBatBuoc: 'Nguồn Cấp tỉnh / Cấp xã / Trung ương phải nhập ngày quyết định khi bàn giao.',
   },
 };

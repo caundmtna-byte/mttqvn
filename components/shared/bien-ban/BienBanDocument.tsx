@@ -194,7 +194,7 @@ interface Props {
 
 /** Một biên bản — cùng phần tử này làm nguồn cho cửa sổ in và bản chụp PDF. */
 const BienBanDocument: React.FC<Props> = ({ model, rootId }) => (
-  <article id={rootId} className={B}>
+  <article id={rootId} className={model.khoGiay === 'ngang' ? `${B} ${B}--ngang` : B}>
     {model.blocks.map((b, i) => (
       <Block key={i} block={b} />
     ))}

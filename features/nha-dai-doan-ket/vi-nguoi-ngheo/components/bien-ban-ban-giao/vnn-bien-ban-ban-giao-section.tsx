@@ -29,6 +29,7 @@ import {
   thanhTienHienVat,
   type BbbgHienVatInput,
 } from '../../core/bien-ban-ban-giao';
+import type { VnnTruongBatBuoc } from '../../core/luat-truong-bat-buoc';
 
 type Ctl = Control<ViNguoiNgheoFormInput, unknown, ViNguoiNgheoFormValues>;
 type Kieu = 'text' | 'textarea' | 'date' | 'tien' | 'thapPhan' | 'so';
@@ -48,7 +49,8 @@ const ONhap: React.FC<{
   kind?: Kieu;
   nhanKey?: string;
   placeholder?: string;
-}> = ({ control, name, kind = 'text', nhanKey, placeholder }) => {
+  required?: boolean;
+}> = ({ control, name, kind = 'text', nhanKey, placeholder, required }) => {
   const { field } = useController({ control, name: path(name) });
   const { errors } = useFormState({ control, name: path(name) });
   const error = (get(errors, path(name)) as { message?: string } | undefined)?.message;
@@ -69,7 +71,9 @@ const ONhap: React.FC<{
         />
       );
     case 'date':
-      return <DatePicker label={label} value={value} onChange={field.onChange} error={error} />;
+      return (
+        <DatePicker label={label} value={value} onChange={field.onChange} error={error} required={required} />
+      );
     case 'tien':
       return (
         <CurrencyInput
@@ -116,6 +120,7 @@ const ONhap: React.FC<{
           onBlur={field.onBlur}
           placeholder={placeholder}
           error={error}
+          required={required}
         />
       );
   }
@@ -209,10 +214,12 @@ interface Props {
   linhVuc: string;
   /** Form sửa đang chờ bản đầy đủ — chưa có dữ liệu biên bản để hiện. */
   dangTai: boolean;
+  /** Ô bắt buộc theo trạng thái + nguồn đang chọn — chỉ để hiện `*`, schema mới chặn. */
+  batBuoc: ReadonlySet<VnnTruongBatBuoc>;
 }
 
 /** Section "Biên bản bàn giao" của form khoản hỗ trợ — chỉ các ô biên bản cần mà dòng chưa có. */
-const VnnBienBanBanGiaoSection: React.FC<Props> = ({ control, linhVuc, dangTai }) => {
+const VnnBienBanBanGiaoSection: React.FC<Props> = ({ control, linhVuc, dangTai, batBuoc }) => {
   const lv = linhVuc as VnnLinhVuc;
   return (
     <FormSection title={txt('viNguoiNgheo.bienBanBanGiao.section')} icon={<HandCoins size={14} />}>
@@ -221,7 +228,7 @@ const VnnBienBanBanGiaoSection: React.FC<Props> = ({ control, linhVuc, dangTai }
         <p className="text-sm text-muted-foreground">{txt('viNguoiNgheo.bienBanBanGiao.dangTai')}</p>
       ) : (
         <FormGrid cols={2}>
-          <ONhap control={control} name="ngay_ban_giao" kind="date" />
+          <ONhap control={control} name="ngay_ban_giao" kind="date" required={batBuoc.has('ngay_ban_giao')} />
           <ONhap control={control} name="dia_diem" />
 
           <NhomTieuDe text={txt('viNguoiNgheo.bienBanBanGiao.nhomBenGiao')} />
@@ -242,8 +249,13 @@ const VnnBienBanBanGiaoSection: React.FC<Props> = ({ control, linhVuc, dangTai }
           <ONhap control={control} name="lam_chung_2_chuc_vu" />
 
           <NhomTieuDe text={txt('viNguoiNgheo.bienBanBanGiao.nhomCanCu')} />
-          <ONhap control={control} name="so_quyet_dinh" placeholder={nhan('so_quyet_dinh_placeholder')} />
-          <ONhap control={control} name="ngay_quyet_dinh" kind="date" />
+          <ONhap
+            control={control}
+            name="so_quyet_dinh"
+            placeholder={nhan('so_quyet_dinh_placeholder')}
+            required={batBuoc.has('so_quyet_dinh')}
+          />
+          <ONhap control={control} name="ngay_quyet_dinh" kind="date" required={batBuoc.has('ngay_quyet_dinh')} />
           <ONhap control={control} name="co_quan_quyet_dinh" />
           <ONhap control={control} name="ve_viec" />
 

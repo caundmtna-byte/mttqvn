@@ -12,8 +12,17 @@ const ctx: HoNgheoImportRowCtx = {
   xaPhamVi: null,
 };
 
+/** Dòng hợp lệ tối thiểu: đủ 5 cột bắt buộc như form nhập tay. */
+const dongHopLe = {
+  ho_ten_dai_dien: 'Nguyễn Văn A',
+  so_cccd: '040012345678',
+  khoi_xom: 'Xóm 1',
+  doi_tuong: 'Hộ nghèo',
+  dan_toc_id: 'Kinh',
+};
+
 const parse = (raw: Record<string, unknown>, c: HoNgheoImportRowCtx = ctx) =>
-  parseHoNgheoImportRow(2, { ho_ten_dai_dien: 'Nguyễn Văn A', ...raw }, c);
+  parseHoNgheoImportRow(2, { ...dongHopLe, ...raw }, c);
 
 describe('parseHoNgheoImportRow', () => {
   it('xã / dân tộc theo tên không dấu; enum không phân biệt hoa thường; ô trống lấy mặc định', () => {
@@ -47,6 +56,33 @@ describe('parseHoNgheoImportRow', () => {
 
   it('thiếu họ tên → lỗi', () => {
     expect(parse({ ho_ten_dai_dien: '  ' }).ok).toBe(false);
+  });
+
+  it.each([
+    ['so_cccd', 'Nhập số căn cước.'],
+    ['khoi_xom', 'Nhập khối xóm.'],
+    ['doi_tuong', 'Chọn đối tượng.'],
+    ['dan_toc_id', 'Chọn dân tộc.'],
+  ])('cột bắt buộc %s trống (kể cả toàn khoảng trắng) → lỗi', (cot, thongBao) => {
+    for (const v of ['', '   ', undefined]) {
+      const r = parse({ [cot]: v });
+      expect(r.ok).toBe(false);
+      expect(!r.ok && r.message).toContain('Dòng 2');
+      expect(!r.ok && r.message).toContain(thongBao);
+    }
+  });
+
+  it('CCCD 11 chữ số (Excel làm rơi số 0 đầu) → lỗi; gõ cách quãng vẫn hợp lệ', () => {
+    expect(parse({ so_cccd: 40012345678 }).ok).toBe(false);
+    const r = parse({ so_cccd: '040 012 345 678' });
+    expect(r.ok && r.data.values.so_cccd).toBe('040012345678');
+  });
+
+  it('thiếu nhiều ô → báo gộp đủ trong một lỗi', () => {
+    const r = parse({ so_cccd: '', khoi_xom: '', dan_toc_id: '' });
+    expect(!r.ok && r.message).toContain('Nhập số căn cước.');
+    expect(!r.ok && r.message).toContain('Nhập khối xóm.');
+    expect(!r.ok && r.message).toContain('Chọn dân tộc.');
   });
 
   it('khoá CCCD bóc mọi khoảng trắng như trigger DB', () => {

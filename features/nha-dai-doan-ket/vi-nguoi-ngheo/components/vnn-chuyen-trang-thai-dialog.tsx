@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { useForm, Controller, type Resolver, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRightLeft, ListChecks, StickyNote } from 'lucide-react';
+import { ArrowRightLeft, Calendar, FileSignature, ListChecks, StickyNote } from 'lucide-react';
 import { txt } from '@/lib/text';
+import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Combobox from '@/components/ui/Combobox';
 import GenericDrawer from '@/components/shared/GenericDrawer';
@@ -11,6 +12,7 @@ import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { DIALOG_SIZE } from '@/lib/dialog-sizes';
 import { VNN_TRANG_THAI_VALUES } from '../core/constants';
+import { vnnTruongBatBuoc, type VnnTruongBatBuoc } from '../core/luat-truong-bat-buoc';
 import {
   viNguoiNgheoStatusChangeSchema,
   type ViNguoiNgheoStatusChangeValues,
@@ -18,6 +20,12 @@ import {
 
 const FORM_ID = 'vnn-chuyen-trang-thai-form';
 const TRANG_THAI_OPTIONS = VNN_TRANG_THAI_VALUES.map((v) => ({ label: v, value: v }));
+
+const O_BAT_BUOC: Record<VnnTruongBatBuoc, 'date' | 'text'> = {
+  ngay_ban_giao: 'date',
+  so_quyet_dinh: 'text',
+  ngay_quyet_dinh: 'date',
+};
 
 interface Props {
   open: boolean;
@@ -43,6 +51,7 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ViNguoiNgheoStatusChangeValues>({
     resolver: zodResolver(viNguoiNgheoStatusChangeSchema) as Resolver<ViNguoiNgheoStatusChangeValues>,
@@ -51,8 +60,11 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
 
   useEffect(() => {
     if (!open) return;
-    reset({ trang_thai: initial.trang_thai, ghi_chu: initial.ghi_chu });
+    reset(initial);
   }, [open, initial, reset]);
+
+  // Ô bắt buộc của trạng thái đang chọn (điền sẵn giá trị hiện có của biên bản).
+  const truongBatBuoc = vnnTruongBatBuoc(watch('trang_thai'), initial.nguon_ho_tro);
 
   const onSubmit: SubmitHandler<ViNguoiNgheoStatusChangeValues> = async (values) => {
     await Promise.resolve(onSave(values));
@@ -120,6 +132,26 @@ const VnnChuyenTrangThaiDialog: React.FC<Props> = ({
             </div>
           </FormGrid>
         </FormSection>
+        {truongBatBuoc.length > 0 ? (
+          <FormSection
+            title={txt('viNguoiNgheo.statusChangeModal.sectionBatBuoc')}
+            icon={<Calendar size={14} />}
+          >
+            <FormGrid cols={2}>
+              {truongBatBuoc.map((k) => (
+                <Input
+                  key={k}
+                  label={txt(`viNguoiNgheo.bienBanBanGiao.nhan.${k}`)}
+                  type={O_BAT_BUOC[k]}
+                  icon={O_BAT_BUOC[k] === 'date' ? Calendar : FileSignature}
+                  required
+                  {...register(k)}
+                  error={errors[k]?.message}
+                />
+              ))}
+            </FormGrid>
+          </FormSection>
+        ) : null}
       </form>
     </GenericDrawer>
   );

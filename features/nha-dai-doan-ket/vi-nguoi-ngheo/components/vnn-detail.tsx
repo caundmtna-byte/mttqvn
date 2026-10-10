@@ -43,7 +43,7 @@ import {
   vnnNguonBadge,
   vnnTrangThaiBadge,
 } from '../core/display-badges';
-import { useUpdateViNguoiNgheoTrangThai } from '../hooks/use-vi-nguoi-ngheo';
+import { useUpdateViNguoiNgheoTrangThai, useViNguoiNgheoFull } from '../hooks/use-vi-nguoi-ngheo';
 import VnnChuyenTrangThaiDialog from './vnn-chuyen-trang-thai-dialog';
 import type { ViNguoiNgheoStatusChangeValues } from '../core/schema';
 import {
@@ -102,9 +102,20 @@ const VnnDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => {
     return actions;
   }, [canEdit]);
 
+  // Bản đầy đủ — cùng cache với VnnBienBanBanGiaoDetailSection, không tốn thêm
+  // request. Hộp thoại cần ngày bàn giao / quyết định hiện có để điền sẵn.
+  const { data: full } = useViNguoiNgheoFull(data.id);
+  const bienBan = full?.bien_ban_ban_giao;
   const statusInitial: ViNguoiNgheoStatusChangeValues = useMemo(
-    () => ({ trang_thai: data.trang_thai, ghi_chu: data.ghi_chu ?? undefined }),
-    [data.trang_thai, data.ghi_chu],
+    () => ({
+      trang_thai: data.trang_thai,
+      ghi_chu: data.ghi_chu ?? undefined,
+      nguon_ho_tro: data.nguon_ho_tro ?? undefined,
+      ngay_ban_giao: bienBan?.ngay_ban_giao ?? undefined,
+      so_quyet_dinh: bienBan?.so_quyet_dinh ?? undefined,
+      ngay_quyet_dinh: bienBan?.ngay_quyet_dinh ?? undefined,
+    }),
+    [data.trang_thai, data.ghi_chu, data.nguon_ho_tro, bienBan],
   );
 
   const footer = (

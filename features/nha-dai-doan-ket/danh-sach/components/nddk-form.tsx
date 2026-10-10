@@ -25,7 +25,6 @@ import FormDrawerFooter from '@/components/shared/FormDrawerFooter';
 import FormSection from '@/components/shared/FormSection';
 import FormGrid, { FORM_GRID_SPAN_FULL } from '@/components/shared/FormGrid';
 import { useAuthStore } from '@/store/useStore';
-import { useResourcePermissions } from '@/hooks/use-resource-permissions';
 import {
   nhaDaiDoanKetSchema,
   nhaDaiDoanKetToFormInput,
@@ -39,8 +38,8 @@ import {
   NDDK_NAM_MIN,
   NDDK_NGUON_HO_TRO_VALUES,
   NDDK_NGUON_VALUES,
+  NDDK_TRANG_THAI_VALUES,
 } from '../core/constants';
-import { nddkTrangThaiChonDuoc } from '../core/quyen-trang-thai';
 import type { NhaDaiDoanKet } from '../core/types';
 import {
   useCreateNhaDaiDoanKet,
@@ -48,11 +47,12 @@ import {
   useUpdateNhaDaiDoanKet,
 } from '../hooks/use-nha-dai-doan-ket';
 import NddkBienBanFormSections from './nddk-bien-ban-form-sections';
+import { nddkTruongBatBuoc } from '../core/luat-truong-bat-buoc';
 import { isNddkScopedToXaPhuong, useNddkViewer } from '../hooks/use-nddk-viewer';
 import { useNddkXaPhuongOptions } from '../hooks/use-nddk-xa-phuong-options';
 import { useVnnHoNgheoOptions } from '../../vi-nguoi-ngheo/hooks/use-vi-nguoi-ngheo';
 import { useKhoDonViCuuTroList } from '@/features/mat-tran-to-quoc/don-vi-cuu-tro/hooks/use-kho-don-vi-cuu-tro';
-import { canNhaTaiTro } from '../core/luat-so-tien';
+import { nddkCanNhaTaiTro } from '../core/luat-so-tien';
 
 const FORM_ID = 'nddk-form';
 
@@ -81,7 +81,6 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
   const updateMutation = useUpdateNhaDaiDoanKet(onClose);
   const viewer = useNddkViewer();
   const scopedToXa = isNddkScopedToXaPhuong(viewer);
-  const { canApprove } = useResourcePermissions('nhaDaiDoanKetList');
 
   const scopedXaId = scopedToXa ? viewer.viewerDonViId : null;
   const xaPhuongOptions = useNddkXaPhuongOptions();
@@ -117,18 +116,9 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
     () => NDDK_LOAI_HINH_VALUES.map((v) => ({ label: v, value: v })),
     [],
   );
-  /**
-   * Ô Trạng thái trên form sửa cũng phải lọc theo quyền Duyệt, không chỉ hộp
-   * thoại "Chuyển trạng thái": để nguyên cả 5 lựa chọn thì người không có quyền
-   * vẫn chọn được "Đã phê duyệt" rồi mới ăn lỗi từ DB khi bấm Lưu.
-   */
   const trangThaiOptions = useMemo(
-    () =>
-      nddkTrangThaiChonDuoc(initialData?.trang_thai, canApprove).map((v) => ({
-        label: v,
-        value: v,
-      })),
-    [initialData?.trang_thai, canApprove],
+    () => NDDK_TRANG_THAI_VALUES.map((v) => ({ label: v, value: v })),
+    [],
   );
 
   const {
@@ -148,7 +138,15 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
     >,
   });
 
+  const nguon = watch('nguon');
   const nguonHoTro = watch('nguon_ho_tro');
+  const canNtt = nddkCanNhaTaiTro(nguon, nguonHoTro);
+  const nhaTaiTroId = watch('nha_tai_tro_id');
+  const trangThai = watch('trang_thai');
+  const batBuoc = useMemo(
+    () => new Set(nddkTruongBatBuoc(trangThai, nguonHoTro)),
+    [trangThai, nguonHoTro],
+  );
   const { data: nhaTaiTroRows = [] } = useKhoDonViCuuTroList();
   const nhaTaiTroOptions = useMemo(
     () =>
@@ -157,6 +155,12 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
         .map((d) => ({ label: d.ten, value: d.id, subLabel: d.loai_label })),
     [nhaTaiTroRows],
   );
+
+  // Nhà tài trợ chỉ có khi Nguồn "Giới thiệu" + Nguồn hỗ trợ "Ủng hộ trực tiếp";
+  // đổi sang nguồn khác thì xoá luôn, khỏi lưu một nhà tài trợ bị khoá không sửa được.
+  useEffect(() => {
+    if (!canNtt && nhaTaiTroId) setValue('nha_tai_tro_id', '', { shouldDirty: true });
+  }, [canNtt, nhaTaiTroId, setValue]);
 
   useEffect(() => {
     if (isEdit) {
@@ -400,7 +404,8 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
                   value={field.value ?? ''}
                   onChange={(v) => field.onChange(v == null ? '' : String(v))}
                   placeholder={txt('nhaDaiDoanKet.form.nhaTaiTroPlaceholder')}
-                  required={canNhaTaiTro(nguonHoTro)}
+                  required={canNtt}
+                  disabled={!canNtt}
                   dropdownInPortal
                   error={errors.nha_tai_tro_id?.message}
                 />
@@ -414,6 +419,7 @@ const NddkForm: React.FC<Props> = ({ initialData, onClose, prefill }) => {
           register={register}
           setValue={setValue}
           errors={errors}
+          batBuoc={batBuoc}
         />
 
         <FormSection

@@ -5,6 +5,8 @@
  * dùng `BIEN_BAN_PRINT_STYLES` (bỏ lề của khung, lề giấy do `@page` lo). Không
  * đặt trong `index.css`: hai nơi giữ hai bản CSS là hai nơi phải sửa cùng lúc.
  */
+import type { BienBanKhoGiay } from './bien-ban-model';
+
 const BASE = `
   .bien-ban-doc {
     font-family: 'Times New Roman', Times, serif;
@@ -49,12 +51,14 @@ const BASE = `
   .bien-ban-doc__ky-grid { display: grid; gap: 0 6pt; }
   .bien-ban-doc__ky-nhom { text-align: center; font-weight: 700; text-transform: uppercase; margin-bottom: 2pt; }
   .bien-ban-doc__ky-col { text-align: center; }
-  .bien-ban-doc__ky-title { font-weight: 700; }
+  .bien-ban-doc__ky-title { font-weight: 700; white-space: pre-line; }
   .bien-ban-doc__ky-note { font-style: italic; font-size: 12pt; }
   .bien-ban-doc__ky-space { height: 64pt; }
   .bien-ban-doc__ky-name { font-weight: 700; }
   .bien-ban-doc__bang { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 2pt 0 6pt; font-size: 12pt; line-height: 1.3; }
   .bien-ban-doc__bang tr { page-break-inside: avoid; break-inside: avoid; }
+  /* Bảng dài sang trang: lặp dòng tiêu đề cột ở đầu mỗi trang in. */
+  .bien-ban-doc__bang thead { display: table-header-group; }
   .bien-ban-doc__bang th, .bien-ban-doc__bang td { border: 1px solid #000; padding: 3pt 4pt; vertical-align: middle; overflow-wrap: anywhere; }
   .bien-ban-doc__bang th { font-weight: 700; text-align: center; }
   .bien-ban-doc__bang td { height: 18pt; }
@@ -62,15 +66,21 @@ const BASE = `
   .bien-ban-doc__bang-o--center { text-align: center; }
   .bien-ban-doc__bang-o--right { text-align: right; }
   .bien-ban-doc__bang-tong td { font-weight: 700; }
+  /* Khổ ngang — danh sách nhiều cột: chữ bảng nhỏ lại cho vừa 11 cột. */
+  .bien-ban-doc--ngang { font-size: 12pt; line-height: 1.4; }
+  .bien-ban-doc--ngang .bien-ban-doc__bang { font-size: 11pt; line-height: 1.25; }
+  .bien-ban-doc--ngang .bien-ban-doc__bang th,
+  .bien-ban-doc--ngang .bien-ban-doc__bang td { padding: 2pt 3pt; }
+  .bien-ban-doc--ngang .bien-ban-doc__bang td { height: 22pt; }
 `;
 
 /** Khung xem trước: lề giống lề giấy thật để bản PDF chụp lại khớp bản in. */
 export const BIEN_BAN_SCREEN_STYLES = `${BASE}
   .bien-ban-doc { padding: 20mm 15mm 20mm 30mm; }
+  .bien-ban-doc--ngang { padding: 12mm 10mm 12mm 12mm; }
 `;
 
-export const BIEN_BAN_PRINT_STYLES = `
-  @page { size: A4 portrait; margin: 20mm 15mm 20mm 30mm; }
+const PRINT_BODY = `
   body {
     margin: 0;
     padding: 0;
@@ -78,6 +88,22 @@ export const BIEN_BAN_PRINT_STYLES = `
     print-color-adjust: exact;
   }
 ${BASE}
-  .bien-ban-doc { padding: 0; max-width: 210mm; margin: 0 auto; }
   .bien-ban-doc__ngat-trang { border: 0; margin: 0; }
 `;
+
+export const BIEN_BAN_PRINT_STYLES = `
+  @page { size: A4 portrait; margin: 20mm 15mm 20mm 30mm; }
+${PRINT_BODY}
+  .bien-ban-doc { padding: 0; max-width: 210mm; margin: 0 auto; }
+`;
+
+const BIEN_BAN_PRINT_STYLES_NGANG = `
+  @page { size: A4 landscape; margin: 12mm 10mm 12mm 12mm; }
+${PRINT_BODY}
+  .bien-ban-doc { padding: 0; max-width: 297mm; margin: 0 auto; }
+`;
+
+/** CSS cửa sổ in theo khổ giấy — khổ ngang dùng cho danh sách nhiều cột. */
+export function bienBanPrintStyles(khoGiay: BienBanKhoGiay = 'doc'): string {
+  return khoGiay === 'ngang' ? BIEN_BAN_PRINT_STYLES_NGANG : BIEN_BAN_PRINT_STYLES;
+}

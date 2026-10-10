@@ -14,6 +14,7 @@ const HO_SO_HOP_LE = {
   ho_ten_chu_ho: 'Hồ Văn Thu',
   so_tien: '50.000.000',
   trang_thai: 'Đang khảo sát',
+  ngay_khao_sat: '2026-03-01',
 };
 
 function soTien(v: unknown) {
@@ -106,5 +107,37 @@ describe('dữ liệu biên bản', () => {
     expect(nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, ngay_ban_giao: '05/10/2026' }).success).toBe(
       false,
     );
+  });
+});
+
+describe('trường bắt buộc theo trạng thái', () => {
+  const loiTai = (r: ReturnType<typeof nhaDaiDoanKetSchema.safeParse>) =>
+    (r.error?.issues ?? []).map((i) => i.path.join('.')).sort();
+
+  it('Đang khảo sát thiếu ngày khảo sát ⇒ lỗi đúng ô', () => {
+    expect(loiTai(nhaDaiDoanKetSchema.safeParse({ ...HO_SO_HOP_LE, ngay_khao_sat: '' }))).toEqual([
+      'ngay_khao_sat',
+    ]);
+  });
+
+  it('Đã bàn giao nguồn Cấp xã đòi đủ 4 ô; Ủng hộ trực tiếp chỉ đòi 2 ngày', () => {
+    const banGiao = { ...HO_SO_HOP_LE, trang_thai: 'Đã bàn giao', ngay_khao_sat: '' };
+    expect(loiTai(nhaDaiDoanKetSchema.safeParse(banGiao))).toEqual([
+      'ngay_ban_giao',
+      'ngay_kiem_tra_hoan_thanh',
+      'ngay_quyet_dinh',
+      'so_quyet_dinh',
+    ]);
+    expect(
+      loiTai(
+        nhaDaiDoanKetSchema.safeParse({
+          ...banGiao,
+          nguon_ho_tro: 'Ủng hộ trực tiếp',
+          nha_tai_tro_id: '3',
+          ngay_kiem_tra_hoan_thanh: '2026-05-01',
+          ngay_ban_giao: '2026-05-10',
+        }),
+      ),
+    ).toEqual([]);
   });
 });

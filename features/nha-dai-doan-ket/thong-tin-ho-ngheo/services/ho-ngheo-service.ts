@@ -335,6 +335,30 @@ export async function getHoNgheoThongKeRows(
   });
 }
 
+/** Số id mỗi lần `.in()` — giữ URL GET dưới giới hạn độ dài. */
+const SO_CCCD_LO = 200;
+
+/**
+ * Số CCCD của các hộ, theo id — chỉ 2 cột, chạy lúc in danh sách nhận hỗ trợ
+ * (trang Thống kê không kéo cột này). Gom đủ mọi lô, không cắt ngầm.
+ */
+export async function getSoCccdTheoHoNgheo(ids: readonly string[]): Promise<Record<string, string>> {
+  const supabase = getSupabase();
+  const out: Record<string, string> = {};
+  if (!supabase || ids.length === 0) return out;
+  for (let i = 0; i < ids.length; i += SO_CCCD_LO) {
+    const { data, error } = await supabase
+      .from('hngh_thong_tin_ho_ngheo')
+      .select('id,so_cccd')
+      .in('id', ids.slice(i, i + SO_CCCD_LO));
+    if (error) handleSupabaseError(error);
+    for (const r of (data ?? []) as { id: string | number; so_cccd: string | null }[]) {
+      if (r.so_cccd?.trim()) out[String(r.id)] = r.so_cccd.trim();
+    }
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ *
  * CRUD hộ
  * ------------------------------------------------------------------ */

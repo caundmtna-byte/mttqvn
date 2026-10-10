@@ -29,6 +29,7 @@ interface Props {
  */
 const BienBanPreview: React.FC<Props> = ({ model, fileBase, onBack }) => {
   const pdfBusy = useRef(false);
+  const landscape = model.khoGiay === 'ngang';
 
   const handlePrint = useCallback(() => {
     const el = document.getElementById(PRINT_ROOT_ID);
@@ -36,7 +37,7 @@ const BienBanPreview: React.FC<Props> = ({ model, fileBase, onBack }) => {
       toast.error(txt('common.error'));
       return;
     }
-    if (!printBienBanDocument(el, model.tieuDe)) {
+    if (!printBienBanDocument(el, model.tieuDe, model.khoGiay)) {
       toast.error(txt('common.printPopupBlocked'));
     }
   }, [model]);
@@ -53,11 +54,11 @@ const BienBanPreview: React.FC<Props> = ({ model, fileBase, onBack }) => {
             toast.error(txt('common.error'));
             return;
           }
-          await downloadVanBanPdf(el, fileBase);
+          await downloadVanBanPdf(el, fileBase, { orientation: landscape ? 'landscape' : 'portrait' });
         } else if (format === 'docx') {
           await downloadBienBanDocx(model, fileBase);
         } else {
-          downloadBienBanXlsx(model, fileBase);
+          await downloadBienBanXlsx(model, fileBase);
         }
       } catch {
         toast.error(txt('common.error'));
@@ -65,7 +66,7 @@ const BienBanPreview: React.FC<Props> = ({ model, fileBase, onBack }) => {
         pdfBusy.current = false;
       }
     },
-    [model, fileBase],
+    [model, fileBase, landscape],
   );
 
   return (
@@ -75,6 +76,7 @@ const BienBanPreview: React.FC<Props> = ({ model, fileBase, onBack }) => {
       onPrint={handlePrint}
       onDownload={handleDownload}
       downloadDisabled={false}
+      orientation={landscape ? 'landscape' : 'portrait'}
     >
       <style>{BIEN_BAN_SCREEN_STYLES}</style>
       <BienBanDocument model={model} rootId={PRINT_ROOT_ID} />

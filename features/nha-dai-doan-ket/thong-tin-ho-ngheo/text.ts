@@ -160,7 +160,7 @@ export const hoNgheo = {
     huongDanColMuc: 'Mục',
     huongDanColNoiDung: 'Nội dung',
     huong1k: 'Cột bắt buộc',
-    huong1v: 'Chỉ “Họ và tên đại diện hộ”. Các cột khác để trống được.',
+    huong1v: 'Họ và tên đại diện hộ, Số căn cước, Khối xóm, Đối tượng, Dân tộc — dòng nào thiếu sẽ bị bỏ qua và báo lỗi. Số căn cước 12 chữ số (hoặc CMND 9 số); định dạng ô là Văn bản (Text) để không mất số 0 đầu.',
     huong2k: 'Xã phường, Dân tộc',
     huong2v: 'Nhập tên hoặc mã (id) đúng như các sheet tra cứu. Tên không phân biệt hoa thường và dấu.',
     huong3k: 'Tôn giáo, Trạng thái',

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { vnnOTienCanNhap } from './luat-so-tien';
+import { vnnTruongConThieu, type VnnTruongBatBuoc } from './luat-truong-bat-buoc';
 import { canNhaTaiTro } from '../../danh-sach/core/luat-so-tien';
 import { txt } from '@/lib/text';
 import { parseSoInput } from '@/lib/number';
@@ -28,6 +29,8 @@ import {
   vnnLoaiPhieu,
   VNN_NHANH_PHIEU,
   type PksFormInput,
+  vNgay,
+  vText,
 } from './phieu-khao-sat';
 import {
   bbbgFormSchema,
@@ -43,6 +46,23 @@ const optionalText = z
   .transform((s) => (s === '' || s === undefined ? undefined : s));
 
 const optionalFk = optionalText;
+
+/** Câu báo lỗi ô bắt buộc theo trạng thái — xem `luat-truong-bat-buoc.ts`. */
+const TRUONG_BAT_BUOC_MSG_KEY: Record<VnnTruongBatBuoc, string> = {
+  ngay_ban_giao: 'viNguoiNgheo.validation.ngayBanGiaoBatBuoc',
+  so_quyet_dinh: 'viNguoiNgheo.validation.soQuyetDinhBatBuoc',
+  ngay_quyet_dinh: 'viNguoiNgheo.validation.ngayQuyetDinhBatBuoc',
+};
+
+function themLoiTruongBatBuoc(
+  ctx: z.RefinementCtx,
+  thieu: VnnTruongBatBuoc[],
+  pathPrefix: string[],
+) {
+  for (const k of thieu) {
+    ctx.addIssue({ code: 'custom', path: [...pathPrefix, k], message: txt(TRUONG_BAT_BUOC_MSG_KEY[k]) });
+  }
+}
 
 /**
  * Số tiền: ô trống ⇒ `undefined` để `superRefine` báo "bắt buộc" đúng ô (luat-so-tien.ts).
@@ -132,6 +152,12 @@ export const viNguoiNgheoSchema = z.object({
       ctx.addIssue({ code: 'custom', path: ['don_vi_ho_tro_id'], message: txt('viNguoiNgheo.validation.nhaTaiTroRequired') });
     }
     if (v.bien_ban_ban_giao) {
+      // `undefined` ⇒ form chưa có bản đầy đủ (nút Lưu đang khoá) — không kiểm được.
+      themLoiTruongBatBuoc(
+        ctx,
+        vnnTruongConThieu(v.trang_thai, v.nguon_ho_tro, v.bien_ban_ban_giao),
+        ['bien_ban_ban_giao'],
+      );
       const r = bbbgFormSchema.safeParse(v.bien_ban_ban_giao);
       if (!r.success) {
         for (const issue of r.error.issues) {
@@ -190,12 +216,20 @@ export type ViNguoiNgheoFormValues = z.infer<typeof viNguoiNgheoSchema>;
  * Hộp thoại "Chuyển trạng thái". `ghi_chu` là **lý do của lần đổi này** —
  * trigger `fn_ghi_lich_su_trang_thai` chụp lại vào `lich_su_trang_thai`.
  */
-export const viNguoiNgheoStatusChangeSchema = z.object({
-  trang_thai: z.enum(VNN_TRANG_THAI_VALUES, {
-    message: txt('viNguoiNgheo.validation.trangThaiInvalid'),
-  }),
-  ghi_chu: optionalText,
-});
+export const viNguoiNgheoStatusChangeSchema = z
+  .object({
+    trang_thai: z.enum(VNN_TRANG_THAI_VALUES, {
+      message: txt('viNguoiNgheo.validation.trangThaiInvalid'),
+    }),
+    ghi_chu: optionalText,
+    /** Chỉ làm ngữ cảnh cho luật bắt buộc số/ngày quyết định — KHÔNG ghi xuống DB. */
+    nguon_ho_tro: optionalText,
+    // Ô biên bản bắt buộc của trạng thái đích; service gộp vào jsonb `bien_ban_ban_giao`.
+    ngay_ban_giao: vNgay,
+    so_quyet_dinh: vText,
+    ngay_quyet_dinh: vNgay,
+  })
+  .superRefine((v, ctx) => themLoiTruongBatBuoc(ctx, vnnTruongConThieu(v.trang_thai, v.nguon_ho_tro, v), []));
 
 export type ViNguoiNgheoStatusChangeValues = z.infer<typeof viNguoiNgheoStatusChangeSchema>;
 

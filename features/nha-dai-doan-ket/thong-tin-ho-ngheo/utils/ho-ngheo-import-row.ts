@@ -4,6 +4,9 @@
  * Xã phường và dân tộc nhận id hoặc tên (bỏ dấu, không phân biệt hoa/thường,
  * khớp nguyên vẹn). Đối tượng / tôn giáo / trạng thái khớp theo danh mục cố
  * định; tôn giáo và trạng thái để trống thì lấy mặc định như form.
+ *
+ * Kiểm bằng `hoNgheoFormSchema` — ĐÚNG luật form nhập tay: Số căn cước, Khối
+ * xóm, Đối tượng, Dân tộc bắt buộc ở mọi chế độ (thêm mới lẫn ghi đè).
  */
 import { txt } from '@/lib/text';
 import { findRefStrict, matchEnumCell, trimCell, type NamedRef } from '@/lib/data/import-cells';
@@ -15,7 +18,7 @@ import {
   HNGH_TRANG_THAI_DEFAULT,
   HNGH_TRANG_THAI_VALUES,
 } from '../core/constants';
-import { hoNgheoSchema, type HoNgheoFormValues } from '../core/schema';
+import { hoNgheoFormSchema, type HoNgheoFormValues } from '../core/schema';
 import { chuanHoaSoCccd } from './so-cccd';
 
 export const HO_NGHEO_IMPORT_MAX_ROWS = 3000;
@@ -79,7 +82,7 @@ export function parseHoNgheoImportRow(
     return fail(rowNum, txt('hoNgheo.import.errTrangThai', { gia_tri: trimCell(raw.trang_thai) }));
   }
 
-  const parsed = hoNgheoSchema.safeParse({
+  const parsed = hoNgheoFormSchema.safeParse({
     ho_ten_dai_dien: trimCell(raw.ho_ten_dai_dien),
     so_cccd: chuanHoaSoCccd(trimCell(raw.so_cccd)),
     xa_phuong_id: xaId,
@@ -94,7 +97,9 @@ export function parseHoNgheoImportRow(
     ghi_chu: trimCell(raw.ghi_chu),
   });
   if (!parsed.success) {
-    return fail(rowNum, parsed.error.issues[0]?.message ?? parsed.error.message);
+    // Báo đủ mọi ô sai của dòng để sửa một lần, không phải tải lên lại từng lượt.
+    const messages = [...new Set(parsed.error.issues.map((i) => i.message))];
+    return fail(rowNum, messages.join(' ') || parsed.error.message);
   }
 
   return {
