@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useStore';
 import { getAuthService } from '@/lib/supabase/auth';
 import { signOutCompletely } from '@/lib/auth/sign-out';
 import { txt } from '@/lib/text';
+import type { KetQuaDoiChieuPhien } from '@/lib/supabase/auth';
 
 /**
  * Giữ trạng thái đăng nhập của app khớp với phiên Supabase.
@@ -24,6 +25,10 @@ import { txt } from '@/lib/text';
  *    một tài khoản đang online chỉ có tác dụng ở lần tải trang kế tiếp — bật
  *    "Ghi nhớ đăng nhập" thì có thể là hàng tuần sau. Có khoảng cách tối thiểu
  *    giữa hai lần kiểm để không bắn truy vấn mỗi lần chuyển cửa sổ.
+ *
+ * Chỉ đăng xuất khi chắc chắn mất phiên (`mat_phien`). Lỗi mạng tạm thời
+ * (`chua_xac_dinh`) thì giữ nguyên — trước đây một lần chập mạng lúc mở laptop
+ * sau khi ngủ cũng đủ đẩy người dùng ra trang đăng nhập.
  */
 
 /** Khoảng cách tối thiểu giữa hai lần đối chiếu phiên khi quay lại tab. */
@@ -52,27 +57,24 @@ export function AuthSessionSynchronizer() {
       navigate('/dang-nhap', { replace: true });
     };
 
-    // 1) Đối chiếu ngay sau hydrate
-    void (async () => {
-      const session = await getAuthService().getSession();
+    const xuLyKetQua = (ketQua: KetQuaDoiChieuPhien) => {
       if (!alive) return;
-      if (!session?.user) {
+      if (ketQua.trang_thai === 'mat_phien') {
         void handleSessionLost();
         return;
       }
-      useAuthStore.getState().login(session.user);
-    })();
+      if (ketQua.trang_thai === 'chua_xac_dinh') return;
+      signingOut.current = false;
+      // Phiên đã hồi (token vừa làm mới xong) ⇒ gỡ toast "hết hạn" do request lỡ nhịp.
+      toast.dismiss('auth-expired');
+      useAuthStore.getState().login(ketQua.user);
+    };
+
+    // 1) Đối chiếu ngay sau hydrate
+    void getAuthService().getSession().then(xuLyKetQua);
 
     // 2) + 3) Theo dõi thay đổi phiên (kể cả từ tab khác)
-    const unsubscribe = getAuthService().onAuthStateChange((session) => {
-      if (!alive) return;
-      if (!session?.user) {
-        void handleSessionLost();
-        return;
-      }
-      signingOut.current = false;
-      useAuthStore.getState().login(session.user);
-    });
+    const unsubscribe = getAuthService().onAuthStateChange(xuLyKetQua);
 
     // Bước 1 ở trên vừa đối chiếu xong, tính từ đây mới đếm khoảng cách.
     lastCheckedAt.current = Date.now();
@@ -83,11 +85,7 @@ export function AuthSessionSynchronizer() {
       const now = Date.now();
       if (now - lastCheckedAt.current < KHOANG_CACH_DOI_CHIEU_MS) return;
       lastCheckedAt.current = now;
-      void (async () => {
-        const session = await getAuthService().getSession();
-        if (!alive) return;
-        if (!session?.user) void handleSessionLost();
-      })();
+      void getAuthService().getSession().then(xuLyKetQua);
     };
     document.addEventListener('visibilitychange', handleVisible);
 

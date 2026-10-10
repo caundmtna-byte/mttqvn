@@ -47,8 +47,10 @@ function queryErrorToast(error: unknown) {
     // Đăng xuất do `AuthSessionSynchronizer` đảm nhiệm (nó có router + queryClient).
     // Ở đây chỉ báo một lần, không đổ chồng toast cho từng query đang lỗi.
     toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', {
+      // Không để `Infinity`: request bắn ra lúc máy vừa thức (token chưa kịp làm mới)
+      // dính 401 rồi toast nằm mãi dù phiên đã tự hồi. `AuthSessionSynchronizer`
+      // còn gỡ toast này khi phiên hợp lệ trở lại.
       id: 'auth-expired',
-      duration: Infinity,
       closeButton: true,
     });
     return;
