@@ -17,11 +17,13 @@ import type {
   HnghDoiTuong,
   HnghGioiTinh,
   HnghTinhTrangDat,
+  HnghToChuc,
   HnghTonGiao,
   HnghTrangThai,
   HnghViecLam,
 } from '../core/constants';
 import {
+  HNGH_TO_CHUC_DEFAULT,
   HNGH_TON_GIAO_DEFAULT,
   HNGH_TRANG_THAI_DEFAULT,
 } from '../core/constants';
@@ -106,6 +108,7 @@ export function flattenHoNgheoRow(row: Record<string, unknown>): HoNgheo {
     dan_toc_id: nullableStr(r.dan_toc_id),
     ten_dan_toc: embeddedName(dt?.ten),
     ton_giao: (nullableStr(r.ton_giao) as HnghTonGiao | null) ?? HNGH_TON_GIAO_DEFAULT,
+    to_chuc: (nullableStr(r.to_chuc) as HnghToChuc | null) ?? HNGH_TO_CHUC_DEFAULT,
     so_tai_khoan: nullableStr(r.so_tai_khoan),
     ngan_hang: nullableStr(r.ngan_hang),
     trang_thai: (nullableStr(r.trang_thai) as HnghTrangThai | null) ?? HNGH_TRANG_THAI_DEFAULT,
@@ -136,6 +139,7 @@ export function formToPayload(data: HoNgheoFormValues): Record<string, unknown> 
     dien_thoai: data.dien_thoai ?? null,
     dan_toc_id: nullableFk(data.dan_toc_id),
     ton_giao: data.ton_giao,
+    to_chuc: data.to_chuc,
     so_tai_khoan: data.so_tai_khoan ?? null,
     ngan_hang: data.ngan_hang ?? null,
     trang_thai: data.trang_thai,
@@ -168,6 +172,7 @@ export const HNGH_SERVER_SORT_COLUMNS = [
   'dien_thoai',
   'ten_dan_toc',
   'ton_giao',
+  'to_chuc',
   'so_tai_khoan',
   'ngan_hang',
   'trang_thai',
@@ -188,6 +193,7 @@ export type HnghPageQuery = {
   viewerXaPhuongId: string | null;
   doiTuong: readonly string[];
   tonGiao: readonly string[];
+  toChuc: readonly string[];
   trangThai: readonly string[];
   danTocIds: readonly string[];
   xaPhuongIds: readonly string[];
@@ -272,6 +278,7 @@ export async function getHoNgheoPage(q: HnghPageQuery): Promise<HnghPageResult> 
     p_dan_toc_ids: toIdArray(q.danTocIds),
     p_xa_phuong_ids: toIdArray(q.xaPhuongIds),
     p_column_search: cleanColumnSearch(q.columnSearch),
+    p_to_chuc: toTextArray(q.toChuc),
   } as never);
   if (error) handleSupabaseError(error);
 

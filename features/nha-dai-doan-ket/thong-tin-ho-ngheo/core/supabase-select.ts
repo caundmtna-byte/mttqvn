@@ -20,6 +20,7 @@ const LIST_COLS = [
   'dien_thoai',
   'dan_toc_id',
   'ton_giao',
+  'to_chuc',
   'so_tai_khoan',
   'ngan_hang',
   'trang_thai',

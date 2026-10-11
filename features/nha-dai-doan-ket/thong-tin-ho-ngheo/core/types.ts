@@ -2,6 +2,7 @@ import type {
   HnghDoiTuong,
   HnghGioiTinh,
   HnghTinhTrangDat,
+  HnghToChuc,
   HnghTonGiao,
   HnghTrangThai,
   HnghViecLam,
@@ -11,6 +12,7 @@ export interface HoNgheoFilters {
   columnSearch: Record<string, string>;
   doi_tuong_filter: string[];
   ton_giao_filter: string[];
+  to_chuc_filter: string[];
   trang_thai_filter: string[];
   dan_toc_filter: string[];
   xa_phuong_filter: string[];
@@ -30,6 +32,7 @@ export interface HoNgheo {
   dan_toc_id: string | null;
   ten_dan_toc: string | null;
   ton_giao: HnghTonGiao;
+  to_chuc: HnghToChuc;
   so_tai_khoan: string | null;
   ngan_hang: string | null;
   trang_thai: HnghTrangThai;

@@ -5,6 +5,8 @@
  * khớp nguyên vẹn). Đối tượng / tôn giáo / trạng thái khớp theo danh mục cố
  * định; tôn giáo và trạng thái để trống thì lấy mặc định như form.
  *
+ * Tổ chức để trống ⇒ “Mặt trận”.
+ *
  * Kiểm bằng `hoNgheoFormSchema` — ĐÚNG luật form nhập tay: Số căn cước, Khối
  * xóm, Đối tượng, Dân tộc bắt buộc ở mọi chế độ (thêm mới lẫn ghi đè).
  */
@@ -13,6 +15,8 @@ import { findRefStrict, matchEnumCell, trimCell, type NamedRef } from '@/lib/dat
 import type { ImportParsedRow, ImportRowOutcome } from '@/lib/data/import-runner';
 import {
   HNGH_DOI_TUONG_VALUES,
+  HNGH_TO_CHUC_DEFAULT,
+  HNGH_TO_CHUC_VALUES,
   HNGH_TON_GIAO_DEFAULT,
   HNGH_TON_GIAO_VALUES,
   HNGH_TRANG_THAI_DEFAULT,
@@ -77,6 +81,10 @@ export function parseHoNgheoImportRow(
   if (tonGiao === null) {
     return fail(rowNum, txt('hoNgheo.import.errTonGiao', { gia_tri: trimCell(raw.ton_giao) }));
   }
+  const toChuc = enumOrDefault(HNGH_TO_CHUC_VALUES, raw.to_chuc, HNGH_TO_CHUC_DEFAULT);
+  if (toChuc === null) {
+    return fail(rowNum, txt('hoNgheo.import.errToChuc', { gia_tri: trimCell(raw.to_chuc) }));
+  }
   const trangThai = enumOrDefault(HNGH_TRANG_THAI_VALUES, raw.trang_thai, HNGH_TRANG_THAI_DEFAULT);
   if (trangThai === null) {
     return fail(rowNum, txt('hoNgheo.import.errTrangThai', { gia_tri: trimCell(raw.trang_thai) }));
@@ -91,6 +99,7 @@ export function parseHoNgheoImportRow(
     dien_thoai: trimCell(raw.dien_thoai),
     dan_toc_id: danToc.ref?.id ?? '',
     ton_giao: tonGiao,
+    to_chuc: toChuc,
     so_tai_khoan: trimCell(raw.so_tai_khoan),
     ngan_hang: trimCell(raw.ngan_hang),
     trang_thai: trangThai,

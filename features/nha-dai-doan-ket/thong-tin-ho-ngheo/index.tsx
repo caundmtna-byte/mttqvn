@@ -40,6 +40,7 @@ import { dryRunHoNgheoImport, type HoNgheoImportContext } from './services/ho-ng
 import {
   HNGH_DOI_TUONG_VALUES,
   HNGH_MAIN_TABS,
+  HNGH_TO_CHUC_VALUES,
   HNGH_TON_GIAO_VALUES,
   HNGH_TRANG_THAI_VALUES,
 } from './core/constants';
@@ -133,6 +134,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
       viewerXaPhuongId: viewer.chucVuCapQuanLy === 'Xã phường' ? viewer.viewerDonViId : null,
       doiTuong: filters.doi_tuong_filter,
       tonGiao: filters.ton_giao_filter,
+      toChuc: filters.to_chuc_filter,
       trangThai: filters.trang_thai_filter,
       danTocIds: filters.dan_toc_filter,
       xaPhuongIds: filters.xa_phuong_filter,
@@ -142,6 +144,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
       viewer,
       filters.doi_tuong_filter,
       filters.ton_giao_filter,
+      filters.to_chuc_filter,
       filters.trang_thai_filter,
       filters.dan_toc_filter,
       filters.xa_phuong_filter,
@@ -204,6 +207,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
       { key: 'doi_tuong', label: txt('hoNgheo.store.doiTuongCol') },
       { key: 'dien_thoai', label: txt('hoNgheo.store.dienThoaiCol') },
       { key: 'ten_dan_toc', label: txt('hoNgheo.store.danTocCol') },
+      { key: 'to_chuc', label: txt('hoNgheo.store.toChucCol') },
       { key: 'ton_giao', label: txt('hoNgheo.store.tonGiaoCol') },
       { key: 'so_tai_khoan', label: txt('hoNgheo.store.soTaiKhoanCol') },
       { key: 'ngan_hang', label: txt('hoNgheo.store.nganHangCol') },
@@ -225,6 +229,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
       doi_tuong: getHnghColumnDisplayValue(item, 'doi_tuong'),
       dien_thoai: getHnghColumnDisplayValue(item, 'dien_thoai'),
       ten_dan_toc: getHnghColumnDisplayValue(item, 'ten_dan_toc'),
+      to_chuc: item.to_chuc,
       ton_giao: item.ton_giao,
       so_tai_khoan: getHnghColumnDisplayValue(item, 'so_tai_khoan'),
       ngan_hang: getHnghColumnDisplayValue(item, 'ngan_hang'),
@@ -268,6 +273,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
       countHnghColumnSearchActive(cs) > 0 ||
       filters.doi_tuong_filter.length > 0 ||
       filters.ton_giao_filter.length > 0 ||
+      filters.to_chuc_filter.length > 0 ||
       filters.trang_thai_filter.length > 0 ||
       filters.dan_toc_filter.length > 0 ||
       filters.xa_phuong_filter.length > 0
@@ -374,6 +380,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
       { key: 'doi_tuong', label: txt('hoNgheo.store.doiTuongCol'), required: true },
       { key: 'dien_thoai', label: txt('hoNgheo.store.dienThoaiCol') },
       { key: 'dan_toc_id', label: txt('hoNgheo.store.danTocCol'), required: true },
+      { key: 'to_chuc', label: txt('hoNgheo.store.toChucCol') },
       { key: 'ton_giao', label: txt('hoNgheo.store.tonGiaoCol') },
       { key: 'so_tai_khoan', label: txt('hoNgheo.store.soTaiKhoanCol') },
       { key: 'ngan_hang', label: txt('hoNgheo.store.nganHangCol') },
@@ -427,6 +434,7 @@ const ThongTinHoNgheoPage: React.FC = () => {
         headers: [k('giaTriColCot'), k('giaTriColGiaTri')],
         rows: [
           [txt('hoNgheo.store.doiTuongCol'), HNGH_DOI_TUONG_VALUES.join(' · ')],
+          [txt('hoNgheo.store.toChucCol'), HNGH_TO_CHUC_VALUES.join(' · ')],
           [txt('hoNgheo.store.tonGiaoCol'), HNGH_TON_GIAO_VALUES.join(' · ')],
           [txt('hoNgheo.store.trangThaiCol'), HNGH_TRANG_THAI_VALUES.join(' · ')],
         ],

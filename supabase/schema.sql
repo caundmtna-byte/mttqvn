@@ -3080,10 +3080,10 @@ $$;
 
 
 --
--- Name: get_hngh_page(text, integer, integer, text, boolean, bigint, text[], text[], text[], bigint[], bigint[], jsonb); Type: FUNCTION; Schema: public; Owner: -
+-- Name: get_hngh_page(text, integer, integer, text, boolean, bigint, text[], text[], text[], bigint[], bigint[], jsonb, text[]); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_doi_tuong text[] DEFAULT NULL::text[], p_ton_giao text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_dan_toc_ids bigint[] DEFAULT NULL::bigint[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb) RETURNS TABLE(id bigint, ho_ten_dai_dien text, so_cccd text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, dien_thoai text, dan_toc_id bigint, ten_dan_toc text, ton_giao text, so_tai_khoan text, ngan_hang text, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, total_count bigint)
+CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit integer DEFAULT 100, p_offset integer DEFAULT 0, p_sort text DEFAULT NULL::text, p_view_all boolean DEFAULT true, p_viewer_xa_phuong_id bigint DEFAULT NULL::bigint, p_doi_tuong text[] DEFAULT NULL::text[], p_ton_giao text[] DEFAULT NULL::text[], p_trang_thai text[] DEFAULT NULL::text[], p_dan_toc_ids bigint[] DEFAULT NULL::bigint[], p_xa_phuong_ids bigint[] DEFAULT NULL::bigint[], p_column_search jsonb DEFAULT NULL::jsonb, p_to_chuc text[] DEFAULT NULL::text[]) RETURNS TABLE(id bigint, ho_ten_dai_dien text, so_cccd text, xa_phuong_id bigint, ten_xa_phuong text, khoi_xom text, doi_tuong text, dien_thoai text, dan_toc_id bigint, ten_dan_toc text, ton_giao text, to_chuc text, so_tai_khoan text, ngan_hang text, trang_thai text, ngay_cap_nhat_trang_thai timestamp with time zone, ghi_chu text, id_nguoi_tao bigint, ho_va_ten_nguoi_tao text, ten_tai_khoan_nguoi_tao text, tg_tao timestamp with time zone, tg_cap_nhat timestamp with time zone, id_nguoi_cap_nhat bigint, ho_va_ten_nguoi_cap_nhat text, ten_tai_khoan_nguoi_cap_nhat text, total_count bigint)
     LANGUAGE sql STABLE
     AS $$
   WITH src AS (
@@ -3107,7 +3107,7 @@ CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit i
     s.id, s.ho_ten_dai_dien, s.so_cccd,
     s.xa_phuong_id, s.ten_xa_phuong, s.khoi_xom,
     s.doi_tuong, s.dien_thoai,
-    s.dan_toc_id, s.ten_dan_toc, s.ton_giao,
+    s.dan_toc_id, s.ten_dan_toc, s.ton_giao, s.to_chuc,
     s.so_tai_khoan, s.ngan_hang,
     s.trang_thai, s.ngay_cap_nhat_trang_thai, s.ghi_chu,
     s.id_nguoi_tao, s.ho_va_ten_nguoi_tao, s.ten_tai_khoan_nguoi_tao,
@@ -3126,6 +3126,7 @@ CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit i
         s.dien_thoai,
         s.ten_dan_toc,
         s.ton_giao,
+        s.to_chuc,
         s.so_tai_khoan,
         s.ngan_hang,
         s.trang_thai,
@@ -3143,6 +3144,7 @@ CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit i
     )
     AND (p_doi_tuong     IS NULL OR cardinality(p_doi_tuong)     = 0 OR s.doi_tuong    = ANY (p_doi_tuong))
     AND (p_ton_giao      IS NULL OR cardinality(p_ton_giao)      = 0 OR s.ton_giao     = ANY (p_ton_giao))
+    AND (p_to_chuc       IS NULL OR cardinality(p_to_chuc)       = 0 OR s.to_chuc      = ANY (p_to_chuc))
     AND (p_trang_thai    IS NULL OR cardinality(p_trang_thai)    = 0 OR s.trang_thai   = ANY (p_trang_thai))
     AND (p_dan_toc_ids   IS NULL OR cardinality(p_dan_toc_ids)   = 0 OR s.dan_toc_id   = ANY (p_dan_toc_ids))
     AND (p_xa_phuong_ids IS NULL OR cardinality(p_xa_phuong_ids) = 0 OR s.xa_phuong_id = ANY (p_xa_phuong_ids))
@@ -3163,6 +3165,8 @@ CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit i
          OR s.ten_dan_toc ILIKE '%'||btrim(p_column_search->>'ten_dan_toc')||'%')
     AND (nullif(btrim(coalesce(p_column_search->>'ton_giao','')),'') IS NULL
          OR s.ton_giao ILIKE '%'||btrim(p_column_search->>'ton_giao')||'%')
+    AND (nullif(btrim(coalesce(p_column_search->>'to_chuc','')),'') IS NULL
+         OR s.to_chuc ILIKE '%'||btrim(p_column_search->>'to_chuc')||'%')
     AND (nullif(btrim(coalesce(p_column_search->>'so_tai_khoan','')),'') IS NULL
          OR s.so_tai_khoan ILIKE '%'||btrim(p_column_search->>'so_tai_khoan')||'%')
     AND (nullif(btrim(coalesce(p_column_search->>'ngan_hang','')),'') IS NULL
@@ -3195,6 +3199,8 @@ CREATE FUNCTION public.get_hngh_page(p_search text DEFAULT NULL::text, p_limit i
     CASE WHEN p_sort = 'ten_dan_toc_desc'     THEN s.ten_dan_toc    END DESC NULLS LAST,
     CASE WHEN p_sort = 'ton_giao_asc'         THEN s.ton_giao       END ASC  NULLS LAST,
     CASE WHEN p_sort = 'ton_giao_desc'        THEN s.ton_giao       END DESC NULLS LAST,
+    CASE WHEN p_sort = 'to_chuc_asc'          THEN s.to_chuc        END ASC  NULLS LAST,
+    CASE WHEN p_sort = 'to_chuc_desc'         THEN s.to_chuc        END DESC NULLS LAST,
     CASE WHEN p_sort = 'so_tai_khoan_asc'     THEN s.so_tai_khoan   END ASC  NULLS LAST,
     CASE WHEN p_sort = 'so_tai_khoan_desc'    THEN s.so_tai_khoan   END DESC NULLS LAST,
     CASE WHEN p_sort = 'ngan_hang_asc'        THEN s.ngan_hang      END ASC  NULLS LAST,
@@ -5740,12 +5746,14 @@ CREATE TABLE public.hngh_thong_tin_ho_ngheo (
     doi_tuong_uu_tien text,
     tinh_trang_dat text,
     id_nguoi_cap_nhat bigint,
+    to_chuc text DEFAULT 'Mặt trận'::text NOT NULL,
     CONSTRAINT hngh_gioi_tinh_chk CHECK (((gioi_tinh IS NULL) OR (gioi_tinh = ANY (ARRAY['Nam'::text, 'Nữ'::text])))),
     CONSTRAINT hngh_ho_ten_dai_dien_chk CHECK ((btrim(ho_ten_dai_dien) <> ''::text)),
     CONSTRAINT hngh_nam_sinh_chk CHECK (((nam_sinh IS NULL) OR ((nam_sinh >= 1900) AND (nam_sinh <= 2100)))),
     CONSTRAINT hngh_so_cccd_chk CHECK (((so_cccd IS NULL) OR (so_cccd ~ '^([0-9]{9}|[0-9]{12})$'::text))),
     CONSTRAINT hngh_so_nhan_khau_chk CHECK (((so_nhan_khau IS NULL) OR ((so_nhan_khau >= 0) AND (so_nhan_khau <= 100)))),
     CONSTRAINT hngh_thong_tin_ho_ngheo_doi_tuong_check CHECK (((doi_tuong IS NULL) OR (doi_tuong = ANY (ARRAY['Hộ nghèo'::text, 'Cận nghèo'::text, 'Khó khăn'::text, 'Trẻ mồ côi'::text, 'Khuyết tật'::text, 'Nạn nhân CĐDC'::text])))),
+    CONSTRAINT hngh_thong_tin_ho_ngheo_to_chuc_check CHECK ((to_chuc = ANY (ARRAY['Mặt trận'::text, 'Phụ nữ'::text, 'Nông dân'::text, 'Công đoàn'::text, 'Đoàn'::text, 'CCB'::text]))),
     CONSTRAINT hngh_thong_tin_ho_ngheo_ton_giao_check CHECK ((ton_giao = ANY (ARRAY['Có'::text, 'Không'::text]))),
     CONSTRAINT hngh_thong_tin_ho_ngheo_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['Đang khó khăn'::text, 'Hết khó khăn'::text]))),
     CONSTRAINT hngh_tinh_trang_dat_chk CHECK (((tinh_trang_dat IS NULL) OR (tinh_trang_dat = ANY (ARRAY['Có GCN QSDĐ'::text, 'Chưa có GCN QSDĐ'::text])))),
@@ -13542,12 +13550,12 @@ GRANT ALL ON FUNCTION public.get_hngh_nhan_ho_tro_tong(p_search text, p_nam inte
 
 
 --
--- Name: FUNCTION get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb); Type: ACL; Schema: public; Owner: -
+-- Name: FUNCTION get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_to_chuc text[]); Type: ACL; Schema: public; Owner: -
 --
 
-GRANT ALL ON FUNCTION public.get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb) TO anon;
-GRANT ALL ON FUNCTION public.get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb) TO authenticated;
-GRANT ALL ON FUNCTION public.get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb) TO service_role;
+GRANT ALL ON FUNCTION public.get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_to_chuc text[]) TO anon;
+GRANT ALL ON FUNCTION public.get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_to_chuc text[]) TO authenticated;
+GRANT ALL ON FUNCTION public.get_hngh_page(p_search text, p_limit integer, p_offset integer, p_sort text, p_view_all boolean, p_viewer_xa_phuong_id bigint, p_doi_tuong text[], p_ton_giao text[], p_trang_thai text[], p_dan_toc_ids bigint[], p_xa_phuong_ids bigint[], p_column_search jsonb, p_to_chuc text[]) TO service_role;
 
 
 --

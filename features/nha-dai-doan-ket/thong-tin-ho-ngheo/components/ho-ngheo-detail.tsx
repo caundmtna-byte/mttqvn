@@ -12,6 +12,7 @@ import {
   Phone,
   Globe2,
   Church,
+  Flag,
   Landmark,
   CreditCard,
   StickyNote,
@@ -30,7 +31,12 @@ import EnumBadge from '@/components/ui/EnumBadge';
 import { formatDetailDate } from '@/lib/display-format';
 import type { HoNgheo } from '../core/types';
 import type { HoNgheoStatusChangeValues } from '../core/schema';
-import { hnghDoiTuongBadge, hnghTonGiaoBadge, hnghTrangThaiBadge } from '../core/display-badges';
+import {
+  hnghDoiTuongBadge,
+  hnghToChucBadge,
+  hnghTonGiaoBadge,
+  hnghTrangThaiBadge,
+} from '../core/display-badges';
 import { useUpdateHoNgheoTrangThai } from '../hooks/use-ho-ngheo';
 import HoNgheoChuyenTrangThaiDialog from './ho-ngheo-chuyen-trang-thai-dialog';
 import HoNgheoHoTroSection from './ho-ngheo-ho-tro-section';
@@ -194,6 +200,11 @@ const HoNgheoDetail: React.FC<Props> = ({ data, onClose, onEdit, onDelete }) => 
               label={txt('hoNgheo.store.tonGiaoCol')}
               icon={<Church size={12} />}
               value={<EnumBadge value={data.ton_giao} config={hnghTonGiaoBadge} shape="pill" truncate />}
+            />
+            <DetailField
+              label={txt('hoNgheo.store.toChucCol')}
+              icon={<Flag size={12} />}
+              value={<EnumBadge value={data.to_chuc} config={hnghToChucBadge} shape="pill" truncate />}
             />
           </DetailFieldGrid>
         </DetailSection>

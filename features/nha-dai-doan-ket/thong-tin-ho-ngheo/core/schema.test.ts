@@ -15,6 +15,7 @@ const hoHopLe = {
   dien_thoai: '',
   dan_toc_id: '',
   ton_giao: 'Không',
+  to_chuc: 'Mặt trận',
   so_tai_khoan: '',
   ngan_hang: '',
   trang_thai: 'Đang khó khăn',
@@ -50,6 +51,11 @@ describe('hoNgheoSchema', () => {
   it('tôn giáo chỉ nhận Có / Không', () => {
     expect(hoNgheoSchema.safeParse({ ...hoHopLe, ton_giao: 'Có' }).success).toBe(true);
     expect(hoNgheoSchema.safeParse({ ...hoHopLe, ton_giao: 'Phật giáo' }).success).toBe(false);
+  });
+
+  it('tổ chức chỉ nhận đúng danh mục, khớp CHECK dưới DB', () => {
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, to_chuc: 'CCB' }).success).toBe(true);
+    expect(hoNgheoSchema.safeParse({ ...hoHopLe, to_chuc: 'Thanh niên' }).success).toBe(false);
   });
 
   it('trạng thái chỉ nhận hai giá trị của nghiệp vụ', () => {
@@ -88,6 +94,7 @@ describe('hoNgheoToFormInput', () => {
   it('hộ mới có sẵn mặc định khớp DEFAULT dưới DB', () => {
     const v = hoNgheoToFormInput(null);
     expect(v.ton_giao).toBe('Không');
+    expect(v.to_chuc).toBe('Mặt trận');
     expect(v.trang_thai).toBe('Đang khó khăn');
   });
 });

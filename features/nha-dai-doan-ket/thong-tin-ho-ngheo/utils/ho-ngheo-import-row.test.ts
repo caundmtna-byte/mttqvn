@@ -32,8 +32,16 @@ describe('parseHoNgheoImportRow', () => {
       dan_toc_id: '5',
       doi_tuong: 'Cận nghèo',
       ton_giao: 'Không',
+      to_chuc: 'Mặt trận',
       trang_thai: 'Đang khó khăn',
     });
+  });
+
+  it('tổ chức: khớp không phân biệt hoa thường; giá trị lạ → lỗi', () => {
+    const r = parse({ to_chuc: 'phụ NỮ' });
+    expect(r.ok && r.data.values.to_chuc).toBe('Phụ nữ');
+    const sai = parse({ to_chuc: 'Thanh niên' });
+    expect(!sai.ok && sai.message).toContain('Dòng 2');
   });
 
   it('hai xã trùng tên → lỗi, phải dùng mã', () => {

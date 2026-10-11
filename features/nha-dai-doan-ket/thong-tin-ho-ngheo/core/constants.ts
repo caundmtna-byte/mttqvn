@@ -27,6 +27,11 @@ export const HNGH_TON_GIAO_VALUES = ['Có', 'Không'] as const;
 export type HnghTonGiao = (typeof HNGH_TON_GIAO_VALUES)[number];
 export const HNGH_TON_GIAO_DEFAULT: HnghTonGiao = 'Không';
 
+/** Tổ chức phụ trách hộ. Không chọn ⇒ Mặt trận (DEFAULT dưới DB). */
+export const HNGH_TO_CHUC_VALUES = ['Mặt trận', 'Phụ nữ', 'Nông dân', 'Công đoàn', 'Đoàn', 'CCB'] as const;
+export type HnghToChuc = (typeof HNGH_TO_CHUC_VALUES)[number];
+export const HNGH_TO_CHUC_DEFAULT: HnghToChuc = 'Mặt trận';
+
 /** Trạng thái hộ. Hai chiều đều hợp lệ — hộ đã thoát vẫn có thể tái nghèo. */
 export const HNGH_TRANG_THAI_VALUES = ['Đang khó khăn', 'Hết khó khăn'] as const;
 export type HnghTrangThai = (typeof HNGH_TRANG_THAI_VALUES)[number];

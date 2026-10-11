@@ -7,7 +7,12 @@ import { useHoNgheoStore } from '../store/useHoNgheoStore';
 import GenericTable from '@/components/shared/GenericTable';
 import { ColumnHeaderSortMenu, ColumnHeaderSearch } from '@/components/shared/column-header';
 import EnumBadge from '@/components/ui/EnumBadge';
-import { hnghDoiTuongBadge, hnghTonGiaoBadge, hnghTrangThaiBadge } from '../core/display-badges';
+import {
+  hnghDoiTuongBadge,
+  hnghToChucBadge,
+  hnghTonGiaoBadge,
+  hnghTrangThaiBadge,
+} from '../core/display-badges';
 import {
   formatHnghDateTimeDisplay,
   formatHnghDienThoaiDisplay,
@@ -148,6 +153,12 @@ const HoNgheoTable = memo(function HoNgheoTable({
             </span>
           );
         }
+        case 'to_chuc':
+          return item.to_chuc?.trim() ? (
+            <EnumBadge value={item.to_chuc.trim()} config={hnghToChucBadge} shape="pill" truncate />
+          ) : (
+            <span className="text-body-sm text-muted-foreground">{empty}</span>
+          );
         case 'ton_giao':
           return item.ton_giao?.trim() ? (
             <EnumBadge value={item.ton_giao.trim()} config={hnghTonGiaoBadge} shape="pill" truncate />

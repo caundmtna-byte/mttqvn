@@ -72,6 +72,7 @@ const ho: HoNgheo = {
   dan_toc_id: null,
   ten_dan_toc: 'Thái',
   ton_giao: 'Không',
+  to_chuc: 'Mặt trận',
   so_tai_khoan: null,
   ngan_hang: null,
   trang_thai: 'Đang khó khăn',

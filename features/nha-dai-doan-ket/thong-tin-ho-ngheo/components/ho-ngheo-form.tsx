@@ -10,6 +10,7 @@ import {
   Phone,
   Globe2,
   Church,
+  Flag,
   Landmark,
   CreditCard,
   StickyNote,
@@ -47,6 +48,8 @@ import {
   HNGH_NAM_SINH_MIN,
   HNGH_SO_NHAN_KHAU_MAX,
   HNGH_TINH_TRANG_DAT_VALUES,
+  HNGH_TO_CHUC_DEFAULT,
+  HNGH_TO_CHUC_VALUES,
   HNGH_TON_GIAO_VALUES,
   HNGH_TRANG_THAI_VALUES,
   HNGH_VIEC_LAM_VALUES,
@@ -96,6 +99,7 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
     () => HNGH_TON_GIAO_VALUES.map((v) => ({ label: v, value: v })),
     [],
   );
+  const toChucOptions = useMemo(() => toOptions(HNGH_TO_CHUC_VALUES), []);
   const trangThaiOptions = useMemo(
     () => HNGH_TRANG_THAI_VALUES.map((v) => ({ label: v, value: v })),
     [],
@@ -279,6 +283,23 @@ const HoNgheoForm: React.FC<Props> = ({ initialData, onClose }) => {
                   placeholder={txt('hoNgheo.store.tonGiaoCol')}
                   error={errors.ton_giao?.message}
                   icon={<Church size={14} />}
+                  clearable={false}
+                  dropdownInPortal
+                />
+              )}
+            />
+            <Controller
+              name="to_chuc"
+              control={control}
+              render={({ field }) => (
+                <Combobox
+                  options={toChucOptions}
+                  value={field.value}
+                  onChange={(v) => field.onChange(v == null ? HNGH_TO_CHUC_DEFAULT : String(v))}
+                  label={txt('hoNgheo.store.toChucCol')}
+                  placeholder={txt('hoNgheo.store.toChucCol')}
+                  error={errors.to_chuc?.message}
+                  icon={<Flag size={14} />}
                   clearable={false}
                   dropdownInPortal
                 />

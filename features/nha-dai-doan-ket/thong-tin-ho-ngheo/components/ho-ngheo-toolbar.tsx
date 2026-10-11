@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus, Download, Upload, ListChecks, MapPin, Users, Church, Globe2 } from 'lucide-react';
+import { Plus, Download, Upload, ListChecks, MapPin, Users, Church, Globe2, Flag } from 'lucide-react';
 import type { ActionItem } from '@/components/ui/MobileActionsSheet';
 import { txt } from '@/lib/text';
 import Button from '@/components/ui/Button';
@@ -13,6 +13,7 @@ import { useDanTocOptions } from '../hooks/use-dan-toc-options';
 import { useNddkXaPhuongOptions } from '../../danh-sach/hooks/use-nddk-xa-phuong-options';
 import {
   HNGH_DOI_TUONG_VALUES,
+  HNGH_TO_CHUC_VALUES,
   HNGH_TON_GIAO_VALUES,
   HNGH_TRANG_THAI_VALUES,
 } from '../core/constants';
@@ -62,6 +63,10 @@ const HoNgheoToolbar: React.FC<Props> = ({
     () => HNGH_TON_GIAO_VALUES.map((v) => ({ value: v, label: v })),
     [],
   );
+  const toChucOptions = useMemo(
+    () => HNGH_TO_CHUC_VALUES.map((v) => ({ value: v, label: v })),
+    [],
+  );
   const trangThaiOptions = useMemo(
     () => HNGH_TRANG_THAI_VALUES.map((v) => ({ value: v, label: v })),
     [],
@@ -73,6 +78,7 @@ const HoNgheoToolbar: React.FC<Props> = ({
       countHnghColumnSearchActive(filters.columnSearch ?? {}) +
       (filters.doi_tuong_filter.length > 0 ? 1 : 0) +
       (filters.ton_giao_filter.length > 0 ? 1 : 0) +
+      (filters.to_chuc_filter.length > 0 ? 1 : 0) +
       (filters.trang_thai_filter.length > 0 ? 1 : 0) +
       (filters.dan_toc_filter.length > 0 ? 1 : 0) +
       (filters.xa_phuong_filter.length > 0 ? 1 : 0),
@@ -84,6 +90,7 @@ const HoNgheoToolbar: React.FC<Props> = ({
     setFilter('columnSearch', {});
     setFilter('doi_tuong_filter', []);
     setFilter('ton_giao_filter', []);
+    setFilter('to_chuc_filter', []);
     setFilter('trang_thai_filter', []);
     setFilter('dan_toc_filter', []);
     setFilter('xa_phuong_filter', []);
@@ -135,9 +142,19 @@ const HoNgheoToolbar: React.FC<Props> = ({
           icon={Church}
           className={chipClass}
         />
+        <FilterChipMultiSelect
+          options={toChucOptions}
+          value={filters.to_chuc_filter}
+          onChange={(val) => setFilter('to_chuc_filter', val)}
+          placeholder={txt('hoNgheo.store.toChucCol')}
+          icon={Flag}
+          className={chipClass}
+        />
       </div>
     ),
     [
+      filters.to_chuc_filter,
+      toChucOptions,
       filters.trang_thai_filter,
       filters.doi_tuong_filter,
       filters.xa_phuong_filter,
@@ -194,8 +211,18 @@ const HoNgheoToolbar: React.FC<Props> = ({
         value: filters.ton_giao_filter,
         onChange: (val: string[]) => setFilter('ton_giao_filter', val),
       },
+      {
+        key: 'to_chuc_filter',
+        label: txt('hoNgheo.store.toChucCol'),
+        icon: Flag,
+        options: toChucOptions,
+        value: filters.to_chuc_filter,
+        onChange: (val: string[]) => setFilter('to_chuc_filter', val),
+      },
     ],
     [
+      toChucOptions,
+      filters.to_chuc_filter,
       trangThaiOptions,
       doiTuongOptions,
       xaPhuongOptions,

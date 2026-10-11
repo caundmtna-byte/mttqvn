@@ -14,6 +14,15 @@ export const hnghDoiTuongBadge: BadgeConfig = {
   'Nạn nhân CĐDC': { label: 'Nạn nhân CĐDC', color: 'indigo' },
 };
 
+export const hnghToChucBadge: BadgeConfig = {
+  'Mặt trận': { label: 'Mặt trận', color: 'rose' },
+  'Phụ nữ': { label: 'Phụ nữ', color: 'violet' },
+  'Nông dân': { label: 'Nông dân', color: 'emerald' },
+  'Công đoàn': { label: 'Công đoàn', color: 'sky' },
+  'Đoàn': { label: 'Đoàn', color: 'indigo' },
+  'CCB': { label: 'CCB', color: 'amber' },
+};
+
 export const hnghTonGiaoBadge: BadgeConfig = {
   'Có': { label: 'Có', color: 'violet' },
   'Không': { label: 'Không', color: 'slate' },

@@ -8,6 +8,8 @@ import {
   HNGH_SO_NHAN_KHAU_MAX,
   HNGH_TINH_TRANG_DAT_VALUES,
   HNGH_VIEC_LAM_VALUES,
+  HNGH_TO_CHUC_DEFAULT,
+  HNGH_TO_CHUC_VALUES,
   HNGH_TON_GIAO_DEFAULT,
   HNGH_TON_GIAO_VALUES,
   HNGH_TRANG_THAI_DEFAULT,
@@ -80,6 +82,7 @@ export const hoNgheoSchema = z.object({
   dien_thoai: optionalText,
   dan_toc_id: optionalFk,
   ton_giao: z.enum(HNGH_TON_GIAO_VALUES, { message: txt('hoNgheo.validation.tonGiaoInvalid') }),
+  to_chuc: z.enum(HNGH_TO_CHUC_VALUES, { message: txt('hoNgheo.validation.toChucInvalid') }),
   so_tai_khoan: optionalText,
   ngan_hang: optionalText,
   trang_thai: z.enum(HNGH_TRANG_THAI_VALUES, {
@@ -148,6 +151,7 @@ export type HoNgheoFormInput = {
   dien_thoai?: string;
   dan_toc_id?: string;
   ton_giao: string;
+  to_chuc: string;
   so_tai_khoan?: string;
   ngan_hang?: string;
   trang_thai: string;
@@ -178,6 +182,7 @@ export function hoNgheoToFormInput(row: HoNgheo | null): HoNgheoFormInput {
       dien_thoai: '',
       dan_toc_id: '',
       ton_giao: HNGH_TON_GIAO_DEFAULT,
+      to_chuc: HNGH_TO_CHUC_DEFAULT,
       so_tai_khoan: '',
       ngan_hang: '',
       trang_thai: HNGH_TRANG_THAI_DEFAULT,
@@ -205,6 +210,7 @@ export function hoNgheoToFormInput(row: HoNgheo | null): HoNgheoFormInput {
     dien_thoai: row.dien_thoai ?? '',
     dan_toc_id: row.dan_toc_id ?? '',
     ton_giao: row.ton_giao ?? HNGH_TON_GIAO_DEFAULT,
+    to_chuc: row.to_chuc ?? HNGH_TO_CHUC_DEFAULT,
     so_tai_khoan: row.so_tai_khoan ?? '',
     ngan_hang: row.ngan_hang ?? '',
     trang_thai: row.trang_thai ?? HNGH_TRANG_THAI_DEFAULT,
